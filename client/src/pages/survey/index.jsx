@@ -78,7 +78,7 @@ const Index = () => {
             fontSize={'26px'}
             fontWeight={700}
             sx={{ cursor: 'pointer' }}
-            onClick={() => navigate('/survey')}
+            onClick={() => navigate('/survey/purpose')}
           >
             Welcome To CADer
           </Typography>

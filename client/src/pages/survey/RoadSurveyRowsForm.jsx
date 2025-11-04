@@ -15,9 +15,10 @@ import { showAlert } from '../../redux/alertSlice';
 import ButtonLink from '../../components/ButtonLink';
 import { MdArrowBackIosNew } from 'react-icons/md';
 import {
-  getSurvey,
-  addSurveyRow,
+  createSurveyRow,
   endSurvey,
+  endSurveyPurpose,
+  getSurveyPurpose,
 } from '../../services/surveyServices';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
 
@@ -165,7 +166,7 @@ const RoadSurveyRowsForm = () => {
   const dispatch = useDispatch();
   const { global } = useSelector((state) => state.loading);
 
-  const [survey, setSurvey] = useState(null);
+  const [purpose, setPurpose] = useState(null);
   const formValues = useRef(initialFormValues);
   const [formErrors, setFormErrors] = useState({});
   const [inputData, setInputData] = useState([]);
@@ -207,28 +208,46 @@ const RoadSurveyRowsForm = () => {
     const roadWidth = Number(formValues.current.roadWidth || 0);
     const spacing = Number(formValues.current.spacing || 0);
 
-    if (!roadWidth || !spacing) return;
+    const intermediateOffsets = ['0.000'];
 
     const halfWidth = roadWidth / 2;
-    const pattern = [];
+    let limit = Math.round(halfWidth / spacing);
 
-    // Generate offsets from -halfWidth to +halfWidth (inclusive)
-    for (
-      let offset = -halfWidth;
-      offset <= halfWidth + 0.0001;
-      offset += spacing
-    ) {
-      pattern.push(offset.toFixed(3));
+    for (let i = 1; i <= limit; i++) {
+      let value = i * spacing;
+
+      // Cap the value at halfWidth if it exceeds it
+      if (value > halfWidth) value = halfWidth;
+
+      const negativeValue = -value;
+
+      intermediateOffsets.push(value.toFixed(3), negativeValue.toFixed(3));
+
+      if (i + 1 === limit && value < halfWidth) {
+        limit += 1;
+      }
+
+      // Stop if we've reached or exceeded the half width
+      if (value >= halfWidth) break;
     }
 
-    const limit = formValues.current.intermediateOffsets.length;
+    const previousLength = formValues.current.intermediateOffsets.length;
     const updatedRows = [...formValues.current.intermediateOffsets];
 
-    for (let i = 0; i < limit; i++) {
-      const offset = pattern[i % pattern.length];
-      updatedRows[i].offset = offset;
-      updatedRows[i].intermediateSight = updatedRows[i].intermediateSight || '';
-    }
+    intermediateOffsets
+      ?.sort((a, b) => a - b)
+      ?.forEach((entry, i) => {
+        if (i >= previousLength) {
+          updatedRows[i] = {
+            offset: entry,
+            intermediateSight: '',
+          };
+        } else {
+          updatedRows[i].offset = entry;
+          updatedRows[i].intermediateSight =
+            updatedRows[i].intermediateSight || '';
+        }
+      });
 
     formValues.current.intermediateOffsets = updatedRows;
     setForceRender(!forceRender);
@@ -286,18 +305,18 @@ const RoadSurveyRowsForm = () => {
     }
   };
 
-  const getNewChainage = (survey) => {
-    const isFirstChainage = survey?.rows?.find((r) => r.type === 'Chainage');
+  const getNewChainage = (purpose) => {
+    const isFirstChainage = purpose?.rows?.find((r) => r.type === 'Chainage');
 
     if (!isFirstChainage) {
       formValues.current.chainage = '0/000';
     } else {
       let lastChainage = null;
-      survey?.rows?.forEach((row) => {
+      purpose?.rows?.forEach((row) => {
         if (row.type === 'Chainage') lastChainage = row.chainage;
       });
 
-      const chainageMultiple = survey?.chainageMultiple;
+      const chainageMultiple = purpose?.surveyId?.chainageMultiple;
 
       // Extract the numeric part after '/'
       const lastDigit = Number(lastChainage.split('/')[1]);
@@ -339,6 +358,10 @@ const RoadSurveyRowsForm = () => {
       let payload = null;
 
       if (rowType === 'Chainage') {
+        formValues.current.intermediateOffsets?.sort(
+          (a, b) => a.offset - b.offset
+        );
+
         payload = {
           ...formValues.current,
           intermediateSight: formValues.current.intermediateOffsets.map(
@@ -350,7 +373,7 @@ const RoadSurveyRowsForm = () => {
         payload = { ...formValues.current };
       }
 
-      const { data } = await addSurveyRow(id, payload);
+      const { data } = await createSurveyRow(id, payload);
 
       if (data.success) {
         dispatch(
@@ -360,18 +383,23 @@ const RoadSurveyRowsForm = () => {
           })
         );
 
+        const updatedPurpose = {
+          ...purpose,
+          rows: [...(purpose.rows || []), data.row],
+        };
+
         formValues.current = {
           ...initialFormValues,
           intermediateOffsets: [{ intermediateSight: '', offset: '' }],
         };
-        getNewChainage(data.survey);
+        getNewChainage(updatedPurpose);
 
         if (rowType === 'Chainage') {
           setPage(0);
           setAutoOffset(false);
-        } else {
-          setForceRender(!forceRender);
         }
+
+        setPurpose(updatedPurpose);
       } else {
         throw new Error('Something went wrong.');
       }
@@ -382,19 +410,19 @@ const RoadSurveyRowsForm = () => {
     }
   };
 
-  const handleEndSurvey = async () => {
+  const handleEndSurveyPurpose = async () => {
     try {
-      const { data } = await endSurvey(id);
+      const { data } = await endSurveyPurpose(id);
 
       if (data.success) {
         dispatch(
           showAlert({
             type: 'success',
-            message: `${survey.purpose} Finished`,
+            message: `${purpose.type} Finished`,
           })
         );
 
-        navigate(`/survey/road-survey/${id}/result`);
+        navigate(`/survey/road-survey/${purpose._id}/field-book`);
       } else {
         throw new Error('Something went wrong.');
       }
@@ -414,15 +442,15 @@ const RoadSurveyRowsForm = () => {
       try {
         if (!global) dispatch(startLoading());
 
-        const { data } = await getSurvey(id);
+        const { data } = await getSurveyPurpose(id);
 
-        if (data.survey.isSurveyFinish) {
-          navigate(`/survey/road-survey/${id}/result`);
-          throw Error('Survey already finished');
+        if (data?.purpose?.isPurposeFinish) {
+          navigate('/survey/purpose');
+          throw Error(`${data?.purpose?.type} already completed`);
         }
 
-        getNewChainage(data.survey);
-        setSurvey(data.survey);
+        getNewChainage(data.purpose);
+        setPurpose(data.purpose);
       } catch (error) {
         handleFormError(error, null, dispatch, navigate);
       } finally {
@@ -438,7 +466,7 @@ const RoadSurveyRowsForm = () => {
         {...alertData}
         open={open}
         onCancel={handleClose}
-        onSubmit={handleEndSurvey}
+        onSubmit={handleEndSurveyPurpose}
       />
 
       {page === 1 && (
@@ -648,7 +676,7 @@ const RoadSurveyRowsForm = () => {
               loading={btnLoading}
             />
 
-            {page === 0 && (
+            {rowType === 'CP' && (
               <BasicButtons
                 value={'Finish Survey'}
                 sx={{ backgroundColor: '#4caf50', height: '45px' }}

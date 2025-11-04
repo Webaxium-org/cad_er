@@ -9,14 +9,20 @@ import {
   getSurvey,
   updateSurvey,
   deleteSurvey,
-  addSurveyRow,
+  createSurveyRow,
   updateSurveyRow,
   deleteSurveyRow,
   endSurvey,
+  getSurveyPurpose,
+  endSurveyPurpose,
+  getAllSurveyPurpose,
 } from '../controllers/surveyController.js';
 
-// Survey routes
+// 🔹 Static routes
 router.get('/exists', checkSurveyExists);
+router.get('/purposes', getAllSurveyPurpose);
+
+// 🔹 Survey routes
 router.get('/', getAllSurvey);
 router.post('/', createSurvey);
 router.patch('/:id/end', endSurvey);
@@ -24,8 +30,12 @@ router.get('/:id', getSurvey);
 router.patch('/:id', updateSurvey);
 router.delete('/:id', deleteSurvey);
 
-// Row routes (nested under a survey)
-router.post('/:id/rows', addSurveyRow);
+// 🔹 Purpose routes (nested under a survey)
+router.get('/:id/purposes', getSurveyPurpose);
+router.patch('/:id/purposes/end', endSurveyPurpose);
+
+// 🔹 Row routes (nested under a survey)
+router.post('/:id/rows', createSurveyRow);
 router.patch('/:id/rows/:rowId', updateSurveyRow);
 router.delete('/:id/rows/:rowId', deleteSurveyRow);
 

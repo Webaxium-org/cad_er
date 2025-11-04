@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllSurvey } from '../../services/surveyServices';
+import { getAllSurveyPurpose } from '../../services/surveyServices';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -20,27 +20,27 @@ import { FaEye, FaChevronRight } from 'react-icons/fa';
 import { handleFormError } from '../../utils/handleFormError';
 import { showAlert } from '../../redux/alertSlice';
 
-export default function SurveyList() {
+export default function PurposeList() {
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
 
   const { global } = useSelector((state) => state.loading);
 
-  const [surveys, setSurveys] = useState([]);
+  const [purposes, setPurposes] = useState([]);
 
-  const fetchSurveys = async () => {
+  const fetchPurposes = async () => {
     try {
       if (!global) {
         dispatch(startLoading());
       }
 
-      const { data } = await getAllSurvey();
+      const { data } = await getAllSurveyPurpose();
 
       if (data.success) {
-        setSurveys(data.surveys || []);
+        setPurposes(data.purposes || []);
       } else {
-        throw Error('Failed to fetch surveys');
+        throw Error('Failed to fetch purposes');
       }
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
@@ -50,58 +50,40 @@ export default function SurveyList() {
   };
 
   useEffect(() => {
-    fetchSurveys();
+    fetchPurposes();
   }, []);
 
-  const handleContinueSurvey = async (id) => {
-    try {
-      const survey = surveys.find((s) => String(s._id) === id);
-
-      if (!survey) throw Error('Something went wrong');
-
-      const activePurpose = survey.purposes?.find((p) => !p.isPurposeFinished);
-
-      if (!activePurpose) throw Error('Something went wrong');
-
-      navigate(`/survey/road-survey/${activePurpose._id}/rows`);
-    } catch (err) {
-      dispatch(
-        showAlert({
-          type: 'error',
-          message: 'Something went wrong',
-        })
-      );
-    }
-  };
+  const handleContinuePurpose = async (id) =>
+    navigate(`/survey/road-survey/${id}/rows`);
 
   const handleEndSurvey = async (id) => {
     alert('!');
   };
 
-  if (surveys.length === 0)
+  if (purposes.length === 0)
     return (
       <Typography p={2} color="text.secondary">
-        No surveys found.
+        No purposes found.
       </Typography>
     );
 
   return (
     <Box p={3}>
       <Typography variant="h5" fontWeight={700} mb={2}>
-        Surveys List
+        Purpose List
       </Typography>
 
-      {/* <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
+      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
         <Table>
           <TableHead sx={{ backgroundColor: '#f4f6f8' }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Title</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Purpose</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Instrument No</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Chainage Multiple</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Created</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Report</TableCell>
               <TableCell sx={{ fontWeight: 700 }} align="right">
                 Actions
               </TableCell>
@@ -109,38 +91,49 @@ export default function SurveyList() {
           </TableHead>
 
           <TableBody>
-            {surveys.map((survey) => (
-              <TableRow key={survey._id} hover>
-                <TableCell>{survey.project}</TableCell>
-                <TableCell>{survey.purposes?.map((p) => p.type)}</TableCell>
-                <TableCell>{survey.instrumentNo}</TableCell>
-                <TableCell>{survey.type}</TableCell>
-                <TableCell>{survey.chainageMultiple}</TableCell>
+            {purposes.map((purpose) => (
+              <TableRow key={purpose._id} hover>
+                <TableCell>{purpose.surveyId?.project}</TableCell>
+                <TableCell>{purpose.type}</TableCell>
+                <TableCell>{purpose.surveyId?.instrumentNo}</TableCell>
+                <TableCell>{purpose.surveyId?.chainageMultiple}</TableCell>
                 <TableCell>
                   <Chip
-                    label={survey.isSurveyFinish ? 'Finished' : 'Active'}
-                    color={survey.isSurveyFinish ? 'success' : 'warning'}
+                    label={purpose.isPurposeFinish ? 'Finished' : 'Active'}
+                    color={purpose.isPurposeFinish ? 'success' : 'warning'}
                     size="small"
                   />
                 </TableCell>
                 <TableCell>
-                  {new Date(survey.DateOfSurvey).toLocaleDateString()}
+                  {new Date(purpose.DateOfSurvey).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <IconButton
+                    color="primary"
+                    onClick={() =>
+                      navigate(
+                        `/survey/road-survey/${purpose?.surveyId?._id}/report`
+                      )
+                    }
+                  >
+                    <FaEye />
+                  </IconButton>
                 </TableCell>
 
                 <TableCell align="right">
                   <IconButton
                     color="primary"
                     onClick={() =>
-                      navigate(`/survey/road-survey/${survey._id}/field-book`)
+                      navigate(`/survey/road-survey/${purpose?._id}/field-book`)
                     }
                   >
                     <FaEye />
                   </IconButton>
 
-                  {!survey.isSurveyFinish && (
+                  {!purpose.isPurposeFinish && (
                     <IconButton
                       color="error"
-                      onClick={() => handleContinueSurvey(survey._id)}
+                      onClick={() => handleContinuePurpose(purpose._id)}
                     >
                       <FaChevronRight />
                     </IconButton>
@@ -150,7 +143,7 @@ export default function SurveyList() {
             ))}
           </TableBody>
         </Table>
-      </TableContainer> */}
+      </TableContainer>
     </Box>
   );
 }

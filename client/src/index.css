@@ -124,6 +124,21 @@
 }
 
 /* ---------------------------
+   CS-Table
+   --------------------------- */
+.cs-table-vertical-line {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 12px;
+  background: black;
+  border-radius: 1px;
+  z-index: 2;
+}
+
+/* ---------------------------
    Preloader
    --------------------------- */
 .preloader {

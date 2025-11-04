@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getSurvey } from '../../../services/surveyServices';
+import { getSurvey, getSurveyPurpose } from '../../../services/surveyServices';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import BasicButtons from '../../../components/BasicButton';
@@ -21,21 +21,21 @@ import {
   Stack,
 } from '@mui/material';
 
-export default function Output() {
+export default function FieldBook() {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { global } = useSelector((state) => state.loading);
 
-  const [survey, setSurvey] = useState(null);
+  const [purpose, setPurpose] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (!global) dispatch(startLoading());
-        const { data } = await getSurvey(id);
+        const { data } = await getSurveyPurpose(id);
         if (data.success) {
-          setSurvey(data.survey);
+          setPurpose(data.purpose);
         } else {
           throw Error('Something went wrong');
         }
@@ -50,13 +50,15 @@ export default function Output() {
 
   // 🔸 Compute table data from survey rows
   const tableData = useMemo(() => {
-    if (!survey) return [];
+    if (!purpose) return [];
+
+    const survey = purpose.surveyId;
 
     let hi = 0; // Height of Instrument
     let rl = 0; // Reduced Level
     const rows = [];
 
-    for (const row of survey.rows) {
+    for (const row of purpose.rows) {
       switch (row.type) {
         case 'Instrument setup':
           rl = Number(survey.reducedLevel || 0);
@@ -69,7 +71,7 @@ export default function Output() {
             HI: hi.toFixed(3),
             RL: rl.toFixed(3),
             Offset: '-',
-            Remarks: '-',
+            Remarks: row.remarks?.[0] || '-',
           });
           break;
 
@@ -126,10 +128,10 @@ export default function Output() {
     }
 
     return rows;
-  }, [survey]);
+  }, [purpose]);
 
   const exportToExcel = () => {
-    if (!survey) return;
+    if (!purpose) return;
 
     const headers = ['CH', 'BS', 'IS', 'FS', 'HI', 'RL'];
 
@@ -142,7 +144,7 @@ export default function Output() {
     // Add custom header section (rows 1–3)
     const headerSection = [
       [
-        `Purpose: ${survey.purpose}`,
+        `Purpose: ${purpose.type}`,
         '',
         '',
         '',
@@ -162,7 +164,7 @@ export default function Output() {
         '',
       ],
       [
-        `Instrument No: ${survey.instrumentNo}`,
+        `Instrument No: ${purpose?.surveyId?.instrumentNo}`,
         '',
         '',
         '',
@@ -204,7 +206,7 @@ export default function Output() {
 
     // Create workbook and export
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Survey');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'AE');
 
     const excelBuffer = XLSX.write(workbook, {
       bookType: 'xlsx',
@@ -213,11 +215,11 @@ export default function Output() {
     const blob = new Blob([excelBuffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    saveAs(blob, `Survey_${survey.purpose}.xlsx`);
+    saveAs(blob, `Survey_${purpose?.type}.xlsx`);
   };
 
-  if (!survey) {
-    return <Typography p={2}>Loading survey details...</Typography>;
+  if (!purpose) {
+    return <Typography p={2}>Loading purpose details...</Typography>;
   }
 
   return (

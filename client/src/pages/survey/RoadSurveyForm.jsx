@@ -14,7 +14,8 @@ import { showAlert } from '../../redux/alertSlice';
 import BasicSelect from '../../components/BasicSelect';
 
 const schema = Yup.object().shape({
-  purpose: Yup.string().required('Project name is required'),
+  project: Yup.string().required('Project name is required'),
+  purpose: Yup.string().required('Purpose name is required'),
   instrumentNo: Yup.string().required('Instrument number is required'),
   backSight: Yup.number()
     .typeError('Backsight is required')
@@ -30,8 +31,19 @@ const schema = Yup.object().shape({
 const inputData = [
   {
     label: 'Project name*',
-    name: 'purpose',
+    name: 'project',
     type: 'text',
+  },
+  {
+    label: 'Purpose*',
+    name: 'purpose',
+    mode: 'select',
+    options: [
+      'Initial Level',
+      'Final Level',
+      'Final Earth Work',
+      'Quarry Muck',
+    ].map((n) => ({ label: n, value: n })),
   },
   {
     label: 'Instrument number*',
@@ -57,6 +69,7 @@ const inputData = [
 ];
 
 const initialFormValues = {
+  project: '',
   purpose: '',
   instrumentNo: '',
   backSight: '',
@@ -105,7 +118,7 @@ const RoadSurveyForm = () => {
       const { data } = await createSurvey(formValues.current);
 
       if (data.success) {
-        const id = data?.survey?._id;
+        const id = data?.survey?.purposeId;
 
         dispatch(
           showAlert({
@@ -128,27 +141,7 @@ const RoadSurveyForm = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!global) {
-          dispatch(startLoading());
-        }
-
-        const { data } = await checkSurveyExists();
-
-        if (data.survey) {
-          const id = data?.survey?._id;
-
-          navigate(`/survey/road-survey/${id}/rows`);
-        }
-      } catch (error) {
-        handleFormError(error, null, dispatch, navigate);
-      } finally {
-        dispatch(stopLoading());
-      }
-    };
-
-    fetchData();
+    dispatch(stopLoading());
   }, []);
 
   return (

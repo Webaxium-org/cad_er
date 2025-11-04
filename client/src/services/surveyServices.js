@@ -24,7 +24,7 @@ export const deleteSurvey = (id) => {
   return axiosInstance.delete(`surveys/${id}`);
 };
 
-export const addSurveyRow = (id, formData) => {
+export const createSurveyRow = (id, formData) => {
   return axiosInstance.post(`surveys/${id}/rows`, formData);
 };
 
@@ -38,4 +38,16 @@ export const updateSurveyRow = (id, rowId) => {
 
 export const deleteSurveyRow = (id) => {
   return axiosInstance.delete(`surveys/${id}/rows/${rowId}`);
+};
+
+export const getAllSurveyPurpose = () => {
+  return axiosInstance.get('surveys/purposes');
+};
+
+export const getSurveyPurpose = (id) => {
+  return axiosInstance.get(`surveys/${id}/purposes`);
+};
+
+export const endSurveyPurpose = (id) => {
+  return axiosInstance.patch(`surveys/${id}/purposes/end`);
 };

@@ -1,9 +1,14 @@
-import Surveys from '../models/survey.js';
+import isValidObjectId from '../helper/index.js';
+import Survey from '../models/survey.js';
+import SurveyPurpose from '../models/surveyPurpose.js';
+import SurveyRow from '../models/surveyRowSchema.js';
+import History from '../models/historySchema.js';
 import createHttpError from 'http-errors';
+import mongoose from 'mongoose';
 
 const checkSurveyExists = async (req, res, next) => {
   try {
-    const survey = await Surveys.findOne({ isSurveyFinish: false });
+    const survey = await Survey.findOne({ isSurveyFinish: false });
 
     res.status(200).json({
       success: true,
@@ -17,23 +22,26 @@ const checkSurveyExists = async (req, res, next) => {
 
 const getAllSurvey = async (req, res, next) => {
   try {
-    const { status } = req.query;
+    const { status, project, purpose, type } = req.query;
 
-    let filter = { deleted: false };
+    const filter = { deleted: false };
 
-    if (status === 'active') {
-      filter.isSurveyFinish = false;
-    } else if (status === 'finished') {
-      filter.isSurveyFinish = true;
-    }
+    // 🔹 Flexible filters
+    if (status === 'active') filter.isSurveyFinish = false;
+    else if (status === 'finished') filter.isSurveyFinish = true;
 
-    const surveys = await Surveys.find(filter)
+    if (project) filter.project = project;
+    if (type) filter.type = type;
+
+    const surveys = await Survey.find(filter)
       .sort({ createdAt: -1 })
+      .populate('purposes')
       // .populate('createdBy', 'name email')
       .lean();
 
     res.status(200).json({
       success: true,
+      count: surveys.length,
       message:
         surveys.length > 0
           ? `${surveys.length} survey${surveys.length > 1 ? 's' : ''} found`
@@ -46,20 +54,22 @@ const getAllSurvey = async (req, res, next) => {
 };
 
 const createSurvey = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
-      body: {
-        purpose,
-        instrumentNo,
-        reducedLevel,
-        backSight,
-        chainageMultiple,
-        remark,
-      },
-    } = req;
+      project,
+      purpose,
+      instrumentNo,
+      reducedLevel,
+      backSight,
+      chainageMultiple,
+    } = req.body;
 
-    // Input validation
+    // 🔹 Input validation
     if (
+      !project ||
       !purpose ||
       !instrumentNo ||
       !reducedLevel ||
@@ -68,60 +78,135 @@ const createSurvey = async (req, res, next) => {
     ) {
       throw createHttpError(
         400,
-        'All fields (purpose, instrumentNo, reducedLevel, backSight, chainageMultiple) are required'
+        'All fields (project, purpose, instrumentNo, reducedLevel, backSight, chainageMultiple) are required'
       );
     }
 
-    // Check if there’s already a running survey
-    const isExist = await Surveys.findOne({ isSurveyFinish: false });
-    if (isExist) {
+    // 🔹 Check for active survey
+    const existingSurvey = await Survey.findOne(
+      { isSurveyFinish: false, deleted: false },
+      null,
+      { session }
+    );
+
+    if (existingSurvey) {
       throw createHttpError(409, 'A survey is already in progress');
     }
 
-    // Prepare rows
-    const rows = [
-      {
-        type: 'Instrument setup',
-        backSight: Number(backSight)?.toFixed(3),
-      },
-    ];
+    // 🔹 Create Survey
+    const survey = await Survey.create(
+      [
+        {
+          project,
+          instrumentNo,
+          chainageMultiple,
+          reducedLevel: Number(reducedLevel).toFixed(3),
+          createdBy: req.user?._id,
+        },
+      ],
+      { session }
+    );
 
-    const survey = await Surveys.create({
-      purpose,
-      instrumentNo,
-      chainageMultiple,
-      reducedLevel: Number(reducedLevel)?.toFixed(3),
-      rows,
-    });
+    const surveyDoc = survey[0];
+
+    // 🔹 Create Purpose
+    const purposeDoc = await SurveyPurpose.create(
+      [
+        {
+          surveyId: surveyDoc._id,
+          type: purpose,
+          isSurveyFinish: false,
+        },
+      ],
+      { session }
+    );
+
+    const purposeObj = purposeDoc[0];
+
+    // 🔹 Create First Row (TBM)
+    const row = await SurveyRow.create(
+      [
+        {
+          surveyId: surveyDoc._id,
+          purposeId: purposeObj._id,
+          type: 'Instrument setup',
+          backSight: Number(backSight).toFixed(3),
+          remarks: ['TBM'],
+        },
+      ],
+      { session }
+    );
+
+    // 🔹 Optionally create a History log
+    await History.create(
+      [
+        {
+          entityType: 'Survey',
+          entityId: surveyDoc._id,
+          action: 'Create',
+          notes: `Survey created with purpose ${purpose}`,
+          performedBy: req.user?._id,
+        },
+      ],
+      { session }
+    );
+
+    // ✅ Commit transaction
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(201).json({
       success: true,
       message: 'Survey created successfully',
-      survey,
+      survey: {
+        ...surveyDoc.toObject(),
+        purposeId: purposeObj._id,
+        purposes: [
+          {
+            ...purposeObj.toObject(),
+            rows: [row[0]],
+          },
+        ],
+      },
     });
   } catch (err) {
+    // ❌ Rollback if anything fails
+    await session.abortTransaction();
+    session.endSession();
     next(err);
   }
 };
 
 const getSurvey = async (req, res, next) => {
   try {
-    const {
-      params: { id },
-    } = req;
+    const { id } = req.params;
 
-    const survey = await Surveys.findOne({ _id: id, deleted: false });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid survey ID',
+      });
+    }
+
+    // Find active (non-deleted) survey
+    const survey = await Survey.findOne({ _id: id, deleted: false })
+      .populate({
+        path: 'purposes',
+        match: { deleted: false },
+        populate: { path: 'rows', match: { deleted: false } },
+      })
+      .lean();
 
     if (!survey) {
       return res.status(404).json({
         success: false,
-        message: 'No active survey found',
+        message: 'Survey not found or has been deleted',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Active survey found',
+      message: 'Survey retrieved successfully',
       survey,
     });
   } catch (err) {
@@ -132,139 +217,279 @@ const getSurvey = async (req, res, next) => {
 const updateSurvey = () => {};
 const deleteSurvey = () => {};
 
-const addSurveyRow = async (req, res, next) => {
+const createSurveyRow = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
+      params: { id },
       body: {
         type,
         backSight,
         intermediateSight,
         foreSight,
-        reducedLevel,
         chainage,
         roadWidth,
         offsets,
       },
     } = req;
 
+    // 🔹 Validate purpose
+    if (!id) throw createHttpError(400, 'Purpose ID is required');
+    const purpose = await SurveyPurpose.findOne({
+      _id: id,
+      deleted: false,
+    })
+      .populate('surveyId')
+      .session(session);
+
+    if (!purpose) throw createHttpError(404, 'Purpose not found');
+    if (purpose.isPurposeFinish)
+      throw createHttpError(409, `${purpose.type} already completed`);
+
+    const survey = purpose.surveyId;
+    if (survey.isSurveyFinish)
+      throw createHttpError(409, 'Survey is already finished');
+    if (!survey || survey.deleted)
+      throw createHttpError(404, 'Survey not found or has been deleted');
+
+    // 🔹 Validate type and required fields (same as before)
     const types = {
       Chainage: ['chainage', 'roadWidth', 'intermediateSight', 'offsets'],
       CP: ['foreSight', 'backSight'],
       TBM: ['intermediateSight'],
     };
 
-    // 🔸 Step 1: Validate row type
-    if (!type) throw createHttpError(400, 'Row type is required');
-    if (!Object.keys(types).includes(type))
-      throw createHttpError(400, `Invalid row type: ${type}`);
+    if (!type || !Object.keys(types).includes(type))
+      throw createHttpError(400, `Invalid or missing row type: ${type}`);
 
-    // 🔸 Step 2: Find active survey
-    const survey = await Surveys.findOne({ isSurveyFinish: false });
-    if (!survey) throw createHttpError(409, 'No active survey found');
-
-    // 🔸 Step 3: Validate required fields based on type
-    const requiredFields = types[type];
-    const missingFields = requiredFields.filter((f) => {
-      const value = req.body[f];
-      return (
-        value === undefined ||
-        value === null ||
-        value === '' ||
-        (Array.isArray(value) && value.length === 0)
-      );
-    });
-
-    if (missingFields.length > 0) {
+    const missing = types[type].filter(
+      (f) => !req.body[f] || (Array.isArray(req.body[f]) && !req.body[f].length)
+    );
+    if (missing.length)
       throw createHttpError(
         400,
-        `Missing required fields for type "${type}": ${missingFields.join(
-          ', '
-        )}`
+        `Missing required fields: ${missing.join(', ')}`
       );
-    }
 
+    // 🔹 Remarks logic
     const remarks = [];
-
     if (type === 'Chainage') {
-      const offsetsToMap = Array.isArray(offsets) ? offsets : [];
-
-      offsetsToMap?.forEach((offset) => {
-        const formattedOffset = Number(offset);
-        let remark;
-
-        if (formattedOffset < 0) {
-          remark = 'LHS';
-        } else if (formattedOffset === 0) {
-          remark = 'PLS';
-        } else {
-          remark = 'RHS';
-        }
-
-        remarks.push(remark);
+      (offsets || []).forEach((offset) => {
+        const n = Number(offset);
+        if (n < 0) remarks.push('LHS');
+        else if (n === 0) remarks.push('PLS');
+        else remarks.push('RHS');
       });
     } else {
       remarks.push(type);
     }
 
-    // 🔸 Step 4: Construct new row safely
-    const newRow = {
-      type,
-      chainage: type === 'Chainage' ? chainage : undefined,
-      roadWidth: roadWidth ? Number(roadWidth).toFixed(3) : undefined,
-      backSight: backSight ? Number(backSight).toFixed(3) : undefined,
-      foreSight: foreSight ? Number(foreSight).toFixed(3) : undefined,
-      reducedLevel: reducedLevel ? Number(reducedLevel).toFixed(3) : undefined,
-      remarks: remarks || '',
-      intermediateSight:
-        type === 'Chainage'
-          ? Array.isArray(intermediateSight)
-            ? intermediateSight.map((n) => Number(n).toFixed(3))
-            : []
-          : intermediateSight
-          ? intermediateSight
-          : [],
-      offsets: Array.isArray(offsets)
-        ? offsets
-            .map((n) => Number(n).toFixed(3))
-            .sort((a, b) => Number(a) - Number(b))
-        : [],
-    };
+    // 🔹 Create new SurveyRow
+    const [newRow] = await SurveyRow.create(
+      [
+        {
+          purposeId: purpose._id,
+          type,
+          chainage,
+          roadWidth: roadWidth ? Number(roadWidth).toFixed(3) : undefined,
+          backSight: backSight ? Number(backSight).toFixed(3) : undefined,
+          foreSight: foreSight ? Number(foreSight).toFixed(3) : undefined,
+          intermediateSight:
+            type === 'Chainage'
+              ? (intermediateSight || []).map((n) => Number(n).toFixed(3))
+              : intermediateSight || [],
+          offsets: (offsets || []).map((n) => Number(n).toFixed(3)),
+          remarks,
+        },
+      ],
+      { session }
+    );
 
-    // 🔸 Step 5: Push row
-    survey.rows.push(newRow);
+    await session.commitTransaction();
+    session.endSession();
 
-    await survey.save();
+    res.status(201).json({
+      success: true,
+      message: 'Survey row added successfully',
+      row: newRow,
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    next(err);
+  }
+};
+
+const getSurveyPurpose = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // 🔹 Validate ID format
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid purpose ID',
+      });
+    }
+
+    // 🔹 Find the specific survey purpose with related data
+    const purpose = await SurveyPurpose.findOne({ _id: id, deleted: false })
+      .populate({
+        path: 'surveyId',
+        match: { deleted: false },
+      })
+      .populate({
+        path: 'rows',
+        match: { deleted: false },
+      })
+      .populate({
+        path: 'history',
+      })
+      .lean();
+
+    if (!purpose) {
+      return res.status(404).json({
+        success: false,
+        message: 'Survey purpose not found or has been deleted',
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Row added successfully',
-      survey,
+      message: 'Survey purpose retrieved successfully',
+      purpose,
     });
   } catch (err) {
     next(err);
   }
 };
 
-const endSurvey = async (req, res, next) => {
+const getAllSurveyPurpose = async (req, res, next) => {
+  try {
+    const purposes = await SurveyPurpose.find({ deleted: false })
+      .populate({
+        path: 'surveyId',
+        match: { deleted: false },
+      })
+      .populate({
+        path: 'rows',
+        match: { deleted: false },
+      })
+      .populate({
+        path: 'history',
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!purposes || purposes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No survey purposes found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: purposes.length,
+      message: `${purposes.length} survey purpose${
+        purposes.length > 1 ? 's' : ''
+      } found`,
+      purposes,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const endSurveyPurpose = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
 
-    const survey = await Surveys.findById(id);
+    // 🔹 Step 1: Find the purpose
+    const purpose = await SurveyPurpose.findById(id).session(session);
+    if (!purpose || purpose.deleted)
+      throw createHttpError(404, 'Survey purpose not found');
 
+    // 🔹 Step 2: Check if already finished
+    if (purpose.isPurposeFinish)
+      throw createHttpError(400, 'Purpose is already finished');
+
+    // 🔹 Step 3: Ensure its parent survey exists and is active
+    const survey = await Survey.findById(purpose.surveyId).session(session);
+    if (!survey || survey.deleted)
+      throw createHttpError(404, 'Parent survey not found');
+    if (survey.isSurveyFinish)
+      throw createHttpError(
+        400,
+        'Cannot finish purpose — survey already finished'
+      );
+
+    // 🔹 Step 4: Mark purpose as finished
+    purpose.isPurposeFinish = true;
+    purpose.purposeFinishDate = new Date();
+    await purpose.save({ session });
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: 'Purpose ended successfully',
+      purpose,
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    next(err);
+  } finally {
+    session.endSession();
+  }
+};
+
+const endSurvey = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = req.params;
+
+    const survey = await Survey.findById(id).session(session);
     if (!survey || survey.deleted)
       throw createHttpError(404, 'Survey not found');
     if (survey.isSurveyFinish)
       throw createHttpError(400, 'Survey already finished');
 
+    const pendingPurpose = await SurveyPurpose.findOne({
+      surveyId: survey._id,
+      isPurposeFinish: false,
+      deleted: false,
+    }).session(session);
+
+    if (pendingPurpose) {
+      throw createHttpError(
+        400,
+        `Cannot end survey — purpose "${pendingPurpose.type}" is still pending`
+      );
+    }
+
     survey.isSurveyFinish = true;
     survey.surveyFinishDate = new Date();
-    await survey.save();
+    await survey.save({ session });
 
-    res
-      .status(200)
-      .json({ success: true, message: 'Survey ended successfully' });
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: 'Survey ended successfully',
+    });
   } catch (err) {
+    await session.abortTransaction();
     next(err);
+  } finally {
+    session.endSession();
   }
 };
 
@@ -285,11 +510,14 @@ export {
   checkSurveyExists,
   getAllSurvey,
   createSurvey,
+  getSurveyPurpose,
+  getAllSurveyPurpose,
+  endSurveyPurpose,
   endSurvey,
   getSurvey,
   updateSurvey,
   deleteSurvey,
-  addSurveyRow,
+  createSurveyRow,
   updateSurveyRow,
   deleteSurveyRow,
 };
