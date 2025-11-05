@@ -38,6 +38,7 @@ const initialChartOptions = {
     axisBorder: { show: false },
   },
   yaxis: {
+    min: 0,
     labels: { show: false },
     axisTicks: { show: false },
     axisBorder: { show: true, color: '#000000' },
@@ -72,7 +73,7 @@ const Report = () => {
     const row = initialLevel.rows?.find((row) => row._id === id);
     if (!row) return;
 
-    const dummyGSB = [9.895, 9.92, 9.895];
+    const dummyGSB = [4.505, 4.736, 4.830];
 
     const safeOffsets = row.offsets || [];
     const safeInitial = row.intermediateSight || [];
@@ -84,6 +85,7 @@ const Report = () => {
       gsb: safeGSB,
       initial: safeInitial,
       offsets: safeOffsets,
+      chainage: row.chainage,
       series: [
         {
           name: 'GSB Prop. Level',
@@ -151,7 +153,7 @@ const Report = () => {
         <Box>
           {/* Header */}
           <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
-            CROSS SECTION AT CHAINAGE 0
+            CROSS SECTION AT CHAINAGE {selectedCs?.chainage}
           </Typography>
           <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
             Datum: {selectedCs.datum}
@@ -160,7 +162,7 @@ const Report = () => {
           {/* Chart */}
           <Box
             sx={{
-              width: 360,
+              width: 390,
               height: 100,
               mt: 1,
               display: 'flex',
@@ -169,7 +171,7 @@ const Report = () => {
             }}
           >
             <Box
-              sx={{ width: 199, height: 100, position: 'absolute', top: '5px' }}
+              sx={{ width: 198, height: 100, position: 'absolute', top: '5px' }}
             >
               <Chart
                 key={selectedCs.id}
@@ -186,7 +188,7 @@ const Report = () => {
           <TableContainer
             component={Paper}
             sx={{
-              maxWidth: 420,
+              width: 420,
               border: '1px solid black',
               mt: 0,
               overflow: 'visible',
