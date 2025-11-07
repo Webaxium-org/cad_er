@@ -82,17 +82,6 @@ const createSurvey = async (req, res, next) => {
       );
     }
 
-    // 🔹 Check for active survey
-    const existingSurvey = await Survey.findOne(
-      { isSurveyFinish: false, deleted: false },
-      null,
-      { session }
-    );
-
-    if (existingSurvey) {
-      throw createHttpError(409, 'A survey is already in progress');
-    }
-
     // 🔹 Create Survey
     const survey = await Survey.create(
       [
