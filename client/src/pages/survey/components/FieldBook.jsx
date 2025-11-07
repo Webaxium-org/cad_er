@@ -60,6 +60,8 @@ export default function FieldBook() {
     let index = 0;
     const rows = [];
 
+    const firstChainage = purpose?.rows?.find((r) => r.type === 'Chainage');
+
     for (const row of purpose.rows) {
       index += 1;
 
@@ -134,6 +136,22 @@ export default function FieldBook() {
           break;
       }
     }
+
+    const finalForeSight = (
+      Number(rows[rows.length - 1].HI) - Number(survey.reducedLevel)
+    )?.toFixed(3);
+
+    rows.push({
+      index: rows.length + 1,
+      CH: '',
+      BS: '',
+      IS: '',
+      FS: finalForeSight,
+      HI: '',
+      RL: Number(survey.reducedLevel)?.toFixed(3),
+      Offset: '',
+      Remarks: `Closed on Starting TBM at CH:${firstChainage?.chainage}`,
+    });
 
     return rows;
   }, [purpose]);
@@ -248,11 +266,8 @@ export default function FieldBook() {
     });
 
     // ======= COLUMN WIDTHS =======
-    const pxToWidth = (px) => px / 7.5;
-    const widths = [80, 80, 80, 80, 80, 80]; // in px
-    widths.forEach((w, i) => {
-      sheet.getColumn(i + 1).width = pxToWidth(w);
-    });
+    const colWidths = [12, 12, 12, 12, 12, 12, 12, 36];
+    colWidths.forEach((w, i) => (sheet.getColumn(i + 1).width = w));
 
     // ======= BORDER AROUND TABLE =======
     const lastRow = sheet.lastRow.number;
