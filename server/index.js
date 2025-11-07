@@ -14,12 +14,6 @@ const app = express();
 const startServer = async () => {
   await connectDB(); // Ensure DB is connected before starting the server
 
-  // 🟢 Dev-only logging
-  if (process.env.NODE_ENV === 'development') {
-    const { default: morgan } = await import('morgan');
-    app.use(morgan('dev'));
-  }
-
   const PORT = process.env.PORT;
 
   app.listen(PORT, () => {
@@ -29,6 +23,12 @@ const startServer = async () => {
 
 // Start the server
 startServer();
+
+// 🟢 Dev-only logging
+if (process.env.NODE_ENV === 'development') {
+  const { default: morgan } = await import('morgan');
+  app.use(morgan('dev'));
+}
 
 // 🟢 Middlewares
 app.use(express.json());

@@ -14,11 +14,13 @@ import {
   Typography,
   IconButton,
   Chip,
+  Stack,
 } from '@mui/material';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { FaEye, FaChevronRight } from 'react-icons/fa';
 import { handleFormError } from '../../utils/handleFormError';
 import { showAlert } from '../../redux/alertSlice';
+import ButtonLink from '../../components/ButtonLink';
 
 export default function PurposeList() {
   const navigate = useNavigate();
@@ -69,9 +71,13 @@ export default function PurposeList() {
 
   return (
     <Box p={3}>
-      <Typography variant="h5" fontWeight={700} mb={2}>
-        Purpose List
-      </Typography>
+      <Stack direction={'row'} alignItems={'center'} spacing={2} mb={2}>
+        <Typography variant="h5" fontWeight={700}>
+          Survey List
+        </Typography>
+
+        <ButtonLink label={'Project List'} onClick={() => navigate('/survey')} />
+      </Stack>
 
       <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
         <Table>

@@ -231,6 +231,7 @@ const createSurveyRow = async (req, res, next) => {
         foreSight,
         chainage,
         roadWidth,
+        spacing,
         offsets,
       },
     } = req;
@@ -256,7 +257,13 @@ const createSurveyRow = async (req, res, next) => {
 
     // 🔹 Validate type and required fields (same as before)
     const types = {
-      Chainage: ['chainage', 'roadWidth', 'intermediateSight', 'offsets'],
+      Chainage: [
+        'chainage',
+        'roadWidth',
+        'spacing',
+        'intermediateSight',
+        'offsets',
+      ],
       CP: ['foreSight', 'backSight'],
       TBM: ['intermediateSight'],
     };
@@ -293,6 +300,7 @@ const createSurveyRow = async (req, res, next) => {
           purposeId: purpose._id,
           type,
           chainage,
+          spacing,
           roadWidth: roadWidth ? Number(roadWidth).toFixed(3) : undefined,
           backSight: backSight ? Number(backSight).toFixed(3) : undefined,
           foreSight: foreSight ? Number(foreSight).toFixed(3) : undefined,
@@ -339,13 +347,18 @@ const getSurveyPurpose = async (req, res, next) => {
       .populate({
         path: 'surveyId',
         match: { deleted: false },
+        populate: {
+          path: 'purposes',
+          match: { deleted: false },
+          populate: {
+            path: 'rows',
+            match: { deleted: false },
+          },
+        },
       })
       .populate({
         path: 'rows',
         match: { deleted: false },
-      })
-      .populate({
-        path: 'history',
       })
       .lean();
 
@@ -362,6 +375,82 @@ const getSurveyPurpose = async (req, res, next) => {
       purpose,
     });
   } catch (err) {
+    next(err);
+  }
+};
+
+const createSurveyPurpose = async (req, res, next) => {
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    const {
+      params: { surveyId },
+      body: { purpose, slope, estimateQuality },
+    } = req;
+
+    // 🔹 Validate required fields
+    if (!purpose || !surveyId) {
+      throw createHttpError(400, 'Purpose and surveyId are required');
+    }
+
+    if (purpose === 'Proposed Level' && (!slope || !estimateQuality)) {
+      throw createHttpError(
+        400,
+        'Slope and Estimate Quality are required for Proposed Level'
+      );
+    }
+
+    // 🔹 Find active survey
+    const survey = await Survey.findOne({
+      _id: surveyId,
+      isSurveyFinish: false,
+      deleted: false,
+    })
+      .populate({
+        path: 'purposes',
+        match: { deleted: false },
+        populate: { path: 'rows', match: { deleted: false } },
+      })
+      .lean()
+      .session(session);
+
+    if (!survey) {
+      throw createHttpError(404, 'Active survey not found');
+    }
+
+    const isPurposeExist = survey?.purposes?.find((p) => p.type === purpose);
+    if (isPurposeExist) throw createHttpError(409, 'The purpose already exist');
+
+    // 🔹 Create purpose document
+    const [purposeDoc] = await SurveyPurpose.create(
+      [
+        {
+          surveyId: survey._id,
+          type: purpose,
+          ...(purpose === 'Proposed Level' && { slope, estimateQuality }),
+        },
+      ],
+      { session }
+    );
+
+    // 🔹 Commit transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({
+      success: true,
+      message: 'Survey purpose created successfully',
+      survey: {
+        ...survey,
+        purposeId: purposeDoc._id,
+        purposes: [...survey.purposes, purposeDoc],
+      },
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
     next(err);
   }
 };
@@ -511,6 +600,7 @@ export {
   getAllSurvey,
   createSurvey,
   getSurveyPurpose,
+  createSurveyPurpose,
   getAllSurveyPurpose,
   endSurveyPurpose,
   endSurvey,

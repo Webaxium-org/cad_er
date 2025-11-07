@@ -8,6 +8,14 @@
   width: 100%;
 }
 
+.pale-yellow {
+  background-color: #FFFFCC;
+}
+
+.pale-cyan {
+  background-color: #CCFFFF;
+}
+
 /* ---------------------------
    Landing / Hero image
    --------------------------- */
@@ -138,50 +146,48 @@
   z-index: 2;
 }
 
-/* ---------------------------
-   Preloader
-   --------------------------- */
-.preloader {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  transition: opacity 1.5s ease-in-out;
-}
-
-.logo {
-  height: 60px; /* default for small screens */
-  transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out;
-}
-
-/* Larger logo on wide screens */
-@media (min-width: 1024px) {
-  .logo {
-    height: 100px;
+  /* ---------------------------
+    Preloader
+    --------------------------- */
+  .preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 1.5s ease-in-out;
   }
-}
 
-/* Fade-out preloader state */
-.fade-out .logo {
-  transform: scale(2);
-  opacity: 0;
-}
+  .logo {
+    height: 60px; /* default for small screens */
+    transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out;
+  }
 
-.fade-out {
-  opacity: 0;
-  pointer-events: none;
-}
+  /* Larger logo on wide screens */
+  @media (min-width: 1024px) {
+    .logo {
+      height: 100px;
+    }
+  }
+
+  /* Fade-out preloader state */
+  .fade-out .logo {
+    transform: scale(2);
+    opacity: 0;
+  }
+
+  .fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
 
 /* ---------------------------
    Responsive helpers
-   Notes:
-   - Replaced non-standard `@media (width > ...)` with `min-width`.
    --------------------------- */
 
 /* Inputs get wider on medium+ screens */

@@ -12,7 +12,13 @@ const SurveyPurposeSchema = new Schema(
     type: {
       type: String,
       required: true,
-      enum: ['Initial Level', 'Final Level', 'Final Earth Work', 'Quarry Muck'],
+      enum: [
+        'Initial Level',
+        'Proposed Level',
+        'Final Level',
+        'Final Earth Work',
+        'Quarry Muck',
+      ],
     },
     isPurposeFinish: { type: Boolean, default: false, index: true },
     DateOfSurvey: { type: Date, default: Date.now },

@@ -44,6 +44,10 @@ export const getAllSurveyPurpose = () => {
   return axiosInstance.get('surveys/purposes');
 };
 
+export const createSurveyPurpose = (id, formData) => {
+  return axiosInstance.post(`surveys/${id}/purposes`, formData);
+};
+
 export const getSurveyPurpose = (id) => {
   return axiosInstance.get(`surveys/${id}/purposes`);
 };

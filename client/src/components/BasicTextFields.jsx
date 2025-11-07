@@ -3,23 +3,23 @@ import TextField from '@mui/material/TextField';
 export default function BasicTextFields({
   label,
   placeholder,
-  type,
+  type = 'text',
   onChange,
   name,
-  value,
-  variant,
-  sx,
+  value = '',
+  variant = 'outlined',
+  sx = {},
   error,
-  className,
-  disabled,
-  fullWidth,
+  className = '',
+  disabled = false,
+  fullWidth = true,
   slotProps,
 }) {
   return (
     <TextField
-      label={error ? error : label}
+      label={error || label}
       placeholder={placeholder}
-      type={type ? type : 'text'}
+      type={type}
       onChange={onChange}
       name={name}
       value={value}
@@ -35,9 +35,9 @@ export default function BasicTextFields({
             margin: 0,
           },
       }}
-      className={`${className} ${error && 'inp-err'}`}
+      className={`${className} ${error ? 'inp-err' : ''}`}
       disabled={disabled}
-      fullWidth={fullWidth || true}
+      fullWidth={fullWidth ?? true}
       slotProps={slotProps}
     />
   );

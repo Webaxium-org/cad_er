@@ -15,6 +15,7 @@ const SurveyRowSchema = new Schema(
     foreSight: String,
     chainage: String,
     roadWidth: String,
+    spacing: String,
     offsets: [String],
     remarks: [String],
     deleted: { type: Boolean, default: false },

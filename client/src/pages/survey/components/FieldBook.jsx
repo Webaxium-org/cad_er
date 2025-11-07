@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getSurvey, getSurveyPurpose } from '../../../services/surveyServices';
-import * as XLSX from 'xlsx';
+import { getSurveyPurpose } from '../../../services/surveyServices';
+import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import BasicButtons from '../../../components/BasicButton';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,6 +20,7 @@ import {
   Typography,
   Stack,
 } from '@mui/material';
+import { purposeCode } from '../../../constants';
 
 export default function FieldBook() {
   const { id } = useParams();
@@ -56,14 +57,18 @@ export default function FieldBook() {
 
     let hi = 0; // Height of Instrument
     let rl = 0; // Reduced Level
+    let index = 0;
     const rows = [];
 
     for (const row of purpose.rows) {
+      index += 1;
+
       switch (row.type) {
         case 'Instrument setup':
           rl = Number(survey.reducedLevel || 0);
           hi = rl + Number(row.backSight || 0);
           rows.push({
+            index,
             CH: '-',
             BS: row.backSight || '-',
             IS: '-',
@@ -79,6 +84,7 @@ export default function FieldBook() {
           row.intermediateSight?.forEach((isVal, i) => {
             const rlValue = (hi - Number(isVal || 0)).toFixed(3);
             rows.push({
+              index,
               CH: i === 0 ? row.chainage : '',
               BS: '-',
               IS: isVal || '-',
@@ -95,6 +101,7 @@ export default function FieldBook() {
           row.intermediateSight?.forEach((isVal, i) => {
             const rlValue = (hi - Number(isVal || 0)).toFixed(3);
             rows.push({
+              index,
               CH: '-',
               BS: '-',
               IS: isVal || '-',
@@ -111,6 +118,7 @@ export default function FieldBook() {
           rl = Number(hi) - Number(row.foreSight);
           hi = Number(rl) + Number(row.backSight || 0);
           rows.push({
+            index,
             CH: '-',
             BS: row.backSight || '-',
             IS: '-',
@@ -130,92 +138,134 @@ export default function FieldBook() {
     return rows;
   }, [purpose]);
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (!purpose) return;
 
-    const headers = ['CH', 'BS', 'IS', 'FS', 'HI', 'RL'];
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet(`${purposeCode[purpose.type]} AE`);
 
-    // Create worksheet from table data (start from row 5)
-    const worksheet = XLSX.utils.json_to_sheet(tableData, {
-      header: headers,
-      origin: 'A5',
+    // ======= GLOBAL STYLES =======
+    const borderStyle = {
+      top: { style: 'thin', color: { argb: '999999' } },
+      left: { style: 'thin', color: { argb: '999999' } },
+      bottom: { style: 'thin', color: { argb: '999999' } },
+      right: { style: 'thin', color: { argb: '999999' } },
+    };
+
+    const titleFill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'E3F2FD' }, // light blue
+    };
+
+    const headerFill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'BBDEFB' }, // blue tint
+    };
+
+    const subHeaderFill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'E8F5E9' }, // soft green tint
+    };
+
+    // ======= TITLE =======
+    sheet.mergeCells('A1:H1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = purpose?.surveyId?.project;
+    titleCell.font = { size: 18, bold: true, color: { argb: '0D47A1' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    titleCell.fill = titleFill;
+    sheet.getRow(1).height = 28;
+
+    // ======= HEADER SECTION =======
+    sheet.mergeCells('A2:D2');
+    sheet.mergeCells('E2:H2');
+    sheet.mergeCells('A3:D3');
+    sheet.mergeCells('E3:H3');
+    sheet.mergeCells('A4:D4');
+    sheet.mergeCells('E4:H4');
+
+    sheet.getCell('A2').value = `Purpose: ${purpose.type}`;
+    sheet.getCell('E2').value = 'Name of Officer: N/A';
+    sheet.getCell(
+      'A3'
+    ).value = `Date of Survey: ${new Date().toLocaleDateString()}`;
+    sheet.getCell('E3').value = 'Designation: Assistant Engineer';
+    sheet.getCell('A4').value = `Instrument No: ${
+      purpose?.surveyId?.instrumentNo || 'N/A'
+    }`;
+    sheet.getCell('E4').value = 'Department: N/A';
+
+    sheet.getRows(2, 3).forEach((row) => {
+      row.height = 22;
+      row.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: '212121' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+      });
     });
 
-    // Add custom header section (rows 1–3)
-    const headerSection = [
-      [
-        `Purpose: ${purpose.type}`,
-        '',
-        '',
-        '',
-        `Name of Officer: N/A`,
-        '',
-        '',
-        '',
-      ],
-      [
-        `Date of Survey: ${new Date().toLocaleDateString()}`,
-        '',
-        '',
-        '',
-        'Designation: Assistant Engineer',
-        '',
-        '',
-        '',
-      ],
-      [
-        `Instrument No: ${purpose?.surveyId?.instrumentNo}`,
-        '',
-        '',
-        '',
-        'Department: N/A',
-        '',
-        '',
-        '',
-      ],
-    ];
+    // ======= SPACER =======
+    sheet.addRow([]);
 
-    XLSX.utils.sheet_add_aoa(worksheet, headerSection, { origin: 'A1' });
+    // ======= TABLE HEADERS =======
+    const headers = ['CH', 'BS', 'IS', 'FS', 'HI', 'RL', 'Offset', 'Remarks'];
+    const headerRow = sheet.addRow(headers);
 
-    // ✅ Corrected merge ranges (A–D for left, E–H for right)
-    worksheet['!merges'] = [
-      // Row 1
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // A1:D1 - Purpose
-      { s: { r: 0, c: 4 }, e: { r: 0, c: 7 } }, // E1:H1 - Name of Officer
-
-      // Row 2
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }, // A2:D2 - Date
-      { s: { r: 1, c: 4 }, e: { r: 1, c: 7 } }, // E2:H2 - Designation
-
-      // Row 3
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }, // A3:D3 - Instrument No
-      { s: { r: 2, c: 4 }, e: { r: 2, c: 7 } }, // E3:H3 - Department
-    ];
-
-    // Optional: Adjust column widths for readability
-    worksheet['!cols'] = [
-      { wch: 15 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 15 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-    ];
-
-    // Create workbook and export
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'AE');
-
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array',
+    headerRow.height = 25;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: '0D47A1' }, size: 12 };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.fill = headerFill;
+      cell.border = borderStyle;
     });
-    const blob = new Blob([excelBuffer], {
+
+    // ======= TABLE DATA =======
+    tableData.forEach((data, i) => {
+      const row = sheet.addRow([
+        data.CH,
+        data.BS,
+        data.IS,
+        data.FS,
+        data.HI,
+        data.RL,
+        data.Offset,
+        data.Remarks,
+      ]);
+
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = borderStyle;
+      });
+
+      // Alternate row shading for readability
+      if (data.index % 2 === 0) {
+        row.eachCell((cell) => {
+          cell.fill = subHeaderFill;
+        });
+      }
+    });
+
+    // ======= COLUMN WIDTHS =======
+    const pxToWidth = (px) => px / 7.5;
+    const widths = [80, 80, 80, 80, 80, 80]; // in px
+    widths.forEach((w, i) => {
+      sheet.getColumn(i + 1).width = pxToWidth(w);
+    });
+
+    // ======= BORDER AROUND TABLE =======
+    const lastRow = sheet.lastRow.number;
+    for (let r = 5; r <= lastRow; r++) {
+      sheet.getRow(r).eachCell((cell) => (cell.border = borderStyle));
+    }
+
+    // ======= SAVE FILE =======
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    saveAs(blob, `Survey_${purpose?.type}.xlsx`);
+    saveAs(blob, `Survey_${purpose?.type || 'Report'}.xlsx`);
   };
 
   if (!purpose) {

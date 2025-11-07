@@ -167,7 +167,7 @@ const RoadSurveyRowsForm = () => {
   const { global } = useSelector((state) => state.loading);
 
   const [purpose, setPurpose] = useState(null);
-  const formValues = useRef(initialFormValues);
+  const [formValues, setFormValues] = useState(initialFormValues);
   const [formErrors, setFormErrors] = useState({});
   const [inputData, setInputData] = useState([]);
   const [rowType, setRowType] = useState('Chainage');
@@ -189,7 +189,6 @@ const RoadSurveyRowsForm = () => {
     const filteredInputData = inputDetails?.filter((d) =>
       values[rowType]?.includes(d.name)
     );
-    formValues.current.type = rowType;
 
     if (rowType === 'TBM') {
       filteredInputData.push({
@@ -199,14 +198,15 @@ const RoadSurveyRowsForm = () => {
       });
     }
 
+    setFormValues((prev) => ({ ...prev, type: rowType }));
     setInputData(filteredInputData);
   };
 
   const handleChangeRowType = (type) => setRowType(type);
 
   const calculateOffset = () => {
-    const roadWidth = Number(formValues.current.roadWidth || 0);
-    const spacing = Number(formValues.current.spacing || 0);
+    const roadWidth = Number(formValues.roadWidth || 0);
+    const spacing = Number(formValues.spacing || 0);
 
     const intermediateOffsets = ['0.000'];
 
@@ -231,8 +231,8 @@ const RoadSurveyRowsForm = () => {
       if (value >= halfWidth) break;
     }
 
-    const previousLength = formValues.current.intermediateOffsets.length;
-    const updatedRows = [...formValues.current.intermediateOffsets];
+    const previousLength = formValues.intermediateOffsets.length;
+    const updatedRows = [...formValues.intermediateOffsets];
 
     intermediateOffsets
       ?.sort((a, b) => a - b)
@@ -249,8 +249,7 @@ const RoadSurveyRowsForm = () => {
         }
       });
 
-    formValues.current.intermediateOffsets = updatedRows;
-    setForceRender(!forceRender);
+    setFormValues((prev) => ({ ...prev, intermediateOffsets: updatedRows }));
   };
 
   const handleChangeAutoOffset = (e) => {
@@ -271,14 +270,18 @@ const RoadSurveyRowsForm = () => {
         : name;
 
     if (name === 'intermediateOffsets') {
-      const updated = [...formValues.current.intermediateOffsets];
+      const updated = [...formValues.intermediateOffsets];
       updated[index][field] = value;
-      formValues.current.intermediateOffsets = updated;
+
+      setFormValues((prev) => ({
+        ...prev,
+        intermediateOffsets: updated,
+      }));
     } else {
-      formValues.current = {
-        ...formValues.current,
+      setFormValues((prev) => ({
+        ...prev,
         [name]: value,
-      };
+      }));
     }
 
     try {
@@ -291,47 +294,96 @@ const RoadSurveyRowsForm = () => {
   };
 
   const handleAddRow = () => {
-    formValues.current.intermediateOffsets.push({
-      intermediateSight: '',
-      offset: '',
-    });
+    setFormValues((prev) => ({
+      ...prev,
+      intermediateOffsets: [
+        ...(formValues.intermediateOffsets || []),
+        { intermediateSight: '', offset: '' },
+      ],
+    }));
+
     setInputData([...inputData]);
   };
 
   const handleRemoveRow = (index) => {
-    if (formValues.current.intermediateOffsets.length > 1) {
-      formValues.current.intermediateOffsets.splice(index, 1);
+    if (formValues.intermediateOffsets.length > 1) {
+      setFormValues((prev) => ({
+        ...prev,
+        intermediateOffsets: formValues.intermediateOffsets.splice(index, 1),
+      }));
+
       setInputData([...inputData]);
     }
   };
 
   const getNewChainage = (purpose) => {
-    const isFirstChainage = purpose?.rows?.find((r) => r.type === 'Chainage');
+    if (purpose.type !== 'Initial Level') {
+      const initialSurvey = purpose?.surveyId?.purposes?.find(
+        (p) => p.type === 'Initial Level'
+      );
 
-    if (!isFirstChainage) {
-      formValues.current.chainage = '0/000';
+      const currentReading = initialSurvey?.rows[purpose?.rows?.length + 1];
+
+      if (currentReading) {
+        const type = currentReading.type;
+
+        const updatedValues = {
+          type,
+          chainage: currentReading?.chainage || '',
+          roadWidth: currentReading?.roadWidth || '',
+          spacing: currentReading?.spacing || '',
+          backSight: currentReading?.backSight || '',
+          foreSight: currentReading?.foreSight || '',
+        };
+
+        if (type === 'Chainage') {
+          updatedValues.intermediateOffsets =
+            currentReading?.intermediateSight?.map((entry, idx) => ({
+              intermediateSight: entry,
+              offset: currentReading?.offsets[idx],
+            }));
+        } else if (type === 'TBM') {
+          updatedValues.intermediateSight =
+            currentReading?.intermediateSight || '';
+        }
+
+        setFormValues((prev) => ({
+          ...prev,
+          ...updatedValues,
+        }));
+
+        setRowType(type);
+      }
     } else {
-      let lastChainage = null;
-      purpose?.rows?.forEach((row) => {
-        if (row.type === 'Chainage') lastChainage = row.chainage;
-      });
+      const isFirstChainage = purpose?.rows?.find((r) => r.type === 'Chainage');
 
-      const chainageMultiple = purpose?.surveyId?.chainageMultiple;
+      if (!isFirstChainage) {
+        setFormValues((prev) => ({
+          ...prev,
+          chainage: '0/000',
+        }));
+      } else {
+        let lastChainage = null;
+        purpose?.rows?.forEach((row) => {
+          if (row.type === 'Chainage') lastChainage = row.chainage;
+        });
 
-      // Extract the numeric part after '/'
-      const lastDigit = Number(lastChainage.split('/')[1]);
+        const chainageMultiple = purpose?.surveyId?.chainageMultiple;
+        const lastDigit = Number(lastChainage.split('/')[1]);
 
-      // Calculate next chainage
-      const remainder = lastDigit % chainageMultiple;
-      const nextNumber =
-        remainder === 0
-          ? lastDigit + chainageMultiple
-          : lastDigit + (chainageMultiple - remainder);
+        const remainder = lastDigit % chainageMultiple;
+        const nextNumber =
+          remainder === 0
+            ? lastDigit + chainageMultiple
+            : lastDigit + (chainageMultiple - remainder);
 
-      // Format back to chainage string like "0/010"
-      const nextChainage = `0/${String(nextNumber).padStart(3, '0')}`;
+        const nextChainage = `0/${String(nextNumber).padStart(3, '0')}`;
 
-      formValues.current.chainage = nextChainage;
+        setFormValues((prev) => ({
+          ...prev,
+          chainage: nextChainage,
+        }));
+      }
     }
   };
 
@@ -340,37 +392,39 @@ const RoadSurveyRowsForm = () => {
     try {
       if (rowType === 'Chainage' && page === 0) {
         const partialSchema = schema.pick(['chainage', 'roadWidth', 'spacing']);
-        await partialSchema.validate(formValues.current, { abortEarly: false });
+        await partialSchema.validate(formValues, { abortEarly: false });
 
-        if (formValues.current.intermediateOffsets?.length === 1) {
-          formValues.current.intermediateOffsets.push(
-            { intermediateSight: '', offset: '' },
-            { intermediateSight: '', offset: '' }
-          );
+        if (formValues.intermediateOffsets?.length === 1) {
+          setFormValues((prev) => ({
+            ...prev,
+            intermediateOffsets: [
+              ...prev.intermediateOffsets,
+              { intermediateSight: '', offset: '' },
+              { intermediateSight: '', offset: '' },
+            ],
+          }));
         }
 
         setBtnLoading(false);
         return setPage(1);
       }
 
-      await schema.validate(formValues.current, { abortEarly: false });
+      await schema.validate(formValues, { abortEarly: false });
 
       let payload = null;
 
       if (rowType === 'Chainage') {
-        formValues.current.intermediateOffsets?.sort(
+        const sortedOffsets = [...(formValues.intermediateOffsets || [])].sort(
           (a, b) => a.offset - b.offset
         );
 
         payload = {
-          ...formValues.current,
-          intermediateSight: formValues.current.intermediateOffsets.map(
-            (r) => r.intermediateSight
-          ),
-          offsets: formValues.current.intermediateOffsets.map((r) => r.offset),
+          ...formValues,
+          intermediateSight: sortedOffsets.map((r) => r.intermediateSight),
+          offsets: sortedOffsets.map((r) => r.offset),
         };
       } else {
-        payload = { ...formValues.current };
+        payload = { ...formValues };
       }
 
       const { data } = await createSurveyRow(id, payload);
@@ -388,10 +442,11 @@ const RoadSurveyRowsForm = () => {
           rows: [...(purpose.rows || []), data.row],
         };
 
-        formValues.current = {
+        setFormValues({
           ...initialFormValues,
           intermediateOffsets: [{ intermediateSight: '', offset: '' }],
-        };
+        });
+
         getNewChainage(updatedPurpose);
 
         if (rowType === 'Chainage') {
@@ -444,13 +499,15 @@ const RoadSurveyRowsForm = () => {
 
         const { data } = await getSurveyPurpose(id);
 
-        if (data?.purpose?.isPurposeFinish) {
+        const purposeDoc = data.purpose;
+
+        if (purposeDoc?.isPurposeFinish) {
           navigate('/survey/purpose');
           throw Error(`${data?.purpose?.type} already completed`);
         }
 
-        getNewChainage(data.purpose);
-        setPurpose(data.purpose);
+        getNewChainage(purposeDoc);
+        setPurpose(purposeDoc);
       } catch (error) {
         handleFormError(error, null, dispatch, navigate);
       } finally {
@@ -495,7 +552,7 @@ const RoadSurveyRowsForm = () => {
         )}
 
         <Stack>
-          {page === 0 && (
+          {purpose?.type === 'Initial Level' && page === 0 && (
             <Stack direction={'row'} justifyContent={'end'} gap={2}>
               {rowType !== 'Chainage' && (
                 <ButtonLink
@@ -552,8 +609,8 @@ const RoadSurveyRowsForm = () => {
                   >
                     <BasicTextFields
                       {...input}
-                      value={formValues.current[input.name]}
-                      error={formErrors && formErrors[input.name]}
+                      value={formValues[input.name] || ''}
+                      error={(formErrors && formErrors[input.name]) || ''}
                       variant="filled"
                       sx={{ width: '100%' }}
                       onChange={(e) => handleInputChange(e)}
@@ -579,7 +636,7 @@ const RoadSurveyRowsForm = () => {
                   </Typography>
                 </Stack>
                 <Stack spacing={2}>
-                  {formValues.current.intermediateOffsets.map((row, idx) => (
+                  {formValues.intermediateOffsets.map((row, idx) => (
                     <Stack
                       key={idx}
                       direction={'row'}
@@ -645,8 +702,7 @@ const RoadSurveyRowsForm = () => {
                         />
                       </Box>
 
-                      {idx ===
-                      formValues.current.intermediateOffsets?.length - 1 ? (
+                      {idx === formValues.intermediateOffsets?.length - 1 ? (
                         <Box className="add-new-sight" onClick={handleAddRow}>
                           <IoAdd fontSize={'24px'} color="#0059E7" />
                         </Box>

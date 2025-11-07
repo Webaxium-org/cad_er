@@ -14,11 +14,13 @@ import {
   Typography,
   IconButton,
   Chip,
+  Stack,
 } from '@mui/material';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { FaEye, FaChevronRight } from 'react-icons/fa';
 import { handleFormError } from '../../utils/handleFormError';
 import { showAlert } from '../../redux/alertSlice';
+import ButtonLink from '../../components/ButtonLink';
 
 export default function SurveyList() {
   const navigate = useNavigate();
@@ -58,12 +60,15 @@ export default function SurveyList() {
       const survey = surveys.find((s) => String(s._id) === id);
 
       if (!survey) throw Error('Something went wrong');
+      if (survey.isSurveyFinish) throw Error('The survey already finished');
 
-      const activePurpose = survey.purposes?.find((p) => !p.isPurposeFinished);
+      const activePurpose = survey.purposes?.find((p) => !p.isPurposeFinish);
 
-      if (!activePurpose) throw Error('Something went wrong');
-
-      navigate(`/survey/road-survey/${activePurpose._id}/rows`);
+      if (activePurpose) {
+        navigate(`/survey/road-survey/${activePurpose._id}/rows`);
+      } else {
+        navigate(`/survey/road-survey/${survey._id}`);
+      }
     } catch (err) {
       dispatch(
         showAlert({
@@ -78,6 +83,32 @@ export default function SurveyList() {
     alert('!');
   };
 
+  const generateLink = (link) => {
+    return (
+      <IconButton color="primary" onClick={() => navigate(link)}>
+        <FaEye />
+      </IconButton>
+    );
+  };
+
+  const getReportLink = (survey, target) => {
+    const initialLevel = survey?.purposes?.find(
+      (p) => p.type === 'Initial Level'
+    );
+
+    if (target === 'Field Book' && initialLevel?.isPurposeFinish) {
+      return generateLink(`/survey/road-survey/${initialLevel._id}/field-book`);
+    } else {
+      const proposedLevel = survey?.purposes?.find(
+        (p) => p.type === 'Proposed Level'
+      );
+
+      if (!proposedLevel?.isPurposeFinish) return 'N/A';
+
+      return generateLink(`/survey/road-survey/${survey._id}/${target}`);
+    }
+  };
+
   if (surveys.length === 0)
     return (
       <Typography p={2} color="text.secondary">
@@ -87,11 +118,18 @@ export default function SurveyList() {
 
   return (
     <Box p={3}>
-      <Typography variant="h5" fontWeight={700} mb={2}>
-        Surveys List
-      </Typography>
+      <Stack direction={'row'} alignItems={'center'} spacing={2} mb={2}>
+        <Typography variant="h5" fontWeight={700}>
+          Project List
+        </Typography>
 
-      {/* <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
+        <ButtonLink
+          label={'Survey List'}
+          onClick={() => navigate('/survey/purpose')}
+        />
+      </Stack>
+
+      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
         <Table>
           <TableHead sx={{ backgroundColor: '#f4f6f8' }}>
             <TableRow>
@@ -102,6 +140,9 @@ export default function SurveyList() {
               <TableCell sx={{ fontWeight: 700 }}>Chainage Multiple</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Created</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>FieldBook</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Area Report</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Volume Report</TableCell>
               <TableCell sx={{ fontWeight: 700 }} align="right">
                 Actions
               </TableCell>
@@ -112,7 +153,9 @@ export default function SurveyList() {
             {surveys.map((survey) => (
               <TableRow key={survey._id} hover>
                 <TableCell>{survey.project}</TableCell>
-                <TableCell>{survey.purposes?.map((p) => p.type)}</TableCell>
+                <TableCell>
+                  {survey.purposes?.map((p) => p.type)?.join(', ')}
+                </TableCell>
                 <TableCell>{survey.instrumentNo}</TableCell>
                 <TableCell>{survey.type}</TableCell>
                 <TableCell>{survey.chainageMultiple}</TableCell>
@@ -126,17 +169,11 @@ export default function SurveyList() {
                 <TableCell>
                   {new Date(survey.DateOfSurvey).toLocaleDateString()}
                 </TableCell>
+                <TableCell>{getReportLink(survey, 'Field Book')}</TableCell>
+                <TableCell>{getReportLink(survey, 'area-report')}</TableCell>
+                <TableCell>{getReportLink(survey, 'volume-report')}</TableCell>
 
                 <TableCell align="right">
-                  <IconButton
-                    color="primary"
-                    onClick={() =>
-                      navigate(`/survey/road-survey/${survey._id}/field-book`)
-                    }
-                  >
-                    <FaEye />
-                  </IconButton>
-
                   {!survey.isSurveyFinish && (
                     <IconButton
                       color="error"
@@ -150,7 +187,7 @@ export default function SurveyList() {
             ))}
           </TableBody>
         </Table>
-      </TableContainer> */}
+      </TableContainer>
     </Box>
   );
 }

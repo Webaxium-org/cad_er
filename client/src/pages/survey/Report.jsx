@@ -73,11 +73,25 @@ const Report = () => {
     const row = initialLevel.rows?.find((row) => row._id === id);
     if (!row) return;
 
-    const dummyGSB = [4.505, 4.736, 4.830];
+    let gsbProposal = [];
+
+    const proposedLevel = survey.purposes?.find(
+      (p) => p.type === 'Proposed Level'
+    );
+
+    if (proposedLevel) {
+      const propRow = proposedLevel.rows?.find(
+        (r) => r.chainage === row.chainage
+      );
+
+      if (propRow) {
+        gsbProposal = propRow?.intermediateSight || [];
+      }
+    }
 
     const safeOffsets = row.offsets || [];
     const safeInitial = row.intermediateSight || [];
-    const safeGSB = dummyGSB.slice(0, safeOffsets.length);
+    const safeGSB = gsbProposal?.slice(0, safeOffsets.length);
 
     const data = {
       id: id,
@@ -329,7 +343,7 @@ const Report = () => {
                       >
                         View
                       </TableCell>
-                      <TableCell>View</TableCell>
+                      <TableCell>N/A</TableCell>
                     </TableRow>
                   )
               )}
