@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 const checkSurveyExists = async (req, res, next) => {
   try {
     const survey = await Survey.findOne({ isSurveyFinish: false });
-
+console.log("haii")
     res.status(200).json({
       success: true,
       message: `${survey ? 'Active survey found' : 'No active survey found'}`,
