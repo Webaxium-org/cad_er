@@ -233,11 +233,7 @@ const VolumeReport = () => {
       const row = sheet.getRow(r);
       row.eachCell((cell) => {
         cell.font = { bold: true, color: { argb: '000000' } };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'F4F6F8' },
-        };
+
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -282,25 +278,6 @@ const VolumeReport = () => {
           right: { style: 'thin' },
         };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
-
-        // 🎨 Conditional background coloring
-        // Cutting area columns: 5–8
-        if (colNumber >= 6 && colNumber <= 9) {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFCC' }, // pale yellow
-          };
-        }
-
-        // Filling area columns: 9–12
-        if (colNumber >= 10 && colNumber <= 13) {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'CCFFFF' }, // pale cyan
-          };
-        }
       });
 
       currentRow++;
@@ -324,11 +301,7 @@ const VolumeReport = () => {
     ]);
     totalRow.eachCell((cell) => {
       cell.font = { bold: true };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'E2EFDA' },
-      };
+
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
@@ -447,50 +420,30 @@ const VolumeReport = () => {
                 <TableCell>{row.prevSection}</TableCell>
                 <TableCell>{row.difference}</TableCell>
                 <TableCell>{row.width}</TableCell>
-                <TableCell className="pale-yellow">
-                  {row.cuttingAreaSqMtr}
-                </TableCell>
-                <TableCell className="pale-yellow">
-                  {row.cuttingPrevArea}
-                </TableCell>
-                <TableCell className="pale-yellow">
-                  {row.cuttingAvgSqrMtr}
-                </TableCell>
-                <TableCell className="pale-yellow">
-                  {row.cuttingVolumeCubicMtr}
-                </TableCell>
-                <TableCell className="pale-cyan">
-                  {row.fillingAreaSqMtr}
-                </TableCell>
-                <TableCell className="pale-cyan">
-                  {row.fillingPrevArea}
-                </TableCell>
-                <TableCell className="pale-cyan">
-                  {row.fillingAvgSqrMtr}
-                </TableCell>
-                <TableCell className="pale-cyan">
-                  {row.fillingVolumeCubicMtr}
-                </TableCell>
+                <TableCell>{row.cuttingAreaSqMtr}</TableCell>
+                <TableCell>{row.cuttingPrevArea}</TableCell>
+                <TableCell>{row.cuttingAvgSqrMtr}</TableCell>
+                <TableCell>{row.cuttingVolumeCubicMtr}</TableCell>
+                <TableCell>{row.fillingAreaSqMtr}</TableCell>
+                <TableCell>{row.fillingPrevArea}</TableCell>
+                <TableCell>{row.fillingAvgSqrMtr}</TableCell>
+                <TableCell>{row.fillingVolumeCubicMtr}</TableCell>
               </TableRow>
             ))}
 
             <TableRow>
               <TableCell colSpan={5}></TableCell>
 
-              <TableCell
-                colSpan={3}
-                sx={{ fontWeight: 'bold' }}
-                className="pale-yellow"
-              >
+              <TableCell colSpan={3} sx={{ fontWeight: 'bold' }}>
                 Total
               </TableCell>
 
-              <TableCell sx={{ fontWeight: 'bold' }} className="pale-yellow">
+              <TableCell sx={{ fontWeight: 'bold' }}>
                 {Number(tableData?.totalCuttingVolume)?.toFixed(3)}
               </TableCell>
-              <TableCell colSpan={3} className="pale-cyan"></TableCell>
+              <TableCell colSpan={3}></TableCell>
 
-              <TableCell sx={{ fontWeight: 'bold' }} className="pale-cyan">
+              <TableCell sx={{ fontWeight: 'bold' }}>
                 {Number(tableData?.totalFillingVolume)?.toFixed(3)}
               </TableCell>
             </TableRow>

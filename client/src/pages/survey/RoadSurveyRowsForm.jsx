@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { handleFormError } from '../../utils/handleFormError';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
-import HeaderImg from '../../assets/chainage.png';
 import { Box, Stack, Typography, Grid, InputAdornment } from '@mui/material';
 import BasicTextFields from '../../components/BasicTextFields';
 import BasicButtons from '../../components/BasicButton';
@@ -16,7 +15,6 @@ import ButtonLink from '../../components/ButtonLink';
 import { MdArrowBackIosNew } from 'react-icons/md';
 import {
   createSurveyRow,
-  endSurvey,
   endSurveyPurpose,
   getSurveyPurpose,
 } from '../../services/surveyServices';
@@ -172,13 +170,25 @@ const RoadSurveyRowsForm = () => {
   const [inputData, setInputData] = useState([]);
   const [rowType, setRowType] = useState('Chainage');
   const [page, setPage] = useState(0);
-  const [forceRender, setForceRender] = useState(false);
   const [autoOffset, setAutoOffset] = useState(false);
   const [btnLoading, setBtnLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [isFinishSurveyDisabled, setIsFinishSurveyDisabled] = useState(false);
 
   const handleClickOpen = () => {
-    setOpen(true);
+    if (formValues.foreSight.trim() || formValues.backSight.trim()) {
+      dispatch(
+        showAlert({
+          type: 'error',
+          message:
+            'If you are trying to add a Change Point (CP), please click "Continue" first, then finish the survey. Otherwise, clear the input fields before proceeding.',
+        })
+      );
+
+      setOpen(false);
+    } else {
+      setOpen(true);
+    }
   };
 
   const handleClose = () => {
@@ -211,7 +221,7 @@ const RoadSurveyRowsForm = () => {
     const intermediateOffsets = ['0.000'];
 
     const halfWidth = roadWidth / 2;
-    let limit = Math.round(halfWidth / spacing);
+    let limit = Math.ceil(halfWidth / spacing);
 
     for (let i = 1; i <= limit; i++) {
       let value = i * spacing;
@@ -309,10 +319,10 @@ const RoadSurveyRowsForm = () => {
     if (formValues.intermediateOffsets.length > 1) {
       setFormValues((prev) => ({
         ...prev,
-        intermediateOffsets: formValues.intermediateOffsets.splice(index, 1),
+        intermediateOffsets: formValues.intermediateOffsets.filter(
+          (_, idx) => idx !== index
+        ),
       }));
-
-      setInputData([...inputData]);
     }
   };
 
@@ -353,6 +363,13 @@ const RoadSurveyRowsForm = () => {
         }));
 
         setRowType(type);
+
+        const isLastReading =
+          purpose?.rows?.length >= initialSurvey?.rows?.length - 1;
+
+        setIsFinishSurveyDisabled(!isLastReading);
+      } else {
+        setRowType('CP');
       }
     } else {
       const isFirstChainage = purpose?.rows?.find((r) => r.type === 'Chainage');
@@ -383,6 +400,8 @@ const RoadSurveyRowsForm = () => {
           ...prev,
           chainage: nextChainage,
         }));
+
+        setIsFinishSurveyDisabled(false);
       }
     }
   };
@@ -467,7 +486,23 @@ const RoadSurveyRowsForm = () => {
 
   const handleEndSurveyPurpose = async () => {
     try {
-      const { data } = await endSurveyPurpose(id);
+      let finalOffset = null;
+
+      if (purpose.type === 'Initial Level') {
+        const inpFinalOffset = document.getElementById('finalOffset');
+
+        if (!inpFinalOffset?.value?.trim()) {
+          inpFinalOffset.parentElement.parentElement.classList.add('inp-err');
+        } else {
+          inpFinalOffset.parentElement.parentElement.classList.remove(
+            'inp-err'
+          );
+
+          finalOffset = inpFinalOffset.value;
+        }
+      }
+
+      const { data } = await endSurveyPurpose(id, finalOffset);
 
       if (data.success) {
         dispatch(
@@ -477,7 +512,12 @@ const RoadSurveyRowsForm = () => {
           })
         );
 
-        navigate(`/survey/road-survey/${purpose._id}/field-book`);
+        const link =
+          purpose.type === 'Initial Level'
+            ? `/survey/road-survey/${purpose._id}/field-book`
+            : '/survey';
+
+        navigate(link);
       } else {
         throw new Error('Something went wrong.');
       }
@@ -523,6 +563,28 @@ const RoadSurveyRowsForm = () => {
         {...alertData}
         open={open}
         onCancel={handleClose}
+        content={
+          purpose?.type === 'Initial Level' && (
+            <Box
+              sx={{
+                '& .MuiOutlinedInput-root, & .MuiFilledInput-root': {
+                  borderRadius: '15px',
+                },
+                width: '100%',
+                mt: 2,
+              }}
+            >
+              <BasicTextFields
+                name={'finalOffset'}
+                type="number"
+                label={'Final Offset*'}
+                variant="filled"
+                sx={{ width: '100%' }}
+                id="finalOffset"
+              />
+            </Box>
+          )
+        }
         onSubmit={handleEndSurveyPurpose}
       />
 
@@ -545,12 +607,6 @@ const RoadSurveyRowsForm = () => {
         </Box>
       )}
       <Stack alignItems={'center'} spacing={5}>
-        {page === 0 && (
-          <Box className="set-chainage-img-wrapper">
-            <img src={HeaderImg} alt="landing" className="chainage-img" />
-          </Box>
-        )}
-
         <Stack>
           {purpose?.type === 'Initial Level' && page === 0 && (
             <Stack direction={'row'} justifyContent={'end'} gap={2}>
@@ -643,77 +699,111 @@ const RoadSurveyRowsForm = () => {
                       alignItems={'center'}
                       spacing={1}
                     >
-                      <Box
-                        sx={{
-                          '& .MuiOutlinedInput-root, & .MuiFilledInput-root': {
-                            borderRadius: '15px',
-                          },
-                          width: '100%',
-                        }}
+                      <Stack
+                        key={idx}
+                        direction={'row'}
+                        alignItems={'center'}
+                        spacing={1}
+                        width={'100%'}
                       >
-                        <BasicTextFields
-                          label="Intermediate Sight"
-                          type="number"
-                          name="intermediateOffsets"
-                          value={row.intermediateSight}
-                          onChange={(e) =>
-                            handleInputChange(e, idx, 'intermediateSight')
-                          }
-                          error={
-                            formErrors &&
-                            formErrors[
-                              `intermediateOffsets[${idx}].intermediateSight`
-                            ]
-                          }
-                          variant="filled"
-                          sx={{ width: '100%' }}
-                        />
-                      </Box>
-
-                      <Box
-                        sx={{
-                          '& .MuiOutlinedInput-root, & .MuiFilledInput-root': {
-                            borderRadius: '15px',
-                          },
-                          width: '100%',
-                        }}
-                      >
-                        <BasicTextFields
-                          label="Offset"
-                          type="number"
-                          name="intermediateOffsets"
-                          value={row.offset}
-                          onChange={(e) => handleInputChange(e, idx, 'offset')}
-                          error={
-                            formErrors &&
-                            formErrors[`intermediateOffsets[${idx}].offset`]
-                          }
-                          variant="filled"
-                          sx={{ width: '100%' }}
-                          slotProps={{
-                            input: {
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  mtr
-                                </InputAdornment>
-                              ),
-                            },
-                          }}
-                        />
-                      </Box>
-
-                      {idx === formValues.intermediateOffsets?.length - 1 ? (
-                        <Box className="add-new-sight" onClick={handleAddRow}>
-                          <IoAdd fontSize={'24px'} color="#0059E7" />
-                        </Box>
-                      ) : (
                         <Box
-                          className="remove-new-sight"
-                          onClick={() => handleRemoveRow(idx)}
+                          sx={{
+                            '& .MuiOutlinedInput-root, & .MuiFilledInput-root':
+                              {
+                                borderRadius: '15px',
+                              },
+                            width: '100%',
+                          }}
                         >
-                          <IoIosRemove fontSize={'24px'} color="rgb(231 0 0)" />
+                          <BasicTextFields
+                            label="Intermediate Sight"
+                            type="number"
+                            name="intermediateOffsets"
+                            value={row.intermediateSight}
+                            onChange={(e) =>
+                              handleInputChange(e, idx, 'intermediateSight')
+                            }
+                            error={
+                              formErrors &&
+                              formErrors[
+                                `intermediateOffsets[${idx}].intermediateSight`
+                              ]
+                            }
+                            variant="filled"
+                            sx={{ width: '100%' }}
+                          />
                         </Box>
-                      )}
+
+                        <Box
+                          sx={{
+                            '& .MuiOutlinedInput-root, & .MuiFilledInput-root':
+                              {
+                                borderRadius: '15px',
+                              },
+                            width: '100%',
+                          }}
+                        >
+                          <BasicTextFields
+                            label="Offset"
+                            type="number"
+                            name="intermediateOffsets"
+                            value={row.offset}
+                            onChange={(e) =>
+                              handleInputChange(e, idx, 'offset')
+                            }
+                            error={
+                              formErrors &&
+                              formErrors[`intermediateOffsets[${idx}].offset`]
+                            }
+                            variant="filled"
+                            sx={{ width: '100%' }}
+                            slotProps={{
+                              input: {
+                                endAdornment: (
+                                  <InputAdornment position="end">
+                                    mtr
+                                  </InputAdornment>
+                                ),
+                              },
+                            }}
+                          />
+                        </Box>
+                      </Stack>
+
+                      <Box>
+                        {idx === formValues.intermediateOffsets?.length - 1 ? (
+                          <Stack direction={'row'} spacing={1}>
+                            {formValues.intermediateOffsets?.length > 1 && (
+                              <Box
+                                className="remove-new-sight"
+                                onClick={() => handleRemoveRow(idx)}
+                              >
+                                <IoIosRemove
+                                  fontSize={'24px'}
+                                  color="rgb(231 0 0)"
+                                />
+                              </Box>
+                            )}
+
+                            <Box
+                              className="add-new-sight"
+                              onClick={handleAddRow}
+                            >
+                              <IoAdd fontSize={'24px'} color="#0059E7" />
+                            </Box>
+                          </Stack>
+                        ) : (
+                          <Box
+                            className="remove-new-sight"
+                            onClick={() => handleRemoveRow(idx)}
+                          >
+                            <IoIosRemove
+                              fontSize={'24px'}
+                              color="rgb(231 0 0)"
+                            />
+                          </Box>
+                        )}
+                      </Box>
                     </Stack>
                   ))}
                 </Stack>
@@ -739,6 +829,7 @@ const RoadSurveyRowsForm = () => {
                 fullWidth={true}
                 onClick={handleClickOpen}
                 loading={btnLoading}
+                disabled={isFinishSurveyDisabled}
               />
             )}
           </Stack>

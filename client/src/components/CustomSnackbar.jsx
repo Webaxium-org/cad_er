@@ -31,7 +31,7 @@ const CustomSnackbar = () => {
 
   return (
     visible && (
-      <div>
+      <div style={{zIndex: 4}}>
         <Snackbar
           anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
           open={open}

@@ -191,11 +191,7 @@ const AreaReport = () => {
       const row = sheet.getRow(r);
       row.eachCell((cell) => {
         cell.font = { bold: true, color: { argb: '000000' } };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'F4F6F8' },
-        };
+
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -218,11 +214,7 @@ const AreaReport = () => {
       const sectionRow = sheet.addRow([`Section: ${section.section}`]);
       sectionRow.eachCell((cell) => {
         cell.font = { bold: true };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'DDEBF7' },
-        };
+
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -263,25 +255,6 @@ const AreaReport = () => {
             right: { style: 'thin' },
           };
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
-
-          // 🎨 Conditional background coloring
-          // Cutting area columns: 5–8
-          if (colNumber >= 5 && colNumber <= 8) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFFFCC' }, // pale yellow
-            };
-          }
-
-          // Filling area columns: 9–12
-          if (colNumber >= 9 && colNumber <= 12) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'CCFFFF' }, // pale cyan
-            };
-          }
         });
 
         currentRow++;
@@ -304,11 +277,7 @@ const AreaReport = () => {
       ]);
       totalRow.eachCell((cell) => {
         cell.font = { bold: true };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'E2EFDA' },
-        };
+
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -431,53 +400,30 @@ const AreaReport = () => {
                     <TableCell>{entry.offset}</TableCell>
                     <TableCell>{entry.initialLevelIS}</TableCell>
                     <TableCell>{entry.proposedLevelIS}</TableCell>
-                    <TableCell className="pale-yellow">
-                      {entry.cuttingMtr}
-                    </TableCell>
-                    <TableCell className="pale-yellow">
-                      {entry.cuttingAvgMtr}
-                    </TableCell>
-                    <TableCell className="pale-yellow">
-                      {entry.cuttingWMtr}
-                    </TableCell>
-                    <TableCell className="pale-yellow">
-                      {entry.cuttingAreaSqMtr}
-                    </TableCell>
-                    <TableCell className="pale-cyan">
-                      {entry.fillingMtr}
-                    </TableCell>
-                    <TableCell className="pale-cyan">
-                      {entry.fillingAvgMtr}
-                    </TableCell>
-                    <TableCell className="pale-cyan">
-                      {entry.fillingWMtr}
-                    </TableCell>
-                    <TableCell className="pale-cyan">
-                      {entry.fillingAreaSqMtr}
-                    </TableCell>
+                    <TableCell>{entry.cuttingMtr}</TableCell>
+                    <TableCell>{entry.cuttingAvgMtr}</TableCell>
+                    <TableCell>{entry.cuttingWMtr}</TableCell>
+                    <TableCell>{entry.cuttingAreaSqMtr}</TableCell>
+                    <TableCell>{entry.fillingMtr}</TableCell>
+                    <TableCell>{entry.fillingAvgMtr}</TableCell>
+                    <TableCell>{entry.fillingWMtr}</TableCell>
+                    <TableCell>{entry.fillingAreaSqMtr}</TableCell>
                   </TableRow>
                 ))}
 
                 <TableRow>
                   <TableCell colSpan={4}></TableCell>
 
-                  <TableCell
-                    colSpan={3}
-                    sx={{ fontWeight: 'bold' }}
-                    className="pale-yellow"
-                  >
+                  <TableCell colSpan={3} sx={{ fontWeight: 'bold' }}>
                     Total
                   </TableCell>
 
-                  <TableCell
-                    sx={{ fontWeight: 'bold' }}
-                    className="pale-yellow"
-                  >
+                  <TableCell sx={{ fontWeight: 'bold' }}>
                     {Number(row?.totalCuttingAreaSqMtr)?.toFixed(3)}
                   </TableCell>
-                  <TableCell colSpan={3} className="pale-cyan"></TableCell>
+                  <TableCell colSpan={3}></TableCell>
 
-                  <TableCell sx={{ fontWeight: 'bold' }} className="pale-cyan">
+                  <TableCell sx={{ fontWeight: 'bold' }}>
                     {Number(row?.totalFillingAreaSqMtr)?.toFixed(3)}
                   </TableCell>
                 </TableRow>

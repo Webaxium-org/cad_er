@@ -1,12 +1,13 @@
 import TextField from '@mui/material/TextField';
 
 export default function BasicTextFields({
+  id,
   label,
   placeholder,
   type = 'text',
   onChange,
   name,
-  value = '',
+  value,
   variant = 'outlined',
   sx = {},
   error,
@@ -17,6 +18,7 @@ export default function BasicTextFields({
 }) {
   return (
     <TextField
+      id={id}
       label={error || label}
       placeholder={placeholder}
       type={type}

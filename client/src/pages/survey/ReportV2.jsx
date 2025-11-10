@@ -24,7 +24,7 @@ const initialChartOptions = {
     zoom: { enabled: false },
   },
   stroke: {
-    curve: 'straight',
+    curve: 'smooth',
     width: 2,
   },
   colors: ['blue', 'green'],
@@ -47,7 +47,7 @@ const initialChartOptions = {
   tooltip: { enabled: false },
 };
 
-const Report = () => {
+const ReportV2 = () => {
   const navigate = useNavigate();
 
   const { id } = useParams();
@@ -79,18 +79,6 @@ const Report = () => {
       (p) => p.type === 'Proposed Level'
     );
 
-    const safeOffsets = row.offsets || [];
-    const safeInitial = row.intermediateSight || [];
-
-    const data = {
-      id: id,
-      datum: 9.4,
-      initial: safeInitial,
-      offsets: safeOffsets,
-      chainage: row.chainage,
-      series: [],
-    };
-
     if (proposedLevel) {
       const propRow = proposedLevel.rows?.find(
         (r) => r.chainage === row.chainage
@@ -99,20 +87,30 @@ const Report = () => {
       if (propRow) {
         gsbProposal = propRow?.intermediateSight || [];
       }
-
-      const safeGSB = gsbProposal?.slice(0, safeOffsets.length);
-
-      data.gsb = safeGSB;
-      data.series.push({
-        name: 'GSB Prop. Level',
-        data: safeOffsets.map((x, i) => [Number(x), safeGSB[i]]),
-      });
     }
 
-    data.series.push({
-      name: 'Initial Level',
-      data: safeOffsets.map((x, i) => [Number(x), Number(safeInitial[i])]),
-    });
+    const safeOffsets = row.offsets || [];
+    const safeInitial = row.intermediateSight || [];
+    const safeGSB = gsbProposal?.slice(0, safeOffsets.length);
+
+    const data = {
+      id: id,
+      datum: 9.4,
+      gsb: safeGSB,
+      initial: safeInitial,
+      offsets: safeOffsets,
+      chainage: row.chainage,
+      series: [
+        {
+          name: 'GSB Prop. Level',
+          data: safeOffsets.map((x, i) => [Number(x), safeGSB[i]]),
+        },
+        {
+          name: 'Initial Level',
+          data: safeOffsets.map((x, i) => [Number(x), Number(safeInitial[i])]),
+        },
+      ],
+    };
 
     setSelectedCs(data);
   };
@@ -213,37 +211,34 @@ const Report = () => {
             <Table size="small">
               <TableBody>
                 {/* GSB Row */}
-
-                {selectedCs?.gsb?.length > 1 && (
-                  <TableRow>
+                <TableRow>
+                  <TableCell
+                    sx={{
+                      fontWeight: 'bold',
+                      borderRight: '1px solid black',
+                      width: '40%',
+                    }}
+                  >
+                    GSB Prop. Level
+                  </TableCell>
+                  {selectedCs?.gsb?.map((val, i) => (
                     <TableCell
+                      key={i}
+                      align="center"
                       sx={{
-                        fontWeight: 'bold',
-                        borderRight: '1px solid black',
-                        width: '40%',
+                        position: 'relative',
+                        color: 'blue',
+                        fontWeight: 500,
+                        height: '55px',
+                        overflow: 'visible',
+                        p: 0,
                       }}
                     >
-                      GSB Prop. Level
+                      <div style={{ rotate: '-90deg' }}>{val}</div>
+                      <div className="cs-table-vertical-line" />
                     </TableCell>
-                    {selectedCs?.gsb?.map((val, i) => (
-                      <TableCell
-                        key={i}
-                        align="center"
-                        sx={{
-                          position: 'relative',
-                          color: 'blue',
-                          fontWeight: 500,
-                          height: '55px',
-                          overflow: 'visible',
-                          p: 0,
-                        }}
-                      >
-                        <div style={{ rotate: '-90deg' }}>{val}</div>
-                        <div className="cs-table-vertical-line" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                )}
+                  ))}
+                </TableRow>
 
                 {/* Initial Level Row */}
                 <TableRow>
@@ -251,7 +246,6 @@ const Report = () => {
                     sx={{
                       fontWeight: 'bold',
                       borderRight: '1px solid black',
-                      width: '40%',
                     }}
                   >
                     Initial Level
@@ -360,4 +354,4 @@ const Report = () => {
   );
 };
 
-export default Report;
+export default ReportV2;

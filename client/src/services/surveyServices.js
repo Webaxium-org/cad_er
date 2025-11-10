@@ -52,6 +52,8 @@ export const getSurveyPurpose = (id) => {
   return axiosInstance.get(`surveys/${id}/purposes`);
 };
 
-export const endSurveyPurpose = (id) => {
-  return axiosInstance.patch(`surveys/${id}/purposes/end`);
+export const endSurveyPurpose = (id, finalOffset) => {
+  return axiosInstance.patch(
+    `surveys/${id}/purposes/end?finalOffset=${finalOffset}`
+  );
 };

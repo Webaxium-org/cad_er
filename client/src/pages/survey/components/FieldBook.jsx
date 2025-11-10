@@ -57,20 +57,16 @@ export default function FieldBook() {
 
     let hi = 0; // Height of Instrument
     let rl = 0; // Reduced Level
-    let index = 0;
     const rows = [];
 
     const firstChainage = purpose?.rows?.find((r) => r.type === 'Chainage');
 
     for (const row of purpose.rows) {
-      index += 1;
-
       switch (row.type) {
         case 'Instrument setup':
           rl = Number(survey.reducedLevel || 0);
           hi = rl + Number(row.backSight || 0);
           rows.push({
-            index,
             CH: '-',
             BS: row.backSight || '-',
             IS: '-',
@@ -86,7 +82,6 @@ export default function FieldBook() {
           row.intermediateSight?.forEach((isVal, i) => {
             const rlValue = (hi - Number(isVal || 0)).toFixed(3);
             rows.push({
-              index,
               CH: i === 0 ? row.chainage : '',
               BS: '-',
               IS: isVal || '-',
@@ -103,7 +98,6 @@ export default function FieldBook() {
           row.intermediateSight?.forEach((isVal, i) => {
             const rlValue = (hi - Number(isVal || 0)).toFixed(3);
             rows.push({
-              index,
               CH: '-',
               BS: '-',
               IS: isVal || '-',
@@ -120,7 +114,6 @@ export default function FieldBook() {
           rl = Number(hi) - Number(row.foreSight);
           hi = Number(rl) + Number(row.backSight || 0);
           rows.push({
-            index,
             CH: '-',
             BS: row.backSight || '-',
             IS: '-',
@@ -142,7 +135,6 @@ export default function FieldBook() {
     )?.toFixed(3);
 
     rows.push({
-      index: rows.length + 1,
       CH: '',
       BS: '',
       IS: '',
@@ -162,39 +154,12 @@ export default function FieldBook() {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet(`${purposeCode[purpose.type]} AE`);
 
-    // ======= GLOBAL STYLES =======
-    const borderStyle = {
-      top: { style: 'thin', color: { argb: '999999' } },
-      left: { style: 'thin', color: { argb: '999999' } },
-      bottom: { style: 'thin', color: { argb: '999999' } },
-      right: { style: 'thin', color: { argb: '999999' } },
-    };
-
-    const titleFill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'E3F2FD' }, // light blue
-    };
-
-    const headerFill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'BBDEFB' }, // blue tint
-    };
-
-    const subHeaderFill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'E8F5E9' }, // soft green tint
-    };
-
     // ======= TITLE =======
     sheet.mergeCells('A1:H1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = purpose?.surveyId?.project;
-    titleCell.font = { size: 18, bold: true, color: { argb: '0D47A1' } };
+    titleCell.font = { size: 18, bold: true };
     titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    titleCell.fill = titleFill;
     sheet.getRow(1).height = 28;
 
     // ======= HEADER SECTION =======
@@ -233,10 +198,8 @@ export default function FieldBook() {
 
     headerRow.height = 25;
     headerRow.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: '0D47A1' }, size: 12 };
+      cell.font = { bold: true, size: 12 };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      cell.fill = headerFill;
-      cell.border = borderStyle;
     });
 
     // ======= TABLE DATA =======
@@ -254,26 +217,12 @@ export default function FieldBook() {
 
       row.eachCell((cell) => {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border = borderStyle;
       });
-
-      // Alternate row shading for readability
-      if (data.index % 2 === 0) {
-        row.eachCell((cell) => {
-          cell.fill = subHeaderFill;
-        });
-      }
     });
 
     // ======= COLUMN WIDTHS =======
     const colWidths = [12, 12, 12, 12, 12, 12, 12, 36];
     colWidths.forEach((w, i) => (sheet.getColumn(i + 1).width = w));
-
-    // ======= BORDER AROUND TABLE =======
-    const lastRow = sheet.lastRow.number;
-    for (let r = 5; r <= lastRow; r++) {
-      sheet.getRow(r).eachCell((cell) => (cell.border = borderStyle));
-    }
 
     // ======= SAVE FILE =======
     const buffer = await workbook.xlsx.writeBuffer();

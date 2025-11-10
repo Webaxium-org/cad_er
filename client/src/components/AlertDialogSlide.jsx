@@ -15,6 +15,7 @@ export default function AlertDialogSlide({
   open,
   title,
   description,
+  content,
   cancelButtonText,
   submitButtonText,
   onCancel,
@@ -36,6 +37,8 @@ export default function AlertDialogSlide({
           <DialogContentText id="alert-dialog-slide-description">
             {description}
           </DialogContentText>
+
+          {content}
         </DialogContent>
         <DialogActions>
           <Button onClick={onCancel}>{cancelButtonText}</Button>

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from './pages/home';
 import SurveyLanding from './pages/survey';
 import RoadSurveyForm from './pages/survey/RoadSurveyForm';
 import RootLayout from './layout/RootLayout';
@@ -19,10 +20,11 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<RootLayout />}>
-            <Route index element={<SurveyLanding />} />
+            <Route index element={<Home />} />
 
             <Route path="survey">
               <Route index element={<SurveyList />} />
+              <Route path='add-survey' element={<SurveyLanding />} />
 
               <Route path="road-survey">
                 <Route index element={<RoadSurveyForm />} />

@@ -8,6 +8,7 @@ export default function BasicButtons({
   variant,
   loading,
   loadingIndicator,
+  disabled = false,
 }) {
   return (
     <Button
@@ -17,6 +18,7 @@ export default function BasicButtons({
       onClick={onClick}
       loading={loading}
       loadingIndicator={loadingIndicator || 'Loading…'}
+      disabled={disabled}
     >
       {value}
     </Button>

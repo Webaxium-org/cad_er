@@ -1,6 +1,26 @@
 import mongoose from 'mongoose';
 const { Schema, model, Types } = mongoose;
 
+const typeEnum = [
+  'Initial Level',
+  'Final Level',
+  'Final Earth Work',
+  'Quarry Muck',
+  'Final GSB',
+  'Final WMM',
+  'Final BM',
+  'Final BC',
+  'Final Tile Top',
+  'Proposed Level',
+  'Proposed Earth Work',
+  'Proposed Muck',
+  'Proposed GSB',
+  'Proposed WMM',
+  'Proposed BM',
+  'Proposed BC',
+  'Proposed Tile Top',
+];
+
 const SurveyPurposeSchema = new Schema(
   {
     surveyId: {
@@ -12,14 +32,18 @@ const SurveyPurposeSchema = new Schema(
     type: {
       type: String,
       required: true,
-      enum: [
-        'Initial Level',
-        'Proposed Level',
-        'Final Level',
-        'Final Earth Work',
-        'Quarry Muck',
-      ],
+      enum: typeEnum,
     },
+    relation: {
+      type: Types.ObjectId,
+      ref: 'SurveyPurpose',
+    },
+    finalOffset:  Number,
+    lSection:  Number,
+    lsSlop:  Number,
+    cSection:  Number,
+    csSlop:  Number,
+    csLamper:  String,
     isPurposeFinish: { type: Boolean, default: false, index: true },
     DateOfSurvey: { type: Date, default: Date.now },
     purposeFinishDate: Date,

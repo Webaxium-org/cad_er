@@ -376,22 +376,34 @@ const createSurveyPurpose = async (req, res, next) => {
 
     const {
       params: { surveyId },
-      body: { purpose, slope, estimateQuality },
+      body: {
+        purpose,
+        proposal,
+        averageHeight,
+        lSection,
+        lsSlop,
+        cSection,
+        csSlop,
+        csLamper,
+      },
     } = req;
 
-    // 🔹 Validate required fields
+    // 🔹 Basic validation
     if (!purpose || !surveyId) {
       throw createHttpError(400, 'Purpose and surveyId are required');
     }
 
-    if (purpose === 'Proposed Level' && (!slope || !estimateQuality)) {
-      throw createHttpError(
-        400,
-        'Slope and Estimate Quality are required for Proposed Level'
-      );
+    // 🔹 Proposal field validation (if proposal mode)
+    if (
+      proposal &&
+      [averageHeight, lSection, lsSlop, cSection, csSlop, csLamper].some(
+        (field) => field === undefined || field === null || field === ''
+      )
+    ) {
+      throw createHttpError(400, 'Missing required fields for proposal');
     }
 
-    // 🔹 Find active survey
+    // 🔹 Fetch active survey
     const survey = await Survey.findOne({
       _id: surveyId,
       isSurveyFinish: false,
@@ -400,25 +412,58 @@ const createSurveyPurpose = async (req, res, next) => {
       .populate({
         path: 'purposes',
         match: { deleted: false },
-        populate: { path: 'rows', match: { deleted: false } },
+        populate: { path: 'relation', match: { deleted: false } },
       })
-      .lean()
       .session(session);
 
     if (!survey) {
       throw createHttpError(404, 'Active survey not found');
     }
 
-    const isPurposeExist = survey?.purposes?.find((p) => p.type === purpose);
-    if (isPurposeExist) throw createHttpError(409, 'The purpose already exist');
+    let relation = null;
+
+    // 🔹 Check for duplicate proposal relation
+    if (proposal) {
+      const existingProposal = survey.purposes?.find(
+        (p) => p.relation?.type === purpose && p.type === proposal
+      );
+
+      if (existingProposal) {
+        throw createHttpError(
+          409,
+          `A proposal between "${purpose}" and "${proposal}" already exists`
+        );
+      }
+
+      const isPurposeExist = survey.purposes?.find((p) => p.type === purpose);
+      if (!isPurposeExist) {
+        throw createHttpError(409, `There is no survey found width ${purpose}`);
+      }
+
+      relation = isPurposeExist._id;
+    } else {
+      // 🔹 Check if purpose already exists
+      const isPurposeExist = survey.purposes?.find((p) => p.type === purpose);
+      if (isPurposeExist) {
+        throw createHttpError(409, `Purpose "${purpose}" already exists`);
+      }
+    }
 
     // 🔹 Create purpose document
     const [purposeDoc] = await SurveyPurpose.create(
       [
         {
-          surveyId: survey._id,
-          type: purpose,
-          ...(purpose === 'Proposed Level' && { slope, estimateQuality }),
+          surveyId,
+          type: proposal ? proposal : purpose,
+          ...(proposal && {
+            averageHeight,
+            lSection,
+            lsSlop,
+            cSection,
+            csSlop,
+            csLamper,
+            relation,
+          }),
         },
       ],
       { session }
@@ -426,21 +471,21 @@ const createSurveyPurpose = async (req, res, next) => {
 
     // 🔹 Commit transaction
     await session.commitTransaction();
-    session.endSession();
 
     res.status(201).json({
       success: true,
       message: 'Survey purpose created successfully',
       survey: {
-        ...survey,
+        ...survey.toObject(),
         purposeId: purposeDoc._id,
-        purposes: [...survey.purposes, purposeDoc],
+        purposes: [...survey.purposes.map((p) => p.toObject()), purposeDoc],
       },
     });
   } catch (err) {
     await session.abortTransaction();
-    session.endSession();
     next(err);
+  } finally {
+    session.endSession();
   }
 };
 
@@ -486,7 +531,10 @@ const endSurveyPurpose = async (req, res, next) => {
   session.startTransaction();
 
   try {
-    const { id } = req.params;
+    const {
+      params: { id },
+      query: { finalOffset },
+    } = req;
 
     // 🔹 Step 1: Find the purpose
     const purpose = await SurveyPurpose.findById(id).session(session);
@@ -510,6 +558,9 @@ const endSurveyPurpose = async (req, res, next) => {
     // 🔹 Step 4: Mark purpose as finished
     purpose.isPurposeFinish = true;
     purpose.purposeFinishDate = new Date();
+
+    if (purpose.type === 'Initial Level') purpose.finalOffset = finalOffset;
+
     await purpose.save({ session });
 
     await session.commitTransaction();
