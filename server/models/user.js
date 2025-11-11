@@ -8,9 +8,8 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
-    company: {
+    organization: {
       type: Types.ObjectId,
-      required: true,
       ref: 'Company',
     },
     designation: {
@@ -24,24 +23,25 @@ const UserSchema = new Schema(
     createdBy: {
       type: Types.ObjectId,
       ref: 'User',
-      required: true,
     },
     phone: {
       type: String,
-      required: true,
       unique: [true, 'This Contact Number Is Already In Use'],
       minlength: 7,
       trim: true,
     },
     phoneCode: {
       type: String,
-      required: true,
       trim: true,
     },
     email: {
       type: String,
       required: true,
       unique: [true, 'This Email Is Already In Use'],
+    },
+    authProvider: {
+      type: String,
+      enum: ['google'],
     },
     password: {
       type: String,
@@ -53,14 +53,19 @@ const UserSchema = new Schema(
       default: 'Not Defined',
       required: true,
     },
-    dob: {
-      type: Date,
-      required: true,
-    },
+    dob: Date,
     role: {
-      type: Types.ObjectId,
-      ref: 'Role',
+      type: String,
       required: true,
+      enum: [
+        'Super Admin',
+        'Survey Manager',
+        'Chief Surveyor',
+        'Senior Surveyor',
+        'Site Engineer',
+        'Assistant Engineer',
+        'Guest',
+      ],
     },
     status: {
       type: String,

@@ -13,39 +13,48 @@ import PurposeList from './pages/survey/PurposeList';
 import Report from './pages/survey/Report';
 import AreaReport from './pages/survey/AreaReport';
 import VolumeReport from './pages/survey/VolumeReport';
+import SignIn from './pages/auth';
+import PublicRoute from './routes/PublicRoute';
+import ProtectedRoute from './routes/ProtectedRoute';
 
 function App() {
   return (
     <>
       <BrowserRouter>
         <Routes>
-          <Route element={<RootLayout />}>
-            <Route index element={<Home />} />
+          <Route element={<PublicRoute />}>
+            <Route path="/login" element={<SignIn />} />
+          </Route>
 
-            <Route path="survey">
-              <Route index element={<SurveyList />} />
-              <Route path='add-survey' element={<SurveyLanding />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<RootLayout />}>
+              <Route index element={<Home />} />
 
-              <Route path="road-survey">
-                <Route index element={<RoadSurveyForm />} />
-                <Route path=":id" element={<RoadSurveyForm />} />
-                <Route path=":id/rows" element={<RoadSurveyRowsForm />} />
+              <Route path="survey">
+                <Route index element={<SurveyList />} />
+                <Route path="add-survey" element={<SurveyLanding />} />
 
-                <Route path=":id/field-book" element={<FieldBook />} />
-                <Route path=":id/report" element={<Report />} />
-                <Route path=":id/area-report" element={<AreaReport />} />
-                <Route path=":id/volume-report" element={<VolumeReport />} />
+                <Route path="road-survey">
+                  <Route index element={<RoadSurveyForm />} />
+                  <Route path=":id" element={<RoadSurveyForm />} />
+                  <Route path=":id/rows" element={<RoadSurveyRowsForm />} />
+
+                  <Route path=":id/field-book" element={<FieldBook />} />
+                  <Route path=":id/report" element={<Report />} />
+                  <Route path=":id/area-report" element={<AreaReport />} />
+                  <Route path=":id/volume-report" element={<VolumeReport />} />
+                </Route>
+
+                <Route path="purpose">
+                  <Route index element={<PurposeList />} />
+                </Route>
               </Route>
 
-              <Route path="purpose">
-                <Route index element={<PurposeList />} />
-              </Route>
+              {/* Error Pages */}
+              <Route path="/unauthorized" element={<Unauthorized />} />
+              <Route path="/server-error" element={<ServerError />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
-
-            {/* Error Pages */}
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="/server-error" element={<ServerError />} />
-            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>

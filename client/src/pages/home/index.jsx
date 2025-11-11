@@ -1,26 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Stack, Box, Typography, Grid, Paper, Avatar } from '@mui/material';
-import {
-  IoNotificationsOutline,
-  IoHomeOutline,
-  IoAddCircleOutline,
-  IoPerson,
-  IoMenu,
-} from 'react-icons/io5';
+import { IoNotificationsOutline, IoAddCircleOutline } from 'react-icons/io5';
 import { RiSurveyLine } from 'react-icons/ri';
 import { GoProject } from 'react-icons/go';
 
 import { TbReportAnalytics } from 'react-icons/tb';
-import {
-  MdOutlineAssignment,
-  MdOutlinePerson,
-  MdOutlineMenu,
-} from 'react-icons/md';
 
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { stopLoading } from '../../redux/loadingSlice';
 import { useNavigate } from 'react-router-dom';
-import BasicBottomNavigation from '../../components/BasicBottomNavigation';
 import BasicTextFields from '../../components/BasicTextFields';
 
 const actions = [
@@ -40,17 +28,12 @@ const actions = [
 
 const otherLinks = [];
 
-const navItems = [
-  { label: 'Home', value: 'Home', icon: <IoHomeOutline size={22} /> },
-  { label: 'Projects', value: 'Projects', icon: <GoProject size={22} /> },
-  { label: 'You', value: 'You', icon: <IoPerson size={22} /> },
-  { label: 'Menu', value: 'Menu', icon: <IoMenu size={22} /> },
-];
-
 const Home = () => {
   const dispatch = useDispatch();
+
   const navigate = useNavigate();
-  const [active, setActive] = useState('Home');
+
+  const { currentUser } = useSelector((state) => state.user);
 
   useEffect(() => {
     dispatch(stopLoading());
@@ -79,7 +62,7 @@ const Home = () => {
           <Typography fontSize="28px">CADer</Typography>
           <IoNotificationsOutline size={24} color="#fff" />
         </Box>
-        <Typography fontSize="14px">Hi, Abhijith Suresh</Typography>
+        <Typography fontSize="14px">Hi, {currentUser?.name}</Typography>
 
         <Box mt={2}>
           <BasicTextFields
@@ -100,7 +83,7 @@ const Home = () => {
         <Typography fontWeight={700} fontSize="16px" mb={1}>
           Quick Links
         </Typography>
-        <Grid container spacing={1}>
+        <Grid container spacing={2}>
           {' '}
           {actions.map((item, i) => (
             <Grid key={i} size={{ xs: 3 }}>
@@ -180,22 +163,6 @@ const Home = () => {
             Get discount for every top up transaction
           </Typography>
         </Paper>
-      </Box>
-      <Box
-        position="fixed"
-        bottom={0}
-        left={0}
-        right={0}
-        sx={{
-          backgroundColor: '#fff',
-          borderTop: '1px solid #eee',
-          display: 'flex',
-          justifyContent: 'space-around',
-          py: 1.2,
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.05)',
-        }}
-      >
-        <BasicBottomNavigation active={'Home'} data={navItems} />
       </Box>
     </Stack>
   );

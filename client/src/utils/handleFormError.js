@@ -1,10 +1,11 @@
 import { showAlert } from '../redux/alertSlice';
+import { logOut } from '../redux/userSlice';
 // import { logOut } from '../redux/userSlice';
 // import { disconnectSocket } from './socket';
 
 export const handleFormError = (error, setFormErrors, dispatch, navigate) => {
   const validationErrors = {};
-console.log(error.inner)
+
   // Check if the error is a Yup validation error
   if (error?.inner && Array.isArray(error.inner)) {
     error.inner.forEach((innerError) => {
@@ -25,7 +26,7 @@ console.log(error.inner)
   }
 
   if (error?.response?.status === 401 || error?.response?.status === 403) {
-    disconnectSocket();
+    // disconnectSocket();
     dispatch(logOut()); // Clear user state in Redux
   }
 
@@ -33,7 +34,7 @@ console.log(error.inner)
     navigate('/server-error'); // Redirect to server error page
   }
 
-  if(error?.response?.status === 404) {
+  if (error?.response?.status === 404) {
     navigate('/not-found'); // Redirect to 404 error page
   }
 

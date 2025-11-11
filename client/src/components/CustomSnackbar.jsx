@@ -31,31 +31,30 @@ const CustomSnackbar = () => {
 
   return (
     visible && (
-      <div style={{zIndex: 4}}>
-        <Snackbar
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-          open={open}
-          autoHideDuration={10000}
+      <Snackbar
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={open}
+        autoHideDuration={10000}
+        onClose={handleClose}
+        sx={{ zIndex: 2000 }}
+      >
+        <Alert
           onClose={handleClose}
+          severity={type || ''}
+          variant="filled"
+          sx={{
+            width: '100%',
+            color: colors[type]?.color,
+            borderColor: colors[type]?.borderColor,
+            bgcolor: `${colors[type]?.bgcolor} !important`,
+            '& .MuiAlert-icon': {
+              color: colors[type]?.iconColor,
+            },
+          }}
         >
-          <Alert
-            onClose={handleClose}
-            severity={type || ''}
-            variant="filled"
-            sx={{
-              width: '100%',
-              color: colors[type]?.color,
-              borderColor: colors[type]?.borderColor,
-              bgcolor: `${colors[type]?.bgcolor} !important`,
-              '& .MuiAlert-icon': {
-                color: colors[type]?.iconColor,
-              },
-            }}
-          >
-            {message}
-          </Alert>
-        </Snackbar>
-      </div>
+          {message}
+        </Alert>
+      </Snackbar>
     )
   );
 };

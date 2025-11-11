@@ -3,23 +3,23 @@ import Box from '@mui/material/Box';
 import Preloader from './Preloader';
 import CustomSnackbar from '../components/CustomSnackbar';
 import { Outlet } from 'react-router-dom';
+import BasicBottomNavigation from '../components/BasicBottomNavigation';
 
 const RootLayout = () => {
   return (
     <>
       <Preloader />
 
-      <Box
-        // className="main-bg"
-        sx={{ width: '100%' }}
-      >
-        {/* Common Alert Start*/}
+      <Box width={'100%'}>
+        {/* Global Alert Start*/}
 
         <CustomSnackbar />
 
-        {/* Common Alert End*/}
+        {/* Global Alert End*/}
 
         <Outlet />
+
+        <BasicBottomNavigation />
       </Box>
     </>
   );

@@ -1,85 +1,166 @@
 import * as React from 'react';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
+import { Box } from '@mui/material';
 
-export default function BasicBottomNavigation({ active, data }) {
-  const [value, setValue] = React.useState(active);
+import { GoProject } from 'react-icons/go';
+import { IoHomeOutline, IoPerson, IoMenu } from 'react-icons/io5';
+import { useLocation, useNavigate } from 'react-router-dom';
+import TemporaryDrawer from './TemporaryDrawer';
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
+import DrawerList from './DrawerList';
+
+const navItems = [
+  {
+    label: 'Home',
+    value: 'Home',
+    icon: <IoHomeOutline size={22} />,
+    path: '/',
+  },
+  {
+    label: 'Projects',
+    value: 'Projects',
+    icon: <GoProject size={22} />,
+    path: '/survey',
+  },
+  {
+    label: 'You',
+    value: 'You',
+    icon: <IoPerson size={22} />,
+    path: '/profile',
+  },
+  { label: 'Menu', value: 'Menu', icon: <IoMenu size={22} />, path: '#' },
+];
+
+export default function BasicBottomNavigation() {
+  const navigate = useNavigate();
+
+  const { pathname } = useLocation();
+
+  const [value, setValue] = React.useState(null);
+
+  const [open, setOpen] = React.useState(false);
+
+  const toggleDrawer = (newOpen) => () => {
+    if (!newOpen) {
+      setValue('Home');
+    }
+
+    setOpen(newOpen);
   };
 
+  const handleChange = (event, newValue) => {
+    const item = navItems?.find((i) => i.value === newValue);
+
+    setValue(newValue);
+
+    if (newValue === 'Menu') {
+      toggleDrawer(true)();
+    } else {
+      navigate(item.path);
+    }
+  };
+
+  React.useEffect(() => {
+    const activeNav = navItems?.find((item) => item.path === pathname);
+
+    if (activeNav) setValue(activeNav.label);
+  }, []);
+
   return (
-    <BottomNavigation
-      sx={{
-        width: '100%',
-        bottom: 0,
-        left: 0,
-        bgcolor: '#fff',
-        // boxShadow: '0 -4px 10px rgba(0,0,0,0.08)',
-        borderTopLeftRadius: '20px',
-        borderTopRightRadius: '20px',
+    <>
+      <TemporaryDrawer
+        open={open}
+        toggleDrawer={toggleDrawer}
+        drawerList={<DrawerList toggleDrawer={toggleDrawer} />}
+      />
 
-        '& .MuiBottomNavigationAction-root': {
-          color: '#9e9e9e',
-          position: 'relative',
-          transition: 'all 0.3s ease',
-          '& .MuiSvgIcon-root': {
-            fontSize: 26,
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: '-6px',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 0,
-            height: 0,
-            borderRadius: '50%',
-            backgroundColor: '#fff',
-            transition: 'all 0.3s ease',
-            zIndex: -5,
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: '-8px',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 0,
-            height: 0,
-            borderRadius: '50%',
-            backgroundColor: '#6334FA',
-            transition: 'all 0.3s ease',
-            zIndex: -5,
-          },
-        },
+      <Box
+        position="fixed"
+        bottom={0}
+        left={0}
+        right={0}
+        sx={{
+          backgroundColor: '#fff',
+          borderTop: '1px solid #eee',
+          display: 'flex',
+          justifyContent: 'space-around',
+          py: 1.2,
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.05)',
+        }}
+      >
+        <BottomNavigation
+          sx={{
+            width: '100%',
+            bottom: 0,
+            left: 0,
+            bgcolor: '#fff',
+            // boxShadow: '0 -4px 10px rgba(0,0,0,0.08)',
+            borderTopLeftRadius: '20px',
+            borderTopRightRadius: '20px',
 
-        '& .Mui-selected': {
-          color: '#6334FA',
-          fontWeight: 600,
-          '&::before': {
-            width: 50,
-            height: 50,
-          },
-          '&::after': {
-            width: 10,
-            height: 10,
-          },
-        },
-        '& .Mui-selected svg': { color: '#6334FA' },
-      }}
-      value={value}
-      onChange={handleChange}
-    >
-      {data.map((nav) => (
-        <BottomNavigationAction
-          key={nav.value}
-          label={nav.label}
-          value={nav.value}
-          icon={nav.icon}
-        />
-      ))}
-    </BottomNavigation>
+            '& .MuiBottomNavigationAction-root': {
+              color: '#9e9e9e',
+              position: 'relative',
+              transition: 'all 0.3s ease',
+              '& .MuiSvgIcon-root': {
+                fontSize: 26,
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '-6px',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 0,
+                height: 0,
+                borderRadius: '50%',
+                backgroundColor: '#fff',
+                transition: 'all 0.3s ease',
+                zIndex: -5,
+              },
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                top: '-9px',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 0,
+                height: 0,
+                borderRadius: '50%',
+                backgroundColor: '#6334FA',
+                transition: 'all 0.3s ease',
+                zIndex: -5,
+              },
+            },
+
+            '& .Mui-selected': {
+              color: '#6334FA',
+              fontWeight: 600,
+              '&::before': {
+                width: 50,
+                height: 50,
+              },
+              '&::after': {
+                width: 10,
+                height: 10,
+              },
+            },
+            '& .Mui-selected svg': { color: '#6334FA' },
+          }}
+          value={value}
+          onChange={handleChange}
+        >
+          {navItems.map((item) => (
+            <BottomNavigationAction
+              key={item.value}
+              label={item.label}
+              value={item.value}
+              icon={item.icon}
+            />
+          ))}
+        </BottomNavigation>
+      </Box>
+    </>
   );
 }

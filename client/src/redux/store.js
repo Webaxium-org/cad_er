@@ -4,17 +4,19 @@ import storage from 'redux-persist/lib/storage';
 
 import loadingReducer from './loadingSlice';
 import alertReducer from './alertSlice';
+import userReducer from './userSlice';
 
 const persistConfig = {
   key: 'root',
   storage,
-  //   whitelist: ['user'],
-  blacklist: ['loading', 'alert'],
+  whitelist: ['user'],
+  // blacklist: ['loading', 'alert'],
 };
 
 const reducer = combineReducers({
   loading: loadingReducer,
   alert: alertReducer,
+  user: userReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, reducer);
