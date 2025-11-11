@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import webaxLogo from '../assets/loader-logo.png';
 import { useSelector } from 'react-redux';
 
@@ -7,7 +7,7 @@ const Preloader = () => {
   const { global } = useSelector((state) => state.loading);
 
   const [loading, setLoading] = useState(true);
-  
+
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
@@ -30,7 +30,9 @@ const Preloader = () => {
         aria-busy={loading}
         aria-label="Loading"
       >
-        <img src={webaxLogo} alt="Logo" className="logo" />
+        <Typography className="logo" variant="h3" gutterBottom>
+          CADer
+        </Typography>
       </Box>
     )
   );

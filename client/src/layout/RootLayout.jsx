@@ -9,7 +9,10 @@ const RootLayout = () => {
     <>
       <Preloader />
 
-      <Box className="main-bg" sx={{ width: '100%', maxWidth: { sm: '100%', md: '2500px' } }}>
+      <Box
+        // className="main-bg"
+        sx={{ width: '100%' }}
+      >
         {/* Common Alert Start*/}
 
         <CustomSnackbar />
