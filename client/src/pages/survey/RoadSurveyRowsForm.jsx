@@ -19,6 +19,9 @@ import {
   getSurveyPurpose,
 } from '../../services/surveyServices';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
+import BasicInput from '../../components/BasicInput';
+import { calculateReducedLevel, initialChartOptions } from '../../constants';
+import CrossSectionChart from './components/CrossSectionChart';
 
 const alertData = {
   title: 'Confirm End of Survey',
@@ -60,108 +63,11 @@ const inputDetails = [
   { label: 'Back sight*', name: 'backSight', type: 'number' },
 ];
 
-const schema = Yup.object().shape({
-  type: Yup.string().required('Type is required'),
-
-  chainage: Yup.string().when('type', {
-    is: 'Chainage',
-    then: (schema) => schema.required('Chainage is required'),
-    otherwise: (schema) => schema.nullable(),
-  }),
-
-  roadWidth: Yup.number()
-    .transform((value, originalValue) => (originalValue === '' ? null : value))
-    .when('type', {
-      is: 'Chainage',
-      then: (schema) =>
-        schema
-          .typeError('Road width is required')
-          .required('Road width is required'),
-      otherwise: (schema) => schema.nullable(),
-    }),
-
-  spacing: Yup.number()
-    .transform((value, originalValue) => (originalValue === '' ? null : value))
-    .when('type', {
-      is: 'Chainage',
-      then: (schema) =>
-        schema.typeError('Spacing is required').required('Spacing is required'),
-      otherwise: (schema) => schema.nullable(),
-    }),
-
-  intermediateOffsets: Yup.array()
-    .of(
-      Yup.object().shape({
-        intermediateSight: Yup.number()
-          .transform((v, o) => (o === '' ? null : v))
-          .nullable()
-          .typeError('Intermediate sight is required')
-          .required('Intermediate sight is required'),
-        offset: Yup.number()
-          .transform((v, o) => (o === '' ? null : v))
-          .nullable()
-          .typeError('Offset is required')
-          .required('Offset is required'),
-      })
-    )
-    .when('type', {
-      is: 'Chainage',
-      then: (schema) =>
-        schema
-          .min(1, 'At least one row is required')
-          .required('Offsets are required'),
-      otherwise: () =>
-        Yup.mixed()
-          .transform(() => null)
-          .nullable(),
-    }),
-
-  foreSight: Yup.number()
-    .transform((v, o) => (o === '' ? null : v))
-    .when('type', {
-      is: 'CP',
-      then: (schema) =>
-        schema
-          .typeError('Fore sight is required')
-          .required('Fore sight is required'),
-      otherwise: (schema) => schema.nullable(),
-    }),
-
-  intermediateSight: Yup.number()
-    .transform((v, o) => (o === '' ? null : v))
-    .when('type', {
-      is: 'TBM',
-      then: (schema) =>
-        schema
-          .typeError('Intermediate sight is required')
-          .required('Intermediate sight is required'),
-      otherwise: (schema) => schema.nullable(),
-    }),
-
-  backSight: Yup.number()
-    .transform((v, o) => (o === '' ? null : v))
-    .when('type', {
-      is: 'CP',
-      then: (schema) =>
-        schema
-          .typeError('Back sight is required')
-          .required('Back sight is required'),
-      otherwise: (schema) => schema.nullable(),
-    }),
-
-  remarks: Yup.string()
-    .trim()
-    .when('type', {
-      is: (val) => ['Chainage', 'CP', 'TBM'].includes(val),
-      then: (schema) => schema.required('Remarks are required'),
-      otherwise: (schema) => schema.nullable(),
-    }),
-});
-
 const RoadSurveyRowsForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const didMount = useRef(false);
   const { global } = useSelector((state) => state.loading);
 
   const [purpose, setPurpose] = useState(null);
@@ -174,6 +80,125 @@ const RoadSurveyRowsForm = () => {
   const [btnLoading, setBtnLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [isFinishSurveyDisabled, setIsFinishSurveyDisabled] = useState(false);
+  const [isLastProposalReading, setIsLastProposalReading] = useState(false); // only for proposal's
+  const [chartOptions, setChartOptions] = useState(initialChartOptions);
+  const [selectedCs, setSelectedCs] = useState(null);
+
+  const schema = Yup.object().shape({
+    type: Yup.string().required('Type is required'),
+
+    chainage: Yup.string().when('type', {
+      is: 'Chainage',
+      then: (schema) => schema.required('Chainage is required'),
+      otherwise: (schema) => schema.nullable(),
+    }),
+
+    roadWidth: Yup.number()
+      .transform((value, originalValue) =>
+        originalValue === '' ? null : value
+      )
+      .when('type', {
+        is: 'Chainage',
+        then: (schema) =>
+          schema
+            .typeError('Road width is required')
+            .required('Road width is required'),
+        otherwise: (schema) => schema.nullable(),
+      }),
+
+    spacing: Yup.number()
+      .transform((value, originalValue) =>
+        originalValue === '' ? null : value
+      )
+      .when('type', {
+        is: 'Chainage',
+        then: (schema) =>
+          schema
+            .typeError('Spacing is required')
+            .required('Spacing is required'),
+        otherwise: (schema) => schema.nullable(),
+      }),
+
+    intermediateOffsets: Yup.array()
+      .of(
+        Yup.object().shape({
+          reducedLevel:
+            purpose?.phase !== 'Proposal'
+              ? Yup.number()
+                  .transform((v, o) => (o === '' ? null : v))
+                  .nullable()
+              : Yup.number()
+                  .transform((v, o) => (o === '' ? null : v))
+                  .nullable()
+                  .typeError('Reduced level is required')
+                  .required('Reduced level is required'),
+          intermediateSight:
+            purpose?.phase === 'Proposal'
+              ? Yup.number()
+                  .transform((v, o) => (o === '' ? null : v))
+                  .nullable()
+              : Yup.number()
+                  .transform((v, o) => (o === '' ? null : v))
+                  .nullable()
+                  .typeError('Intermediate sight is required')
+                  .required('Intermediate sight is required'),
+          offset: Yup.number()
+            .transform((v, o) => (o === '' ? null : v))
+            .nullable()
+            .typeError('Offset is required')
+            .required('Offset is required'),
+        })
+      )
+      .when('type', {
+        is: 'Chainage',
+        then: (schema) =>
+          schema
+            .min(1, 'At least one row is required')
+            .required('Offsets are required'),
+        otherwise: (schema) => schema.transform(() => null).nullable(),
+      }),
+
+    foreSight: Yup.number()
+      .transform((v, o) => (o === '' ? null : v))
+      .when('type', {
+        is: 'CP',
+        then: (schema) =>
+          schema
+            .typeError('Fore sight is required')
+            .required('Fore sight is required'),
+        otherwise: (schema) => schema.nullable(),
+      }),
+
+    intermediateSight: Yup.number()
+      .transform((v, o) => (o === '' ? null : v))
+      .when('type', {
+        is: 'TBM',
+        then: (schema) =>
+          schema
+            .typeError('Intermediate sight is required')
+            .required('Intermediate sight is required'),
+        otherwise: (schema) => schema.nullable(),
+      }),
+
+    backSight: Yup.number()
+      .transform((v, o) => (o === '' ? null : v))
+      .when('type', {
+        is: 'CP',
+        then: (schema) =>
+          schema
+            .typeError('Back sight is required')
+            .required('Back sight is required'),
+        otherwise: (schema) => schema.nullable(),
+      }),
+
+    remarks: Yup.string()
+      .trim()
+      .when('type', {
+        is: (val) => ['Chainage', 'CP', 'TBM'].includes(val),
+        then: (schema) => schema.required('Remarks are required'),
+        otherwise: (schema) => schema.nullable(),
+      }),
+  });
 
   const handleClickOpen = () => {
     if (formValues.foreSight.trim() || formValues.backSight.trim()) {
@@ -260,6 +285,7 @@ const RoadSurveyRowsForm = () => {
       });
 
     setFormValues((prev) => ({ ...prev, intermediateOffsets: updatedRows }));
+    handleChangeReducedLevel(updatedRows);
   };
 
   const handleChangeAutoOffset = (e) => {
@@ -287,6 +313,8 @@ const RoadSurveyRowsForm = () => {
         ...prev,
         intermediateOffsets: updated,
       }));
+
+      handleChangeReducedLevel(updated);
     } else {
       setFormValues((prev) => ({
         ...prev,
@@ -327,82 +355,137 @@ const RoadSurveyRowsForm = () => {
   };
 
   const getNewChainage = (purpose) => {
-    if (purpose.type !== 'Initial Level') {
-      const initialSurvey = purpose?.surveyId?.purposes?.find(
-        (p) => p.type === 'Initial Level'
-      );
+    try {
+      if (purpose.type !== 'Initial Level') {
+        const initialSurvey = purpose?.surveyId?.purposes?.find(
+          (p) => p.type === 'Initial Level'
+        );
 
-      const currentReading = initialSurvey?.rows[purpose?.rows?.length + 1];
+        const isProposal = purpose.phase === 'Proposal';
+        let currentReading = null;
 
-      if (currentReading) {
-        const type = currentReading.type;
+        if (isProposal) {
+          if (purpose?.rows?.length) {
+            const prevChainage = purpose?.rows?.at(-1)?.chainage;
 
-        const updatedValues = {
-          type,
-          chainage: currentReading?.chainage || '',
-          roadWidth: currentReading?.roadWidth || '',
-          spacing: currentReading?.spacing || '',
-          backSight: currentReading?.backSight || '',
-          foreSight: currentReading?.foreSight || '',
-        };
+            const filteredInitialSurvey =
+              initialSurvey?.rows?.filter((r) => r.type === 'Chainage') ?? [];
 
-        if (type === 'Chainage') {
-          updatedValues.intermediateOffsets =
-            currentReading?.intermediateSight?.map((entry, idx) => ({
-              intermediateSight: entry,
-              offset: currentReading?.offsets[idx],
-            }));
-        } else if (type === 'TBM') {
-          updatedValues.intermediateSight =
-            currentReading?.intermediateSight || '';
+            const currentIndex = filteredInitialSurvey.findIndex(
+              (r) => r.chainage === prevChainage
+            );
+
+            if (currentIndex === -1) {
+              throw new Error('Previous chainage not found in initial survey');
+            }
+
+            const nextReading = filteredInitialSurvey[currentIndex + 1] || null;
+            const isLastReading =
+              currentIndex + 1 >= filteredInitialSurvey.length - 1;
+
+            if (isLastReading) setIsLastProposalReading(true);
+
+            if (!nextReading) {
+              throw new Error(
+                'Next chainage not found, returning to dashboard'
+              );
+            }
+
+            currentReading = nextReading;
+          } else {
+            currentReading = initialSurvey?.rows?.find(
+              (r) => r.type === 'Chainage'
+            );
+          }
+
+          updateSelectedCs(
+            purpose.surveyId,
+            currentReading?.chainage,
+            purpose.type
+          );
+        } else {
+          const nextIndex = purpose?.rows?.length ?? 0;
+          currentReading = initialSurvey?.rows?.[nextIndex] || null;
         }
 
-        setFormValues((prev) => ({
-          ...prev,
-          ...updatedValues,
-        }));
+        if (currentReading) {
+          const type = currentReading.type;
 
-        setRowType(type);
+          const updatedValues = {
+            type,
+            chainage: currentReading?.chainage || '',
+            roadWidth: currentReading?.roadWidth || '',
+            spacing: currentReading?.spacing || '',
+            backSight: currentReading?.backSight || '',
+            foreSight: currentReading?.foreSight || '',
+          };
 
-        const isLastReading =
-          purpose?.rows?.length >= initialSurvey?.rows?.length - 1;
+          if (!isProposal) {
+            if (type === 'Chainage') {
+              updatedValues.intermediateOffsets =
+                currentReading?.intermediateSight?.map((entry, idx) => ({
+                  intermediateSight: entry,
+                  offset: currentReading?.offsets[idx],
+                }));
+            } else if (type === 'TBM') {
+              updatedValues.intermediateSight =
+                currentReading?.intermediateSight || '';
+            }
+          }
 
-        setIsFinishSurveyDisabled(!isLastReading);
+          setFormValues((prev) => ({
+            ...prev,
+            ...updatedValues,
+          }));
+
+          setRowType(type);
+
+          const isLastReading =
+            purpose?.rows?.length >= initialSurvey?.rows?.length - 1;
+
+          setIsFinishSurveyDisabled(!isLastReading);
+        } else {
+          setRowType('CP');
+        }
       } else {
-        setRowType('CP');
+        const isFirstChainage = purpose?.rows?.find(
+          (r) => r.type === 'Chainage'
+        );
+
+        if (!isFirstChainage) {
+          setFormValues((prev) => ({
+            ...prev,
+            chainage: '0/000',
+          }));
+        } else {
+          let lastChainage = null;
+          purpose?.rows?.forEach((row) => {
+            if (row.type === 'Chainage') lastChainage = row.chainage;
+          });
+
+          const chainageMultiple = purpose?.surveyId?.chainageMultiple;
+          const lastDigit = Number(lastChainage.split('/')[1]);
+
+          const remainder = lastDigit % chainageMultiple;
+          const nextNumber =
+            remainder === 0
+              ? lastDigit + chainageMultiple
+              : lastDigit + (chainageMultiple - remainder);
+
+          const nextChainage = `0/${String(nextNumber).padStart(3, '0')}`;
+
+          setFormValues((prev) => ({
+            ...prev,
+            chainage: nextChainage,
+          }));
+
+          setIsFinishSurveyDisabled(false);
+        }
       }
-    } else {
-      const isFirstChainage = purpose?.rows?.find((r) => r.type === 'Chainage');
+    } catch (error) {
+      navigate('/');
 
-      if (!isFirstChainage) {
-        setFormValues((prev) => ({
-          ...prev,
-          chainage: '0/000',
-        }));
-      } else {
-        let lastChainage = null;
-        purpose?.rows?.forEach((row) => {
-          if (row.type === 'Chainage') lastChainage = row.chainage;
-        });
-
-        const chainageMultiple = purpose?.surveyId?.chainageMultiple;
-        const lastDigit = Number(lastChainage.split('/')[1]);
-
-        const remainder = lastDigit % chainageMultiple;
-        const nextNumber =
-          remainder === 0
-            ? lastDigit + chainageMultiple
-            : lastDigit + (chainageMultiple - remainder);
-
-        const nextChainage = `0/${String(nextNumber).padStart(3, '0')}`;
-
-        setFormValues((prev) => ({
-          ...prev,
-          chainage: nextChainage,
-        }));
-
-        setIsFinishSurveyDisabled(false);
-      }
+      handleFormError(error, null, dispatch, navigate);
     }
   };
 
@@ -410,18 +493,45 @@ const RoadSurveyRowsForm = () => {
     setBtnLoading(true);
     try {
       if (rowType === 'Chainage' && page === 0) {
-        const partialSchema = schema.pick(['chainage', 'roadWidth', 'spacing']);
+        const pickItems = ['chainage', 'roadWidth', 'spacing'];
+
+        const isProposal = purpose.phase === 'Proposal';
+
+        const partialSchema = schema.pick(pickItems);
         await partialSchema.validate(formValues, { abortEarly: false });
 
         if (formValues.intermediateOffsets?.length === 1) {
-          setFormValues((prev) => ({
-            ...prev,
-            intermediateOffsets: [
-              ...prev.intermediateOffsets,
-              { intermediateSight: '', offset: '' },
-              { intermediateSight: '', offset: '' },
-            ],
-          }));
+          if (isProposal) {
+            setFormValues((prev) => ({
+              ...prev,
+              intermediateOffsets: [
+                {
+                  reducedLevel: '',
+                  offset: '',
+                },
+                {
+                  reducedLevel: '',
+                  offset: '',
+                },
+                {
+                  reducedLevel: '',
+                  offset: '',
+                },
+              ],
+            }));
+          } else {
+            setFormValues((prev) => ({
+              ...prev,
+              intermediateOffsets: [
+                ...prev.intermediateOffsets,
+                {
+                  intermediateSight: '',
+                  offset: '',
+                },
+                { intermediateSight: '', offset: '' },
+              ],
+            }));
+          }
         }
 
         setBtnLoading(false);
@@ -439,22 +549,38 @@ const RoadSurveyRowsForm = () => {
 
         payload = {
           ...formValues,
-          intermediateSight: sortedOffsets.map((r) => r.intermediateSight),
+          reducedLevels:
+            purpose.phase !== 'Proposal'
+              ? []
+              : sortedOffsets.map((r) => r.reducedLevel),
+          intermediateSight:
+            purpose.phase === 'Proposal'
+              ? []
+              : sortedOffsets.map((r) => r.intermediateSight),
           offsets: sortedOffsets.map((r) => r.offset),
         };
       } else {
-        payload = { ...formValues };
+        payload = { ...formValues, chainage: null };
       }
 
       const { data } = await createSurveyRow(id, payload);
 
       if (data.success) {
+        const message = isLastProposalReading
+          ? `Proposal Ended Successfully`
+          : `${rowType} Added Successfully`;
+
         dispatch(
           showAlert({
             type: 'success',
-            message: `${rowType} Added Successfully`,
+            message,
           })
         );
+
+        if (isLastProposalReading) {
+          navigate('/survey/purpose');
+          return;
+        }
 
         const updatedPurpose = {
           ...purpose,
@@ -473,6 +599,10 @@ const RoadSurveyRowsForm = () => {
           setAutoOffset(false);
         }
 
+        if (purpose.type === 'Initial Level' && rowType === 'TBM') {
+          setRowType('Chainage');
+        }
+
         setPurpose(updatedPurpose);
       } else {
         throw new Error('Something went wrong.');
@@ -486,23 +616,25 @@ const RoadSurveyRowsForm = () => {
 
   const handleEndSurveyPurpose = async () => {
     try {
-      let finalOffset = null;
+      let finalForesight = null;
 
       if (purpose.type === 'Initial Level') {
-        const inpFinalOffset = document.getElementById('finalOffset');
+        const inpFinalForesight = document.getElementById('finalForesight');
 
-        if (!inpFinalOffset?.value?.trim()) {
-          inpFinalOffset.parentElement.parentElement.classList.add('inp-err');
+        if (!inpFinalForesight?.value?.trim()) {
+          inpFinalForesight.parentElement.parentElement.classList.add(
+            'inp-err'
+          );
         } else {
-          inpFinalOffset.parentElement.parentElement.classList.remove(
+          inpFinalForesight.parentElement.parentElement.classList.remove(
             'inp-err'
           );
 
-          finalOffset = inpFinalOffset.value;
+          finalForesight = inpFinalForesight.value;
         }
       }
 
-      const { data } = await endSurveyPurpose(id, finalOffset);
+      const { data } = await endSurveyPurpose(id, finalForesight);
 
       if (data.success) {
         dispatch(
@@ -528,9 +660,84 @@ const RoadSurveyRowsForm = () => {
     }
   };
 
+  const handleChangeReducedLevel = (values) => {
+    if (!selectedCs?.series?.[0]?.data) return;
+
+    // Create deep copies of what you mutate
+    const newSeries = selectedCs.series.map((s, i) => {
+      if (i === 0) {
+        const proposalRL = [];
+
+        const updatedData = s.data.map(([x]) => {
+          const matched = values.find((e) => Number(e.offset) === Number(x));
+          const rl = matched ? Number(matched.reducedLevel)?.toFixed(3) : null;
+          proposalRL.push(rl);
+
+          return [Number(x), rl];
+        });
+
+        return { ...s, data: updatedData, proposalRL };
+      }
+
+      return s;
+    });
+
+    const updated = {
+      ...selectedCs,
+      series: newSeries,
+      proposal: newSeries[0].proposalRL,
+      // change id to force Chart remount
+      id: `${selectedCs.id}-r${Date.now()}`,
+    };
+
+    setSelectedCs(updated);
+  };
+
+  const updateSelectedCs = (surveyWithoutRl, chainage, type) => {
+    const survey = calculateReducedLevel(surveyWithoutRl);
+
+    const initialLevel = survey.purposes?.find(
+      (p) => p.type === 'Initial Level'
+    );
+
+    const row = initialLevel.rows?.find(
+      (row) => row.type === 'Chainage' && row.chainage === chainage
+    );
+    if (!row) return;
+
+    const safeOffsets = row.offsets || [];
+    const safeInitial = row.reducedLevels || [];
+
+    const data = {
+      id: id,
+      datum: 9.4,
+      initial: safeInitial,
+      offsets: safeOffsets,
+      proposal: [],
+      chainage,
+      series: [],
+    };
+
+    data.series.push({
+      name: type,
+      data: safeOffsets.map((x, i) => [Number(x), null]),
+    });
+
+    data.series.push({
+      name: 'Initial Level',
+      data: safeOffsets.map((x, i) => [Number(x), Number(safeInitial[i])]),
+    });
+
+    setSelectedCs(data);
+  };
+
   useEffect(() => {
-    updateInputData();
-  }, [rowType]);
+    if (didMount.current) {
+      updateInputData();
+    } else {
+      didMount.current = true;
+    }
+  }, [rowType, purpose]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -575,12 +782,12 @@ const RoadSurveyRowsForm = () => {
               }}
             >
               <BasicTextFields
-                name={'finalOffset'}
+                name={'finalForesight'}
                 type="number"
-                label={'Final Offset*'}
+                label={'Final Foresight*'}
                 variant="filled"
                 sx={{ width: '100%' }}
-                id="finalOffset"
+                id="finalForesight"
               />
             </Box>
           )
@@ -607,25 +814,35 @@ const RoadSurveyRowsForm = () => {
         </Box>
       )}
       <Stack alignItems={'center'} spacing={5}>
-        <Stack>
+        {selectedCs && selectedCs?.series && (
+          <CrossSectionChart
+            selectedCs={selectedCs}
+            chartOptions={chartOptions}
+          />
+        )}
+
+        <Stack spacing={2}>
           {purpose?.type === 'Initial Level' && page === 0 && (
             <Stack direction={'row'} justifyContent={'end'} gap={2}>
               {rowType !== 'Chainage' && (
-                <ButtonLink
-                  label={'Add Chainage'}
+                <BasicButtons
+                  value={'Add Chainage'}
                   onClick={() => handleChangeRowType('Chainage')}
+                  sx={{ backgroundColor: '#0059E7' }}
                 />
               )}
               {rowType !== 'CP' && (
-                <ButtonLink
-                  label={'Add CP'}
+                <BasicButtons
+                  value={'Add CP'}
                   onClick={() => handleChangeRowType('CP')}
+                  sx={{ backgroundColor: '#0059E7' }}
                 />
               )}
               {rowType !== 'TBM' && (
-                <ButtonLink
-                  label={'Add TBM'}
+                <BasicButtons
+                  value={'Add TBM'}
                   onClick={() => handleChangeRowType('TBM')}
+                  sx={{ backgroundColor: '#0059E7' }}
                 />
               )}
             </Stack>
@@ -663,11 +880,10 @@ const RoadSurveyRowsForm = () => {
                       width: '100%',
                     }}
                   >
-                    <BasicTextFields
+                    <BasicInput
                       {...input}
                       value={formValues[input.name] || ''}
                       error={(formErrors && formErrors[input.name]) || ''}
-                      variant="filled"
                       sx={{ width: '100%' }}
                       onChange={(e) => handleInputChange(e)}
                     />
@@ -696,7 +912,7 @@ const RoadSurveyRowsForm = () => {
                     <Stack
                       key={idx}
                       direction={'row'}
-                      alignItems={'center'}
+                      alignItems={'end'}
                       spacing={1}
                     >
                       <Stack
@@ -706,68 +922,53 @@ const RoadSurveyRowsForm = () => {
                         spacing={1}
                         width={'100%'}
                       >
-                        <Box
-                          sx={{
-                            '& .MuiOutlinedInput-root, & .MuiFilledInput-root':
-                              {
-                                borderRadius: '15px',
-                              },
-                            width: '100%',
-                          }}
-                        >
-                          <BasicTextFields
+                        {purpose.phase === 'Proposal' ? (
+                          <BasicInput
+                            label="Reduced Level"
+                            type="number"
+                            name="intermediateOffsets"
+                            value={row.reducedLevel || ''}
+                            error={
+                              formErrors &&
+                              formErrors[
+                                `intermediateOffsets[${idx}].reducedLevel`
+                              ]
+                            }
+                            sx={{ width: '100%' }}
+                            onChange={(e) =>
+                              handleInputChange(e, idx, 'reducedLevel')
+                            }
+                          />
+                        ) : (
+                          <BasicInput
                             label="Intermediate Sight"
                             type="number"
                             name="intermediateOffsets"
-                            value={row.intermediateSight}
-                            onChange={(e) =>
-                              handleInputChange(e, idx, 'intermediateSight')
-                            }
+                            value={row.intermediateSight || ''}
                             error={
                               formErrors &&
                               formErrors[
                                 `intermediateOffsets[${idx}].intermediateSight`
                               ]
                             }
-                            variant="filled"
                             sx={{ width: '100%' }}
-                          />
-                        </Box>
-
-                        <Box
-                          sx={{
-                            '& .MuiOutlinedInput-root, & .MuiFilledInput-root':
-                              {
-                                borderRadius: '15px',
-                              },
-                            width: '100%',
-                          }}
-                        >
-                          <BasicTextFields
-                            label="Offset"
-                            type="number"
-                            name="intermediateOffsets"
-                            value={row.offset}
                             onChange={(e) =>
-                              handleInputChange(e, idx, 'offset')
+                              handleInputChange(e, idx, 'intermediateSight')
                             }
-                            error={
-                              formErrors &&
-                              formErrors[`intermediateOffsets[${idx}].offset`]
-                            }
-                            variant="filled"
-                            sx={{ width: '100%' }}
-                            slotProps={{
-                              input: {
-                                endAdornment: (
-                                  <InputAdornment position="end">
-                                    mtr
-                                  </InputAdornment>
-                                ),
-                              },
-                            }}
                           />
-                        </Box>
+                        )}
+
+                        <BasicInput
+                          label="Offset"
+                          type="number"
+                          name="intermediateOffsets"
+                          value={row.offset}
+                          onChange={(e) => handleInputChange(e, idx, 'offset')}
+                          error={
+                            formErrors &&
+                            formErrors[`intermediateOffsets[${idx}].offset`]
+                          }
+                        />
                       </Stack>
 
                       <Box>
@@ -815,8 +1016,16 @@ const RoadSurveyRowsForm = () => {
         <Box px={'24px'} width={'100%'} maxWidth={'md'}>
           <Stack direction={'row'} spacing={2}>
             <BasicButtons
-              value={'Continue'}
-              sx={{ backgroundColor: '#0059E7', height: '45px' }}
+              value={
+                isLastProposalReading && page === 1
+                  ? 'Finish Proposal'
+                  : 'Continue'
+              }
+              sx={{
+                backgroundColor:
+                  isLastProposalReading && page === 1 ? '#4caf50' : '#0059E7',
+                height: '45px',
+              }}
               fullWidth={true}
               onClick={handleSubmit}
               loading={btnLoading}

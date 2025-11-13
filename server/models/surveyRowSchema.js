@@ -9,8 +9,13 @@ const SurveyRowSchema = new Schema(
       required: true,
       index: true,
     },
-    type: { type: String, enum: ['Instrument setup', 'Chainage', 'TBM', 'CP'], required: true },
+    type: {
+      type: String,
+      enum: ['Instrument setup', 'Chainage', 'TBM', 'CP'],
+      required: true,
+    },
     backSight: String,
+    reducedLevels: [String],
     intermediateSight: [String],
     foreSight: String,
     chainage: String,
@@ -24,3 +29,4 @@ const SurveyRowSchema = new Schema(
 );
 
 export default model('SurveyRow', SurveyRowSchema);
+//Survey Reading

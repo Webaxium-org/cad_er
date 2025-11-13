@@ -1,14 +1,8 @@
 import * as Yup from 'yup';
 import { Box, Grid, InputAdornment, Stack, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MdArrowBackIosNew } from 'react-icons/md';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  createSurvey,
-  createSurveyPurpose,
-  getSurvey,
-} from '../../services/surveyServices';
-import BasicTextFields from '../../components/BasicTextFields';
 import BasicButtons from '../../components/BasicButton';
 import { useDispatch, useSelector } from 'react-redux';
 import { handleFormError } from '../../utils/handleFormError';
@@ -17,6 +11,12 @@ import { showAlert } from '../../redux/alertSlice';
 import BasicSelect from '../../components/BasicSelect';
 import { purposeLevels, proposalLevels } from '../../constants';
 import BasicCheckbox from '../../components/BasicCheckbox';
+import BasicInput from '../../components/BasicInput';
+import {
+  createSurvey,
+  createSurveyPurpose,
+  getSurvey,
+} from '../../services/surveyServices';
 
 const inputDetails = [
   {
@@ -39,6 +39,13 @@ const inputDetails = [
     options: proposalLevels?.map((p) => ({ label: p, value: p })),
     for: 'Proposed Level',
     size: 6,
+    hidden: true,
+  },
+  {
+    label: 'Proposed Level*',
+    name: 'proposedLevel',
+    type: 'number',
+    for: 'Proposed Level',
     hidden: true,
   },
   {
@@ -90,6 +97,13 @@ const inputDetails = [
     size: 6,
   },
   {
+    label: 'Slop',
+    name: 'crossSectionType',
+    mode: 'checkbox',
+    hidden: true,
+    for: 'Proposed Level',
+  },
+  {
     label: '',
     name: 'cSection',
     type: 'number',
@@ -106,8 +120,8 @@ const inputDetails = [
     size: 6,
   },
   {
-    label: 'Cross section lamper',
-    name: 'csLamper',
+    label: 'Cross section camper',
+    name: 'csCamper',
     type: 'text',
     hidden: true,
     for: 'Proposed Level',
@@ -127,7 +141,7 @@ const initialFormValues = {
   lsSlop: '',
   cSection: '',
   csSlop: '',
-  csLamper: '',
+  csCamper: '',
 };
 
 const RoadSurveyForm = () => {
@@ -137,13 +151,17 @@ const RoadSurveyForm = () => {
 
   const dispatch = useDispatch();
 
+  const didMount = useRef(false);
+
   const { global } = useSelector((state) => state.loading);
 
   const [inputData, setInputData] = useState(inputDetails);
 
-  const [survey, setSurvey] = useState(false);
+  const [survey, setSurvey] = useState(null);
 
   const [type, setType] = useState(false);
+
+  const [crossSection, setCrossSection] = useState('slop');
 
   const [formValues, setFormValues] = useState(initialFormValues);
 
@@ -157,6 +175,12 @@ const RoadSurveyForm = () => {
 
     proposal: type
       ? Yup.string().required('Proposal is required')
+      : Yup.string().nullable(),
+
+    proposedLevel: type
+      ? Yup.number()
+          .typeError('Proposed Level is required')
+          .required('Proposed Level is required')
       : Yup.string().nullable(),
 
     instrumentNo: !id
@@ -195,23 +219,26 @@ const RoadSurveyForm = () => {
           .typeError('Longitudinal section slop is required')
           .required('Longitudinal section slop is required')
       : Yup.string().nullable(),
-    cSection: type
-      ? Yup.number()
-          .typeError('Cross section slop is required')
-          .required('Cross section slop is required')
-      : Yup.string().nullable(),
+    cSection:
+      type && crossSection === 'slop'
+        ? Yup.number()
+            .typeError('Cross section slop is required')
+            .required('Cross section slop is required')
+        : Yup.string().nullable(),
 
-    csSlop: type
-      ? Yup.number()
-          .typeError('Cross section slop is required')
-          .required('Cross section slop is required')
-      : Yup.string().nullable(),
-    csLamper: type
-      ? Yup.string().required('Cross section lamper is required')
-      : Yup.string().nullable(),
+    csSlop:
+      type && crossSection === 'slop'
+        ? Yup.number()
+            .typeError('Cross section slop is required')
+            .required('Cross section slop is required')
+        : Yup.string().nullable(),
+    csCamper:
+      type && crossSection === 'camper'
+        ? Yup.string().required('Cross section camper is required')
+        : Yup.string().nullable(),
   });
 
-  const handleGoBack = () => navigate('/');
+  const handleGoBack = () => navigate(-1);
 
   const handleInputChange = async (event) => {
     const { name, value } = event.target;
@@ -280,7 +307,10 @@ const RoadSurveyForm = () => {
 
       const completedLevels = surveyDoc?.purposes?.map((p) => p.type) || [];
 
-      updateInputData(completedLevels);
+      const lastPhase =
+        surveyDoc.purposes[surveyDoc.purposes?.length - 1]?.phase;
+
+      updateInputData(completedLevels, lastPhase);
 
       setFormValues(updatedFormValues);
       setSurvey(surveyDoc);
@@ -291,7 +321,7 @@ const RoadSurveyForm = () => {
     }
   };
 
-  const updateInputData = (completedLevels) => {
+  const updateInputData = (completedLevels, lastPhase) => {
     setInputData(
       !id
         ? [...inputDetails]
@@ -303,7 +333,10 @@ const RoadSurveyForm = () => {
                     ...e,
                     hidden: false,
                     options: type
-                      ? purposeLevels.map((p) => ({ label: p, value: p }))
+                      ? [
+                          ...purposeLevels,
+                          ...(lastPhase === 'Proposal' ? purposeLevels : []),
+                        ].map((p) => ({ label: p, value: p }))
                       : purposeLevels
                           ?.filter((p) => !completedLevels.includes(p))
                           .map((p) => ({ label: p, value: p })),
@@ -318,6 +351,14 @@ const RoadSurveyForm = () => {
               }
 
               if (type && e.for === 'Proposed Level') {
+                if (e.name === 'cSection' || e.name === 'csSlop') {
+                  return { ...e, hidden: crossSection === 'camper' };
+                }
+
+                if (e.name === 'csCamper') {
+                  return { ...e, hidden: crossSection === 'slop' };
+                }
+
                 return { ...e, hidden: false };
               }
 
@@ -331,10 +372,16 @@ const RoadSurveyForm = () => {
   };
 
   useEffect(() => {
-    const completedLevels = survey?.purposes?.map((p) => p.type) || [];
+    if (didMount.current) {
+      const completedLevels = survey?.purposes?.map((p) => p.type) || [];
 
-    updateInputData(completedLevels);
-  }, [type]);
+      const lastPhase = survey?.purposes[survey.purposes?.length - 1]?.phase;
+
+      updateInputData(completedLevels, lastPhase);
+    } else {
+      didMount.current = true;
+    }
+  }, [type, crossSection]);
 
   useEffect(() => {
     if (id) {
@@ -376,7 +423,14 @@ const RoadSurveyForm = () => {
         <Stack width={'100%'} spacing={3} className="input-wrapper">
           {id && (
             <Box display={'flex'} alignItems={'center'} justifyContent={'end'}>
-              <Typography fontSize={'16px'} fontWeight={400} color="#434343">
+              <Typography
+                variant="body2"
+                sx={{
+                  mb: 0.5,
+                  fontWeight: 500,
+                  color: 'text.secondary',
+                }}
+              >
                 Proposal
               </Typography>
               <BasicCheckbox
@@ -388,12 +442,11 @@ const RoadSurveyForm = () => {
 
           <Grid container spacing={3} columns={12} alignItems={'end'}>
             {inputData.map(
-              (input, index) =>
-                !input.hidden && (
+              ({ hidden, for: inputFor, mode, size, ...input }, index) =>
+                !hidden && (
                   <Grid
                     size={{
-                      xs: 12,
-                      sm: input.size || 12,
+                      xs: size || 12,
                     }}
                     key={index}
                   >
@@ -401,9 +454,12 @@ const RoadSurveyForm = () => {
                       input.name === 'lSection' ||
                       input.name === 'cSection') && (
                       <Typography
-                        fontSize={'16px'}
-                        fontWeight={400}
-                        color="#434343"
+                        variant="body2"
+                        sx={{
+                          mb: 0.5,
+                          fontWeight: 500,
+                          color: 'text.secondary',
+                        }}
                       >
                         {input.name === 'purpose'
                           ? 'Proposal Between'
@@ -413,53 +469,59 @@ const RoadSurveyForm = () => {
                         :
                       </Typography>
                     )}
-                    <Box
-                      sx={{
-                        '& .MuiOutlinedInput-root, & .MuiFilledInput-root': {
-                          borderRadius: '15px',
-                        },
-                        width: '100%',
-                      }}
-                    >
-                      {input?.mode === 'select' ? (
-                        <BasicSelect
-                          {...input}
-                          value={formValues[input.name] || ''}
-                          error={(formErrors && formErrors[input.name]) || ''}
-                          variant={'filled'}
-                          sx={{ width: '100%' }}
-                          onChange={(e) => handleInputChange(e)}
-                        />
-                      ) : (
-                        <BasicTextFields
-                          {...input}
-                          value={formValues[input.name] || ''}
-                          error={(formErrors && formErrors[input.name]) || ''}
-                          variant={'filled'}
-                          sx={{ width: '100%' }}
-                          onChange={(e) => handleInputChange(e)}
-                          slotProps={
-                            (input.name === 'lSection' ||
-                              input.name === 'cSection') && {
-                              input: {
-                                endAdornment: (
-                                  <InputAdornment
-                                    position="end"
-                                    sx={{
-                                      '& .MuiTypography-body1': {
-                                        fontWeight: 900,
-                                      },
-                                    }}
-                                  >
-                                    :
-                                  </InputAdornment>
-                                ),
-                              },
-                            }
-                          }
-                        />
-                      )}
-                    </Box>
+
+                    {mode === 'select' ? (
+                      <BasicSelect
+                        {...input}
+                        value={formValues[input.name] || ''}
+                        error={(formErrors && formErrors[input.name]) || ''}
+                        sx={{ width: '100%' }}
+                        onChange={(e) => handleInputChange(e)}
+                      />
+                    ) : mode === 'checkbox' ? (
+                      <Stack direction={'row'}>
+                        <Box display={'flex'} alignItems={'center'}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              mb: 0.5,
+                              fontWeight: 500,
+                              color: 'text.secondary',
+                            }}
+                          >
+                            Slop
+                          </Typography>
+                          <BasicCheckbox
+                            checked={crossSection === 'slop'}
+                            onChange={() => setCrossSection('slop')}
+                          />
+                        </Box>
+                        <Box display={'flex'} alignItems={'center'}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              mb: 0.5,
+                              fontWeight: 500,
+                              color: 'text.secondary',
+                            }}
+                          >
+                            Camper
+                          </Typography>
+                          <BasicCheckbox
+                            checked={crossSection === 'camper'}
+                            onChange={() => setCrossSection('camper')}
+                          />
+                        </Box>
+                      </Stack>
+                    ) : (
+                      <BasicInput
+                        {...input}
+                        value={formValues[input.name] || ''}
+                        error={(formErrors && formErrors[input.name]) || ''}
+                        sx={{ width: '100%' }}
+                        onChange={(e) => handleInputChange(e)}
+                      />
+                    )}
                   </Grid>
                 )
             )}

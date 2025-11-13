@@ -1,17 +1,11 @@
-import {
-  Box,
-  Typography,
-  Select,
-  MenuItem,
-  FormHelperText,
-} from '@mui/material';
+import { Input, Box, Typography } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 
-const StyledSelect = styled(Select)(({ theme }) => ({
+const StyledInput = styled(Input)(({ theme }) => ({
   width: '100%',
   borderRadius: '10px',
   padding: '10px 14px',
-  // border: `1px solid ${theme.palette.divider}`,
+  border: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f9f9fb',
   color: theme.palette.text.primary,
   fontSize: '0.95rem',
@@ -45,26 +39,20 @@ const StyledSelect = styled(Select)(({ theme }) => ({
     },
   },
 
-  '& .MuiSelect-select': {
+  '& input': {
     padding: 0,
-    paddingRight: '32px !important',
   },
 }));
 
-const BasicSelect = ({
+const BasicInput = ({
   label,
   error = '',
   helperText = '',
-  value,
-  defaultValue,
-  onChange,
-  options = [],
   sx = {},
-  placeholder = 'Select...',
   ...props
 }) => {
   return (
-    <Box sx={{ width: '100%', ...sx }}>
+    <Box sx={{ width: '100%' }}>
       {label && (
         <Typography
           variant="body2"
@@ -77,32 +65,33 @@ const BasicSelect = ({
           {label}
         </Typography>
       )}
-
-      <StyledSelect
-        value={value || ''}
-        onChange={onChange}
-        error={Boolean(error)}
-        displayEmpty
+      <StyledInput
         disableUnderline
+        error={Boolean(error)}
         {...props}
-      >
-        <MenuItem value="" disabled>
-          {placeholder}
-        </MenuItem>
-        {options.map((option, index) => (
-          <MenuItem key={index} value={option.value || option}>
-            {option.label || option}
-          </MenuItem>
-        ))}
-      </StyledSelect>
-
-      {(helperText || error) && (
-        <FormHelperText sx={{ ml: 1, mt: 0.5 }} error={Boolean(error)}>
+        sx={{
+          ...sx,
+          '& input[type=number]': {
+            MozAppearance: 'textfield',
+          },
+          '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button':
+            {
+              WebkitAppearance: 'none',
+              margin: 0,
+            },
+        }}
+      />
+      {helperText || error ? (
+        <Typography
+          variant="caption"
+          color={error ? 'error' : 'text.secondary'}
+          sx={{ mt: 0.5, ml: 1, display: 'block' }}
+        >
           {error || helperText}
-        </FormHelperText>
-      )}
+        </Typography>
+      ) : null}
     </Box>
   );
 };
 
-export default BasicSelect;
+export default BasicInput;

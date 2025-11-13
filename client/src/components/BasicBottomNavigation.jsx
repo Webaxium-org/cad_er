@@ -65,7 +65,7 @@ export default function BasicBottomNavigation() {
     const activeNav = navItems?.find((item) => item.path === pathname);
 
     if (activeNav) setValue(activeNav.label);
-  }, []);
+  }, [pathname]);
 
   return (
     <>
@@ -80,6 +80,7 @@ export default function BasicBottomNavigation() {
         bottom={0}
         left={0}
         right={0}
+        zIndex={1}
         sx={{
           backgroundColor: '#fff',
           borderTop: '1px solid #eee',

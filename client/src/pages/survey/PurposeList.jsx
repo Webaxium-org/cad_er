@@ -76,7 +76,10 @@ export default function PurposeList() {
           Survey List
         </Typography>
 
-        <ButtonLink label={'Project List'} onClick={() => navigate('/survey')} />
+        <ButtonLink
+          label={'Project List'}
+          onClick={() => navigate('/survey')}
+        />
       </Stack>
 
       <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
@@ -90,6 +93,7 @@ export default function PurposeList() {
               <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Created</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Report</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Field Book</TableCell>
               <TableCell sx={{ fontWeight: 700 }} align="right">
                 Actions
               </TableCell>
@@ -125,17 +129,25 @@ export default function PurposeList() {
                     <FaEye />
                   </IconButton>
                 </TableCell>
+                <TableCell>
+                  {purpose.type === 'Initial Level' &&
+                  purpose.isPurposeFinish ? (
+                    <IconButton
+                      color="primary"
+                      onClick={() =>
+                        navigate(
+                          `/survey/road-survey/${purpose?._id}/field-book`
+                        )
+                      }
+                    >
+                      <FaEye />
+                    </IconButton>
+                  ) : (
+                    'N/A'
+                  )}
+                </TableCell>
 
                 <TableCell align="right">
-                  <IconButton
-                    color="primary"
-                    onClick={() =>
-                      navigate(`/survey/road-survey/${purpose?._id}/field-book`)
-                    }
-                  >
-                    <FaEye />
-                  </IconButton>
-
                   {!purpose.isPurposeFinish && (
                     <IconButton
                       color="error"

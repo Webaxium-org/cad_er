@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Stack, Box, Typography, Grid, Paper, Avatar } from '@mui/material';
 import { IoNotificationsOutline, IoAddCircleOutline } from 'react-icons/io5';
 import { RiSurveyLine } from 'react-icons/ri';
@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { stopLoading } from '../../redux/loadingSlice';
 import { useNavigate } from 'react-router-dom';
 import BasicTextFields from '../../components/BasicTextFields';
+import BasicInput from '../../components/BasicInput';
 
 const actions = [
   { label: 'Projects', icon: <GoProject size={24} />, link: '/survey' },
@@ -145,7 +146,7 @@ const Home = () => {
       </Box>
 
       {/* 🎁 Promo Banner */}
-      <Box px={2}>
+      {/* <Box px={2}>
         <Paper
           sx={{
             mt: 3,
@@ -163,7 +164,32 @@ const Home = () => {
             Get discount for every top up transaction
           </Typography>
         </Paper>
-      </Box>
+      </Box> */}
+
+      {/* <Box px={10}>
+        <BasicInput
+          label="Email"
+          placeholder="Enter your email"
+          value={''}
+          onChange={() => {}}
+          error={'error !!'}
+          helperText="We'll never share your email."
+        />
+        <BasicInput
+          label="Email"
+          placeholder="Enter your email"
+          value={''}
+          onChange={() => {}}
+          helperText="We'll never share your email."
+        />
+        <BasicInput
+          label="Email"
+          placeholder="Enter your email"
+          value={''}
+          onChange={() => {}}
+          helperText="We'll never share your email."
+        />
+      </Box> */}
     </Stack>
   );
 };

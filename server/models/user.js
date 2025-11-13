@@ -26,7 +26,6 @@ const UserSchema = new Schema(
     },
     phone: {
       type: String,
-      unique: [true, 'This Contact Number Is Already In Use'],
       minlength: 7,
       trim: true,
     },

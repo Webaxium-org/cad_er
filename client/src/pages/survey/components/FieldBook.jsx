@@ -59,8 +59,6 @@ export default function FieldBook() {
     let rl = 0; // Reduced Level
     const rows = [];
 
-    const firstChainage = purpose?.rows?.find((r) => r.type === 'Chainage');
-
     for (const row of purpose.rows) {
       switch (row.type) {
         case 'Instrument setup':
@@ -130,19 +128,29 @@ export default function FieldBook() {
       }
     }
 
-    const finalForeSight = (
-      Number(rows[rows.length - 1].HI) - Number(survey.reducedLevel)
-    )?.toFixed(3);
+    const finalForeSight =
+      Number(rows[rows.length - 1].HI) - Number(survey.reducedLevel);
+
+    const finalRl = Number(rows[rows.length - 1].HI) - finalForeSight;
+
+    const diff = finalRl - Number(survey.reducedLevel);
 
     rows.push({
       CH: '',
       BS: '',
       IS: '',
-      FS: finalForeSight,
+      FS: finalForeSight?.toFixed(3),
       HI: '',
-      RL: Number(survey.reducedLevel)?.toFixed(3),
+      RL: Number(finalRl)?.toFixed(3),
       Offset: '',
-      Remarks: `Closed on Starting TBM at CH:${firstChainage?.chainage}`,
+      diff,
+      Remarks: `Closed on Starting TBM at ${
+        diff === 0
+          ? '±0.000'
+          : diff < 0
+          ? `${diff?.toFixed(3)}`
+          : `+${diff?.toFixed(3)}`
+      }`,
     });
 
     return rows;
@@ -215,8 +223,16 @@ export default function FieldBook() {
         data.Remarks,
       ]);
 
-      row.eachCell((cell) => {
+      row.eachCell((cell, colNumber) => {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        if (colNumber === 8) {
+          if (data.diff !== undefined && data.diff !== null) {
+            cell.font = {
+              color: { argb: data.diff === 0 ? 'FF008000' : 'FFFF0000' }, // Green if 0, Red otherwise
+            };
+          }
+        }
       });
     });
 
@@ -233,7 +249,7 @@ export default function FieldBook() {
   };
 
   if (!purpose) {
-    return <Typography p={2}>Loading purpose details...</Typography>;
+    return <Typography p={2}>Loading survey details...</Typography>;
   }
 
   return (
@@ -251,7 +267,7 @@ export default function FieldBook() {
             cursor: 'pointer',
             mb: '24px',
           }}
-          onClick={() => navigate('/')}
+          onClick={() => navigate(-1)}
         >
           <MdArrowBackIosNew />
         </Box>
@@ -303,7 +319,19 @@ export default function FieldBook() {
                 <TableCell align="right">{row.HI}</TableCell>
                 <TableCell align="right">{row.RL}</TableCell>
                 <TableCell align="right">{row.Offset}</TableCell>
-                <TableCell align="right">{row.Remarks}</TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color:
+                      row.diff !== undefined && row.diff !== null
+                        ? row.diff === 0
+                          ? 'green'
+                          : 'red'
+                        : '',
+                  }}
+                >
+                  {row.Remarks}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

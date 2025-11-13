@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 const checkSurveyExists = async (req, res, next) => {
   try {
     const survey = await Survey.findOne({ isSurveyFinish: false });
-console.log("haii")
+    console.log('haii');
     res.status(200).json({
       success: true,
       message: `${survey ? 'Active survey found' : 'No active survey found'}`,
@@ -222,6 +222,7 @@ const createSurveyRow = async (req, res, next) => {
         roadWidth,
         spacing,
         offsets,
+        reducedLevels,
       },
     } = req;
 
@@ -231,7 +232,16 @@ const createSurveyRow = async (req, res, next) => {
       _id: id,
       deleted: false,
     })
-      .populate('surveyId')
+      .populate({
+        path: 'surveyId',
+        populate: {
+          path: 'purposes',
+          populate: {
+            path: 'rows',
+          },
+        },
+      })
+      .populate('rows')
       .session(session);
 
     if (!purpose) throw createHttpError(404, 'Purpose not found');
@@ -244,18 +254,17 @@ const createSurveyRow = async (req, res, next) => {
     if (!survey || survey.deleted)
       throw createHttpError(404, 'Survey not found or has been deleted');
 
+    const isProposal = purpose.phase === 'Proposal';
+    let isLastReading = false;
+
     // 🔹 Validate type and required fields (same as before)
     const types = {
-      Chainage: [
-        'chainage',
-        'roadWidth',
-        'spacing',
-        'intermediateSight',
-        'offsets',
-      ],
+      Chainage: ['chainage', 'roadWidth', 'spacing', 'offsets'],
       CP: ['foreSight', 'backSight'],
       TBM: ['intermediateSight'],
     };
+
+    types['Chainage'].push(isProposal ? 'reducedLevels' : 'intermediateSight');
 
     if (!type || !Object.keys(types).includes(type))
       throw createHttpError(400, `Invalid or missing row type: ${type}`);
@@ -282,17 +291,42 @@ const createSurveyRow = async (req, res, next) => {
       remarks.push(type);
     }
 
+    if (isProposal) {
+      const initialSurvey = survey.purposes?.find(
+        (p) => p.type === 'Initial Level'
+      );
+
+      const filteredInitialSurvey =
+        initialSurvey?.rows?.filter((entry) => entry.type === 'Chainage') || [];
+
+      const totalReadings = filteredInitialSurvey.length;
+      const currentIndex = filteredInitialSurvey.findIndex(
+        (entry) => entry.chainage === chainage
+      );
+
+      if (currentIndex === -1) {
+        throw new Error(`Chainage "${chainage}" not found in initial survey`);
+      }
+
+      if (currentIndex === totalReadings - 1) {
+        isLastReading = true;
+      }
+    }
+
     // 🔹 Create new SurveyRow
     const [newRow] = await SurveyRow.create(
       [
         {
           purposeId: purpose._id,
           type,
-          chainage,
-          spacing,
+          chainage: type === 'Chainage' ? chainage : undefined,
+          spacing: type === 'Chainage' ? spacing : undefined,
           roadWidth: roadWidth ? Number(roadWidth).toFixed(3) : undefined,
           backSight: backSight ? Number(backSight).toFixed(3) : undefined,
           foreSight: foreSight ? Number(foreSight).toFixed(3) : undefined,
+          reducedLevels: isProposal
+            ? (reducedLevels || []).map((n) => Number(n).toFixed(3))
+            : [],
           intermediateSight:
             type === 'Chainage'
               ? (intermediateSight || []).map((n) => Number(n).toFixed(3))
@@ -303,6 +337,13 @@ const createSurveyRow = async (req, res, next) => {
       ],
       { session }
     );
+
+    if (isLastReading) {
+      purpose.isPurposeFinish = true;
+      purpose.purposeFinishDate = new Date();
+
+      await purpose.save({ session });
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -379,12 +420,13 @@ const createSurveyPurpose = async (req, res, next) => {
       body: {
         purpose,
         proposal,
+        proposedLevel,
         averageHeight,
         lSection,
         lsSlop,
         cSection,
         csSlop,
-        csLamper,
+        csCamper,
       },
     } = req;
 
@@ -394,14 +436,39 @@ const createSurveyPurpose = async (req, res, next) => {
     }
 
     // 🔹 Proposal field validation (if proposal mode)
-    if (
-      proposal &&
-      [averageHeight, lSection, lsSlop, cSection, csSlop, csLamper].some(
+    if (proposal) {
+      const requiredFields = [proposedLevel, averageHeight, lSection, lsSlop];
+
+      // Check if any of the always-required fields are missing
+      const missingRequired = requiredFields.some(
         (field) => field === undefined || field === null || field === ''
-      )
-    ) {
-      throw createHttpError(400, 'Missing required fields for proposal');
+      );
+
+      if (missingRequired) {
+        throw createHttpError(400, 'Missing required fields for proposal');
+      }
+
+      // Conditional validation for cross-section inputs
+      const hasCsPair =
+        cSection !== undefined &&
+        cSection !== null &&
+        cSection !== '' &&
+        csSlop !== undefined &&
+        csSlop !== null &&
+        csSlop !== '';
+
+      const hasCsCamper =
+        csCamper !== undefined && csCamper !== null && csCamper !== '';
+
+      if (!hasCsPair && !hasCsCamper) {
+        throw createHttpError(
+          400,
+          'Please provide either (Cross section slop) or Cross section camper'
+        );
+      }
     }
+
+    const type = proposal ? proposal : purpose;
 
     // 🔹 Fetch active survey
     const survey = await Survey.findOne({
@@ -422,6 +489,12 @@ const createSurveyPurpose = async (req, res, next) => {
 
     let relation = null;
 
+    // 🔹 Check if purpose already exists
+    const isPurposeExist = survey.purposes?.find((p) => p.type === type);
+    if (isPurposeExist) {
+      throw createHttpError(409, `Purpose "${type}" already exists`);
+    }
+
     // 🔹 Check for duplicate proposal relation
     if (proposal) {
       const existingProposal = survey.purposes?.find(
@@ -441,12 +514,6 @@ const createSurveyPurpose = async (req, res, next) => {
       }
 
       relation = isPurposeExist._id;
-    } else {
-      // 🔹 Check if purpose already exists
-      const isPurposeExist = survey.purposes?.find((p) => p.type === purpose);
-      if (isPurposeExist) {
-        throw createHttpError(409, `Purpose "${purpose}" already exists`);
-      }
     }
 
     // 🔹 Create purpose document
@@ -454,14 +521,16 @@ const createSurveyPurpose = async (req, res, next) => {
       [
         {
           surveyId,
-          type: proposal ? proposal : purpose,
+          type,
+          phase: proposal ? 'Proposal' : 'Actual',
           ...(proposal && {
+            proposedLevel,
             averageHeight,
             lSection,
             lsSlop,
             cSection,
             csSlop,
-            csLamper,
+            csCamper,
             relation,
           }),
         },
@@ -533,7 +602,7 @@ const endSurveyPurpose = async (req, res, next) => {
   try {
     const {
       params: { id },
-      query: { finalOffset },
+      query: { finalForesight },
     } = req;
 
     // 🔹 Step 1: Find the purpose
@@ -559,7 +628,8 @@ const endSurveyPurpose = async (req, res, next) => {
     purpose.isPurposeFinish = true;
     purpose.purposeFinishDate = new Date();
 
-    if (purpose.type === 'Initial Level') purpose.finalOffset = finalOffset;
+    if (purpose.type === 'Initial Level')
+      purpose.finalForesight = finalForesight;
 
     await purpose.save({ session });
 

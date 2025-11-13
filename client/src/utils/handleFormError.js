@@ -18,6 +18,7 @@ export const handleFormError = (error, setFormErrors, dispatch, navigate) => {
 
   if (import.meta.env.VITE_NODE_ENV === 'development') {
     console.error(error); // Log full error in development
+    console.error(validationErrors); // Log full error in development
   }
 
   // Set form validation errors if any

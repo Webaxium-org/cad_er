@@ -2,7 +2,6 @@ import * as React from 'react';
 import * as Yup from 'yup';
 import {
   Box,
-  CssBaseline,
   Divider,
   Link,
   Typography,
@@ -185,7 +184,6 @@ export default function SignIn() {
 
   return (
     <>
-      <CssBaseline enableColorScheme />
       <SignInContainer
         direction="column"
         justifyContent="center"

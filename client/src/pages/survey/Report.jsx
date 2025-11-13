@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import Chart from 'react-apexcharts';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { handleFormError } from '../../utils/handleFormError';
@@ -16,36 +15,8 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-
-const initialChartOptions = {
-  chart: {
-    id: 'cross-section',
-    toolbar: { show: false },
-    zoom: { enabled: false },
-  },
-  stroke: {
-    curve: 'straight',
-    width: 2,
-  },
-  colors: ['blue', 'green'],
-  grid: {
-    show: false,
-  },
-  xaxis: {
-    type: 'numeric',
-    labels: { show: false },
-    axisTicks: { show: false },
-    axisBorder: { show: false },
-  },
-  yaxis: {
-    min: 0,
-    labels: { show: false },
-    axisTicks: { show: false },
-    axisBorder: { show: true, color: '#000000' },
-  },
-  legend: { show: false },
-  tooltip: { enabled: false },
-};
+import CrossSectionChart from './components/CrossSectionChart';
+import { calculateReducedLevel, initialChartOptions } from '../../constants';
 
 const Report = () => {
   const navigate = useNavigate();
@@ -73,14 +44,14 @@ const Report = () => {
     const row = initialLevel.rows?.find((row) => row._id === id);
     if (!row) return;
 
-    let gsbProposal = [];
+    let proposal = [];
 
     const proposedLevel = survey.purposes?.find(
       (p) => p.type === 'Proposed Level'
     );
 
     const safeOffsets = row.offsets || [];
-    const safeInitial = row.intermediateSight || [];
+    const safeInitial = row.reducedLevels || [];
 
     const data = {
       id: id,
@@ -97,15 +68,15 @@ const Report = () => {
       );
 
       if (propRow) {
-        gsbProposal = propRow?.intermediateSight || [];
+        proposal = propRow?.reducedLevels || [];
       }
 
-      const safeGSB = gsbProposal?.slice(0, safeOffsets.length);
+      const safeProposal = proposal?.slice(0, safeOffsets.length);
 
-      data.gsb = safeGSB;
+      data.proposal = safeProposal;
       data.series.push({
-        name: 'GSB Prop. Level',
-        data: safeOffsets.map((x, i) => [Number(x), safeGSB[i]]),
+        name: proposedLevel.type,
+        data: safeOffsets.map((x, i) => [Number(x), safeProposal[i]]),
       });
     }
 
@@ -119,14 +90,13 @@ const Report = () => {
 
   const fetchSurvey = async () => {
     try {
-      if (!global) {
-        dispatch(startLoading());
-      }
-
+      if (!global) dispatch(startLoading());
       const { data } = await getSurvey(id);
 
       if (data.success) {
-        setSurvey(data.survey || []);
+        const surveyWithRL = calculateReducedLevel(data.survey);
+
+        setSurvey(surveyWithRL);
       } else {
         throw Error('Failed to fetch survey');
       }
@@ -166,155 +136,10 @@ const Report = () => {
       }}
     >
       {selectedCs && selectedCs?.series && (
-        <Box>
-          {/* Header */}
-          <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
-            CROSS SECTION AT CHAINAGE {selectedCs?.chainage}
-          </Typography>
-          <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
-            Datum: {selectedCs.datum}
-          </Typography>
-
-          {/* Chart */}
-          <Box
-            sx={{
-              width: 390,
-              height: 100,
-              mt: 1,
-              display: 'flex',
-              justifyContent: 'end',
-              position: 'relative',
-            }}
-          >
-            <Box
-              sx={{ width: 198, height: 100, position: 'absolute', top: '5px' }}
-            >
-              <Chart
-                key={selectedCs.id}
-                options={chartOptions}
-                series={selectedCs?.series || []}
-                type="line"
-                height="100%"
-                width="100%"
-              />
-            </Box>
-          </Box>
-
-          {/* Table */}
-          <TableContainer
-            component={Paper}
-            sx={{
-              width: 420,
-              border: '1px solid black',
-              mt: 0,
-              overflow: 'visible',
-            }}
-          >
-            <Table size="small">
-              <TableBody>
-                {/* GSB Row */}
-
-                {selectedCs?.gsb?.length > 1 && (
-                  <TableRow>
-                    <TableCell
-                      sx={{
-                        fontWeight: 'bold',
-                        borderRight: '1px solid black',
-                        width: '40%',
-                      }}
-                    >
-                      GSB Prop. Level
-                    </TableCell>
-                    {selectedCs?.gsb?.map((val, i) => (
-                      <TableCell
-                        key={i}
-                        align="center"
-                        sx={{
-                          position: 'relative',
-                          color: 'blue',
-                          fontWeight: 500,
-                          height: '55px',
-                          overflow: 'visible',
-                          p: 0,
-                        }}
-                      >
-                        <div style={{ rotate: '-90deg' }}>{val}</div>
-                        <div className="cs-table-vertical-line" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                )}
-
-                {/* Initial Level Row */}
-                <TableRow>
-                  <TableCell
-                    sx={{
-                      fontWeight: 'bold',
-                      borderRight: '1px solid black',
-                      width: '40%',
-                    }}
-                  >
-                    Initial Level
-                  </TableCell>
-                  {selectedCs?.initial?.map((val, i) => (
-                    <TableCell
-                      key={i}
-                      align="center"
-                      sx={{
-                        position: 'relative',
-                        color: 'green',
-                        fontWeight: 500,
-                        height: '55px',
-                        overflow: 'visible',
-                        p: 0,
-                      }}
-                    >
-                      <div style={{ rotate: '-90deg' }}>{val}</div>
-                      <div className="cs-table-vertical-line" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-
-                {/* Offset Row */}
-                <TableRow>
-                  <TableCell
-                    sx={{
-                      fontWeight: 'bold',
-                      borderRight: '1px solid black',
-                    }}
-                  >
-                    Offset
-                  </TableCell>
-                  {selectedCs?.offsets?.map((val, i) => (
-                    <TableCell
-                      key={i}
-                      align="center"
-                      sx={{
-                        position: 'relative',
-                        color: 'green',
-                        fontWeight: 500,
-                        height: '55px',
-                        overflow: 'visible',
-                        p: 0,
-                      }}
-                    >
-                      <div style={{ rotate: '-90deg' }}>{val}</div>
-                      <div className="cs-table-vertical-line" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* Footer */}
-          <Typography
-            variant="caption"
-            sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
-          >
-            [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
-          </Typography>
-        </Box>
+        <CrossSectionChart
+          selectedCs={selectedCs}
+          chartOptions={chartOptions}
+        />
       )}
 
       <TableContainer
