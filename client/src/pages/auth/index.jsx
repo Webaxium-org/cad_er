@@ -7,6 +7,8 @@ import {
   Typography,
   Stack,
   Card as MuiCard,
+  Button,
+  CssBaseline,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { GoogleLogin } from '@react-oauth/google';
@@ -18,10 +20,14 @@ import { showAlert } from '../../redux/alertSlice';
 import { handleFormError } from '../../utils/handleFormError';
 import { useNavigate } from 'react-router-dom';
 import { setUser } from '../../redux/userSlice';
-import BasicTextFields from '../../components/BasicTextFields';
 import BasicButtons from '../../components/BasicButton';
+import {
+  GoogleIcon,
+  FacebookIcon,
+  SitemarkIcon,
+} from './components/CustomIcons';
+import BasicInput from '../../components/BasicInput';
 
-// ✅ Styled Components
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
@@ -35,10 +41,14 @@ const Card = styled(MuiCard)(({ theme }) => ({
   },
   boxShadow:
     'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
+  ...theme.applyStyles('dark', {
+    boxShadow:
+      'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
+  }),
 }));
 
 const SignInContainer = styled(Stack)(({ theme }) => ({
-  height: '100dvh',
+  height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
   minHeight: '100%',
   padding: theme.spacing(2),
   [theme.breakpoints.up('sm')]: {
@@ -53,6 +63,10 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
     backgroundImage:
       'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
     backgroundRepeat: 'no-repeat',
+    ...theme.applyStyles('dark', {
+      backgroundImage:
+        'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))',
+    }),
   },
 }));
 
@@ -184,20 +198,18 @@ export default function SignIn() {
 
   return (
     <>
+      <CssBaseline enableColorScheme />
       <SignInContainer
         direction="column"
         justifyContent="center"
         alignItems="center"
       >
         <Card variant="outlined">
+          <SitemarkIcon />
           <Typography
             component="h1"
             variant="h4"
-            sx={{
-              width: '100%',
-              fontSize: 'clamp(2rem, 10vw, 2.15rem)',
-              textAlign: 'center',
-            }}
+            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
           >
             Sign in
           </Typography>
@@ -221,7 +233,7 @@ export default function SignIn() {
                 }}
                 key={index}
               >
-                <BasicTextFields
+                <BasicInput
                   {...input}
                   value={formValues[input.name] || ''}
                   error={(formErrors && formErrors[input.name]) || ''}
@@ -234,7 +246,22 @@ export default function SignIn() {
 
             <BasicButtons
               value={'Sign in'}
-              sx={{ backgroundColor: '#0059E7', height: '45px' }}
+              sx={{
+                textTransform: 'none',
+                height: '2.5rem',
+                color: 'white',
+                backgroundColor: 'hsl(220, 35%, 3%)',
+                backgroundImage:
+                  'linear-gradient(to bottom, hsl(220, 20%, 25%), hsl(220, 30%, 6%))',
+                boxShadow:
+                  'inset 0 1px 0 hsl(220, 20%, 35%), inset 0 -1px 0 1px hsl(220, 0%, 0%)',
+                border: '1px solid hsl(220, 20%, 25%)',
+                '&:hover': {
+                  backgroundImage: 'none',
+                  backgroundColor: 'rgb(51, 60, 77)',
+                  boxShadow: 'none',
+                },
+              }}
               fullWidth={true}
               onClick={handleSubmit}
               loading={loading}
@@ -253,18 +280,38 @@ export default function SignIn() {
 
           <Divider>or</Divider>
 
-          {/* ✅ Google Login Button */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              width: '100%',
-            }}
-          >
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-            />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* ✅ Google Login Button */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                width: '100%',
+              }}
+            >
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+              />
+            </Box>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => alert('Sign in with Facebook')}
+              startIcon={<FacebookIcon />}
+            >
+              Sign in with Facebook
+            </Button>
+            <Typography sx={{ textAlign: 'center' }}>
+              Don&apos;t have an account?{' '}
+              <Link
+                href="/material-ui/getting-started/templates/sign-in/"
+                variant="body2"
+                sx={{ alignSelf: 'center' }}
+              >
+                Sign up
+              </Link>
+            </Typography>
           </Box>
         </Card>
       </SignInContainer>
