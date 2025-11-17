@@ -34,16 +34,16 @@ const getWeatherIcon = (code) => {
 };
 
 const actions = [
-  { label: 'Projects', icon: <GoProject size={24} />, link: '/survey' },
+  { label: 'Projects', icon: <GoProject size={28} />, link: '/survey' },
   {
     label: 'Surveys',
-    icon: <RiSurveyLine size={24} />,
+    icon: <RiSurveyLine size={28} />,
     link: '/survey/purpose',
   },
-  { label: 'Reports', icon: <TbReportAnalytics size={24} />, link: '#' },
+  { label: 'Reports', icon: <TbReportAnalytics size={28} />, link: '#' },
   {
     label: 'Add Survey',
-    icon: <IoAddCircleOutline size={24} />,
+    icon: <IoAddCircleOutline size={28} />,
     link: '/survey/add-survey',
   },
 ];
@@ -191,7 +191,7 @@ const Home = () => {
 
           {/* User greeting */}
           <Box>
-            <Typography fontSize="14px" sx={{ opacity: 0.85 }}>
+            <Typography fontSize="14px" mt={3} sx={{ opacity: 0.85 }}>
               Hello, Welcome 🎉
             </Typography>
             <Typography fontSize="20px" fontWeight="600">
@@ -211,34 +211,36 @@ const Home = () => {
         <Typography fontWeight={700} fontSize="16px" mb={1}>
           Quick Links
         </Typography>
-        <Grid container spacing={2}>
+        <Grid container spacing={2} justifyContent={'center'}>
           {' '}
           {actions.map((item, i) => (
             <Grid key={i} size={{ xs: 3 }}>
-              {' '}
-              <Paper
-                elevation={2}
-                sx={{
-                  py: 1.5,
-                  borderRadius: '16px',
-                  textAlign: 'center',
-                  backgroundColor: '#F4F0FF',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    backgroundColor: '#EAE4FF',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 10px rgba(99, 52, 250, 0.15)',
-                  },
-                }}
-                onClick={() => handleNavigate(item.link)}
-              >
+              <Stack alignItems={'center'} spacing={0.5}>
                 {' '}
-                <Box sx={{ color: '#6334FA', fontSize: 20 }}>
-                  {item.icon}
-                </Box>{' '}
-                <Typography fontSize="12px"> {item.label} </Typography>{' '}
-              </Paper>{' '}
+                <Paper
+                  elevation={2}
+                  sx={{
+                    px: 2.5,
+                    py: 2,
+                    borderRadius: '22px',
+                    textAlign: 'center',
+                    backgroundColor: 'rgba(109, 66, 250, 0.21)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: 'none',
+                    width: 'fit-content',
+                    boxShadow: '0 3px 12px rgba(0,0,0,0.06)',
+                  }}
+                  onClick={() => handleNavigate(item.link)}
+                >
+                  {' '}
+                  <Box sx={{ color: '#6334FA' }}>{item.icon}</Box>{' '}
+                </Paper>{' '}
+                <Typography fontSize="12px" fontWeight={500} align="center">
+                  {' '}
+                  {item.label}{' '}
+                </Typography>{' '}
+              </Stack>
             </Grid>
           ))}{' '}
         </Grid>{' '}

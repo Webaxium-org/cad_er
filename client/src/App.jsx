@@ -17,6 +17,7 @@ import SignIn from './pages/auth';
 import PublicRoute from './routes/PublicRoute';
 import ProtectedRoute from './routes/ProtectedRoute';
 import CrossSectionReport from './pages/survey/CrossSectionReport';
+import Profile from './pages/user/Profile';
 
 function App() {
   return (
@@ -30,6 +31,8 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<RootLayout />}>
               <Route index element={<Home />} />
+
+              <Route path="/profile" element={<Profile />} />
 
               <Route path="survey">
                 <Route index element={<SurveyList />} />
