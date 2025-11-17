@@ -48,12 +48,22 @@ export const createSurveyPurpose = (id, formData) => {
   return axiosInstance.post(`surveys/${id}/purposes`, formData);
 };
 
+export const generateSurveyPurpose = (id, formData) => {
+  return axiosInstance.post(`surveys/${id}/purposes/generate`, formData);
+};
+
 export const getSurveyPurpose = (id) => {
   return axiosInstance.get(`surveys/${id}/purposes`);
 };
 
-export const endSurveyPurpose = (id, finalOffset) => {
+export const endSurveyPurpose = (id, finalForesight) => {
   return axiosInstance.patch(
-    `surveys/${id}/purposes/end?finalOffset=${finalOffset}`
+    `surveys/${id}/purposes/end?finalForesight=${finalForesight}`
+  );
+};
+
+export const pauseSurveyPurpose = (id, backSight) => {
+  return axiosInstance.patch(
+    `surveys/${id}/purposes/pause?backSight=${backSight}`
   );
 };

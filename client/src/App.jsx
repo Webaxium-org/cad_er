@@ -16,6 +16,7 @@ import VolumeReport from './pages/survey/VolumeReport';
 import SignIn from './pages/auth';
 import PublicRoute from './routes/PublicRoute';
 import ProtectedRoute from './routes/ProtectedRoute';
+import CrossSectionReport from './pages/survey/CrossSectionReport';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
               <Route path="survey">
                 <Route index element={<SurveyList />} />
                 <Route path="add-survey" element={<SurveyLanding />} />
+                <Route path=":id/report" element={<Report />} />
 
                 <Route path="road-survey">
                   <Route index element={<RoadSurveyForm />} />
@@ -40,7 +42,7 @@ function App() {
                   <Route path=":id/rows" element={<RoadSurveyRowsForm />} />
 
                   <Route path=":id/field-book" element={<FieldBook />} />
-                  <Route path=":id/report" element={<Report />} />
+                  <Route path=":id/report" element={<CrossSectionReport />} />
                   <Route path=":id/area-report" element={<AreaReport />} />
                   <Route path=":id/volume-report" element={<VolumeReport />} />
                 </Route>

@@ -77,40 +77,40 @@ const AreaReport = () => {
         const chainage = row.chainage?.split('/')?.[1] ?? '';
 
         const data = (row?.offsets ?? []).map((entry, idx) => {
-          const initialLevelIS = row?.intermediateSight?.[idx] ?? 0;
-          const proposedLevelIS = proposedRow?.intermediateSight?.[idx] ?? 0;
+          const initialLevelRL = row?.reducedLevels?.[idx] ?? 0;
+          const proposedLevelRL = proposedRow?.reducedLevels?.[idx] ?? 0;
 
-          const initIS = Number(initialLevelIS);
-          const propIS = Number(proposedLevelIS);
+          const initRL = Number(initialLevelRL);
+          const propRL = Number(proposedLevelRL);
           const offsetVal = Number(entry);
           const prevOffsetVal = Number(row?.offsets?.[idx - 1] ?? 0);
 
           // Determine whether it's cutting or filling
-          const isCutting = initIS > propIS;
+          const isCutting = initRL > propRL;
 
           // Shared width (W) for both cutting and filling
           const widthMtr =
             idx === 0 ? 0 : (prevOffsetVal - offsetVal).toFixed(3);
 
           const cuttingAvgMtr = isCutting
-            ? ((initIS + propIS) / 2).toFixed(3)
+            ? ((initRL + propRL) / 2).toFixed(3)
             : '0.000';
 
           const fillingAvgMtr = isCutting
             ? '0.000'
-            : ((propIS + initIS) / 2).toFixed(3);
+            : ((propRL + initRL) / 2).toFixed(3);
 
           return {
             offset: entry,
-            initialLevelIS,
-            proposedLevelIS,
-            cuttingMtr: isCutting ? (initIS - propIS).toFixed(3) : '0.000',
+            initialLevelRL,
+            proposedLevelRL,
+            cuttingMtr: isCutting ? (initRL - propRL).toFixed(3) : '0.000',
             cuttingAvgMtr,
             cuttingWMtr: widthMtr,
             cuttingAreaSqMtr: (
               Number(cuttingAvgMtr) * Number(widthMtr)
             ).toFixed(3),
-            fillingMtr: isCutting ? '0.000' : (propIS - initIS).toFixed(3),
+            fillingMtr: isCutting ? '0.000' : (propRL - initRL).toFixed(3),
             fillingAvgMtr,
             fillingWMtr: widthMtr,
             fillingAreaSqMtr: (
@@ -234,8 +234,8 @@ const AreaReport = () => {
         const dataRow = sheet.addRow([
           idx + 1,
           entry.offset,
-          entry.initialLevelIS,
-          entry.proposedLevelIS,
+          entry.initialLevelRL,
+          entry.proposedLevelRL,
           entry.cuttingMtr,
           entry.cuttingAvgMtr,
           entry.cuttingWMtr,
@@ -398,8 +398,8 @@ const AreaReport = () => {
                   <TableRow key={`${index}-${idx}`}>
                     <TableCell>{idx + 1}</TableCell>
                     <TableCell>{entry.offset}</TableCell>
-                    <TableCell>{entry.initialLevelIS}</TableCell>
-                    <TableCell>{entry.proposedLevelIS}</TableCell>
+                    <TableCell>{entry.initialLevelRL}</TableCell>
+                    <TableCell>{entry.proposedLevelRL}</TableCell>
                     <TableCell>{entry.cuttingMtr}</TableCell>
                     <TableCell>{entry.cuttingAvgMtr}</TableCell>
                     <TableCell>{entry.cuttingWMtr}</TableCell>

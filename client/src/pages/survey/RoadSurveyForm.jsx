@@ -15,8 +15,18 @@ import BasicInput from '../../components/BasicInput';
 import {
   createSurvey,
   createSurveyPurpose,
+  generateSurveyPurpose,
   getSurvey,
 } from '../../services/surveyServices';
+import AlertDialogSlide from '../../components/AlertDialogSlide';
+
+const alertData = {
+  title: 'Generate Proposal',
+  description: '',
+  content: '',
+  cancelButtonText: 'Cancel',
+  submitButtonText: 'Continue',
+};
 
 const inputDetails = [
   {
@@ -42,8 +52,32 @@ const inputDetails = [
     hidden: true,
   },
   {
-    label: 'Proposed Level*',
+    label: 'Entry Type',
+    name: 'entryType',
+    mode: 'checkbox',
+    hidden: true,
+    for: 'Proposed Level',
+    options: [
+      {
+        name: 'manualEntry',
+        label: 'Manual entry',
+      },
+      {
+        name: 'autoGenerate',
+        label: 'Auto Generate',
+      },
+    ],
+  },
+  {
+    label: 'Proposed level*',
     name: 'proposedLevel',
+    type: 'number',
+    for: 'Proposed Level',
+    hidden: true,
+  },
+  {
+    label: 'Quantity*',
+    name: 'quantity',
     type: 'number',
     for: 'Proposed Level',
     hidden: true,
@@ -97,11 +131,21 @@ const inputDetails = [
     size: 6,
   },
   {
-    label: 'Slop',
+    label: 'Cross section type',
     name: 'crossSectionType',
     mode: 'checkbox',
     hidden: true,
     for: 'Proposed Level',
+    options: [
+      {
+        name: 'slop',
+        label: 'Slop',
+      },
+      {
+        name: 'camper',
+        label: 'Camper',
+      },
+    ],
   },
   {
     label: '',
@@ -163,9 +207,13 @@ const RoadSurveyForm = () => {
 
   const [crossSection, setCrossSection] = useState('slop');
 
+  const [entryType, setEntryType] = useState('manualEntry');
+
   const [formValues, setFormValues] = useState(initialFormValues);
 
   const [formErrors, setFormErrors] = useState(null);
+
+  const [open, setOpen] = useState(false);
 
   const [btnLoading, setBtnLoading] = useState(false);
 
@@ -177,11 +225,19 @@ const RoadSurveyForm = () => {
       ? Yup.string().required('Proposal is required')
       : Yup.string().nullable(),
 
-    proposedLevel: type
-      ? Yup.number()
-          .typeError('Proposed Level is required')
-          .required('Proposed Level is required')
-      : Yup.string().nullable(),
+    quantity:
+      type && entryType === 'autoGenerate'
+        ? Yup.number()
+            .typeError('Quantity is required')
+            .required('Quantity is required')
+        : Yup.string().nullable(),
+
+    proposedLevel:
+      type && entryType === 'manualEntry'
+        ? Yup.number()
+            .typeError('Proposed Level is required')
+            .required('Proposed Level is required')
+        : Yup.string().nullable(),
 
     instrumentNo: !id
       ? Yup.string().required('Instrument number is required')
@@ -264,7 +320,9 @@ const RoadSurveyForm = () => {
       await schema.validate(formValues, { abortEarly: false });
 
       const { data } = id
-        ? await createSurveyPurpose(id, formValues)
+        ? entryType === 'manualEntry'
+          ? await createSurveyPurpose(id, formValues)
+          : await generateSurveyPurpose(id, formValues)
         : await createSurvey(formValues);
 
       if (data.success) {
@@ -286,7 +344,16 @@ const RoadSurveyForm = () => {
     } catch (error) {
       handleFormError(error, setFormErrors, dispatch, navigate);
     } finally {
+      setOpen(false);
       setBtnLoading(false);
+    }
+  };
+
+  const preSubmitCheck = () => {
+    if (entryType === 'autoGenerate') {
+      setOpen(true);
+    } else {
+      handleSubmit();
     }
   };
 
@@ -359,6 +426,14 @@ const RoadSurveyForm = () => {
                   return { ...e, hidden: crossSection === 'slop' };
                 }
 
+                if (e.name === 'proposedLevel') {
+                  return { ...e, hidden: entryType === 'autoGenerate' };
+                }
+
+                if (e.name === 'quantity') {
+                  return { ...e, hidden: entryType === 'manualEntry' };
+                }
+
                 return { ...e, hidden: false };
               }
 
@@ -371,6 +446,10 @@ const RoadSurveyForm = () => {
     );
   };
 
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   useEffect(() => {
     if (didMount.current) {
       const completedLevels = survey?.purposes?.map((p) => p.type) || [];
@@ -381,18 +460,27 @@ const RoadSurveyForm = () => {
     } else {
       didMount.current = true;
     }
-  }, [type, crossSection]);
+  }, [type, crossSection, entryType]);
 
   useEffect(() => {
-    if (id) {
-      fetchData();
+    if (!id) {
+      dispatch(stopLoading());
+      return;
     }
 
-    dispatch(stopLoading());
+    fetchData();
   }, [id]);
 
   return (
     <Box padding={'24px'}>
+      <AlertDialogSlide
+        {...alertData}
+        description={`Are you sure you want to auto-generate the ${formValues?.proposal} for ${formValues.purpose} `}
+        open={open}
+        onCancel={handleClose}
+        onSubmit={handleSubmit}
+      />
+
       <Box
         sx={{
           border: '1px solid #EFEFEF',
@@ -413,10 +501,10 @@ const RoadSurveyForm = () => {
       <Stack alignItems={'center'} spacing={5}>
         <Stack alignItems={'center'}>
           <Typography fontSize={'26px'} fontWeight={700}>
-            Please Enter The Following Values
+            Create New Survey
           </Typography>
           <Typography fontSize={'16px'} fontWeight={400} color="#434343">
-            Sed ut perspiciatis unde omnis iste natus error sit voluptatem
+            Please Enter The Following Values
           </Typography>
         </Stack>
 
@@ -480,38 +568,32 @@ const RoadSurveyForm = () => {
                       />
                     ) : mode === 'checkbox' ? (
                       <Stack direction={'row'}>
-                        <Box display={'flex'} alignItems={'center'}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              mb: 0.5,
-                              fontWeight: 500,
-                              color: 'text.secondary',
-                            }}
-                          >
-                            Slop
-                          </Typography>
-                          <BasicCheckbox
-                            checked={crossSection === 'slop'}
-                            onChange={() => setCrossSection('slop')}
-                          />
-                        </Box>
-                        <Box display={'flex'} alignItems={'center'}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              mb: 0.5,
-                              fontWeight: 500,
-                              color: 'text.secondary',
-                            }}
-                          >
-                            Camper
-                          </Typography>
-                          <BasicCheckbox
-                            checked={crossSection === 'camper'}
-                            onChange={() => setCrossSection('camper')}
-                          />
-                        </Box>
+                        {input.options?.map((option, idx) => (
+                          <Box display={'flex'} alignItems={'center'} key={idx}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                mb: 0.5,
+                                fontWeight: 500,
+                                color: 'text.secondary',
+                              }}
+                            >
+                              {option.label}
+                            </Typography>
+                            <BasicCheckbox
+                              checked={
+                                (input.name === 'crossSectionType'
+                                  ? crossSection
+                                  : entryType) === option.name
+                              }
+                              onChange={() =>
+                                input.name === 'crossSectionType'
+                                  ? setCrossSection(option.name)
+                                  : setEntryType(option.name)
+                              }
+                            />
+                          </Box>
+                        ))}
                       </Stack>
                     ) : (
                       <BasicInput
@@ -533,7 +615,7 @@ const RoadSurveyForm = () => {
             value={'Continue'}
             sx={{ backgroundColor: '#0059E7', height: '45px' }}
             fullWidth={true}
-            onClick={handleSubmit}
+            onClick={preSubmitCheck}
             loading={btnLoading}
           />
         </Box>

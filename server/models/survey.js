@@ -5,6 +5,12 @@ const SurveySchema = new Schema(
   {
     type: { type: String, default: 'Road Survey', index: true },
     project: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ['Active', 'Deleted'],
+      required: true,
+      default: 'Active',
+    },
     instrumentNo: { type: String, required: true },
     chainageMultiple: { type: Number, required: true },
     reducedLevel: { type: String, required: true },

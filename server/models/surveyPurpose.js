@@ -44,6 +44,12 @@ const SurveyPurposeSchema = new Schema(
       type: Types.ObjectId,
       ref: 'SurveyPurpose',
     },
+    status: {
+      type: String,
+      enum: ['Active', 'Paused', 'Finished', 'Deleted'],
+      required: true,
+      default: 'Active',
+    },
     finalForesight: Number,
     proposedLevel: Number,
     lSection: Number,

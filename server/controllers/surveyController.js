@@ -1,8 +1,8 @@
-import isValidObjectId from '../helper/index.js';
 import Survey from '../models/survey.js';
 import SurveyPurpose from '../models/surveyPurpose.js';
 import SurveyRow from '../models/surveyRowSchema.js';
 import History from '../models/historySchema.js';
+import { isValidObjectId, calculateReducedLevel } from '../helper/index.js';
 import createHttpError from 'http-errors';
 import mongoose from 'mongoose';
 
@@ -121,6 +121,10 @@ const createSurvey = async (req, res, next) => {
           type: 'Instrument setup',
           backSight: Number(backSight).toFixed(3),
           remarks: ['TBM'],
+          reducedLevels: [Number(reducedLevel).toFixed(3)],
+          heightOfInstrument: Number(
+            Number(reducedLevel) + Number(backSight)
+          ).toFixed(3),
         },
       ],
       { session }
@@ -228,20 +232,24 @@ const createSurveyRow = async (req, res, next) => {
 
     // 🔹 Validate purpose
     if (!id) throw createHttpError(400, 'Purpose ID is required');
-    const purpose = await SurveyPurpose.findOne({
-      _id: id,
-      deleted: false,
-    })
+
+    const purpose = await SurveyPurpose.findOne({ _id: id, deleted: false })
       .populate({
         path: 'surveyId',
+        match: { deleted: false },
         populate: {
           path: 'purposes',
+          match: { deleted: false },
           populate: {
             path: 'rows',
+            match: { deleted: false },
           },
         },
       })
-      .populate('rows')
+      .populate({
+        path: 'rows',
+        match: { deleted: false },
+      })
       .session(session);
 
     if (!purpose) throw createHttpError(404, 'Purpose not found');
@@ -255,7 +263,9 @@ const createSurveyRow = async (req, res, next) => {
       throw createHttpError(404, 'Survey not found or has been deleted');
 
     const isProposal = purpose.phase === 'Proposal';
+    const isSurveyPaused = purpose.status === 'Paused';
     let isLastReading = false;
+    let bs = null;
 
     // 🔹 Validate type and required fields (same as before)
     const types = {
@@ -291,11 +301,11 @@ const createSurveyRow = async (req, res, next) => {
       remarks.push(type);
     }
 
-    if (isProposal) {
-      const initialSurvey = survey.purposes?.find(
-        (p) => p.type === 'Initial Level'
-      );
+    const initialSurvey = survey.purposes?.find(
+      (p) => p.type === 'Initial Level'
+    );
 
+    if (isProposal) {
       const filteredInitialSurvey =
         initialSurvey?.rows?.filter((entry) => entry.type === 'Chainage') || [];
 
@@ -311,34 +321,86 @@ const createSurveyRow = async (req, res, next) => {
       if (currentIndex === totalReadings - 1) {
         isLastReading = true;
       }
+    } else {
+      const totalReadings = initialSurvey?.rows?.length;
+      const currentIndex = purpose.rows?.length;
+
+      if (totalReadings === currentIndex + 1) {
+        isLastReading = true;
+      }
     }
 
-    // 🔹 Create new SurveyRow
-    const [newRow] = await SurveyRow.create(
-      [
+    const newReading = {
+      purposeId: purpose._id,
+      type,
+      chainage: type === 'Chainage' ? chainage : undefined,
+      spacing: type === 'Chainage' ? spacing : undefined,
+      roadWidth: roadWidth ? Number(roadWidth).toFixed(3) : undefined,
+
+      backSight: backSight ? Number(backSight).toFixed(3) : undefined,
+      foreSight: foreSight ? Number(foreSight).toFixed(3) : undefined,
+
+      reducedLevels: isProposal
+        ? (reducedLevels || []).map((n) => Number(n).toFixed(3))
+        : [],
+
+      intermediateSight:
+        type === 'Chainage'
+          ? (intermediateSight || []).map((n) => Number(n).toFixed(3))
+          : intermediateSight || [],
+
+      offsets: (offsets || []).map((n) => Number(n).toFixed(3)),
+
+      remarks,
+    };
+
+    if (!isProposal) {
+      const { hi, rl } = calculateReducedLevel(survey, newReading, purpose._id);
+
+      newReading.reducedLevels = rl;
+      newReading.heightOfInstrument = hi;
+    }
+
+    let newRow = null;
+
+    if (isSurveyPaused) {
+      const lastRow = purpose.rows[purpose.rows?.length - 1];
+
+      if (lastRow.type !== 'CP') {
+        throw createHttpError(
+          400,
+          'Invalid state: last row must be CP when resuming a paused survey.'
+        );
+      }
+
+      newRow = await SurveyRow.findByIdAndUpdate(
+        lastRow._id,
         {
-          purposeId: purpose._id,
-          type,
-          chainage: type === 'Chainage' ? chainage : undefined,
-          spacing: type === 'Chainage' ? spacing : undefined,
-          roadWidth: roadWidth ? Number(roadWidth).toFixed(3) : undefined,
           backSight: backSight ? Number(backSight).toFixed(3) : undefined,
           foreSight: foreSight ? Number(foreSight).toFixed(3) : undefined,
-          reducedLevels: isProposal
-            ? (reducedLevels || []).map((n) => Number(n).toFixed(3))
-            : [],
-          intermediateSight:
-            type === 'Chainage'
-              ? (intermediateSight || []).map((n) => Number(n).toFixed(3))
-              : intermediateSight || [],
-          offsets: (offsets || []).map((n) => Number(n).toFixed(3)),
-          remarks,
+          reducedLevels: newReading.reducedLevels,
+          heightOfInstrument: newReading.heightOfInstrument,
         },
-      ],
-      { session }
-    );
+        { new: true, session }
+      );
+
+      if (!newRow) {
+        throw createHttpError(
+          500,
+          'Failed to update CP row while resuming survey.'
+        );
+      }
+
+      purpose.status = 'Active';
+      await purpose.save({ session });
+    } else {
+      // Create new row
+      const rows = await SurveyRow.create([newReading], { session });
+      newRow = rows[0];
+    }
 
     if (isLastReading) {
+      purpose.status = 'Finished';
       purpose.isPurposeFinish = true;
       purpose.purposeFinishDate = new Date();
 
@@ -348,10 +410,16 @@ const createSurveyRow = async (req, res, next) => {
     await session.commitTransaction();
     session.endSession();
 
+    const plainPurpose = purpose.toObject();
+
     res.status(201).json({
       success: true,
       message: 'Survey row added successfully',
       row: newRow,
+      purpose: {
+        ...plainPurpose,
+        rows: [...plainPurpose.rows, newRow],
+      },
     });
   } catch (err) {
     await session.abortTransaction();
@@ -479,7 +547,10 @@ const createSurveyPurpose = async (req, res, next) => {
       .populate({
         path: 'purposes',
         match: { deleted: false },
-        populate: { path: 'relation', match: { deleted: false } },
+        populate: [
+          { path: 'rows', match: { deleted: false } },
+          { path: 'relation', match: { deleted: false } },
+        ],
       })
       .session(session);
 
@@ -537,6 +608,35 @@ const createSurveyPurpose = async (req, res, next) => {
       ],
       { session }
     );
+
+    if (!proposal) {
+      const initialLevel = survey?.purposes?.find(
+        (p) => p.type === 'Initial Level'
+      );
+
+      if (!initialLevel) throw createHttpError(404, 'Initial level not found');
+
+      const tbmReading = initialLevel.rows[0];
+
+      if (!tbmReading)
+        throw createHttpError(404, 'Initial level reading not found');
+
+      // 🔹 Create First Reading (TBM)
+      await SurveyRow.create(
+        [
+          {
+            surveyId: survey._id,
+            purposeId: purposeDoc._id,
+            type: 'Instrument setup',
+            backSight: tbmReading.backSight,
+            reducedLevels: tbmReading.reducedLevels,
+            heightOfInstrument: tbmReading.heightOfInstrument,
+            remarks: ['TBM'],
+          },
+        ],
+        { session }
+      );
+    }
 
     // 🔹 Commit transaction
     await session.commitTransaction();
@@ -624,12 +724,17 @@ const endSurveyPurpose = async (req, res, next) => {
         'Cannot finish purpose — survey already finished'
       );
 
+    if (purpose.type === 'Initial Level') {
+      if (!finalForesight)
+        throw createHttpError(400, 'Final fore sight is required');
+
+      purpose.finalForesight = finalForesight;
+    }
+
     // 🔹 Step 4: Mark purpose as finished
+    purpose.status = 'Finished';
     purpose.isPurposeFinish = true;
     purpose.purposeFinishDate = new Date();
-
-    if (purpose.type === 'Initial Level')
-      purpose.finalForesight = finalForesight;
 
     await purpose.save({ session });
 
@@ -705,6 +810,212 @@ const deleteSurveyRow = async (req, res, next) => {
   }
 };
 
+const pauseSurveyPurpose = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const {
+      params: { id },
+      query: { backSight },
+    } = req;
+
+    if (!backSight?.trim()) {
+      throw createHttpError(
+        400,
+        'Backsight value is required to pause the survey.'
+      );
+    }
+
+    // 1) Validate survey
+    const survey = await SurveyPurpose.findById(id).session(session);
+    if (!survey || survey.deleted) {
+      throw createHttpError(404, 'Survey not found.');
+    }
+
+    if (survey.isPurposeFinish) {
+      throw createHttpError(
+        400,
+        'This survey has already been finished. Cannot pause.'
+      );
+    }
+
+    if (survey.status === 'Paused') {
+      throw createHttpError(400, 'This survey is already paused.');
+    }
+
+    if (survey.type !== 'Initial Level') {
+      throw createHttpError(
+        400,
+        'This operation is allowed only for Initial Level surveys.'
+      );
+    }
+
+    // 2) Update survey status
+    survey.status = 'Paused';
+    await survey.save({ session });
+
+    // 3) Create CP row
+    await SurveyRow.create(
+      [
+        {
+          purposeId: survey._id,
+          type: 'CP',
+          backSight,
+          remarks: ['CP'],
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({
+      success: true,
+      message: 'Survey purpose has been paused successfully.',
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    next(err);
+  }
+};
+
+const generateSurveyPurpose = async (req, res, next) => {
+  try {
+    const {
+      params: { surveyId },
+      body: {
+        purpose,
+        proposal,
+        proposedLevel,
+        averageHeight,
+        lSection,
+        lsSlop,
+        cSection,
+        csSlop,
+        csCamper,
+      },
+    } = req;
+
+    throw createHttpError(400, 'Work in progress');
+
+    // 🔹 Basic validation
+    if (!purpose || !surveyId) {
+      throw createHttpError(400, 'Purpose and surveyId are required');
+    }
+
+    // 🔹 Proposal field validation (if proposal mode)
+    if (proposal) {
+      const requiredFields = [proposedLevel, averageHeight, lSection, lsSlop];
+
+      // Check if any of the always-required fields are missing
+      const missingRequired = requiredFields.some(
+        (field) => field === undefined || field === null || field === ''
+      );
+
+      if (missingRequired) {
+        throw createHttpError(400, 'Missing required fields for proposal');
+      }
+
+      // Conditional validation for cross-section inputs
+      const hasCsPair =
+        cSection !== undefined &&
+        cSection !== null &&
+        cSection !== '' &&
+        csSlop !== undefined &&
+        csSlop !== null &&
+        csSlop !== '';
+
+      const hasCsCamper =
+        csCamper !== undefined && csCamper !== null && csCamper !== '';
+
+      if (!hasCsPair && !hasCsCamper) {
+        throw createHttpError(
+          400,
+          'Please provide either (Cross section slop) or Cross section camper'
+        );
+      }
+    }
+
+    const type = proposal ? proposal : purpose;
+
+    // 🔹 Fetch active survey
+    const survey = await Survey.findOne({
+      _id: surveyId,
+      isSurveyFinish: false,
+      deleted: false,
+    })
+      .populate({
+        path: 'purposes',
+        match: { deleted: false },
+        populate: [
+          { path: 'rows', match: { deleted: false } },
+          { path: 'relation', match: { deleted: false } },
+        ],
+      })
+      .session(session);
+
+    if (!survey) {
+      throw createHttpError(404, 'Active survey not found');
+    }
+
+    let relation = null;
+
+    // 🔹 Check if purpose already exists
+    const isPurposeExist = survey.purposes?.find((p) => p.type === type);
+    if (isPurposeExist) {
+      throw createHttpError(409, `Purpose "${type}" already exists`);
+    }
+
+    // 🔹 Check for duplicate proposal relation
+    if (proposal) {
+      const existingProposal = survey.purposes?.find(
+        (p) => p.relation?.type === purpose && p.type === proposal
+      );
+
+      if (existingProposal) {
+        throw createHttpError(
+          409,
+          `A proposal between "${purpose}" and "${proposal}" already exists`
+        );
+      }
+
+      const isPurposeExist = survey.purposes?.find((p) => p.type === purpose);
+      if (!isPurposeExist) {
+        throw createHttpError(409, `There is no survey found width ${purpose}`);
+      }
+
+      relation = isPurposeExist._id;
+    }
+
+    // 🔹 Create purpose document
+    const [purposeDoc] = await SurveyPurpose.create(
+      [
+        {
+          surveyId,
+          type,
+          phase: proposal ? 'Proposal' : 'Actual',
+          ...(proposal && {
+            proposedLevel,
+            averageHeight,
+            lSection,
+            lsSlop,
+            cSection,
+            csSlop,
+            csCamper,
+            relation,
+          }),
+        },
+      ],
+      { session }
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 export {
   checkSurveyExists,
   getAllSurvey,
@@ -720,4 +1031,6 @@ export {
   createSurveyRow,
   updateSurveyRow,
   deleteSurveyRow,
+  pauseSurveyPurpose,
+  generateSurveyPurpose,
 };

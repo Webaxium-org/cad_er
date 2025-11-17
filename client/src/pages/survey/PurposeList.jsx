@@ -109,7 +109,7 @@ export default function PurposeList() {
                 <TableCell>{purpose.surveyId?.chainageMultiple}</TableCell>
                 <TableCell>
                   <Chip
-                    label={purpose.isPurposeFinish ? 'Finished' : 'Active'}
+                    label={purpose.status}
                     color={purpose.isPurposeFinish ? 'success' : 'warning'}
                     size="small"
                   />

@@ -92,6 +92,10 @@ export default function SurveyList() {
   };
 
   const getReportLink = (survey, target) => {
+    if (target === 'reports') {
+      return generateLink(`/survey/${survey._id}/report`);
+    }
+
     const initialLevel = survey?.purposes?.find(
       (p) => p.type === 'Initial Level'
     );
@@ -141,6 +145,7 @@ export default function SurveyList() {
               <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Created</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>FieldBook</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Reports</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Area Report</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Volume Report</TableCell>
               <TableCell sx={{ fontWeight: 700 }} align="right">
@@ -170,6 +175,7 @@ export default function SurveyList() {
                   {new Date(survey.DateOfSurvey).toLocaleDateString()}
                 </TableCell>
                 <TableCell>{getReportLink(survey, 'Field Book')}</TableCell>
+                <TableCell>{getReportLink(survey, 'reports')}</TableCell>
                 <TableCell>{getReportLink(survey, 'area-report')}</TableCell>
                 <TableCell>{getReportLink(survey, 'volume-report')}</TableCell>
 

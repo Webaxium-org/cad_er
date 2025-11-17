@@ -128,8 +128,10 @@ export default function FieldBook() {
       }
     }
 
-    const finalForeSight =
-      Number(rows[rows.length - 1].HI) - Number(survey.reducedLevel);
+    const finalForeSight = Number(purpose.finalForesight);
+
+    // const finalForeSight =
+    //   Number(rows[rows.length - 1].HI) - Number(survey.reducedLevel);
 
     const finalRl = Number(rows[rows.length - 1].HI) - finalForeSight;
 

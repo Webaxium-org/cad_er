@@ -16,6 +16,7 @@ const SurveyRowSchema = new Schema(
     },
     backSight: String,
     reducedLevels: [String],
+    heightOfInstrument: String,
     intermediateSight: [String],
     foreSight: String,
     chainage: String,

@@ -87,22 +87,22 @@ const VolumeReport = () => {
 
         // --- Compute area for each offset ---
         const data = (row?.offsets ?? []).map((entry, idx) => {
-          const initIS = Number(row?.intermediateSight?.[idx] ?? 0);
-          const propIS = Number(proposedRow?.intermediateSight?.[idx] ?? 0);
+          const initRL = Number(row?.reducedLevels?.[idx] ?? 0);
+          const propRL = Number(proposedRow?.reducedLevels?.[idx] ?? 0);
           const offsetVal = Number(entry);
           const prevOffsetVal = Number(row?.offsets?.[idx - 1] ?? 0);
 
-          const isCutting = initIS > propIS;
+          const isCutting = initRL > propRL;
           const widthMtr =
             idx === 0 ? 0 : (prevOffsetVal - offsetVal).toFixed(3);
 
           const cuttingAvgMtr = isCutting
-            ? ((initIS + propIS) / 2).toFixed(3)
+            ? ((initRL + propRL) / 2).toFixed(3)
             : '0.000';
 
           const fillingAvgMtr = isCutting
             ? '0.000'
-            : ((propIS + initIS) / 2).toFixed(3);
+            : ((propRL + initRL) / 2).toFixed(3);
 
           return {
             cuttingAreaSqMtr: (

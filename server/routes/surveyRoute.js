@@ -17,6 +17,8 @@ import {
   endSurveyPurpose,
   getAllSurveyPurpose,
   createSurveyPurpose,
+  pauseSurveyPurpose,
+  generateSurveyPurpose,
 } from '../controllers/surveyController.js';
 
 // 🔹 Static routes
@@ -35,6 +37,8 @@ router.delete('/:id', deleteSurvey);
 router.get('/:id/purposes', getSurveyPurpose);
 router.post('/:surveyId/purposes', createSurveyPurpose);
 router.patch('/:id/purposes/end', endSurveyPurpose);
+router.patch('/:id/purposes/pause', pauseSurveyPurpose);
+router.patch('/:id/purposes/generate', generateSurveyPurpose);
 
 // 🔹 Row routes (nested under a survey)
 router.post('/:id/rows', createSurveyRow);

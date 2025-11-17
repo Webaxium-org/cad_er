@@ -39,6 +39,26 @@ body {
   z-index: 1;
 }
 
+.google-sign-in-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.google-sign-in-wrapper > :first-child {
+  width: 100%;
+}
+
+.google-sign-in-wrapper iframe {
+  margin: 0 !important;
+  width: 100% !important;
+  position: static !important;
+}
+
+.qJTHM .haAclf {
+  display: contents !important;
+}
+
 /* ---------------------------
    Landing / Hero image
    --------------------------- */
@@ -139,19 +159,18 @@ body {
 /* ---------------------------
    Form input error states
    --------------------------- */
-.inp-err label,
+.inp-err p,
 .inp-err .MuiSelect-icon {
   color: red !important;
 }
 
-.inp-err .css-1pht7va-MuiInputBase-root-MuiFilledInput-root::before,
-.inp-err .css-1mb1do-MuiInputBase-root-MuiFilledInput-root::before {
-  border-bottom: 1px solid rgba(255, 0, 0, 0.42) !important;
+.inp-err .css-i79v29-MuiInputBase-root-MuiInput-root {
+  border-color: #d32f2f !important;
+  background-color: rgba(211, 47, 47, 0.05) !important;
+  box-shadow: rgba(211, 47, 47, 0.35) 0 0 0 2px !important;
 }
-
-.inp-err .css-1pht7va-MuiInputBase-root-MuiFilledInput-root::after,
-.inp-err .css-1mb1do-MuiInputBase-root-MuiFilledInput-root::after {
-  border-bottom: 2px solid rgba(255, 0, 0, 0.42) !important;
+.inp-err .css-i79v29-MuiInputBase-root-MuiInput-root.Mui-focused {
+  box-shadow: rgb(255, 0, 0) 0 0 3px !important;
 }
 
 /* ---------------------------

@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { handleFormError } from '../../utils/handleFormError';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
+import { handleFormError } from '../../utils/handleFormError';
 import { getSurvey } from '../../services/surveyServices';
+
+// MUI
 import {
   Box,
+  Typography,
   Paper,
   Table,
   TableBody,
@@ -13,93 +16,31 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
+  Checkbox,
+  Button,
+  ToggleButton,
+  ToggleButtonGroup,
+  Divider,
+  Chip,
 } from '@mui/material';
-import CrossSectionChart from './components/CrossSectionChart';
-import { calculateReducedLevel, initialChartOptions } from '../../constants';
+
+import { MdDelete } from 'react-icons/md';
 
 const Report = () => {
-  const navigate = useNavigate();
-
   const { id } = useParams();
-
+  const navigate = useNavigate();
   const dispatch = useDispatch();
-
   const { global } = useSelector((state) => state.loading);
 
-  const [chartOptions, setChartOptions] = useState(initialChartOptions);
+  const [survey, setSurvey] = useState(null);
+  const [selectedPurposes, setSelectedPurposes] = useState([]);
+  const [reportType, setReportType] = useState(null);
 
-  const [survey, setSurvey] = useState([]);
-
-  const [selectedCs, setSelectedCs] = useState(null);
-
-  const handleClickCs = (id) => {
-    if (selectedCs?.id === id) return;
-
-    const initialLevel = survey.purposes?.find(
-      (p) => p.type === 'Initial Level'
-    );
-    if (!initialLevel) return;
-
-    const row = initialLevel.rows?.find((row) => row._id === id);
-    if (!row) return;
-
-    let proposal = [];
-
-    const proposedLevel = survey.purposes?.find(
-      (p) => p.type === 'Proposed Level'
-    );
-
-    const safeOffsets = row.offsets || [];
-    const safeInitial = row.reducedLevels || [];
-
-    const data = {
-      id: id,
-      datum: 9.4,
-      initial: safeInitial,
-      offsets: safeOffsets,
-      chainage: row.chainage,
-      series: [],
-    };
-
-    if (proposedLevel) {
-      const propRow = proposedLevel.rows?.find(
-        (r) => r.chainage === row.chainage
-      );
-
-      if (propRow) {
-        proposal = propRow?.reducedLevels || [];
-      }
-
-      const safeProposal = proposal?.slice(0, safeOffsets.length);
-
-      data.proposal = safeProposal;
-      data.series.push({
-        name: proposedLevel.type,
-        data: safeOffsets.map((x, i) => [Number(x), safeProposal[i]]),
-      });
-    }
-
-    data.series.push({
-      name: 'Initial Level',
-      data: safeOffsets.map((x, i) => [Number(x), Number(safeInitial[i])]),
-    });
-
-    setSelectedCs(data);
-  };
-
-  const fetchSurvey = async () => {
+  const fetchData = async () => {
     try {
       if (!global) dispatch(startLoading());
       const { data } = await getSurvey(id);
-
-      if (data.success) {
-        const surveyWithRL = calculateReducedLevel(data.survey);
-
-        setSurvey(surveyWithRL);
-      } else {
-        throw Error('Failed to fetch survey');
-      }
+      setSurvey(data.survey);
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     } finally {
@@ -108,79 +49,226 @@ const Report = () => {
   };
 
   useEffect(() => {
-    fetchSurvey();
-  }, []);
+    if (id) fetchData();
+  }, [id]);
 
-  useEffect(() => {
-    if (survey) {
-      const initialLevel = survey?.purposes?.find(
-        (p) => p.type === 'Initial Level'
-      );
+  const togglePurpose = (purpose) => {
+    setSelectedPurposes((prev) =>
+      prev.find((p) => p._id === purpose._id)
+        ? prev.filter((p) => p._id !== purpose._id)
+        : [...prev, purpose]
+    );
+  };
 
-      if (!initialLevel) return;
+  const isSelected = (id) => selectedPurposes.some((p) => p._id === id);
 
-      const row = initialLevel.rows?.find((row) => row.type === 'Chainage');
+  // ----- Select All Logic -----
+  const allSelected =
+    survey?.purposes?.length > 0 &&
+    selectedPurposes.length === survey?.purposes?.length;
 
-      if (row) handleClickCs(row._id);
-    }
-  }, [survey]);
+  const partiallySelected =
+    selectedPurposes.length > 0 &&
+    selectedPurposes.length < survey?.purposes?.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedPurposes([]);
+    else setSelectedPurposes(survey?.purposes || []);
+  };
+
+  const generateReport = () => {
+    navigate(`/report/${id}/preview`, {
+      state: {
+        selectedPurposes,
+        reportType,
+      },
+    });
+  };
 
   return (
-    <Box
-      sx={{
-        textAlign: 'center',
-        mt: 4,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
-    >
-      {selectedCs && selectedCs?.series && (
-        <CrossSectionChart
-          selectedCs={selectedCs}
-          chartOptions={chartOptions}
-        />
-      )}
+    <Box p={2} sx={{ maxWidth: 900, mx: 'auto' }}>
+      <Typography
+        variant="h5"
+        fontWeight="bold"
+        mb={3}
+        textAlign="center"
+        sx={{ fontSize: { xs: '1.2rem', sm: '1.6rem' } }}
+      >
+        Generate Survey Report
+      </Typography>
 
-      <TableContainer
-        component={Paper}
+      {/* Report Type Selector */}
+      <Paper
+        elevation={2}
         sx={{
-          maxWidth: 420,
-          border: '1px solid black',
-          mt: 2,
-          overflow: 'visible',
+          p: 2,
+          mb: 3,
+          borderRadius: 3,
         }}
       >
-        <Table>
-          <TableHead sx={{ backgroundColor: '#f4f6f8' }}>
+        <Typography
+          variant="subtitle1"
+          fontWeight="bold"
+          sx={{ mb: 1, fontSize: { xs: '0.85rem', sm: '1rem' } }}
+        >
+          Select Report Type
+        </Typography>
+
+        <ToggleButtonGroup
+          value={reportType}
+          exclusive
+          fullWidth
+          onChange={(e, value) => setReportType(value)}
+          sx={{ display: 'flex', gap: 1 }}
+        >
+          <ToggleButton
+            value="cross"
+            sx={{
+              flex: 1,
+              fontSize: { xs: '0.75rem', sm: '0.9rem' },
+              py: { xs: 0.7, sm: 1 },
+            }}
+          >
+            Cross Section
+          </ToggleButton>
+          <ToggleButton
+            value="area"
+            sx={{
+              flex: 1,
+              fontSize: { xs: '0.75rem', sm: '0.9rem' },
+              py: { xs: 0.7, sm: 1 },
+            }}
+          >
+            Area Report
+          </ToggleButton>
+          <ToggleButton
+            value="volume"
+            sx={{
+              flex: 1,
+              fontSize: { xs: '0.75rem', sm: '0.9rem' },
+              py: { xs: 0.7, sm: 1 },
+            }}
+          >
+            Volume Report
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Paper>
+
+      {/* Purpose Table */}
+      <TableContainer
+        component={Paper}
+        sx={{ borderRadius: 3, overflow: 'hidden' }}
+      >
+        <Table stickyHeader>
+          <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Chainage</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>CS</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>LS</TableCell>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  color="primary"
+                  checked={allSelected}
+                  indeterminate={partiallySelected}
+                  onChange={toggleSelectAll}
+                />
+              </TableCell>
+              <TableCell
+                sx={{ fontWeight: 'bold', fontSize: { xs: 12, sm: 14 } }}
+              >
+                Purpose
+              </TableCell>
+              <TableCell
+                sx={{ fontWeight: 'bold', fontSize: { xs: 12, sm: 14 } }}
+              >
+                Description
+              </TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
-            {survey?.purposes
-              ?.find((p) => p.type === 'Initial Level')
-              ?.rows?.map(
-                (row, index) =>
-                  row.type === 'Chainage' && (
-                    <TableRow key={index}>
-                      <TableCell>{row.chainage}</TableCell>
-                      <TableCell
-                        sx={{ cursor: 'pointer' }}
-                        onClick={() => handleClickCs(row._id)}
-                      >
-                        View
-                      </TableCell>
-                      <TableCell>N/A</TableCell>
-                    </TableRow>
-                  )
-              )}
+            {survey?.purposes?.map((purpose) => (
+              <TableRow
+                key={purpose._id}
+                hover
+                onClick={() => togglePurpose(purpose)}
+                sx={{
+                  cursor: 'pointer',
+                  background: isSelected(purpose._id)
+                    ? 'rgba(25,118,210,0.08)'
+                    : 'inherit',
+                }}
+              >
+                <TableCell padding="checkbox">
+                  <Checkbox color="primary" checked={isSelected(purpose._id)} />
+                </TableCell>
+
+                <TableCell sx={{ fontSize: { xs: 12, sm: 14 } }}>
+                  {purpose.type}
+                </TableCell>
+
+                <TableCell sx={{ fontSize: { xs: 12, sm: 14 } }}>
+                  {purpose.description || 'No description'}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Selected Purposes */}
+      {selectedPurposes.length > 0 && (
+        <Paper
+          elevation={2}
+          sx={{
+            mt: 4,
+            p: 2,
+            borderRadius: 3,
+          }}
+        >
+          <Typography
+            variant="subtitle1"
+            fontWeight="bold"
+            mb={1}
+            sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}
+          >
+            Selected Purposes
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {selectedPurposes.map((p) => (
+              <Chip
+                key={p._id}
+                label={p.type}
+                onDelete={() =>
+                  setSelectedPurposes((prev) =>
+                    prev.filter((x) => x._id !== p._id)
+                  )
+                }
+                deleteIcon={<MdDelete />}
+                sx={{
+                  fontSize: { xs: 10, sm: 12 },
+                  height: { xs: 24, sm: 28 },
+                }}
+              />
+            ))}
+          </Box>
+
+          <Divider sx={{ my: 2 }} />
+
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            disabled={!reportType || selectedPurposes.length === 0}
+            onClick={generateReport}
+            sx={{
+              py: { xs: 1, sm: 1.5 },
+              borderRadius: 2,
+              fontSize: { xs: '0.75rem', sm: '0.9rem' },
+            }}
+          >
+            Generate Report
+          </Button>
+        </Paper>
+      )}
     </Box>
   );
 };

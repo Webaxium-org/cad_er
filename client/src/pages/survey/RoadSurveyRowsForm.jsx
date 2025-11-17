@@ -11,24 +11,44 @@ import { IoAdd } from 'react-icons/io5';
 import { IoIosRemove } from 'react-icons/io';
 import BasicCheckbox from '../../components/BasicCheckbox';
 import { showAlert } from '../../redux/alertSlice';
-import ButtonLink from '../../components/ButtonLink';
 import { MdArrowBackIosNew } from 'react-icons/md';
 import {
   createSurveyRow,
   endSurveyPurpose,
   getSurveyPurpose,
+  pauseSurveyPurpose,
 } from '../../services/surveyServices';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
 import BasicInput from '../../components/BasicInput';
 import { calculateReducedLevel, initialChartOptions } from '../../constants';
 import CrossSectionChart from './components/CrossSectionChart';
 
-const alertData = {
+const finishSurveyAlertData = {
   title: 'Confirm End of Survey',
   description:
     'Ending this survey will lock all existing data and prevent any new rows from being added. Do you want to continue?',
+  content: '',
   cancelButtonText: 'Cancel',
   submitButtonText: 'Submit',
+};
+
+const pauseSurveyAlertData = {
+  title: 'Pause Survey?',
+  description:
+    'Pausing this survey will save your current progress. You can resume later',
+  content: (
+    <Box mt={2}>
+      <BasicInput
+        label="Back sight*"
+        placeholder="Enter back sight"
+        type="number"
+        name="backSight"
+        id="inpPauseBackSight"
+      />
+    </Box>
+  ),
+  cancelButtonText: 'Cancel',
+  submitButtonText: 'Pause',
 };
 
 const initialFormValues = {
@@ -79,10 +99,10 @@ const RoadSurveyRowsForm = () => {
   const [autoOffset, setAutoOffset] = useState(false);
   const [btnLoading, setBtnLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [isFinishSurveyDisabled, setIsFinishSurveyDisabled] = useState(false);
   const [isLastProposalReading, setIsLastProposalReading] = useState(false); // only for proposal's
   const [chartOptions, setChartOptions] = useState(initialChartOptions);
   const [selectedCs, setSelectedCs] = useState(null);
+  const [alertData, setAlertData] = useState(null);
 
   const schema = Yup.object().shape({
     type: Yup.string().required('Type is required'),
@@ -200,8 +220,11 @@ const RoadSurveyRowsForm = () => {
       }),
   });
 
-  const handleClickOpen = () => {
-    if (formValues.foreSight.trim() || formValues.backSight.trim()) {
+  const handleClickOpen = (action) => {
+    if (
+      action === 'Finish Survey' &&
+      (formValues.foreSight.trim() || formValues.backSight.trim())
+    ) {
       dispatch(
         showAlert({
           type: 'error',
@@ -212,6 +235,33 @@ const RoadSurveyRowsForm = () => {
 
       setOpen(false);
     } else {
+      let updatedAlertData = null;
+
+      if (action === 'Finish Survey' && purpose?.type === 'Initial Level') {
+        updatedAlertData = {
+          ...finishSurveyAlertData,
+          onSubmit: handleEndSurveyPurpose,
+          content: (
+            <Box mt={2}>
+              <BasicInput
+                label="Final foresight*"
+                placeholder="Enter foresight"
+                type="number"
+                name="finalForesight"
+                id="finalForesight"
+              />
+            </Box>
+          ),
+        };
+      } else {
+        updatedAlertData = {
+          ...pauseSurveyAlertData,
+          onSubmit: handlePauseSurvey,
+        };
+      }
+
+      setAlertData(updatedAlertData);
+
       setOpen(true);
     }
   };
@@ -441,9 +491,9 @@ const RoadSurveyRowsForm = () => {
           setRowType(type);
 
           const isLastReading =
-            purpose?.rows?.length >= initialSurvey?.rows?.length - 1;
+            purpose?.rows?.length === initialSurvey?.rows?.length - 1;
 
-          setIsFinishSurveyDisabled(!isLastReading);
+          if (isLastReading) setIsLastProposalReading(true);
         } else {
           setRowType('CP');
         }
@@ -478,8 +528,6 @@ const RoadSurveyRowsForm = () => {
             ...prev,
             chainage: nextChainage,
           }));
-
-          setIsFinishSurveyDisabled(false);
         }
       }
     } catch (error) {
@@ -567,7 +615,7 @@ const RoadSurveyRowsForm = () => {
 
       if (data.success) {
         const message = isLastProposalReading
-          ? `Proposal Ended Successfully`
+          ? `${purpose.type} Ended Successfully`
           : `${rowType} Added Successfully`;
 
         dispatch(
@@ -582,17 +630,14 @@ const RoadSurveyRowsForm = () => {
           return;
         }
 
-        const updatedPurpose = {
-          ...purpose,
-          rows: [...(purpose.rows || []), data.row],
-        };
+        const purposeDoc = data.purpose;
 
         setFormValues({
           ...initialFormValues,
           intermediateOffsets: [{ intermediateSight: '', offset: '' }],
         });
 
-        getNewChainage(updatedPurpose);
+        getNewChainage(purposeDoc);
 
         if (rowType === 'Chainage') {
           setPage(0);
@@ -603,7 +648,7 @@ const RoadSurveyRowsForm = () => {
           setRowType('Chainage');
         }
 
-        setPurpose(updatedPurpose);
+        setPurpose(purposeDoc);
       } else {
         throw new Error('Something went wrong.');
       }
@@ -657,6 +702,36 @@ const RoadSurveyRowsForm = () => {
       handleFormError(error, setFormErrors, dispatch, navigate);
     } finally {
       setBtnLoading(false);
+    }
+  };
+
+  const handlePauseSurvey = async () => {
+    try {
+      const inpBackSight = document.getElementById('inpPauseBackSight');
+
+      if (!inpBackSight?.value?.trim()) {
+        inpBackSight.parentElement.parentElement.classList.add('inp-err');
+        return;
+      } else {
+        inpBackSight.parentElement.parentElement.classList.remove('inp-err');
+      }
+
+      const { data } = await pauseSurveyPurpose(id, inpBackSight.value);
+
+      if (data.success) {
+        dispatch(
+          showAlert({
+            type: 'success',
+            message: `${purpose.type} Paused`,
+          })
+        );
+
+        navigate('/survey');
+      } else {
+        throw new Error('Something went wrong.');
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
     }
   };
 
@@ -753,7 +828,15 @@ const RoadSurveyRowsForm = () => {
           throw Error(`${data?.purpose?.type} already completed`);
         }
 
-        getNewChainage(purposeDoc);
+        if (purposeDoc.status === 'Paused') {
+          const lastRow = purposeDoc.rows[purposeDoc.rows.length - 1];
+
+          setFormValues((prev) => ({ ...prev, backSight: lastRow.backSight }));
+          setRowType('CP');
+        } else {
+          getNewChainage(purposeDoc);
+        }
+
         setPurpose(purposeDoc);
       } catch (error) {
         handleFormError(error, null, dispatch, navigate);
@@ -766,34 +849,7 @@ const RoadSurveyRowsForm = () => {
 
   return (
     <Box p={3}>
-      <AlertDialogSlide
-        {...alertData}
-        open={open}
-        onCancel={handleClose}
-        content={
-          purpose?.type === 'Initial Level' && (
-            <Box
-              sx={{
-                '& .MuiOutlinedInput-root, & .MuiFilledInput-root': {
-                  borderRadius: '15px',
-                },
-                width: '100%',
-                mt: 2,
-              }}
-            >
-              <BasicTextFields
-                name={'finalForesight'}
-                type="number"
-                label={'Final Foresight*'}
-                variant="filled"
-                sx={{ width: '100%' }}
-                id="finalForesight"
-              />
-            </Box>
-          )
-        }
-        onSubmit={handleEndSurveyPurpose}
-      />
+      <AlertDialogSlide {...alertData} open={open} onCancel={handleClose} />
 
       {page === 1 && (
         <Box
@@ -822,38 +878,54 @@ const RoadSurveyRowsForm = () => {
         )}
 
         <Stack spacing={2}>
-          {purpose?.type === 'Initial Level' && page === 0 && (
-            <Stack direction={'row'} justifyContent={'end'} gap={2}>
-              {rowType !== 'Chainage' && (
+          <Stack direction={'row'} justifyContent={'end'} gap={2}>
+            {purpose &&
+              purpose?.status === 'Active' &&
+              purpose?.type === 'Initial Level' &&
+              page === 0 && (
+                <>
+                  {rowType !== 'Chainage' && (
+                    <BasicButtons
+                      value={'Add Chainage'}
+                      onClick={() => handleChangeRowType('Chainage')}
+                      sx={{ backgroundColor: '#0059E7' }}
+                    />
+                  )}
+                  {rowType !== 'CP' && (
+                    <BasicButtons
+                      value={'Add CP'}
+                      onClick={() => handleChangeRowType('CP')}
+                      sx={{ backgroundColor: '#0059E7' }}
+                    />
+                  )}
+                  {rowType !== 'TBM' && (
+                    <BasicButtons
+                      value={'Add TBM'}
+                      onClick={() => handleChangeRowType('TBM')}
+                      sx={{ backgroundColor: '#0059E7' }}
+                    />
+                  )}
+                </>
+              )}
+
+            {purpose &&
+              purpose?.type === 'Initial Level' &&
+              purpose?.status !== 'Paused' &&
+              page === 0 && (
                 <BasicButtons
-                  value={'Add Chainage'}
-                  onClick={() => handleChangeRowType('Chainage')}
-                  sx={{ backgroundColor: '#0059E7' }}
+                  value={'Pause Survey'}
+                  onClick={() => handleClickOpen('Pause Survey')}
+                  sx={{ backgroundColor: '#e7c400ff' }}
                 />
               )}
-              {rowType !== 'CP' && (
-                <BasicButtons
-                  value={'Add CP'}
-                  onClick={() => handleChangeRowType('CP')}
-                  sx={{ backgroundColor: '#0059E7' }}
-                />
-              )}
-              {rowType !== 'TBM' && (
-                <BasicButtons
-                  value={'Add TBM'}
-                  onClick={() => handleChangeRowType('TBM')}
-                  sx={{ backgroundColor: '#0059E7' }}
-                />
-              )}
-            </Stack>
-          )}
+          </Stack>
 
           <Box display={'flex'} flexDirection={'column'} alignItems={'center'}>
             <Typography fontSize={'26px'} fontWeight={700}>
               Please Set The {rowType}:
             </Typography>
             <Typography fontSize={'16px'} fontWeight={400} color="#434343">
-              Sed ut perspiciatis unde omnis iste natus error sit voluptatem
+              Please Enter The Following Values
             </Typography>
           </Box>
         </Stack>
@@ -1017,13 +1089,21 @@ const RoadSurveyRowsForm = () => {
           <Stack direction={'row'} spacing={2}>
             <BasicButtons
               value={
-                isLastProposalReading && page === 1
-                  ? 'Finish Proposal'
+                (purpose?.phase === 'Proposal' &&
+                  isLastProposalReading &&
+                  page === 1) ||
+                (rowType !== 'Chainage' && isLastProposalReading)
+                  ? `Finish ${purpose?.type}`
                   : 'Continue'
               }
               sx={{
                 backgroundColor:
-                  isLastProposalReading && page === 1 ? '#4caf50' : '#0059E7',
+                  (purpose?.phase === 'Proposal' &&
+                    isLastProposalReading &&
+                    page === 1) ||
+                  (rowType !== 'Chainage' && isLastProposalReading)
+                    ? '#4caf50'
+                    : '#0059E7',
                 height: '45px',
               }}
               fullWidth={true}
@@ -1031,14 +1111,13 @@ const RoadSurveyRowsForm = () => {
               loading={btnLoading}
             />
 
-            {rowType === 'CP' && (
+            {rowType === 'CP' && purpose.type === 'Initial Level' && (
               <BasicButtons
                 value={'Finish Survey'}
                 sx={{ backgroundColor: '#4caf50', height: '45px' }}
                 fullWidth={true}
-                onClick={handleClickOpen}
+                onClick={() => handleClickOpen('Finish Survey')}
                 loading={btnLoading}
-                disabled={isFinishSurveyDisabled}
               />
             )}
           </Stack>

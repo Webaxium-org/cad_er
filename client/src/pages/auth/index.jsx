@@ -194,7 +194,7 @@ export default function SignIn() {
 
   React.useEffect(() => {
     dispatch(stopLoading());
-  }, [dispatch]);
+  }, []);
 
   return (
     <>
@@ -282,13 +282,7 @@ export default function SignIn() {
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* ✅ Google Login Button */}
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                width: '100%',
-              }}
-            >
+            <Box className="google-sign-in-wrapper">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
