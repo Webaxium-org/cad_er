@@ -64,7 +64,6 @@ const Home = () => {
   const [temperature, setTemperature] = useState(null);
   const [city, setCity] = useState('Loading...');
   const [weatherCode, setWeatherCode] = useState(null);
-  const [error, setError] = useState(null);
 
   const getIconFromWMO = (code) => {
     const map = {
