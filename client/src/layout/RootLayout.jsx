@@ -4,6 +4,7 @@ import Preloader from './Preloader';
 import CustomSnackbar from '../components/CustomSnackbar';
 import { Outlet } from 'react-router-dom';
 import BasicBottomNavigation from '../components/BasicBottomNavigation';
+import CookieBlockedDialog from './CookieBlockedDialog';
 
 const RootLayout = () => {
   return (
@@ -20,6 +21,9 @@ const RootLayout = () => {
         <Outlet />
 
         <BasicBottomNavigation />
+
+        {/* Add this here */}
+        {/* <CookieBlockedDialog /> */}
       </Box>
     </>
   );

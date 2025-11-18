@@ -64,7 +64,7 @@ export default function BasicBottomNavigation() {
   React.useEffect(() => {
     const activeNav = navItems?.find((item) => item.path === pathname);
 
-    if (activeNav) setValue(activeNav.label);
+    setValue(activeNav ? activeNav.label : '');
   }, [pathname]);
 
   return (
@@ -88,6 +88,7 @@ export default function BasicBottomNavigation() {
           justifyContent: 'space-around',
           py: 1.2,
           boxShadow: '0 -2px 8px rgba(0,0,0,0.05)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
         <BottomNavigation

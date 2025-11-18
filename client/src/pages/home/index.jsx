@@ -142,7 +142,7 @@ const Home = () => {
         }}
         spacing={2}
       >
-        {/* <div
+        <div
           style={{
             position: 'absolute',
             inset: 0,
@@ -154,7 +154,7 @@ const Home = () => {
           }}
         ></div>
 
-        {/* Content */}
+        {/* /* Content */}
         <Stack sx={{ position: 'relative', zIndex: 1 }} spacing={2}>
           {/* Header Row */}
           <Stack
@@ -227,9 +227,9 @@ const Home = () => {
                     backgroundColor: 'rgba(109, 66, 250, 0.21)',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    boxShadow: 'none',
+                    // boxShadow: 'none',
                     width: 'fit-content',
-                    // boxShadow: '0 3px 12px rgba(0,0,0,0.06)',
+                    boxShadow: '0 3px 12px rgba(0,0,0,0.06)',
                   }}
                   onClick={() => handleNavigate(item.link)}
                 >

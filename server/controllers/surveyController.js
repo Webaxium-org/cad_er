@@ -883,14 +883,18 @@ const pauseSurveyPurpose = async (req, res, next) => {
 };
 
 const generateSurveyPurpose = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
-      params: { surveyId },
+      params: { id },
       body: {
         purpose,
         proposal,
-        proposedLevel,
+        quantity,
         averageHeight,
+        length,
         lSection,
         lsSlop,
         cSection,
@@ -899,51 +903,40 @@ const generateSurveyPurpose = async (req, res, next) => {
       },
     } = req;
 
-    throw createHttpError(400, 'Work in progress');
-
     // 🔹 Basic validation
-    if (!purpose || !surveyId) {
-      throw createHttpError(400, 'Purpose and surveyId are required');
+    if (!purpose || !id) {
+      throw createHttpError(400, 'Purpose and surveyId are required.');
     }
 
-    // 🔹 Proposal field validation (if proposal mode)
-    if (proposal) {
-      const requiredFields = [proposedLevel, averageHeight, lSection, lsSlop];
+    // Required fields used for proposal generation
+    const requiredFields = [quantity, averageHeight, lSection, lsSlop, length];
+    const missingRequired = requiredFields.some(
+      (x) => x === undefined || x === null || x === ''
+    );
 
-      // Check if any of the always-required fields are missing
-      const missingRequired = requiredFields.some(
-        (field) => field === undefined || field === null || field === ''
+    if (missingRequired) {
+      throw createHttpError(
+        400,
+        'Missing required fields for proposal generation.'
       );
-
-      if (missingRequired) {
-        throw createHttpError(400, 'Missing required fields for proposal');
-      }
-
-      // Conditional validation for cross-section inputs
-      const hasCsPair =
-        cSection !== undefined &&
-        cSection !== null &&
-        cSection !== '' &&
-        csSlop !== undefined &&
-        csSlop !== null &&
-        csSlop !== '';
-
-      const hasCsCamper =
-        csCamper !== undefined && csCamper !== null && csCamper !== '';
-
-      if (!hasCsPair && !hasCsCamper) {
-        throw createHttpError(
-          400,
-          'Please provide either (Cross section slop) or Cross section camper'
-        );
-      }
     }
 
-    const type = proposal ? proposal : purpose;
+    // Conditional validation for cross-section inputs
+    const hasCsPair = cSection && csSlop && cSection !== '' && csSlop !== '';
+
+    const hasCsCamper =
+      csCamper !== undefined && csCamper !== null && csCamper !== '';
+
+    if (!hasCsPair && !hasCsCamper) {
+      throw createHttpError(
+        400,
+        'Please enter either both cross-section slope fields or a cross-section camber.'
+      );
+    }
 
     // 🔹 Fetch active survey
     const survey = await Survey.findOne({
-      _id: surveyId,
+      _id: id,
       isSurveyFinish: false,
       deleted: false,
     })
@@ -958,60 +951,142 @@ const generateSurveyPurpose = async (req, res, next) => {
       .session(session);
 
     if (!survey) {
-      throw createHttpError(404, 'Active survey not found');
+      throw createHttpError(404, 'Active survey not found.');
     }
 
-    let relation = null;
+    // 🔹 Does this proposal already exist?
+    const isProposalExist = survey.purposes?.find((p) => p.type === proposal);
 
-    // 🔹 Check if purpose already exists
-    const isPurposeExist = survey.purposes?.find((p) => p.type === type);
-    if (isPurposeExist) {
-      throw createHttpError(409, `Purpose "${type}" already exists`);
-    }
-
-    // 🔹 Check for duplicate proposal relation
-    if (proposal) {
-      const existingProposal = survey.purposes?.find(
-        (p) => p.relation?.type === purpose && p.type === proposal
+    if (isProposalExist) {
+      throw createHttpError(
+        409,
+        `A survey with the name "${proposal}" already exists.`
       );
-
-      if (existingProposal) {
-        throw createHttpError(
-          409,
-          `A proposal between "${purpose}" and "${proposal}" already exists`
-        );
-      }
-
-      const isPurposeExist = survey.purposes?.find((p) => p.type === purpose);
-      if (!isPurposeExist) {
-        throw createHttpError(409, `There is no survey found width ${purpose}`);
-      }
-
-      relation = isPurposeExist._id;
     }
 
-    // 🔹 Create purpose document
+    // 🔹 Check if relationship already exists
+    const existingProposal = survey.purposes?.find(
+      (p) => p.relation?.type === purpose && p.type === proposal
+    );
+
+    if (existingProposal) {
+      throw createHttpError(
+        409,
+        `A proposal between "${purpose}" and "${proposal}" already exists.`
+      );
+    }
+
+    // 🔹 Check if the base purpose exists
+    const basePurpose = survey.purposes?.find((p) => p.type === purpose);
+
+    if (!basePurpose) {
+      throw createHttpError(404, `Survey purpose "${purpose}" not found.`);
+    }
+
+    const relation = basePurpose._id;
+
+    // 🔹 Filter chainage rows from base purpose
+    const readingsToCreate = basePurpose.rows?.filter(
+      (r) => r.type === 'Chainage'
+    );
+
+    if (!readingsToCreate?.length) {
+      throw createHttpError(
+        409,
+        `No chainage readings found to generate "${proposal}".`
+      );
+    }
+
+    // 🔹 Create new proposal purpose
     const [purposeDoc] = await SurveyPurpose.create(
       [
         {
-          surveyId,
-          type,
-          phase: proposal ? 'Proposal' : 'Actual',
-          ...(proposal && {
-            proposedLevel,
-            averageHeight,
-            lSection,
-            lsSlop,
-            cSection,
-            csSlop,
-            csCamper,
-            relation,
-          }),
+          surveyId: id,
+          type: proposal,
+          phase: 'Proposal',
+          quantity,
+          averageHeight,
+          lSection,
+          lsSlop,
+          cSection,
+          csSlop,
+          csCamper,
+          relation,
+          status: 'Finished',
+          isPurposeFinish: true,
+          purposeFinishDate: new Date(),
         },
       ],
       { session }
     );
+
+    // -----------------------------
+    // 🔹 Bulk Insert Rows (FASTEST)
+    // -----------------------------
+
+    const roadWidth = Number(readingsToCreate[0]?.roadWidth) || 0;
+
+    const bulkOps = readingsToCreate.map((reading) => {
+      // ✅ FIX 1: Correct reduce (your version mutated curr incorrectly)
+      const totalReadingReducedLevel = reading.reducedLevels.reduce(
+        (acc, curr) => acc + Number(curr),
+        0
+      );
+
+      // Assuming always 2 readings?
+      const avgReadingReducedLevel =
+        totalReadingReducedLevel / reading.reducedLevels.length;
+
+      // Last reading always same → calculate once outside map (optimization)
+      const lastReading = readingsToCreate.at(-1);
+
+      // chainage format "X/Y" → get Y safely
+      const limit = Number(lastReading?.chainage?.split('/')?.[1]) || 0;
+
+      // quantity MUST be non-zero
+      const safeQuantity = Number(quantity) || 1;
+
+      const value = (limit * roadWidth) / safeQuantity;
+
+      // Build updated RL array
+      const reducedLevels = reading.reducedLevels.map(() =>
+        Number(avgReadingReducedLevel + value).toFixed(3)
+      );
+
+      return {
+        insertOne: {
+          document: {
+            surveyId: id,
+            purposeId: purposeDoc._id,
+            type: 'Chainage',
+            chainage: reading.chainage,
+            spacing: reading.spacing,
+            roadWidth: reading.roadWidth,
+            reducedLevels,
+            heightOfInstrument: reading.heightOfInstrument,
+            offsets: reading.offsets,
+            remarks: reading.remarks,
+          },
+        },
+      };
+    });
+
+    if (bulkOps.length > 0) {
+      await SurveyRow.bulkWrite(bulkOps, { session });
+    }
+
+    // 🔹 Commit transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({
+      success: true,
+      message: `Survey proposal "${proposal}" generated successfully.`,
+      purpose: purposeDoc,
+    });
   } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
     next(err);
   }
 };

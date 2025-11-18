@@ -220,6 +220,17 @@ const RoadSurveyRowsForm = () => {
       }),
   });
 
+  const handleCalculateFinalForesight = (e) => {
+    const inpFinalForesight = document.getElementById('finalForesight');
+
+    const lastReading = purpose.rows.at(-1);
+    const reducedLevel = purpose.surveyId?.reducedLevel || 0;
+
+    const value = Number(lastReading.heightOfInstrument) - Number(reducedLevel);
+
+    inpFinalForesight.value = e.target.checked ? value : '';
+  };
+
   const handleClickOpen = (action) => {
     if (
       action === 'Finish Survey' &&
@@ -243,6 +254,14 @@ const RoadSurveyRowsForm = () => {
           onSubmit: handleEndSurveyPurpose,
           content: (
             <Box mt={2}>
+              <Stack direction={'row'} alignItems={'center'}>
+                <Typography fontSize={'16px'} fontWeight={400} color="#434343">
+                  Auto calculate
+                </Typography>
+                <BasicCheckbox
+                  onChange={(e) => handleCalculateFinalForesight(e)}
+                />
+              </Stack>
               <BasicInput
                 label="Final foresight*"
                 placeholder="Enter foresight"
@@ -261,7 +280,6 @@ const RoadSurveyRowsForm = () => {
       }
 
       setAlertData(updatedAlertData);
-
       setOpen(true);
     }
   };

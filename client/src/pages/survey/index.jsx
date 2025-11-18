@@ -1,5 +1,4 @@
 import { Box, Stack, Typography } from '@mui/material';
-import LandingImg from '../../assets/landing.jpg';
 import BasicButtons from '../../components/BasicButton';
 import { FaRoad } from 'react-icons/fa6';
 import { FaWater } from 'react-icons/fa';
@@ -63,14 +62,13 @@ const Index = () => {
       {showAlert && <SimpleAlert {...alertData} />}
       <Stack spacing={5}>
         <Box className="landing-img-wrapper">
-          <img
-            src={LandingImg}
-            srcSet={`${LandingImg}?w=800 800w, ${LandingImg}?w=1600 1600w, ${LandingImg}?w=2400 2400w`}
+          {/* <img
+            src={''}
+            srcSet={``}
             sizes="100vw"
             alt="landing"
-            // loading="lazy"
             className="landing-img"
-          />
+          /> */}
         </Box>
 
         <Stack alignItems={'center'}>

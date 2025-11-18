@@ -115,6 +115,14 @@ const inputDetails = [
     for: 'Proposed Level',
   },
   {
+    label: 'Length*',
+    name: 'length',
+    type: 'number',
+    placeholder: '0/000',
+    hidden: true,
+    for: 'Proposed Level',
+  },
+  {
     label: '',
     name: 'lSection',
     type: 'number',
@@ -232,6 +240,11 @@ const RoadSurveyForm = () => {
             .required('Quantity is required')
         : Yup.string().nullable(),
 
+    length:
+      type && entryType === 'autoGenerate'
+        ? Yup.string().required('Length is required')
+        : Yup.string().nullable(),
+
     proposedLevel:
       type && entryType === 'manualEntry'
         ? Yup.number()
@@ -328,16 +341,26 @@ const RoadSurveyForm = () => {
       if (data.success) {
         const purposeId = data?.survey?.purposeId;
 
+        const message =
+          id && entryType === 'autoGenerate'
+            ? `${formValues.proposal} generated successfully`
+            : 'Form Submitted Successfully';
+
+        const link =
+          id && entryType === 'autoGenerate'
+            ? '/survey/purpose'
+            : `/survey/road-survey/${purposeId}/rows`;
+
         dispatch(
           showAlert({
             type: 'success',
-            message: `Form Submitted Successfully`,
+            message,
           })
         );
 
         dispatch(startLoading());
 
-        navigate(`/survey/road-survey/${purposeId}/rows`);
+        navigate(link);
       } else {
         throw new Error('Something went wrong.');
       }
@@ -434,6 +457,10 @@ const RoadSurveyForm = () => {
                   return { ...e, hidden: entryType === 'manualEntry' };
                 }
 
+                if (e.name === 'length') {
+                  return { ...e, hidden: entryType === 'manualEntry' };
+                }
+
                 return { ...e, hidden: false };
               }
 
@@ -514,7 +541,6 @@ const RoadSurveyForm = () => {
               <Typography
                 variant="body2"
                 sx={{
-                  mb: 0.5,
                   fontWeight: 500,
                   color: 'text.secondary',
                 }}
@@ -573,7 +599,6 @@ const RoadSurveyForm = () => {
                             <Typography
                               variant="body2"
                               sx={{
-                                mb: 0.5,
                                 fontWeight: 500,
                                 color: 'text.secondary',
                               }}
