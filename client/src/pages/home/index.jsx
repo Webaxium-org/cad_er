@@ -229,7 +229,7 @@ const Home = () => {
                     transition: 'all 0.3s ease',
                     boxShadow: 'none',
                     width: 'fit-content',
-                    boxShadow: '0 3px 12px rgba(0,0,0,0.06)',
+                    // boxShadow: '0 3px 12px rgba(0,0,0,0.06)',
                   }}
                   onClick={() => handleNavigate(item.link)}
                 >
