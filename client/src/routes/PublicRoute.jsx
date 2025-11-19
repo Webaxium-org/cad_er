@@ -3,9 +3,9 @@ import { useSelector } from 'react-redux';
 import CustomSnackbar from '../components/CustomSnackbar';
 
 const PublicRoute = () => {
-  const { currentUser } = useSelector((state) => state.user);
+  const { user } = useSelector((state) => state.user);
 
-  return currentUser ? (
+  return user ? (
     <Navigate to="/" replace />
   ) : (
     <>

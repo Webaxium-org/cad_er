@@ -1,27 +1,12 @@
 import { useEffect } from 'react';
 import { Avatar, Box, Typography, Paper, Stack, Divider } from '@mui/material';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { stopLoading } from '../../redux/loadingSlice';
-
-const user = {
-  name: 'Neftu',
-  email: 'neftu@surveyapp.com',
-  avatar: '',
-  phone: '+91 9876543210',
-  role: 'Survey Engineer',
-  location: 'Tamil Nadu, India',
-
-  company: 'SurveyPro Pvt Ltd',
-  department: 'Field Operations',
-  designation: 'Senior Surveyor',
-
-  surveys: 28,
-  completed: 20,
-  pending: 8,
-};
 
 const Profile = () => {
   const dispatch = useDispatch();
+
+  const { user } = useSelector((state) => state.user);
 
   useEffect(() => {
     dispatch(stopLoading());
@@ -48,11 +33,11 @@ const Profile = () => {
         {/* User Info */}
         <Box textAlign="center">
           <Typography fontSize="18px" fontWeight={700}>
-            {user?.name || 'Survey User'}
+            {user?.name || 'N/A'}
           </Typography>
 
           <Typography fontSize="13px" sx={{ opacity: 0.7 }}>
-            {user?.email || 'user@example.com'}
+            {user?.email || 'N/A'}
           </Typography>
         </Box>
 
@@ -69,19 +54,24 @@ const Profile = () => {
       <Stack mt={3} p={3} spacing={2}>
         {/* Personal Info Section */}
         <Section title="Personal Information">
-          <Info label="Phone" value={user?.phone} />
-          <Info label="Role" value={user?.role} />
-          <Info label="Location" value={user?.location} />
+          <Info label="Email" value={user?.email} />
+          <Info label="Phone" value={user?.phone || 'N/A'} />
+          <Info label="Role" value={user?.role || 'N/A'} />
+          <Info label="Location" value={user?.location || 'N/A'} />
         </Section>
 
-        <Divider sx={{ width: '100%' }} />
+        {user?.organization && (
+          <>
+            <Divider sx={{ width: '100%' }} />
 
-        {/* Organization Info Section */}
-        <Section title="Organization Details">
-          <Info label="Company" value={user?.company} />
-          <Info label="Department" value={user?.department} />
-          <Info label="Designation" value={user?.designation} />
-        </Section>
+            {/* Organization Info Section */}
+            <Section title="Organization Details">
+              <Info label="Organization" value={user?.organization} />
+              <Info label="Department" value={user?.department} />
+              <Info label="Designation" value={user?.designation} />
+            </Section>
+          </>
+        )}
       </Stack>
     </Paper>
   );

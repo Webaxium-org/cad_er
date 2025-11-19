@@ -18,6 +18,8 @@ import PublicRoute from './routes/PublicRoute';
 import ProtectedRoute from './routes/ProtectedRoute';
 import CrossSectionReport from './pages/survey/CrossSectionReport';
 import Profile from './pages/user/Profile';
+import OrganizationsDashboard from './pages/organization';
+import UsersDashboard from './pages/user';
 
 function App() {
   return (
@@ -33,6 +35,14 @@ function App() {
               <Route index element={<Home />} />
 
               <Route path="/profile" element={<Profile />} />
+
+              <Route path="organizations">
+                <Route index element={<OrganizationsDashboard />} />
+              </Route>
+
+              <Route path="users">
+                <Route index element={<UsersDashboard />} />
+              </Route>
 
               <Route path="survey">
                 <Route index element={<SurveyList />} />

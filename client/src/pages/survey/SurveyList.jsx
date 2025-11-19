@@ -27,16 +27,10 @@ export default function SurveyList() {
 
   const dispatch = useDispatch();
 
-  const { global } = useSelector((state) => state.loading);
-
   const [surveys, setSurveys] = useState([]);
 
   const fetchSurveys = async () => {
     try {
-      if (!global) {
-        dispatch(startLoading());
-      }
-
       const { data } = await getAllSurvey();
 
       if (data.success) {

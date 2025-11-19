@@ -66,7 +66,7 @@ const CrossSectionReport = () => {
       const propRow = proposedLevel.rows?.find(
         (r) => r.chainage === row.chainage
       );
-      console.log(propRow, proposedLevel)
+
       if (propRow) {
         proposal = propRow?.reducedLevels || [];
       }

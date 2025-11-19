@@ -1,10 +1,11 @@
 import { FaSignOutAlt } from 'react-icons/fa';
-import { IoAddCircleOutline, IoHomeOutline } from 'react-icons/io5';
-import { RiSurveyLine } from 'react-icons/ri';
-import { TbReportAnalytics } from 'react-icons/tb';
+import { IoHomeOutline } from 'react-icons/io5';
+import { GoOrganization, GoProject } from 'react-icons/go';
+import { FaUsers } from "react-icons/fa";
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logOut } from '../redux/userSlice';
+import { persistor } from '../redux/store';
 import {
   Box,
   List,
@@ -17,19 +18,64 @@ import {
   Typography,
   Stack,
 } from '@mui/material';
+import { useEffect, useState } from 'react';
+
+const menuListDetails = [
+  {
+    id: '1',
+    label: 'Home',
+    icon: <IoHomeOutline />,
+    path: '/',
+  },
+  {
+    label: 'Organizations',
+    icon: <GoOrganization />,
+    path: '/organizations',
+    required: ['Super Admin'],
+  },
+  {
+    label: 'Users',
+    icon: <FaUsers />,
+    path: '/users',
+    required: [
+      'Super Admin',
+      'Survey Manager',
+      'Chief Surveyor',
+      'Senior Surveyor',
+    ],
+  },
+  { label: 'Projects', icon: <GoProject />, path: '/survey' },
+];
 
 const DrawerList = ({ toggleDrawer }) => {
   const dispatch = useDispatch();
 
   const navigate = useNavigate();
 
-  const { currentUser } = useSelector((state) => state.user);
+  const { user } = useSelector((state) => state.user);
+
+  const [menuList, setMenuList] = useState([]);
+
+  const handleNavigate = (link) => {
+    navigate(link);
+  };
 
   const handleLogout = () => {
     dispatch(logOut());
+    persistor.purge();
 
-    navigate('/');
+    handleNavigate('/');
   };
+
+  useEffect(() => {
+    if (user) {
+      const filteredMenu = menuListDetails.filter((menu) =>
+        menu.required ? menu.required.includes(user.role) : true
+      );
+
+      setMenuList(filteredMenu);
+    }
+  }, [user]);
 
   return (
     <Box
@@ -45,12 +91,11 @@ const DrawerList = ({ toggleDrawer }) => {
     >
       {/* 👤 User Profile Section */}
       <Stack
-        direction="row"
         alignItems="center"
         spacing={2}
         sx={{
           p: 2,
-          background: 'linear-gradient(135deg, #6334FA 0%, #8E6CFF 100%)',
+          backgroundColor: '#2775ad',
           color: 'white',
         }}
       >
@@ -60,22 +105,21 @@ const DrawerList = ({ toggleDrawer }) => {
           sx={{ width: 48, height: 48, border: '2px solid white' }}
         />
         <Box>
-          <Typography fontWeight={600}>{currentUser?.name}</Typography>
+          <Typography fontWeight={600}>{user?.name}</Typography>
           <Typography fontSize="0.8rem" sx={{ opacity: 0.9 }}>
-            {currentUser?.email}
+            {user?.email}
           </Typography>
         </Box>
       </Stack>
 
       {/* 🔹 Menu Items */}
       <List sx={{ flexGrow: 1 }}>
-        {[
-          { text: 'Home', icon: <IoHomeOutline />, path: '/' },
-          { text: 'Surveys', icon: <RiSurveyLine />, path: '/survey' },
-          { text: 'Reports', icon: <TbReportAnalytics />, path: '/reports' },
-          { text: 'Settings', icon: <IoAddCircleOutline />, path: '/settings' },
-        ].map((item) => (
-          <ListItem key={item.text} disablePadding>
+        {menuList.map((item) => (
+          <ListItem
+            key={item.label}
+            disablePadding
+            onClick={() => handleNavigate(item.path)}
+          >
             <ListItemButton
               sx={{
                 borderRadius: '8px',
@@ -90,7 +134,7 @@ const DrawerList = ({ toggleDrawer }) => {
                 {item.icon}
               </ListItemIcon>
               <ListItemText
-                primary={item.text}
+                primary={item.label}
                 primaryTypographyProps={{ fontWeight: 500 }}
               />
             </ListItemButton>

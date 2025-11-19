@@ -27,16 +27,10 @@ export default function PurposeList() {
 
   const dispatch = useDispatch();
 
-  const { global } = useSelector((state) => state.loading);
-
   const [purposes, setPurposes] = useState([]);
 
   const fetchPurposes = async () => {
     try {
-      if (!global) {
-        dispatch(startLoading());
-      }
-
       const { data } = await getAllSurveyPurpose();
 
       if (data.success) {

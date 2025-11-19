@@ -7,6 +7,8 @@ import configureCors from './utils/cors.js';
 import errorHandler from './middleware/errorHandler.js';
 
 import indexRouter from './routes/indexRoute.js';
+import organizationRouter from './routes/organizationRoute.js';
+import userRouter from './routes/userRoute.js';
 import surveyRouter from './routes/surveyRoute.js';
 
 const app = express();
@@ -37,6 +39,8 @@ app.use(configureCors());
 
 // 🟢 Routes
 app.use('/api', indexRouter);
+app.use('/api/organization', organizationRouter);
+app.use('/api/user', userRouter);
 app.use('/api/surveys', surveyRouter);
 
 // 🟢 Error Handler Middleware (Keep at the End)

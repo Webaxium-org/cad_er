@@ -11,6 +11,8 @@ import { stopLoading } from '../../redux/loadingSlice';
 import { useNavigate } from 'react-router-dom';
 import BasicInput from '../../components/BasicInput';
 
+import BackgroundImage from '../../assets/background-img.png'
+
 import { IoMdNotifications } from 'react-icons/io';
 
 import {
@@ -55,7 +57,7 @@ const Home = () => {
 
   const navigate = useNavigate();
 
-  const { currentUser } = useSelector((state) => state.user);
+  const { user } = useSelector((state) => state.user);
 
   const handleNavigate = (link) => {
     navigate(link);
@@ -145,7 +147,7 @@ const Home = () => {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url("src/assets/background-img.png")',
+            backgroundImage: `url(${BackgroundImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.25,
@@ -194,7 +196,7 @@ const Home = () => {
               Hello, Welcome 🎉
             </Typography>
             <Typography fontSize="20px" fontWeight="600">
-              {currentUser?.name}
+              {user?.name}
             </Typography>
           </Box>
 

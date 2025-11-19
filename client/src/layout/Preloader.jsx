@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
-import webaxLogo from '../assets/loader-logo.png';
 import { useSelector } from 'react-redux';
 
 const Preloader = () => {

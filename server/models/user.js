@@ -10,7 +10,7 @@ const UserSchema = new Schema(
     },
     organization: {
       type: Types.ObjectId,
-      ref: 'Company',
+      ref: 'Organization',
     },
     designation: {
       type: String,

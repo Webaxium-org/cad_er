@@ -76,13 +76,24 @@ const Report = () => {
     else setSelectedPurposes(survey?.purposes || []);
   };
 
+  const getLink = () => {
+    let link = `/survey/road-survey/${id}/`;
+
+    if (reportType === 'cross') {
+      link += 'report';
+    }
+    if (reportType === 'area') {
+      link += 'area-report';
+    }
+    if (reportType === 'volume') {
+      link += 'volume-report';
+    }
+
+    return link;
+  };
+
   const generateReport = () => {
-    navigate(`/report/${id}/preview`, {
-      state: {
-        selectedPurposes,
-        reportType,
-      },
-    });
+    navigate(getLink());
   };
 
   return (
