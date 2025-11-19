@@ -130,14 +130,14 @@ export default function BasicBottomNavigation() {
                 width: 0,
                 height: 0,
                 borderRadius: '50%',
-                backgroundColor: '#6334FA',
+                backgroundColor: '#2775ad',
                 transition: 'all 0.3s ease',
                 zIndex: -5,
               },
             },
 
             '& .Mui-selected': {
-              color: '#6334FA',
+              color: '#2775ad',
               fontWeight: 600,
               '&::before': {
                 width: 50,
@@ -148,7 +148,7 @@ export default function BasicBottomNavigation() {
                 height: 10,
               },
             },
-            '& .Mui-selected svg': { color: '#6334FA' },
+            '& .Mui-selected svg': { color: '#2775ad' },
           }}
           value={value}
           onChange={handleChange}

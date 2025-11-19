@@ -11,7 +11,7 @@ import { stopLoading } from '../../redux/loadingSlice';
 import { useNavigate } from 'react-router-dom';
 import BasicInput from '../../components/BasicInput';
 
-import BackgroundImage from '../../assets/background-img.png'
+import BackgroundImage from '../../assets/background-img.png';
 
 import { IoMdNotifications } from 'react-icons/io';
 
@@ -49,6 +49,30 @@ const actions = [
     link: '/survey/add-survey',
   },
 ];
+
+const colors = [
+  {
+    bg: '#F5F9FC',
+    icon: '#2775AD',  // your theme as accent
+    hover: '#E8F1F8',
+  },
+  {
+    bg: '#F6FAF8',
+    icon: '#3A7F6C',
+    hover: '#EAF3EE',
+  },
+  {
+    bg: '#FBF9F4',
+    icon: '#AA7A33',
+    hover: '#F4EEDF',
+  },
+  {
+    bg: '#FCF6F7',
+    icon: '#B5545C',
+    hover: '#F4E4E6',
+  },
+];
+
 
 const otherLinks = [];
 
@@ -138,12 +162,12 @@ const Home = () => {
           borderBottomRightRadius: '28px',
           overflow: 'hidden',
           color: '#fff',
-          backgroundColor: 'rgba(99, 53, 250, 1)',
+          backgroundColor: '#2775ad',
           p: 2,
         }}
         spacing={2}
       >
-        <div
+        {/* <div
           style={{
             position: 'absolute',
             inset: 0,
@@ -153,7 +177,7 @@ const Home = () => {
             opacity: 0.25,
             zIndex: 0,
           }}
-        ></div>
+        ></div> */}
 
         {/* /* Content */}
         <Stack sx={{ position: 'relative', zIndex: 1 }} spacing={2}>
@@ -214,28 +238,30 @@ const Home = () => {
         </Typography>
         <Grid container spacing={2} justifyContent={'center'}>
           {' '}
-          {actions.map((item, i) => (
-            <Grid key={i} size={{ xs: 3 }}>
+          {actions.map((item, idx) => (
+            <Grid key={idx} size={{ xs: 3 }}>
               <Stack alignItems={'center'} spacing={0.5}>
                 {' '}
                 <Paper
-                  elevation={2}
+                  elevation={3}
                   sx={{
                     px: 2.5,
                     py: 2,
                     borderRadius: '22px',
                     textAlign: 'center',
-                    backgroundColor: 'rgba(109, 66, 250, 0.21)',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    // boxShadow: 'none',
                     width: 'fit-content',
-                    boxShadow: '0 3px 12px rgba(0,0,0,0.06)',
+                    backgroundColor: colors[idx].bg,
+                    '&:hover': {
+                      backgroundColor: colors[idx].hover,
+                      transform: 'scale(1.05)',
+                    },
                   }}
                   onClick={() => handleNavigate(item.link)}
                 >
                   {' '}
-                  <Box sx={{ color: '#6334FA' }}>{item.icon}</Box>{' '}
+                  <Box sx={{ color: colors[idx].icon }}>{item.icon}</Box>{' '}
                 </Paper>{' '}
                 <Typography fontSize="12px" fontWeight={500} align="center">
                   {' '}
