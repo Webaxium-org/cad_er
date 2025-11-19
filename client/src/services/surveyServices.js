@@ -62,8 +62,8 @@ export const endSurveyPurpose = (id, finalForesight) => {
   );
 };
 
-export const pauseSurveyPurpose = (id, backSight) => {
+export const pauseSurveyPurpose = (id, foreSight) => {
   return axiosInstance.patch(
-    `surveys/${id}/purposes/pause?backSight=${backSight}`
+    `surveys/${id}/purposes/pause?foreSight=${foreSight}`
   );
 };

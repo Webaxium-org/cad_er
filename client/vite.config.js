@@ -7,6 +7,6 @@ export default defineConfig({
   preview: {
     port: 8080,
     host: true,
-    allowedHosts: ['cader-8kvsl.ondigitalocean.app'],
+    allowedHosts: ['cader-8kvsl.ondigitalocean.app', 'https://getcader.com'],
   },
 });

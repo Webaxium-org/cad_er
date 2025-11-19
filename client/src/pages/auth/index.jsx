@@ -203,6 +203,7 @@ export default function SignIn() {
         direction="column"
         justifyContent="center"
         alignItems="center"
+        minHeight={'660px !important'}
       >
         <Card variant="outlined">
           <SitemarkIcon />

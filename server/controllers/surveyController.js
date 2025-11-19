@@ -265,7 +265,6 @@ const createSurveyRow = async (req, res, next) => {
     const isProposal = purpose.phase === 'Proposal';
     const isSurveyPaused = purpose.status === 'Paused';
     let isLastReading = false;
-    let bs = null;
 
     // 🔹 Validate type and required fields (same as before)
     const types = {
@@ -817,13 +816,13 @@ const pauseSurveyPurpose = async (req, res, next) => {
   try {
     const {
       params: { id },
-      query: { backSight },
+      query: { foreSight },
     } = req;
 
-    if (!backSight?.trim()) {
+    if (!foreSight?.trim()) {
       throw createHttpError(
         400,
-        'Backsight value is required to pause the survey.'
+        'foresight value is required to pause the survey.'
       );
     }
 
@@ -861,7 +860,7 @@ const pauseSurveyPurpose = async (req, res, next) => {
         {
           purposeId: survey._id,
           type: 'CP',
-          backSight,
+          foreSight,
           remarks: ['CP'],
         },
       ],

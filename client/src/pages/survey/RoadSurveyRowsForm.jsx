@@ -39,11 +39,11 @@ const pauseSurveyAlertData = {
   content: (
     <Box mt={2}>
       <BasicInput
-        label="Back sight*"
-        placeholder="Enter back sight"
+        label="Foresight*"
+        placeholder="Enter foresight"
         type="number"
-        name="backSight"
-        id="inpPauseBackSight"
+        name="foreSight"
+        id="inpPauseForeSight"
       />
     </Box>
   ),
@@ -662,7 +662,10 @@ const RoadSurveyRowsForm = () => {
           setAutoOffset(false);
         }
 
-        if (purpose.type === 'Initial Level' && rowType === 'TBM') {
+        if (
+          (purpose.type === 'Initial Level' && rowType === 'TBM') ||
+          purpose.status === 'Paused'
+        ) {
           setRowType('Chainage');
         }
 
@@ -725,16 +728,16 @@ const RoadSurveyRowsForm = () => {
 
   const handlePauseSurvey = async () => {
     try {
-      const inpBackSight = document.getElementById('inpPauseBackSight');
+      const inpForeSight = document.getElementById('inpPauseForeSight');
 
-      if (!inpBackSight?.value?.trim()) {
-        inpBackSight.parentElement.parentElement.classList.add('inp-err');
+      if (!inpForeSight?.value?.trim()) {
+        inpForeSight.parentElement.parentElement.classList.add('inp-err');
         return;
       } else {
-        inpBackSight.parentElement.parentElement.classList.remove('inp-err');
+        inpForeSight.parentElement.parentElement.classList.remove('inp-err');
       }
 
-      const { data } = await pauseSurveyPurpose(id, inpBackSight.value);
+      const { data } = await pauseSurveyPurpose(id, inpForeSight.value);
 
       if (data.success) {
         dispatch(
@@ -849,7 +852,7 @@ const RoadSurveyRowsForm = () => {
         if (purposeDoc.status === 'Paused') {
           const lastRow = purposeDoc.rows[purposeDoc.rows.length - 1];
 
-          setFormValues((prev) => ({ ...prev, backSight: lastRow.backSight }));
+          setFormValues((prev) => ({ ...prev, foreSight: lastRow.foreSight }));
           setRowType('CP');
         } else {
           getNewChainage(purposeDoc);
