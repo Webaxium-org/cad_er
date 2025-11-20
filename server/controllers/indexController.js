@@ -53,7 +53,7 @@ export const loginUser = async (req, res, next) => {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      path: '/refresh',
+      path: '/',
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
@@ -137,7 +137,7 @@ export const googleLogin = async (req, res, next) => {
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      path: '/refresh',
+      path: '/',
     });
 
     // 6. Extract safe user
@@ -165,7 +165,7 @@ export const logoutUser = async (req, res, next) => {
         httpOnly: true,
         secure: isProd,
         sameSite: isProd ? 'none' : 'lax',
-        path: '/refresh',
+        path: '/',
       });
 
       return res.status(200).json({
@@ -182,7 +182,7 @@ export const logoutUser = async (req, res, next) => {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      path: '/refresh',
+      path: '/',
     });
 
     return res.status(200).json({
@@ -230,7 +230,7 @@ export const refreshToken = async (req, res) => {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      path: '/refresh',
+      path: '/',
       maxAge: 30 * 86400000,
     });
 
