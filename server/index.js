@@ -33,9 +33,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // 🟢 Middlewares
-app.use(express.json());
-app.use(cookieParser());
 app.use(configureCors());
+app.use(express.json());
+app.use(cookieParser())
 
 // 🟢 Routes
 app.use('/api', indexRouter);

@@ -55,6 +55,8 @@ export const loginUser = async (req, res, next) => {
         secure: true,
         sameSite: "none",
         path: "/",
+        domain: "cader-server-n3t6t.ondigitalocean.app",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(200)
       .json({ status: "success", user: { ...userWithoutPassword } });
@@ -107,6 +109,8 @@ export const googleLogin = async (req, res, next) => {
         secure: true,
         sameSite: "none",
         path: "/",
+        domain: "cader-server-n3t6t.ondigitalocean.app",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(200)
       .json({ status: "success", user: { ...userWithoutPassword } });
@@ -122,6 +126,7 @@ export const logoutUser = (req, res, next) => {
       secure: true,
       sameSite: "none",
       path: "/",
+      domain: "cader-server-n3t6t.ondigitalocean.app",
     });
 
     res.status(200).json({
