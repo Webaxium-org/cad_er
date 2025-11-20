@@ -54,7 +54,7 @@ export const loginUser = async (req, res, next) => {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        domain: "https://cader-server-n3t6t.ondigitalocean.app",
+        domain: "cader-server-n3t6t.ondigitalocean.app",
         path: "/",
       })
       .status(200)
@@ -107,7 +107,7 @@ export const googleLogin = async (req, res, next) => {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        domain: "https://cader-server-n3t6t.ondigitalocean.app",
+        domain: "cader-server-n3t6t.ondigitalocean.app",
         path: "/",
       })
       .status(200)
@@ -123,7 +123,7 @@ export const logoutUser = (req, res, next) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      domain: "https://cader-server-n3t6t.ondigitalocean.app",
+      domain: "cader-server-n3t6t.ondigitalocean.app",
       path: "/",
     });
 
