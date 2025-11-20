@@ -17,7 +17,7 @@ router.post('/google', googleLogin);
 
 router.get('/logout', logoutUser);
 
-router.use(requireAuth, isAuthenticated);
+// router.use(requireAuth, isAuthenticated);
 
 router.get('/', getDashboard);
 

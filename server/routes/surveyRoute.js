@@ -20,13 +20,14 @@ import {
   pauseSurveyPurpose,
   generateSurveyPurpose,
 } from '../controllers/surveyController.js';
+import { isAuthenticated, requireAuth } from '../middleware/auth.js';
 
 // 🔹 Static routes
 router.get('/exists', checkSurveyExists);
 router.get('/purposes', getAllSurveyPurpose);
 
 // 🔹 Survey routes
-router.get('/', getAllSurvey);
+router.get('/', requireAuth, isAuthenticated, getAllSurvey);
 router.post('/', createSurvey);
 router.patch('/:id/end', endSurvey);
 router.get('/:id', getSurvey);

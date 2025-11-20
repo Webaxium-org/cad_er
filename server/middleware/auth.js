@@ -1,5 +1,5 @@
-import User from '../models/user.js';
-import jwt from 'jsonwebtoken';
+import User from "../models/user.js";
+import jwt from "jsonwebtoken";
 
 export const requireAuth = async (req, res, next) => {
   try {
@@ -20,8 +20,8 @@ export const requireAuth = async (req, res, next) => {
       return next();
     }
 
-    if (user.status !== 'Active')
-      throw new Error('The user has been suspended');
+    if (user.status !== "Active")
+      throw new Error("The user has been suspended");
 
     req.user = {
       userId: user._id,
@@ -47,8 +47,14 @@ export const isAuthenticated = async (req, res, next) => {
       return next();
     }
 
-    console.log(`Unauthorized access attempt: ${req.originalUrl}`);
-    const error = new Error('Authentication required.');
+    console.log(
+      `Unauthorized access attempt: ${
+        req.originalUrl + "" + req.user + "" + req.cookies
+      }`
+    );
+
+    console.log(req.headers);
+    const error = new Error("Authentication required.");
     error.statusCode = 401;
     throw error;
   } catch (err) {
@@ -64,7 +70,7 @@ export const isAuthorized = (roles = []) => {
       } = req;
 
       if (roles.includes(role)) {
-        const error = new Error('Forbidden: Insufficient permissions.');
+        const error = new Error("Forbidden: Insufficient permissions.");
         error.statusCode = 403;
         throw error;
       }
