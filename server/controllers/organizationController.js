@@ -1,4 +1,4 @@
-import Organization from '../models/Organization.js';
+import Organization from '../models/organization.js';
 
 export const getAllOrganizations = async (req, res, next) => {
   try {
