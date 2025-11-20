@@ -1,7 +1,7 @@
 import { FaSignOutAlt } from 'react-icons/fa';
 import { IoHomeOutline } from 'react-icons/io5';
 import { GoOrganization, GoProject } from 'react-icons/go';
-import { FaUsers } from "react-icons/fa";
+import { FaUsers } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logOut } from '../redux/userSlice';
@@ -19,6 +19,7 @@ import {
   Stack,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { tokenService } from '../services/tokenService';
 
 const menuListDetails = [
   {
@@ -60,11 +61,31 @@ const DrawerList = ({ toggleDrawer }) => {
     navigate(link);
   };
 
-  const handleLogout = () => {
-    dispatch(logOut());
-    persistor.purge();
+  const handleLogout = async () => {
+    try {
+      // 1. Call backend to remove refresh token + clear cookies
+      await logoutUser();
 
-    handleNavigate('/');
+      // 2. Clear frontend token (in-memory)
+      tokenService.clear();
+
+      // 3. Clear redux state
+      dispatch(logOut());
+
+      // 4. Clear persisted redux cache
+      persistor.purge();
+
+      // 5. Redirect to login/home
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+
+      // Even if backend fails, still clear client state
+      tokenService.clear();
+      dispatch(logOut());
+      persistor.purge();
+      navigate('/login');
+    }
   };
 
   useEffect(() => {

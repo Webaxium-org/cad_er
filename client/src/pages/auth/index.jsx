@@ -27,6 +27,7 @@ import {
   SitemarkIcon,
 } from './components/CustomIcons';
 import BasicInput from '../../components/BasicInput';
+import { tokenService } from '../../services/tokenService';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -116,13 +117,15 @@ export default function SignIn() {
 
   const [loading, setLoading] = React.useState(false);
 
-  const handleSuccessLogin = (user) => {
-    dispatch(setUser(user));
+  const handleSuccessLogin = (data) => {
+    tokenService.set(data.accessToken);
+
+    dispatch(setUser(data.user));
 
     dispatch(
       showAlert({
         type: 'success',
-        message: `Hi ${user?.name}, everything's ready for you. Let's get started!`,
+        message: `Hi ${data.user?.name}, everything's ready for you. Let's get started!`,
       })
     );
 
@@ -154,7 +157,7 @@ export default function SignIn() {
 
       const { data } = await loginUser(formValues);
 
-      handleSuccessLogin(data.user);
+      handleSuccessLogin(data);
     } catch (error) {
       if (error?.response?.data?.message === 'Invalid credentials') {
         const innerError = [
@@ -181,7 +184,7 @@ export default function SignIn() {
         data: credentialResponse.credential,
       });
 
-      handleSuccessLogin(data.user);
+      handleSuccessLogin(data);
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     }

@@ -1,4 +1,4 @@
-import { axiosInstance } from '../utils/config';
+import axiosInstance from '../utils/config';
 
 export const checkSurveyExists = () => {
   return axiosInstance.get('surveys/exists');

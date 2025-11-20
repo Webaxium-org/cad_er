@@ -1,27 +1,38 @@
 import User from '../models/user.js';
-import jwt from 'jsonwebtoken';
+import createHttpError from 'http-errors';
+import { verifyAccessToken } from '../utils/jwt.js';
 
 export const requireAuth = async (req, res, next) => {
   try {
-    const token = req.cookies?.access__; // Get the token from cookies
+    const header = req.headers.authorization;
 
-    if (!token) {
+    // If no header → user is not logged in (public visitor)
+    if (!header || !header.startsWith('Bearer ')) {
       req.user = { isAuthenticated: false };
-      return next(); // Proceed without authentication
+      return next();
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded?.id;
+    const token = header.split(' ')[1];
 
-    const user = await User.findById(userId);
+    let decoded;
+    try {
+      decoded = verifyAccessToken(token);
+    } catch (err) {
+      // Token expired or invalid — allow frontend to refresh automatically
+      req.user = { isAuthenticated: false };
+      return next();
+    }
+
+    const user = await User.findById(decoded.id).lean();
 
     if (!user) {
       req.user = { isAuthenticated: false };
       return next();
     }
 
-    if (user.status !== 'Active')
-      throw new Error('The user has been suspended');
+    if (user.status !== 'Active') {
+      return next(createHttpError(403, 'User account is suspended'));
+    }
 
     req.user = {
       userId: user._id,
@@ -33,45 +44,32 @@ export const requireAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    req.user = { isAuthenticated: false };
-    // return res.status(401).json({ error: 'Unauthorized. Invalid token.' });
-
-    error.statusCode = error.statusCode || 401;
-    next(error);
+    next(createHttpError(401, 'Unauthorized'));
   }
 };
 
-export const isAuthenticated = async (req, res, next) => {
-  try {
-    if (req.user && req.user.isAuthenticated) {
-      return next();
-    }
-
-    console.log(`Unauthorized access attempt: ${req.originalUrl}`);
-    const error = new Error('Authentication required.');
-    error.statusCode = 401;
-    throw error;
-  } catch (err) {
-    next(err); // Pass the error to the global error handler
+export const isAuthenticated = (req, res, next) => {
+  if (req.user?.isAuthenticated) {
+    return next();
   }
+
+  return next(createHttpError(401, 'Authentication required'));
 };
 
-export const isAuthorized = (roles = []) => {
+export const isAuthorized = (allowedRoles = []) => {
   return (req, res, next) => {
     try {
-      const {
-        user: { role },
-      } = req;
+      const role = req.user?.role;
 
-      if (roles.includes(role)) {
-        const error = new Error('Forbidden: Insufficient permissions.');
-        error.statusCode = 403;
-        throw error;
+      if (!role || !allowedRoles.includes(role)) {
+        return next(
+          createHttpError(403, 'Forbidden: Insufficient permissions')
+        );
       }
 
       next();
     } catch (err) {
-      next(err); // Pass the error to the global error handler
+      return next(createHttpError(403, 'Forbidden'));
     }
   };
 };
