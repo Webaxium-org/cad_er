@@ -1,5 +1,6 @@
 import User from "../models/user.js";
 import jwt from "jsonwebtoken";
+import createHttpError from "http-errors";
 
 export const requireAuth = async (req, res, next) => {
   try {
@@ -7,7 +8,7 @@ export const requireAuth = async (req, res, next) => {
 
     if (!token) {
       req.user = { isAuthenticated: false };
-      return next(); // Proceed without authentication
+      return next(); // Continue without blocking
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -20,8 +21,9 @@ export const requireAuth = async (req, res, next) => {
       return next();
     }
 
-    if (user.status !== "Active")
-      throw new Error("The user has been suspended");
+    if (user.status !== "Active") {
+      throw createHttpError(403, "Account suspended");
+    }
 
     req.user = {
       userId: user._id,
@@ -33,49 +35,41 @@ export const requireAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    req.user = { isAuthenticated: false };
-    // return res.status(401).json({ error: 'Unauthorized. Invalid token.' });
+    // Token invalid OR verify error → unauthorized
+    if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
+      return next(createHttpError(401, "Invalid or expired token"));
+    }
 
-    error.statusCode = error.statusCode || 401;
     next(error);
   }
 };
 
-export const isAuthenticated = async (req, res, next) => {
+export const isAuthenticated = (req, res, next) => {
   try {
-    if (req.user && req.user.isAuthenticated) {
+    if (req.user?.isAuthenticated) {
       return next();
     }
 
-    console.log(`Unauthorized access attempt: ${req.originalUrl}`);
+    console.log(req.user, req.headers, req.cookies)
 
-    console.log(req.user);
-    console.log(req.cookies);
-    console.log(req.headers);
-    const error = new Error("Authentication required.");
-    error.statusCode = 401;
-    throw error;
+    throw createHttpError(401, "Authentication required");
   } catch (err) {
-    next(err); // Pass the error to the global error handler
+    next(err);
   }
 };
 
 export const isAuthorized = (roles = []) => {
   return (req, res, next) => {
     try {
-      const {
-        user: { role },
-      } = req;
+      const userRole = req.user?.role;
 
-      if (roles.includes(role)) {
-        const error = new Error("Forbidden: Insufficient permissions.");
-        error.statusCode = 403;
-        throw error;
+      if (!roles.includes(userRole)) {
+        throw createHttpError(403, "Forbidden: Insufficient permissions");
       }
 
       next();
     } catch (err) {
-      next(err); // Pass the error to the global error handler
+      next(err);
     }
   };
 };
