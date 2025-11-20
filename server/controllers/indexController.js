@@ -49,13 +49,12 @@ export const loginUser = async (req, res, next) => {
     const isProd = process.env.NODE_ENV === 'production';
 
     // 6. Set REFRESH TOKEN cookie (HttpOnly, secure)
-    res.cookie('refresh__', refreshToken, {
+    res.cookie('refresh__', refreshToken.token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      path: '/',
       maxAge: 30 * 24 * 60 * 60 * 1000,
-      path: '/api/refresh', // IMPORTANT
-      domain: 'cader-server-n3t6t.ondigitalocean.app',
     });
 
     // 7. Return user + accessToken (frontend stores in memory)
@@ -135,11 +134,10 @@ export const googleLogin = async (req, res, next) => {
     // 5. Set REFRESH TOKEN cookie
     res.cookie('refresh__', refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      path: '/api/refresh', // IMPORTANT
-      domain: 'cader-server-n3t6t.ondigitalocean.app', // backend domain
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: '/',
     });
 
     // 6. Extract safe user
@@ -165,10 +163,9 @@ export const logoutUser = async (req, res, next) => {
     if (!refreshToken) {
       res.clearCookie('refresh__', {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        path: '/api/refresh',
-        domain: 'cader-server-n3t6t.ondigitalocean.app',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+        path: '/',
       });
 
       return res.status(200).json({
@@ -183,10 +180,9 @@ export const logoutUser = async (req, res, next) => {
     // Clear refresh token cookie
     res.clearCookie('refresh__', {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      path: '/api/refresh',
-      domain: 'cader-server-n3t6t.ondigitalocean.app',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      path: '/',
     });
 
     return res.status(200).json({
