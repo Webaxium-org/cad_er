@@ -11,7 +11,7 @@ import {
   CssBaseline,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { GoogleLogin } from '@react-oauth/google';
+// import { GoogleLogin } from '@react-oauth/google';
 import { useDispatch } from 'react-redux';
 import { stopLoading } from '../../redux/loadingSlice';
 import { jwtDecode } from 'jwt-decode';
@@ -283,12 +283,12 @@ export default function SignIn() {
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* ✅ Google Login Button */}
-            <Box className="google-sign-in-wrapper">
+            {/* <Box className="google-sign-in-wrapper">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
               />
-            </Box>
+            </Box> */}
             <Button
               fullWidth
               variant="outlined"

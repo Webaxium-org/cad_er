@@ -52,8 +52,9 @@ export const loginUser = async (req, res, next) => {
     res
       .cookie('access__', token, {
         httpOnly: true,
-        secure: isProd ? true : false,
-        sameSite: isProd ? 'none' : 'lax',
+        secure: true,
+        sameSite: 'none',
+        path: '/',
       })
       .status(200)
       .json({ status: 'success', user: { ...userWithoutPassword } });
@@ -103,11 +104,30 @@ export const googleLogin = async (req, res, next) => {
     res
       .cookie('access__', token, {
         httpOnly: true,
-        secure: isProd ? true : false,
-        sameSite: isProd ? 'none' : 'lax',
+        secure: true,
+        sameSite: 'none',
+        path: '/',
       })
       .status(200)
       .json({ status: 'success', user: { ...userWithoutPassword } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const logoutUser = (req, res, next) => {
+  try {
+    res.clearCookie('access__', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Logged out successfully',
+    });
   } catch (err) {
     next(err);
   }
