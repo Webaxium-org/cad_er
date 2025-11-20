@@ -47,12 +47,10 @@ export const isAuthenticated = async (req, res, next) => {
       return next();
     }
 
-    console.log(
-      `Unauthorized access attempt: ${
-        req.originalUrl + "" + req.user + "" + req.cookies
-      }`
-    );
+    console.log(`Unauthorized access attempt: ${req.originalUrl}`);
 
+    console.log(req.user);
+    console.log(req.cookies);
     console.log(req.headers);
     const error = new Error("Authentication required.");
     error.statusCode = 401;
