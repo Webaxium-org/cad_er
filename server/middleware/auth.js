@@ -5,7 +5,7 @@ import createHttpError from "http-errors";
 export const requireAuth = async (req, res, next) => {
   try {
     const token = req.cookies?.access__; // Get the token from cookies
-
+    console.log("Auth Token:", token, req.cookies);
     if (!token) {
       req.user = { isAuthenticated: false };
       return next(); // Continue without blocking
