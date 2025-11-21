@@ -1,11 +1,11 @@
-import User from "../models/user.js";
-import jwt from "jsonwebtoken";
-import createHttpError from "http-errors";
+import User from '../models/user.js';
+import jwt from 'jsonwebtoken';
+import createHttpError from 'http-errors';
 
 export const requireAuth = async (req, res, next) => {
   try {
     const token = req.cookies?.access__; // Get the token from cookies
-    console.log("Auth Token:", token, req.cookies);
+
     if (!token) {
       req.user = { isAuthenticated: false };
       return next(); // Continue without blocking
@@ -21,8 +21,8 @@ export const requireAuth = async (req, res, next) => {
       return next();
     }
 
-    if (user.status !== "Active") {
-      throw createHttpError(403, "Account suspended");
+    if (user.status !== 'Active') {
+      throw createHttpError(403, 'Account suspended');
     }
 
     req.user = {
@@ -36,8 +36,11 @@ export const requireAuth = async (req, res, next) => {
     next();
   } catch (error) {
     // Token invalid OR verify error → unauthorized
-    if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
-      return next(createHttpError(401, "Invalid or expired token"));
+    if (
+      error.name === 'JsonWebTokenError' ||
+      error.name === 'TokenExpiredError'
+    ) {
+      return next(createHttpError(401, 'Invalid or expired token'));
     }
 
     next(error);
@@ -50,9 +53,7 @@ export const isAuthenticated = (req, res, next) => {
       return next();
     }
 
-    console.log(req.user, req.headers, req.cookies)
-
-    throw createHttpError(401, "Authentication required");
+    throw createHttpError(401, 'Authentication required');
   } catch (err) {
     next(err);
   }
@@ -64,7 +65,7 @@ export const isAuthorized = (roles = []) => {
       const userRole = req.user?.role;
 
       if (!roles.includes(userRole)) {
-        throw createHttpError(403, "Forbidden: Insufficient permissions");
+        throw createHttpError(403, 'Forbidden: Insufficient permissions');
       }
 
       next();

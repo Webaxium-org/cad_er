@@ -108,13 +108,6 @@ const inputDetails = [
     for: 'Initial Level',
   },
   {
-    label: 'Average height*',
-    name: 'averageHeight',
-    type: 'number',
-    hidden: true,
-    for: 'Proposed Level',
-  },
-  {
     label: 'Length*',
     name: 'length',
     type: 'number',
@@ -188,7 +181,6 @@ const initialFormValues = {
   backSight: '',
   reducedLevel: '',
   chainageMultiple: '',
-  averageHeight: '',
   lSection: '',
   lsSlop: '',
   cSection: '',
@@ -272,11 +264,6 @@ const RoadSurveyForm = () => {
           .required('Chainage multiple is required')
       : Yup.string().nullable(),
 
-    averageHeight: type
-      ? Yup.number()
-          .typeError('Average height is required')
-          .required('Average height is required')
-      : Yup.string().nullable(),
     lSection: type
       ? Yup.number()
           .typeError('Longitudinal section slop is required')

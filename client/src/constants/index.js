@@ -54,7 +54,7 @@ export const initialChartOptions = {
     curve: 'straight',
     width: 2,
   },
-  colors: ['blue', 'green'],
+  colors: ['blue', 'green', 'red', '#9B59B6', '#F1C40F', '#34495E'],
   grid: {
     show: false,
   },

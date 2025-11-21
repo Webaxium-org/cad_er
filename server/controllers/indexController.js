@@ -52,11 +52,11 @@ export const loginUser = async (req, res, next) => {
     res
       .cookie('access__', token, {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
         path: '/',
-        domain: '.getcader.com',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        domain: isProd ? '.getcader.com' : undefined,
+        maxAge: Number(process.env.TOKEN_EXPIRY_DAYS) * 24 * 60 * 60 * 1000,
       })
       .status(200)
       .json({ status: 'success', user: { ...userWithoutPassword } });
@@ -106,11 +106,11 @@ export const googleLogin = async (req, res, next) => {
     res
       .cookie('access__', token, {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
         path: '/',
-        domain: '.getcader.com',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        domain: isProd ? '.getcader.com' : undefined,
+        maxAge: Number(process.env.TOKEN_EXPIRY_DAYS) * 24 * 60 * 60 * 1000,
       })
       .status(200)
       .json({ status: 'success', user: { ...userWithoutPassword } });
@@ -121,12 +121,14 @@ export const googleLogin = async (req, res, next) => {
 
 export const logoutUser = (req, res, next) => {
   try {
+    const isProd = process.env.NODE_ENV === 'production';
+
     res.clearCookie('access__', {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/',
-      domain: '.getcader.com',
+      domain: isProd ? '.getcader.com' : undefined,
     });
 
     res.status(200).json({

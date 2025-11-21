@@ -1,5 +1,20 @@
-import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableRow, Typography } from '@mui/material';
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import Chart from 'react-apexcharts';
+
+const colors = {
+  Initial: 'green',
+  Proposed: 'blue',
+  Final: 'red',
+};
 
 const CrossSectionChart = ({ selectedCs, chartOptions }) => {
   return (
@@ -13,7 +28,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions }) => {
       </Typography>
 
       {/* Chart */}
-      <Box
+      {/* <Box
         sx={{
           width: 390,
           height: 100,
@@ -33,89 +48,104 @@ const CrossSectionChart = ({ selectedCs, chartOptions }) => {
             width="100%"
           />
         </Box>
-      </Box>
+      </Box> */}
 
       {/* Table */}
       <TableContainer
         component={Paper}
         sx={{
-          width: 420,
-          border: '1px solid black',
+          // border: '1px solid black',
           mt: 0,
           overflow: 'visible',
+          bgcolor: 'transparent',
         }}
       >
         <Table size="small">
           <TableBody>
-            {/* GSB Row */}
-
-            {selectedCs?.proposal?.length > 1 && (
-              <TableRow>
-                <TableCell
-                  sx={{
-                    fontWeight: 'bold',
-                    borderRight: '1px solid black',
-                    width: '40%',
-                  }}
-                >
-                  Prop. Level
-                </TableCell>
-                {selectedCs?.proposal?.map((val, i) => (
-                  <TableCell
-                    key={i}
-                    align="center"
-                    sx={{
-                      position: 'relative',
-                      color: 'blue',
-                      fontWeight: 500,
-                      height: '55px',
-                      overflow: 'visible',
-                      p: 0,
-                    }}
-                  >
-                    <div style={{ rotate: '-90deg' }}>{val}</div>
-                    <div className="cs-table-vertical-line" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            )}
-
-            {/* Initial Level Row */}
             <TableRow>
               <TableCell
-                sx={{
-                  fontWeight: 'bold',
-                  borderRight: '1px solid black',
-                  width: '40%',
-                }}
+                sx={{ border: 'none', bgcolor: 'transparent' }}
+              ></TableCell>
+              <TableCell
+                sx={{ border: 'none', px: '14px', bgcolor: 'transparent' }}
+                colSpan={selectedCs?.offsets?.length}
               >
-                Initial Level
-              </TableCell>
-              {selectedCs?.initial?.map((val, i) => (
-                <TableCell
-                  key={i}
-                  align="center"
+                <Box
                   sx={{
+                    height: 100,
+                    width: '100%',
+                    display: 'flex',
                     position: 'relative',
-                    color: 'green',
-                    fontWeight: 500,
-                    height: '55px',
-                    overflow: 'visible',
-                    p: 0,
                   }}
                 >
-                  <div style={{ rotate: '-90deg' }}>{val}</div>
-                  <div className="cs-table-vertical-line" />
-                </TableCell>
-              ))}
+                  <Box
+                    sx={{
+                      width: '100%',
+                      height: 100,
+                      position: 'absolute',
+                      top: '5px',
+                      left: '-6.5px',
+                    }}
+                  >
+                    <Chart
+                      key={selectedCs.id}
+                      options={chartOptions}
+                      series={selectedCs?.series || []}
+                      type="line"
+                      height="100%"
+                      width="100%"
+                    />
+                  </Box>
+                </Box>
+              </TableCell>
             </TableRow>
+
+            {selectedCs?.series?.length &&
+              selectedCs.series.map((s, idx) => (
+                <TableRow key={idx}>
+                  <TableCell
+                    sx={{
+                      fontWeight: 'bold',
+                      border: '1px solid black',
+                    }}
+                  >
+                    {s.name}
+                  </TableCell>
+                  {s.data?.map((val, i) => (
+                    <TableCell
+                      key={i}
+                      align="center"
+                      sx={{
+                        position: 'relative',
+                        color:
+                          colors[
+                            s.name?.includes('Initial')
+                              ? 'Initial'
+                              : s.name?.includes('Proposed')
+                              ? 'Proposed'
+                              : 'Final'
+                          ],
+                        fontWeight: 500,
+                        height: '55px',
+                        overflow: 'visible',
+                        border: '1px solid black',
+                        p: 0,
+                        width: '60px',
+                      }}
+                    >
+                      <div style={{ rotate: '-90deg' }}>{val[1]}</div>
+                      <div className="cs-table-vertical-line" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
 
             {/* Offset Row */}
             <TableRow>
               <TableCell
                 sx={{
                   fontWeight: 'bold',
-                  borderRight: '1px solid black',
+                  border: '1px solid black',
                 }}
               >
                 Offset
@@ -130,6 +160,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions }) => {
                     fontWeight: 500,
                     height: '55px',
                     overflow: 'visible',
+                    border: '1px solid black',
                     p: 0,
                   }}
                 >

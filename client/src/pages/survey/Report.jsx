@@ -93,7 +93,20 @@ const Report = () => {
   };
 
   const generateReport = () => {
-    navigate(getLink());
+    try {
+      if (reportType !== 'cross' && selectedPurposes.length > 2) {
+        throw Error(
+          `Only two surveys can be selected for the ${reportType} report.`
+        );
+      }
+
+      const link = getLink();
+      const selectedIds = selectedPurposes.map((p) => p._id);
+
+      navigate(link, { state: { selectedPurposeIds: selectedIds } });
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    }
   };
 
   return (
@@ -173,14 +186,16 @@ const Report = () => {
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox">
+              {/* <TableCell padding="checkbox">
                 <Checkbox
                   color="primary"
                   checked={allSelected}
                   indeterminate={partiallySelected}
                   onChange={toggleSelectAll}
                 />
-              </TableCell>
+              </TableCell> */}
+              <TableCell></TableCell>
+
               <TableCell
                 sx={{ fontWeight: 'bold', fontSize: { xs: 12, sm: 14 } }}
               >

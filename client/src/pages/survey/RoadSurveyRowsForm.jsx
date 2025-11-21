@@ -762,17 +762,14 @@ const RoadSurveyRowsForm = () => {
     // Create deep copies of what you mutate
     const newSeries = selectedCs.series.map((s, i) => {
       if (i === 0) {
-        const proposalRL = [];
-
         const updatedData = s.data.map(([x]) => {
           const matched = values.find((e) => Number(e.offset) === Number(x));
           const rl = matched ? Number(matched.reducedLevel)?.toFixed(3) : null;
-          proposalRL.push(rl);
 
           return [Number(x), rl];
         });
 
-        return { ...s, data: updatedData, proposalRL };
+        return { ...s, data: updatedData };
       }
 
       return s;
@@ -781,7 +778,6 @@ const RoadSurveyRowsForm = () => {
     const updated = {
       ...selectedCs,
       series: newSeries,
-      proposal: newSeries[0].proposalRL,
       // change id to force Chart remount
       id: `${selectedCs.id}-r${Date.now()}`,
     };
@@ -789,9 +785,7 @@ const RoadSurveyRowsForm = () => {
     setSelectedCs(updated);
   };
 
-  const updateSelectedCs = (surveyWithoutRl, chainage, type) => {
-    const survey = calculateReducedLevel(surveyWithoutRl);
-
+  const updateSelectedCs = (survey, chainage, type) => {
     const initialLevel = survey.purposes?.find(
       (p) => p.type === 'Initial Level'
     );
@@ -804,24 +798,25 @@ const RoadSurveyRowsForm = () => {
     const safeOffsets = row.offsets || [];
     const safeInitial = row.reducedLevels || [];
 
+    const makeSeries = (name, offsets, levels) =>
+      offsets.map((o, i) => [Number(o), Number(levels?.[i] ?? 0).toFixed(3)]);
+
     const data = {
       id: id,
       datum: 9.4,
-      initial: safeInitial,
       offsets: safeOffsets,
-      proposal: [],
       chainage,
       series: [],
     };
 
     data.series.push({
       name: type,
-      data: safeOffsets.map((x, i) => [Number(x), null]),
+      data: makeSeries(type, safeOffsets, null),
     });
 
     data.series.push({
       name: 'Initial Level',
-      data: safeOffsets.map((x, i) => [Number(x), Number(safeInitial[i])]),
+      data: makeSeries(type, safeOffsets, safeInitial),
     });
 
     setSelectedCs(data);

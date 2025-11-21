@@ -1,6 +1,6 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { getSurvey } from '../../services/surveyServices';
 import { handleFormError } from '../../utils/handleFormError';
@@ -22,10 +22,19 @@ import BasicButtons from '../../components/BasicButton';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
+const initialDetails = {
+  initialEntry: '',
+  secondaryEntry: '',
+};
+
 const AreaReport = () => {
   const navigate = useNavigate();
 
   const { id } = useParams();
+
+  const reportDetails = useRef(initialDetails);
+
+  const { state } = useLocation();
 
   const dispatch = useDispatch();
 
@@ -53,18 +62,38 @@ const AreaReport = () => {
     }
   };
 
+  const shortType = (type) => {
+    if (!type) return type;
+    return type.replace(/^Proposed\s+/i, 'Prop. ');
+  };
+
   const tableData = useMemo(() => {
-    const initialLevel = survey?.purposes?.find(
-      (p) => p.type === 'Initial Level'
-    );
-    const proposedLevel = survey?.purposes?.find(
-      (p) => p.type === 'Proposed Level'
-    );
+    let initialEntry = null;
+    let secondaryEntry = null;
 
-    if (!survey || !initialLevel || !proposedLevel) return [];
+    if (state && state?.selectedPurposeIds?.length) {
+      initialEntry = survey?.purposes?.find(
+        (p) => String(p._id) === String(state.selectedPurposeIds[0])
+      );
+      secondaryEntry = survey?.purposes?.find(
+        (p) => String(p._id) === String(state.selectedPurposeIds[1])
+      );
+    } else {
+      initialEntry = survey?.purposes?.find((p) => p.type === 'Initial Level');
+      secondaryEntry = survey?.purposes?.find(
+        (p) => p.type === 'Proposed Level'
+      );
+    }
 
-    const initialRows = initialLevel?.rows ?? [];
-    const proposedRows = proposedLevel?.rows ?? [];
+    if (!survey || !initialEntry || !secondaryEntry) return [];
+
+    reportDetails.current = {
+      initialEntry: shortType(initialEntry.type),
+      secondaryEntry: shortType(secondaryEntry.type),
+    };
+
+    const initialRows = initialEntry?.rows ?? [];
+    const proposedRows = secondaryEntry?.rows ?? [];
     const rows = [];
 
     // Process only "Chainage" type rows
@@ -77,11 +106,11 @@ const AreaReport = () => {
         const chainage = row.chainage?.split('/')?.[1] ?? '';
 
         const data = (row?.offsets ?? []).map((entry, idx) => {
-          const initialLevelRL = row?.reducedLevels?.[idx] ?? 0;
-          const proposedLevelRL = proposedRow?.reducedLevels?.[idx] ?? 0;
+          const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
+          const secondaryEntryRL = proposedRow?.reducedLevels?.[idx] ?? 0;
 
-          const initRL = Number(initialLevelRL);
-          const propRL = Number(proposedLevelRL);
+          const initRL = Number(initialEntryRL);
+          const propRL = Number(secondaryEntryRL);
           const offsetVal = Number(entry);
           const prevOffsetVal = Number(row?.offsets?.[idx - 1] ?? 0);
 
@@ -90,7 +119,7 @@ const AreaReport = () => {
 
           // Shared width (W) for both cutting and filling
           const widthMtr =
-            idx === 0 ? 0 : (prevOffsetVal - offsetVal).toFixed(3);
+            idx === 0 ? '0.000' : (prevOffsetVal - offsetVal).toFixed(3);
 
           const cuttingAvgMtr = isCutting
             ? ((initRL + propRL) / 2).toFixed(3)
@@ -102,8 +131,8 @@ const AreaReport = () => {
 
           return {
             offset: entry,
-            initialLevelRL,
-            proposedLevelRL,
+            initialEntryRL,
+            secondaryEntryRL,
             cuttingMtr: isCutting ? (initRL - propRL).toFixed(3) : '0.000',
             cuttingAvgMtr,
             cuttingWMtr: widthMtr,
@@ -234,8 +263,8 @@ const AreaReport = () => {
         const dataRow = sheet.addRow([
           idx + 1,
           entry.offset,
-          entry.initialLevelRL,
-          entry.proposedLevelRL,
+          entry.initialEntryRL,
+          entry.secondaryEntryRL,
           entry.cuttingMtr,
           entry.cuttingAvgMtr,
           entry.cuttingWMtr,
@@ -321,7 +350,7 @@ const AreaReport = () => {
             cursor: 'pointer',
             mb: '24px',
           }}
-          onClick={() => navigate('/')}
+          onClick={() => navigate(-1)}
         >
           <MdArrowBackIosNew />
         </Box>
@@ -335,7 +364,8 @@ const AreaReport = () => {
       </Stack>
 
       <Typography variant="h5" fontWeight={700} align="center" mb={2}>
-        Area Report
+        Area Report Between {reportDetails.current.initialEntry} and{' '}
+        {reportDetails.current.secondaryEntry}
       </Typography>
 
       <TableContainer component={Paper}>
@@ -357,10 +387,10 @@ const AreaReport = () => {
                 Distance Meters
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                Initial Level Meters
+                {reportDetails?.current?.initialEntry || ''} Meters
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                Prop. Level Meters
+                {reportDetails?.current?.secondaryEntry || ''} Meters
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} colSpan={4} align="center">
                 Cutting Area
@@ -398,8 +428,8 @@ const AreaReport = () => {
                   <TableRow key={`${index}-${idx}`}>
                     <TableCell>{idx + 1}</TableCell>
                     <TableCell>{entry.offset}</TableCell>
-                    <TableCell>{entry.initialLevelRL}</TableCell>
-                    <TableCell>{entry.proposedLevelRL}</TableCell>
+                    <TableCell>{entry.initialEntryRL}</TableCell>
+                    <TableCell>{entry.secondaryEntryRL}</TableCell>
                     <TableCell>{entry.cuttingMtr}</TableCell>
                     <TableCell>{entry.cuttingAvgMtr}</TableCell>
                     <TableCell>{entry.cuttingWMtr}</TableCell>

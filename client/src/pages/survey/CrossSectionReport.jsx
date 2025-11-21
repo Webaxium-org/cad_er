@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { handleFormError } from '../../utils/handleFormError';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { getSurvey } from '../../services/surveyServices';
@@ -25,64 +25,81 @@ const CrossSectionReport = () => {
 
   const dispatch = useDispatch();
 
+  const { state } = useLocation();
+
   const { global } = useSelector((state) => state.loading);
 
   const [chartOptions, setChartOptions] = useState(initialChartOptions);
 
   const [survey, setSurvey] = useState([]);
 
+  const [tableData, setTableData] = useState([]);
+
   const [selectedCs, setSelectedCs] = useState(null);
+
+  const handleSetTableData = (survey) => {
+    const data = [];
+
+    if (state && state?.selectedPurposeIds?.length) {
+      state?.selectedPurposeIds?.forEach((entry) => {
+        data.push(
+          survey?.purposes?.find((p) => String(p._id) === String(entry))
+        );
+      });
+    } else {
+      data.push(survey?.purposes?.find((p) => p.type === 'Initial Level'));
+    }
+
+    setTableData(data);
+  };
 
   const handleClickCs = (id) => {
     if (selectedCs?.id === id) return;
 
-    const initialLevel = survey.purposes?.find(
-      (p) => p.type === 'Initial Level'
-    );
-    if (!initialLevel) return;
+    if (!tableData?.length) return;
 
-    const row = initialLevel.rows?.find((row) => row._id === id);
+    const initialEntry = tableData[0];
+    if (!initialEntry?.rows?.length) return;
+
+    const row = initialEntry.rows.find((row) => row._id === id);
     if (!row) return;
-
-    let proposal = [];
-
-    const proposedLevel = survey.purposes?.find(
-      (p) => p.type === 'Proposed Level'
-    );
 
     const safeOffsets = row.offsets || [];
     const safeInitial = row.reducedLevels || [];
 
     const data = {
-      id: id,
+      id,
       datum: 9.4,
-      initial: safeInitial,
       offsets: safeOffsets,
       chainage: row.chainage,
       series: [],
     };
 
-    if (proposedLevel) {
-      const propRow = proposedLevel.rows?.find(
-        (r) => r.chainage === row.chainage
-      );
+    const makeSeries = (name, offsets, levels) =>
+      offsets.map((o, i) => [Number(o), Number(levels?.[i] ?? 0).toFixed(3)]);
 
-      if (propRow) {
-        proposal = propRow?.reducedLevels || [];
+    // Add all additional tableData (Proposed, Level 2, etc.)
+    if (tableData.length > 1) {
+      for (let i = 1; i < tableData.length; i++) {
+        const table = tableData[i];
+
+        const newRow = table?.rows?.find((r) => r.chainage === row.chainage);
+        if (!newRow) continue;
+
+        const safeProposal =
+          newRow.reducedLevels?.slice(0, safeOffsets.length) || [];
+
+        data.series.push({
+          name: table.type,
+          data: makeSeries(table.type, safeOffsets, safeProposal),
+        });
       }
-
-      const safeProposal = proposal?.slice(0, safeOffsets.length);
-
-      data.proposal = safeProposal;
-      data.series.push({
-        name: proposedLevel.type,
-        data: safeOffsets.map((x, i) => [Number(x), safeProposal[i]]),
-      });
     }
 
+    // Add the Initial Entry at the end
     data.series.push({
-      name: 'Initial Level',
-      data: safeOffsets.map((x, i) => [Number(x), Number(safeInitial[i])]),
+      name: initialEntry.type,
+      data: makeSeries(initialEntry.type, safeOffsets, safeInitial),
     });
 
     setSelectedCs(data);
@@ -94,9 +111,9 @@ const CrossSectionReport = () => {
       const { data } = await getSurvey(id);
 
       if (data.success) {
-        const surveyWithRL = calculateReducedLevel(data.survey);
+        setSurvey(data.survey);
 
-        setSurvey(surveyWithRL);
+        handleSetTableData(data.survey);
       } else {
         throw Error('Failed to fetch survey');
       }
@@ -112,18 +129,12 @@ const CrossSectionReport = () => {
   }, []);
 
   useEffect(() => {
-    if (survey) {
-      const initialLevel = survey?.purposes?.find(
-        (p) => p.type === 'Initial Level'
-      );
-
-      if (!initialLevel) return;
-
-      const row = initialLevel.rows?.find((row) => row.type === 'Chainage');
+    if (tableData.length) {
+      const row = tableData[0].rows?.find((row) => row.type === 'Chainage');
 
       if (row) handleClickCs(row._id);
     }
-  }, [survey]);
+  }, [tableData]);
 
   return (
     <Box
@@ -161,23 +172,21 @@ const CrossSectionReport = () => {
           </TableHead>
 
           <TableBody>
-            {survey?.purposes
-              ?.find((p) => p.type === 'Initial Level')
-              ?.rows?.map(
-                (row, index) =>
-                  row.type === 'Chainage' && (
-                    <TableRow key={index}>
-                      <TableCell>{row.chainage}</TableCell>
-                      <TableCell
-                        sx={{ cursor: 'pointer' }}
-                        onClick={() => handleClickCs(row._id)}
-                      >
-                        View
-                      </TableCell>
-                      <TableCell>N/A</TableCell>
-                    </TableRow>
-                  )
-              )}
+            {tableData[0]?.rows?.map(
+              (row, index) =>
+                row.type === 'Chainage' && (
+                  <TableRow key={index}>
+                    <TableCell>{row.chainage}</TableCell>
+                    <TableCell
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => handleClickCs(row._id)}
+                    >
+                      View
+                    </TableCell>
+                    <TableCell>N/A</TableCell>
+                  </TableRow>
+                )
+            )}
           </TableBody>
         </Table>
       </TableContainer>

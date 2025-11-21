@@ -488,7 +488,6 @@ const createSurveyPurpose = async (req, res, next) => {
         purpose,
         proposal,
         proposedLevel,
-        averageHeight,
         lSection,
         lsSlop,
         cSection,
@@ -504,7 +503,7 @@ const createSurveyPurpose = async (req, res, next) => {
 
     // 🔹 Proposal field validation (if proposal mode)
     if (proposal) {
-      const requiredFields = [proposedLevel, averageHeight, lSection, lsSlop];
+      const requiredFields = [proposedLevel, lSection, lsSlop];
 
       // Check if any of the always-required fields are missing
       const missingRequired = requiredFields.some(
@@ -595,7 +594,6 @@ const createSurveyPurpose = async (req, res, next) => {
           phase: proposal ? 'Proposal' : 'Actual',
           ...(proposal && {
             proposedLevel,
-            averageHeight,
             lSection,
             lsSlop,
             cSection,
@@ -892,7 +890,6 @@ const generateSurveyPurpose = async (req, res, next) => {
         purpose,
         proposal,
         quantity,
-        averageHeight,
         length,
         lSection,
         lsSlop,
@@ -908,7 +905,7 @@ const generateSurveyPurpose = async (req, res, next) => {
     }
 
     // Required fields used for proposal generation
-    const requiredFields = [quantity, averageHeight, lSection, lsSlop, length];
+    const requiredFields = [quantity, lSection, lsSlop, length];
     const missingRequired = requiredFields.some(
       (x) => x === undefined || x === null || x === ''
     );
@@ -1004,7 +1001,6 @@ const generateSurveyPurpose = async (req, res, next) => {
           type: proposal,
           phase: 'Proposal',
           quantity,
-          averageHeight,
           lSection,
           lsSlop,
           cSection,
