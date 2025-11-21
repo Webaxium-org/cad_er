@@ -55,6 +55,7 @@ export const loginUser = async (req, res, next) => {
         secure: true,
         sameSite: 'none',
         path: '/',
+        domain: '.getcader.com',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -108,7 +109,8 @@ export const googleLogin = async (req, res, next) => {
         secure: true,
         sameSite: 'none',
         path: '/',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        domain: '.getcader.com',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200)
       .json({ status: 'success', user: { ...userWithoutPassword } });
@@ -124,6 +126,7 @@ export const logoutUser = (req, res, next) => {
       secure: true,
       sameSite: 'none',
       path: '/',
+      domain: '.getcader.com',
     });
 
     res.status(200).json({
