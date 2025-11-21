@@ -162,12 +162,12 @@ const Home = () => {
           borderBottomRightRadius: '28px',
           overflow: 'hidden',
           color: '#fff',
-          backgroundColor: '#2775ad',
+          backgroundColor: '#6334FA',
           p: 2,
         }}
         spacing={2}
       >
-        {/* <div
+        <div
           style={{
             position: 'absolute',
             inset: 0,
@@ -177,7 +177,7 @@ const Home = () => {
             opacity: 0.25,
             zIndex: 0,
           }}
-        ></div> */}
+        ></div>
 
         {/* /* Content */}
         <Stack sx={{ position: 'relative', zIndex: 1 }} spacing={2}>

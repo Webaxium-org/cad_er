@@ -67,29 +67,6 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
           Datum: {selectedCs.datum}
         </Typography>
 
-        {/* Chart */}
-        {/* <Box
-        sx={{
-          width: 390,
-          height: 100,
-          mt: 1,
-          display: 'flex',
-          justifyContent: 'end',
-          position: 'relative',
-        }}
-      >
-        <Box sx={{ width: 198, height: 100, position: 'absolute', top: '5px' }}>
-          <Chart
-            key={selectedCs.id}
-            options={chartOptions}
-            series={selectedCs?.series || []}
-            type="line"
-            height="100%"
-            width="100%"
-          />
-        </Box>
-      </Box> */}
-
         {/* Table */}
         <TableContainer
           component={Paper}
@@ -170,7 +147,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                           overflow: 'visible',
                           border: '1px solid black',
                           p: 0,
-                          width: '60px',
+                          minWidth: '60px',
                         }}
                       >
                         <div style={{ rotate: '-90deg' }}>{val[1]}</div>
