@@ -16,7 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import CrossSectionChart from './components/CrossSectionChart';
-import { calculateReducedLevel, initialChartOptions } from '../../constants';
+import { initialChartOptions } from '../../constants';
 
 const CrossSectionReport = () => {
   const navigate = useNavigate();
@@ -150,6 +150,7 @@ const CrossSectionReport = () => {
         <CrossSectionChart
           selectedCs={selectedCs}
           chartOptions={chartOptions}
+          download={true}
         />
       )}
 

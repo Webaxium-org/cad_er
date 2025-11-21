@@ -110,8 +110,8 @@ const inputDetails = [
   {
     label: 'Length*',
     name: 'length',
-    type: 'number',
-    placeholder: '0/000',
+    mode: 'select',
+    options: [{ label: 'All', value: 'All' }],
     hidden: true,
     for: 'Proposed Level',
   },
