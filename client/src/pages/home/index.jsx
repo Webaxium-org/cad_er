@@ -345,12 +345,9 @@ const Home = () => {
               <BasicCard
                 key={global}
                 component={motion.div}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{
-                  y: -5,
-                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
-                }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.4, delay: 0.8 }}
                 sx={{
                   borderRadius: '16px',
