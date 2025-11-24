@@ -109,7 +109,10 @@ const RoadSurveyRowsForm = () => {
 
     chainage: Yup.string().when('type', {
       is: 'Chainage',
-      then: (schema) => schema.required('Chainage is required'),
+      then: (schema) =>
+        schema
+          .required('Chainage is required')
+          .matches(/^\d\/\d{3}$/, 'Chainage must be in the format 0/000'),
       otherwise: (schema) => schema.nullable(),
     }),
 

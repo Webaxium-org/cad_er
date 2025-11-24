@@ -16,7 +16,7 @@ const StyledInput = styled(Input)(({ theme }) => ({
 
   '&:hover': {
     borderColor: theme.palette.text.secondary,
-    backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#f1f1f5',
+    backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#F8F9FE',
   },
 
   '&.Mui-focused': {

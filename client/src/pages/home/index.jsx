@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Stack, Box, Typography, Grid, Paper, Avatar } from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { IoAddCircleOutline } from 'react-icons/io5';
 import { RiSurveyLine } from 'react-icons/ri';
 import { GoProject } from 'react-icons/go';
@@ -11,16 +12,17 @@ import { useDispatch, useSelector } from 'react-redux';
 import { stopLoading } from '../../redux/loadingSlice';
 import { useNavigate } from 'react-router-dom';
 import BasicInput from '../../components/BasicInput';
-
-import BackgroundImage from '../../assets/background-img.png';
+import BasicCard from '../../components/BasicCard';
 
 import { IoNotificationsOutline } from 'react-icons/io5';
 import { MdOutlineSearch } from 'react-icons/md';
 
 import Lottie from 'lottie-react';
 
-import MenuIcon from '../../assets/icons/Menu - Open and close.json';
-import BasicCard from '../../components/BasicCard';
+import totalStationIcon from '../../assets/icons/compass.json';
+import DGPSIcon from '../../assets/icons/GPS Navigation.json';
+import DroneIcon from '../../assets/icons/Drone Camera.json';
+import BathymetryIcon from '../../assets/icons/Boat-Looking-For-Land.json';
 
 const actions = [
   { label: 'Projects', icon: <GoProject size={28} />, link: '/survey' },
@@ -34,6 +36,41 @@ const actions = [
     label: 'Add Project',
     icon: <IoAddCircleOutline size={28} />,
     link: '/survey/add-survey',
+  },
+];
+
+const upcomingList = [
+  {
+    label: 'Total Station',
+    icon: totalStationIcon,
+    link: '#',
+    color: '#006FFD',
+    description:
+      'High-precision land surveying using electronic distance and angle measurements.',
+  },
+  {
+    label: 'DGPS',
+    icon: DGPSIcon,
+    link: '#',
+    color: '#D98500',
+    description:
+      'Centimeter-level positioning using GPS enhanced by base-station corrections.',
+  },
+  {
+    label: 'Drone',
+    icon: DroneIcon,
+    link: '#',
+    color: '#7A2EFF',
+    description:
+      'Aerial mapping and 3D modelling using high-resolution drone imagery.',
+  },
+  {
+    label: 'Bathymetry',
+    icon: BathymetryIcon,
+    link: '#',
+    color: '#00A79D',
+    description:
+      'Underwater depth mapping using sonar or echo-sounder measurement systems.',
   },
 ];
 
@@ -60,8 +97,6 @@ const colors = [
   },
 ];
 
-const otherLinks = [];
-
 const Home = () => {
   const dispatch = useDispatch();
 
@@ -74,7 +109,7 @@ const Home = () => {
   const lottieRef = useRef();
   const [open, setOpen] = useState(false);
 
-  const showAnim = !global;
+  const above412 = useMediaQuery('(min-width:412px)');
 
   const handleClick = () => {
     if (!lottieRef.current) return;
@@ -99,31 +134,31 @@ const Home = () => {
   }, []);
 
   return (
-    <Stack spacing={2} py={2}>
+    <Stack spacing={2} pb={2}>
       {/* 🌈 HEADER */}
-      <Stack spacing={2} px={2}>
-        <Typography textAlign={'center'} fontWeight={700} fontSize="24px">
-          Cader
-        </Typography>
-
+      <Stack spacing={2} p={2} bgcolor={'#EAF2FF'}>
         <Box
           display={'flex'}
           justifyContent={'space-between'}
           alignItems={'center'}
         >
-          <Stack>
-            <Typography fontWeight={700} fontSize="16px">
-              Hello,
-            </Typography>
-            <Typography fontWeight={700} fontSize="16px">
-              {user.name}
-            </Typography>
-          </Stack>
+          <Typography textAlign={'center'} fontWeight={700} fontSize="24px">
+            Cader
+          </Typography>
 
           <Box>
             <IoNotificationsOutline fontSize={'24px'} />
           </Box>
         </Box>
+
+        <Stack>
+          <Typography fontWeight={700} fontSize="16px">
+            Hello,
+          </Typography>
+          <Typography fontWeight={700} fontSize="16px">
+            {user.name}
+          </Typography>
+        </Stack>
 
         <Box position={'relative'}>
           <Box
@@ -146,7 +181,7 @@ const Home = () => {
       {/* ⚡ Quick Actions */}
       <Stack spacing={2}>
         <Typography fontWeight={700} fontSize="14px" px={2}>
-          Quick Links
+          Quick Actions
         </Typography>
         <Box display={'flex'} justifyContent={'space-evenly'}>
           {' '}
@@ -185,79 +220,159 @@ const Home = () => {
         </Box>{' '}
       </Stack>
 
-      {/* 🧾 Payment List */}
+      {/* Overview */}
+
       <Box px={2}>
         <Typography fontWeight={700} fontSize="14px" mt={2} mb={1}>
           Overview
         </Typography>
+
         <Grid container columns={12} spacing={2}>
-          {otherLinks.map((label, i) => (
-            <Grid size={{ xs: 3 }} key={i}>
-              <Paper
-                sx={{
-                  p: 2,
-                  borderRadius: '16px',
-                  textAlign: 'center',
-                  backgroundColor: '#fff',
-                }}
-              >
-                <Avatar sx={{ bgcolor: '#6334FA', width: 40, height: 40 }}>
-                  {label[0]}
-                </Avatar>
-                <Typography fontSize="12px" mt={1}>
-                  {label}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
+          <Grid size={{ xs: above412 ? 6 : 12 }}>
+            <BasicCard
+              key={global}
+              component={motion.div}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -5, boxShadow: '0px 8px 20px rgba(0,0,0,0.1)' }}
+              transition={{ duration: 0.4, delay: 0.6 }}
+              sx={{
+                borderBottom: '2px solid #006FFD',
+                borderRadius: '16px',
+                cursor: 'pointer',
+              }}
+              content={
+                <Stack spacing={1}>
+                  <Box
+                    display={'flex'}
+                    justifyContent={'space-between'}
+                    alignItems={'center'}
+                    gap={2}
+                  >
+                    <Typography fontWeight={500} fontSize="14px">
+                      Total Projects
+                    </Typography>
+
+                    <Box>
+                      <GoProject
+                        size={28}
+                        style={{
+                          padding: 10,
+                          backgroundColor: '#EAF2FF',
+                          color: '#006FFD',
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                  <Typography fontWeight={700} fontSize="24px">
+                    12
+                  </Typography>
+
+                  <Typography fontWeight={500} fontSize="14px">
+                    Today +2
+                  </Typography>
+                </Stack>
+              }
+            />
+          </Grid>
+          <Grid size={{ xs: above412 ? 6 : 12 }}>
+            <BasicCard
+              key={global}
+              component={motion.div}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -5, boxShadow: '0px 8px 20px rgba(0,0,0,0.1)' }}
+              transition={{ duration: 0.4, delay: 0.8 }}
+              sx={{
+                borderBottom: '2px solid #0B8A1F',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                height: '100%',
+              }}
+              content={
+                <Stack spacing={1}>
+                  <Box
+                    display={'flex'}
+                    justifyContent={'space-between'}
+                    alignItems={'center'}
+                    gap={2}
+                  >
+                    <Typography fontWeight={500} fontSize="14px">
+                      Total Tasks
+                    </Typography>
+
+                    <Box>
+                      <RiSurveyLine
+                        size={28}
+                        style={{
+                          padding: 10,
+                          backgroundColor: '#E8F7EA',
+                          color: '#0B8A1F',
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                  <Typography fontWeight={700} fontSize="24px">
+                    0
+                  </Typography>
+
+                  <Typography fontWeight={500} fontSize="14px">
+                    Today 0
+                  </Typography>
+                </Stack>
+              }
+            />
+          </Grid>
         </Grid>
       </Box>
 
       <Box px={2}>
-        <BasicCard
-          key={global}
-          component={motion.div}
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ y: -5, boxShadow: '0px 8px 20px rgba(0,0,0,0.1)' }}
-          transition={{ duration: 0.4, delay: 0.6 }}
-          sx={{
-            borderBottom: '2px solid #006FFD',
-            borderRadius: '16px',
-            cursor: 'pointer',
-          }}
-          content={
-            <Stack spacing={2}>
-              <Box
-                display={'flex'}
-                justifyContent={'space-between'}
-                alignItems={'center'}
-              >
-                <Typography fontWeight={500} fontSize="14px">
-                  Total Projects
-                </Typography>
+        <Typography fontWeight={700} fontSize="14px" mt={2} mb={1}>
+          Upcoming
+        </Typography>
 
-                <Box>
-                  <GoProject
-                    size={28}
-                    style={{
-                      padding: 10,
-                      backgroundColor: '#EAF2FF',
-                      color: '#006FFD',
-                    }}
-                  />
-                </Box>
-              </Box>
-              <Typography fontWeight={700} fontSize="24px">
-                12
-              </Typography>
-
-              <Typography fontWeight={500} fontSize="14px">
-                Today +2
-              </Typography>
-            </Stack>
-          }
-        />
+        <Grid container columns={12} spacing={2}>
+          {upcomingList.map((upcoming, idx) => (
+            <Grid
+              key={idx}
+              size={{ xs: above412 ? 6 : 12 }}
+              sx={{
+                '& .MuiCard-root': {
+                  height: '100% !important',
+                },
+              }}
+            >
+              <BasicCard
+                key={global}
+                component={motion.div}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{
+                  y: -5,
+                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+                }}
+                transition={{ duration: 0.4, delay: 0.8 }}
+                sx={{
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                }}
+                content={
+                  <Stack spacing={1}>
+                    <Box width={'70px'}>
+                      <Lottie animationData={upcoming.icon} />
+                    </Box>
+                    <Typography fontWeight={700} fontSize="24px">
+                      {upcoming.label}
+                    </Typography>
+                    <Typography fontWeight={500} fontSize="16px">
+                      {upcoming.description}
+                    </Typography>
+                  </Stack>
+                }
+              />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
 
       {/* <div onClick={handleClick} style={{ width: 50, cursor: 'pointer' }}>
