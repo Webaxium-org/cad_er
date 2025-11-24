@@ -36,7 +36,7 @@ const inputDetails = [
     for: 'All',
   },
   {
-    label: 'Purpose*',
+    label: 'Select purpose*',
     name: 'purpose',
     mode: 'select',
     options: [{ label: 'Initial Level', value: 'Initial Level' }],
@@ -89,19 +89,20 @@ const inputDetails = [
     for: 'Initial Level',
   },
   {
-    label: 'Back sight*',
-    name: 'backSight',
-    type: 'number',
-    for: 'Initial Level',
-  },
-  {
     label: 'Reduced level*',
     name: 'reducedLevel',
     type: 'number',
     for: 'Initial Level',
   },
   {
-    label: 'Chainage multiple*',
+    label: 'Back sight*',
+    name: 'backSight',
+    type: 'number',
+    for: 'Initial Level',
+  },
+
+  {
+    label: 'Set chainage multiple*',
     name: 'chainageMultiple',
     mode: 'select',
     options: [5, 10, 20, 30, 50].map((n) => ({ label: n, value: n })),
@@ -328,22 +329,22 @@ const RoadSurveyForm = () => {
       if (data.success) {
         const purposeId = data?.survey?.purposeId;
 
-        const message =
-          id && entryType === 'autoGenerate'
-            ? `${formValues.proposal} generated successfully`
-            : 'Form Submitted Successfully';
+        // const message =
+        //   id && entryType === 'autoGenerate'
+        //     ? `${formValues.proposal} generated successfully`
+        //     : 'Form Submitted Successfully';
 
         const link =
           id && entryType === 'autoGenerate'
             ? '/survey/purpose'
             : `/survey/road-survey/${purposeId}/rows`;
 
-        dispatch(
-          showAlert({
-            type: 'success',
-            message,
-          })
-        );
+        // dispatch(
+        //   showAlert({
+        //     type: 'success',
+        //     message,
+        //   })
+        // );
 
         dispatch(startLoading());
 
@@ -527,10 +528,9 @@ const RoadSurveyForm = () => {
             <Box display={'flex'} alignItems={'center'} justifyContent={'end'}>
               <Typography
                 variant="body2"
-                sx={{
-                  fontWeight: 500,
-                  color: 'text.secondary',
-                }}
+                fontSize={'16px'}
+                fontWeight={600}
+                color="black"
               >
                 Proposal
               </Typography>
@@ -556,11 +556,9 @@ const RoadSurveyForm = () => {
                       input.name === 'cSection') && (
                       <Typography
                         variant="body2"
-                        sx={{
-                          mb: 0.5,
-                          fontWeight: 500,
-                          color: 'text.secondary',
-                        }}
+                        fontSize={'16px'}
+                        fontWeight={600}
+                        color="black"
                       >
                         {input.name === 'purpose'
                           ? 'Proposal Between'
@@ -585,10 +583,9 @@ const RoadSurveyForm = () => {
                           <Box display={'flex'} alignItems={'center'} key={idx}>
                             <Typography
                               variant="body2"
-                              sx={{
-                                fontWeight: 500,
-                                color: 'text.secondary',
-                              }}
+                              fontSize={'16px'}
+                              fontWeight={600}
+                              color="black"
                             >
                               {option.label}
                             </Typography>

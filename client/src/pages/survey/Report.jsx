@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { handleFormError } from '../../utils/handleFormError';
-import { getSurvey } from '../../services/surveyServices';
+import { getAllSurvey, getSurvey } from '../../services/surveyServices';
 
 // MUI
 import {
@@ -25,22 +25,40 @@ import {
 } from '@mui/material';
 
 import { MdDelete } from 'react-icons/md';
+import BasicAutocomplete from '../../components/BasicAutocomplete';
 
 const Report = () => {
   const { id } = useParams();
+
   const navigate = useNavigate();
+
   const dispatch = useDispatch();
+
   const { global } = useSelector((state) => state.loading);
 
   const [survey, setSurvey] = useState(null);
+
+  const [surveys, setSurveys] = useState(null);
+
+  const [inputValue, setInputValue] = useState('');
+
   const [selectedPurposes, setSelectedPurposes] = useState([]);
+
   const [reportType, setReportType] = useState(null);
+
+  const handleInputChange = (e, newValue) => {
+    const surveyId = newValue.value;
+
+    setInputValue(newValue);
+    setSurvey(surveys.find((s) => String(s._id) === String(surveyId)));
+  };
 
   const fetchData = async () => {
     try {
       if (!global) dispatch(startLoading());
-      const { data } = await getSurvey(id);
-      setSurvey(data.survey);
+      const { data } = id ? await getSurvey(id) : await getAllSurvey();
+
+      id ? setSurvey(data.survey) : setSurveys(data.surveys);
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     } finally {
@@ -49,7 +67,7 @@ const Report = () => {
   };
 
   useEffect(() => {
-    if (id) fetchData();
+    fetchData();
   }, [id]);
 
   const togglePurpose = (purpose) => {
@@ -77,10 +95,13 @@ const Report = () => {
   };
 
   const getLink = () => {
-    let link = `/survey/road-survey/${id}/`;
+    let link = `/survey/road-survey/${survey._id}/`;
 
     if (reportType === 'cross') {
       link += 'report';
+    }
+    if (reportType === 'longitudinal') {
+      link += 'longitudinal-report';
     }
     if (reportType === 'area') {
       link += 'area-report';
@@ -130,6 +151,22 @@ const Report = () => {
           borderRadius: 3,
         }}
       >
+        {!id && (
+          <Box mb={2}>
+            <BasicAutocomplete
+              label={'Select Survey'}
+              options={
+                surveys?.length
+                  ? surveys?.map((s) => ({ label: s.project, value: s._id }))
+                  : []
+              }
+              value={inputValue}
+              onChange={(e, newValue) => handleInputChange(e, newValue)}
+              placeholder={'Select...'}
+            />
+          </Box>
+        )}
+
         <Typography
           variant="subtitle1"
           fontWeight="bold"
@@ -153,7 +190,17 @@ const Report = () => {
               py: { xs: 0.7, sm: 1 },
             }}
           >
-            Cross Section
+            CS
+          </ToggleButton>
+          <ToggleButton
+            value="longitudinal"
+            sx={{
+              flex: 1,
+              fontSize: { xs: '0.75rem', sm: '0.9rem' },
+              py: { xs: 0.7, sm: 1 },
+            }}
+          >
+            LS
           </ToggleButton>
           <ToggleButton
             value="area"

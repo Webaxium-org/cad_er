@@ -20,6 +20,7 @@ import CrossSectionReport from './pages/survey/CrossSectionReport';
 import Profile from './pages/user/Profile';
 import OrganizationsDashboard from './pages/organization';
 import UsersDashboard from './pages/user';
+import LongitudinalSectionReport from './pages/survey/LongitudinalSectionReport';
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
               <Route path="survey">
                 <Route index element={<SurveyList />} />
                 <Route path="add-survey" element={<SurveyLanding />} />
+                <Route path="report" element={<Report />} />
                 <Route path=":id/report" element={<Report />} />
 
                 <Route path="road-survey">
@@ -56,6 +58,10 @@ function App() {
 
                   <Route path=":id/field-book" element={<FieldBook />} />
                   <Route path=":id/report" element={<CrossSectionReport />} />
+                  <Route
+                    path=":id/longitudinal-report"
+                    element={<LongitudinalSectionReport />}
+                  />
                   <Route path=":id/area-report" element={<AreaReport />} />
                   <Route path=":id/volume-report" element={<VolumeReport />} />
                 </Route>

@@ -70,8 +70,8 @@ const BasicSelect = ({
           variant="body2"
           sx={{
             mb: 0.5,
-            fontWeight: 500,
-            color: error ? 'error.main' : 'text.secondary',
+            fontWeight: 600,
+            color: error ? 'error.main' : 'black',
           }}
         >
           {label}

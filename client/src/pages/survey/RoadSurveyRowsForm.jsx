@@ -5,9 +5,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { handleFormError } from '../../utils/handleFormError';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { Box, Stack, Typography, Grid, InputAdornment } from '@mui/material';
-import BasicTextFields from '../../components/BasicTextFields';
 import BasicButtons from '../../components/BasicButton';
-import { IoAdd } from 'react-icons/io5';
+import { IoAdd, IoPauseCircleOutline } from 'react-icons/io5';
+import { IoIosAddCircleOutline } from 'react-icons/io';
 import { IoIosRemove } from 'react-icons/io';
 import BasicCheckbox from '../../components/BasicCheckbox';
 import { showAlert } from '../../redux/alertSlice';
@@ -258,7 +258,7 @@ const RoadSurveyRowsForm = () => {
           content: (
             <Box mt={2}>
               <Stack direction={'row'} alignItems={'center'}>
-                <Typography fontSize={'16px'} fontWeight={400} color="#434343">
+                <Typography fontSize={'16px'} fontWeight={600} color="black">
                   Auto calculate
                 </Typography>
                 <BasicCheckbox
@@ -635,16 +635,16 @@ const RoadSurveyRowsForm = () => {
       const { data } = await createSurveyRow(id, payload);
 
       if (data.success) {
-        const message = isLastProposalReading
-          ? `${purpose.type} Ended Successfully`
-          : `${rowType} Added Successfully`;
+        // const message = isLastProposalReading
+        //   ? `${purpose.type} Ended Successfully`
+        //   : `${rowType} Added Successfully`;
 
-        dispatch(
-          showAlert({
-            type: 'success',
-            message,
-          })
-        );
+        // dispatch(
+        //   showAlert({
+        //     type: 'success',
+        //     message,
+        //   })
+        // );
 
         if (isLastProposalReading) {
           navigate('/survey/purpose');
@@ -897,51 +897,9 @@ const RoadSurveyRowsForm = () => {
         )}
 
         <Stack spacing={2}>
-          <Stack direction={'row'} justifyContent={'end'} gap={2}>
-            {purpose &&
-              purpose?.status === 'Active' &&
-              purpose?.type === 'Initial Level' &&
-              page === 0 && (
-                <>
-                  {rowType !== 'Chainage' && (
-                    <BasicButtons
-                      value={'Add Chainage'}
-                      onClick={() => handleChangeRowType('Chainage')}
-                      sx={{ backgroundColor: '#0059E7' }}
-                    />
-                  )}
-                  {rowType !== 'CP' && (
-                    <BasicButtons
-                      value={'Add CP'}
-                      onClick={() => handleChangeRowType('CP')}
-                      sx={{ backgroundColor: '#0059E7' }}
-                    />
-                  )}
-                  {rowType !== 'TBM' && (
-                    <BasicButtons
-                      value={'Add TBM'}
-                      onClick={() => handleChangeRowType('TBM')}
-                      sx={{ backgroundColor: '#0059E7' }}
-                    />
-                  )}
-                </>
-              )}
-
-            {purpose &&
-              purpose?.type === 'Initial Level' &&
-              purpose?.status !== 'Paused' &&
-              page === 0 && (
-                <BasicButtons
-                  value={'Pause Survey'}
-                  onClick={() => handleClickOpen('Pause Survey')}
-                  sx={{ backgroundColor: '#e7c400ff' }}
-                />
-              )}
-          </Stack>
-
           <Box display={'flex'} flexDirection={'column'} alignItems={'center'}>
             <Typography fontSize={'26px'} fontWeight={700}>
-              Please Set The {rowType}:
+              Please Set The {page === 1 ? 'IS' : rowType}:
             </Typography>
             <Typography fontSize={'16px'} fontWeight={400} color="#434343">
               Please Enter The Following Values
@@ -990,11 +948,7 @@ const RoadSurveyRowsForm = () => {
                     checked={autoOffset}
                     onChange={(e) => handleChangeAutoOffset(e)}
                   />
-                  <Typography
-                    fontSize={'16px'}
-                    fontWeight={400}
-                    color="#434343"
-                  >
+                  <Typography fontSize={'16px'} fontWeight={600} color="black">
                     Default offset
                   </Typography>
                 </Stack>
@@ -1141,6 +1095,68 @@ const RoadSurveyRowsForm = () => {
             )}
           </Stack>
         </Box>
+
+        <Stack direction={'row'} justifyContent={'end'} gap={2}>
+          {purpose &&
+            purpose?.status === 'Active' &&
+            purpose?.type === 'Initial Level' &&
+            page === 0 && (
+              <>
+                {rowType !== 'Chainage' && (
+                  <BasicButtons
+                    value={
+                      <Box display={'flex'} gap={1} alignItems={'center'}>
+                        <IoIosAddCircleOutline fontSize={'20px'} />
+                        Chainage
+                      </Box>
+                    }
+                    onClick={() => handleChangeRowType('Chainage')}
+                    sx={{ backgroundColor: '#0059E7' }}
+                  />
+                )}
+                {rowType !== 'CP' && (
+                  <BasicButtons
+                    value={
+                      <Box display={'flex'} gap={1} alignItems={'center'}>
+                        <IoIosAddCircleOutline fontSize={'20px'} />
+                        CP
+                      </Box>
+                    }
+                    onClick={() => handleChangeRowType('CP')}
+                    sx={{ backgroundColor: '#0059E7' }}
+                  />
+                )}
+                {rowType !== 'TBM' && (
+                  <BasicButtons
+                    value={
+                      <Box display={'flex'} gap={1} alignItems={'center'}>
+                        <IoIosAddCircleOutline fontSize={'20px'} />
+                        TBM
+                      </Box>
+                    }
+                    onClick={() => handleChangeRowType('TBM')}
+                    sx={{ backgroundColor: '#0059E7' }}
+                  />
+                )}
+              </>
+            )}
+
+          {purpose &&
+            purpose?.type === 'Initial Level' &&
+            purpose?.status !== 'Paused' &&
+            page === 0 && (
+              <BasicButtons
+                value={
+                  <Box display={'flex'} gap={1} alignItems={'center'}>
+                    <IoPauseCircleOutline fontSize={'20px'} />
+                    Survey
+                  </Box>
+                }
+                onClick={() => handleClickOpen('Pause Survey')}
+                sx={{ backgroundColor: '#e7c400ff' }}
+              />
+            )}
+        </Stack>
       </Stack>
     </Box>
   );

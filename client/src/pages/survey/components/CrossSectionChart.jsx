@@ -21,7 +21,7 @@ const colors = {
   Final: 'red',
 };
 
-const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
+const CrossSectionChart = ({ selectedCs, chartOptions, download, title }) => {
   const pdfRef = useRef();
 
   const downloadPDF = async () => {
@@ -61,7 +61,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
       <Box ref={pdfRef}>
         {/* Header */}
         <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
-          CROSS SECTION AT CHAINAGE {selectedCs?.chainage}
+          {title ? title : `CROSS SECTION AT CHAINAGE ${selectedCs?.chainage}`}
         </Typography>
         <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
           Datum: {selectedCs.datum}
@@ -85,7 +85,9 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                 ></TableCell>
                 <TableCell
                   sx={{ border: 'none', px: '14px', bgcolor: 'transparent' }}
-                  colSpan={selectedCs?.offsets?.length}
+                  colSpan={
+                    (selectedCs?.offsets ?? selectedCs.chainages)?.length
+                  }
                 >
                   <Box
                     sx={{
@@ -165,26 +167,30 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                     border: '1px solid black',
                   }}
                 >
-                  Offset
+                  {selectedCs?.offsets ? 'Offset': 'Chainage'}
                 </TableCell>
-                {selectedCs?.offsets?.map((val, i) => (
-                  <TableCell
-                    key={i}
-                    align="center"
-                    sx={{
-                      position: 'relative',
-                      color: 'green',
-                      fontWeight: 500,
-                      height: '55px',
-                      overflow: 'visible',
-                      border: '1px solid black',
-                      p: 0,
-                    }}
-                  >
-                    <div style={{ rotate: '-90deg' }}>{val}</div>
-                    <div className="cs-table-vertical-line" />
-                  </TableCell>
-                ))}
+                {(selectedCs?.offsets ?? selectedCs.chainages)?.map(
+                  (val, i) => (
+                    <TableCell
+                      key={i}
+                      align="center"
+                      sx={{
+                        position: 'relative',
+                        color: 'green',
+                        fontWeight: 500,
+                        height: '55px',
+                        overflow: 'visible',
+                        border: '1px solid black',
+                        p: 0,
+                      }}
+                    >
+                      <div style={{ rotate: '-90deg' }}>
+                        {Number(val).toFixed(2)}
+                      </div>
+                      <div className="cs-table-vertical-line" />
+                    </TableCell>
+                  )
+                )}
               </TableRow>
             </TableBody>
           </Table>

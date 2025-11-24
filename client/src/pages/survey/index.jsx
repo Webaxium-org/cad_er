@@ -21,7 +21,7 @@ const cardData = [
   {
     id: 1,
     icon: <FaWater fontSize={'26px'} color="#B8B8B8" />,
-    title: 'Waterbodies',
+    title: 'Water way',
     description:
       'Sed ut perspiciatis unde omnis iste natus error sit voluptatem',
   },
@@ -80,7 +80,7 @@ const Index = () => {
             Welcome To CADer
           </Typography>
           <Typography fontSize={'16px'} fontWeight={400} color="#434343">
-            What type of survey do you want to perform?
+            What type of survey do you want to perform using Auto Level?
           </Typography>
         </Stack>
 

@@ -31,7 +31,7 @@ const actions = [
     icon: <RiSurveyLine size={28} />,
     link: '/survey/tasks',
   },
-  { label: 'Reports', icon: <TbReportAnalytics size={28} />, link: '#' },
+  { label: 'Reports', icon: <TbReportAnalytics size={28} />, link: '/survey/report' },
   {
     label: 'Add Project',
     icon: <IoAddCircleOutline size={28} />,
@@ -72,6 +72,11 @@ const upcomingList = [
     description:
       'Underwater depth mapping using sonar or echo-sounder measurement systems.',
   },
+];
+
+const animations = [
+  { initial: { opacity: 0, x: -20 }, animate: { opacity: 1, x: 0 } },
+  { initial: { opacity: 0, x: 20 }, animate: { opacity: 1, x: 0 } },
 ];
 
 const colors = [
@@ -326,7 +331,7 @@ const Home = () => {
         </Grid>
       </Box>
 
-      <Box px={2}>
+      <Box p={2} overflow={'hidden'}>
         <Typography fontWeight={700} fontSize="14px" mt={2} mb={1}>
           Upcoming
         </Typography>
@@ -338,17 +343,19 @@ const Home = () => {
               size={{ xs: above412 ? 6 : 12 }}
               sx={{
                 '& .MuiCard-root': {
-                  height: '100% !important',
+                  height: '100%',
                 },
               }}
             >
               <BasicCard
                 key={global}
                 component={motion.div}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.4, delay: 0.8 }}
+                {...animations[idx % 2]}
+                whileHover={{
+                  y: -5,
+                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+                }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
                 sx={{
                   borderRadius: '16px',
                   cursor: 'pointer',
