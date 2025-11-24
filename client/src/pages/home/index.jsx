@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Stack, Box, Typography, Grid, Paper, Avatar } from '@mui/material';
 import { IoAddCircleOutline } from 'react-icons/io5';
@@ -13,41 +14,24 @@ import BasicInput from '../../components/BasicInput';
 
 import BackgroundImage from '../../assets/background-img.png';
 
-import { IoMdNotifications } from 'react-icons/io';
+import { IoNotificationsOutline } from 'react-icons/io5';
+import { MdOutlineSearch } from 'react-icons/md';
+
 import Lottie from 'lottie-react';
 
 import MenuIcon from '../../assets/icons/Menu - Open and close.json';
-
-import {
-  WiDaySunny,
-  WiCloud,
-  WiRain,
-  WiThunderstorm,
-  WiFog,
-} from 'react-icons/wi';
-
-const getWeatherIcon = (code) => {
-  if (code === 0) return <WiDaySunny />; // Clear
-  if ([1, 2].includes(code)) return <WiCloud />; // Partly cloudy
-  if (code === 3) return <WiCloud />; // Overcast
-  if ([51, 53, 55].includes(code)) return <WiFog />; // Drizzle
-  if ([61, 63, 65].includes(code)) return <WiRain />; // Rain
-  if ([80, 81, 82].includes(code)) return <WiRain />; // Showers
-  if ([95, 96, 99].includes(code)) return <WiThunderstorm />; // Storm
-
-  return <WiDaySunny />;
-};
+import BasicCard from '../../components/BasicCard';
 
 const actions = [
   { label: 'Projects', icon: <GoProject size={28} />, link: '/survey' },
   {
-    label: 'Surveys',
+    label: 'Tasks',
     icon: <RiSurveyLine size={28} />,
-    link: '/survey/purpose',
+    link: '/survey/tasks',
   },
   { label: 'Reports', icon: <TbReportAnalytics size={28} />, link: '#' },
   {
-    label: 'Add Survey',
+    label: 'Add Project',
     icon: <IoAddCircleOutline size={28} />,
     link: '/survey/add-survey',
   },
@@ -85,8 +69,12 @@ const Home = () => {
 
   const { user } = useSelector((state) => state.user);
 
+  const { global } = useSelector((state) => state.loading);
+
   const lottieRef = useRef();
   const [open, setOpen] = useState(false);
+
+  const showAnim = !global;
 
   const handleClick = () => {
     if (!lottieRef.current) return;
@@ -106,153 +94,58 @@ const Home = () => {
     navigate(link);
   };
 
-  const [temperature, setTemperature] = useState(null);
-  const [city, setCity] = useState('Loading...');
-  const [weatherCode, setWeatherCode] = useState(null);
-
-  const getIconFromWMO = (code) => {
-    const map = {
-      0: '01d',
-      1: '02d',
-      2: '03d',
-      3: '04d',
-      45: '50d',
-      48: '50d',
-      51: '09d',
-      53: '09d',
-      55: '09d',
-      61: '10d',
-      63: '10d',
-      65: '10d',
-      71: '13d',
-      73: '13d',
-      75: '13d',
-      77: '13d',
-      80: '09d',
-      81: '09d',
-      82: '09d',
-      95: '11d',
-      96: '11d',
-      99: '11d',
-    };
-    return map[code] || '01d';
-  };
-
-  useEffect(() => {
-    const loadWeather = () => {
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-
-        const wURL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
-        const wRes = await fetch(wURL);
-        const wData = await wRes.json();
-
-        setTemperature(wData.current_weather.temperature);
-        setWeatherCode(wData.current_weather.weathercode);
-
-        const gURL = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
-        const gRes = await fetch(gURL);
-        const gData = await gRes.json();
-
-        setCity(
-          gData.address.city ||
-            gData.address.town ||
-            gData.address.village ||
-            'Unknown'
-        );
-      });
-    };
-
-    loadWeather();
-  }, []);
-
   useEffect(() => {
     dispatch(stopLoading());
   }, []);
 
   return (
-    <Stack spacing={2} pb={10} sx={{ bgcolor: '#F7F7FF' }}>
+    <Stack spacing={2} py={2}>
       {/* 🌈 HEADER */}
-      <Stack
-        sx={{
-          position: 'relative',
-          borderBottomLeftRadius: '28px',
-          borderBottomRightRadius: '28px',
-          overflow: 'hidden',
-          color: '#fff',
-          backgroundColor: '#6334FA',
-          p: 2,
-        }}
-        spacing={2}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `url(${BackgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.25,
-            zIndex: 0,
-          }}
-        ></div>
+      <Stack spacing={2} px={2}>
+        <Typography textAlign={'center'} fontWeight={700} fontSize="24px">
+          Cader
+        </Typography>
 
-        {/* /* Content */}
-        <Stack sx={{ position: 'relative', zIndex: 1 }} spacing={2}>
-          {/* Header Row */}
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            {/* Temperature + City */}
-            <Box display="flex" alignItems="center" gap={1}>
-              <img
-                src={`https://openweathermap.org/img/wn/${getIconFromWMO(
-                  weatherCode
-                )}@2x.png`}
-                alt="weather"
-                style={{ width: 32, height: 32 }}
-              />
-
-              <Box>
-                <Typography fontWeight={600} fontSize="14px">
-                  {temperature !== null ? `${temperature}°C` : '...'}
-                </Typography>
-                <Typography fontSize="12px" sx={{ opacity: 0.8 }}>
-                  {city}
-                </Typography>
-              </Box>
-            </Box>
-
-            <Typography fontSize="22px" fontWeight="700" letterSpacing={0.5}>
-              CADER
+        <Box
+          display={'flex'}
+          justifyContent={'space-between'}
+          alignItems={'center'}
+        >
+          <Stack>
+            <Typography fontWeight={700} fontSize="16px">
+              Hello,
             </Typography>
-
-            <IoMdNotifications size={24} />
+            <Typography fontWeight={700} fontSize="16px">
+              {user.name}
+            </Typography>
           </Stack>
 
-          {/* User greeting */}
           <Box>
-            <Typography fontSize="14px" mt={3} sx={{ opacity: 0.85 }}>
-              Hello, Welcome 🎉
-            </Typography>
-            <Typography fontSize="20px" fontWeight="600">
-              {user?.name}
-            </Typography>
+            <IoNotificationsOutline fontSize={'24px'} />
           </Box>
+        </Box>
 
-          {/* Search bar */}
-          <Box>
-            <BasicInput placeholder="Search" />
+        <Box position={'relative'}>
+          <Box
+            position={'absolute'}
+            zIndex={1}
+            sx={{ top: '10px', left: '10px' }}
+          >
+            <MdOutlineSearch fontSize={'24px'} />
           </Box>
-        </Stack>
+          <BasicInput
+            placeholder="Search"
+            sx={{
+              paddingLeft: '40px',
+              borderRadius: '14px',
+            }}
+          />
+        </Box>
       </Stack>
 
       {/* ⚡ Quick Actions */}
-      <Box>
-        <Typography fontWeight={700} fontSize="16px" mb={1} px={2}>
+      <Stack spacing={2}>
+        <Typography fontWeight={700} fontSize="14px" px={2}>
           Quick Links
         </Typography>
         <Box display={'flex'} justifyContent={'space-evenly'}>
@@ -290,11 +183,11 @@ const Home = () => {
             </Box>
           ))}{' '}
         </Box>{' '}
-      </Box>
+      </Stack>
 
       {/* 🧾 Payment List */}
       <Box px={2}>
-        <Typography fontWeight={700} fontSize="16px" mt={2} mb={1}>
+        <Typography fontWeight={700} fontSize="14px" mt={2} mb={1}>
           Overview
         </Typography>
         <Grid container columns={12} spacing={2}>
@@ -320,26 +213,52 @@ const Home = () => {
         </Grid>
       </Box>
 
-      {/* 🎁 Promo Banner */}
-      {/* <Box px={2}>
-        <Paper
+      <Box px={2}>
+        <BasicCard
+          key={global}
+          component={motion.div}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{ y: -5, boxShadow: '0px 8px 20px rgba(0,0,0,0.1)' }}
+          transition={{ duration: 0.4, delay: 0.6 }}
           sx={{
-            mt: 2,
-            p: 2,
+            borderBottom: '2px solid #006FFD',
             borderRadius: '16px',
-            background: 'linear-gradient(90deg, #4F8CFF, #6B4EFF)',
-            color: '#fff',
-            textAlign: 'center',
+            cursor: 'pointer',
           }}
-        >
-          <Typography fontWeight={700}>
-            Special Offer for Today's Top Up
-          </Typography>
-          <Typography fontSize="12px">
-            Get discount for every top up transaction
-          </Typography>
-        </Paper>
-      </Box> */}
+          content={
+            <Stack spacing={2}>
+              <Box
+                display={'flex'}
+                justifyContent={'space-between'}
+                alignItems={'center'}
+              >
+                <Typography fontWeight={500} fontSize="14px">
+                  Total Projects
+                </Typography>
+
+                <Box>
+                  <GoProject
+                    size={28}
+                    style={{
+                      padding: 10,
+                      backgroundColor: '#EAF2FF',
+                      color: '#006FFD',
+                    }}
+                  />
+                </Box>
+              </Box>
+              <Typography fontWeight={700} fontSize="24px">
+                12
+              </Typography>
+
+              <Typography fontWeight={500} fontSize="14px">
+                Today +2
+              </Typography>
+            </Stack>
+          }
+        />
+      </Box>
 
       {/* <div onClick={handleClick} style={{ width: 50, cursor: 'pointer' }}>
         <Lottie

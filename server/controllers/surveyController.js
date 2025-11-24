@@ -84,7 +84,7 @@ const createSurvey = async (req, res, next) => {
         'All fields (project, purpose, instrumentNo, reducedLevel, backSight, chainageMultiple) are required'
       );
     }
-
+    console.log('im here', userId);
     // 🔹 Create Survey
     const survey = await Survey.create(
       [

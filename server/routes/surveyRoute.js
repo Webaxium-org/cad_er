@@ -22,12 +22,14 @@ import {
 } from '../controllers/surveyController.js';
 import { isAuthenticated, requireAuth } from '../middleware/auth.js';
 
+router.use(requireAuth, isAuthenticated);
+
 // 🔹 Static routes
 router.get('/exists', checkSurveyExists);
 router.get('/purposes', getAllSurveyPurpose);
 
 // 🔹 Survey routes
-router.get('/', requireAuth, isAuthenticated, getAllSurvey);
+router.get('/', getAllSurvey);
 router.post('/', createSurvey);
 router.patch('/:id/end', endSurvey);
 router.get('/:id', getSurvey);

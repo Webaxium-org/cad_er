@@ -6,7 +6,7 @@ const StyledInput = styled(Input)(({ theme }) => ({
   borderRadius: '10px',
   padding: '10px 14px',
   border: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f9f9fb',
+  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#F8F9FE',
   color: theme.palette.text.primary,
   fontSize: '0.95rem',
   transition: theme.transitions.create(
@@ -22,7 +22,7 @@ const StyledInput = styled(Input)(({ theme }) => ({
   '&.Mui-focused': {
     borderColor: theme.palette.primary.main,
     boxShadow: `${alpha(theme.palette.primary.main, 0.25)} 0 0 0 3px`,
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: '#F8F9FE',
   },
 
   '&.Mui-error': {
@@ -69,6 +69,13 @@ const BasicInput = ({
         disableUnderline
         error={Boolean(error)}
         {...props}
+        onKeyDown={(e) => {
+          if (props.type === 'number') {
+            if (['e', 'E', '+', '-'].includes(e.key)) {
+              e.preventDefault();
+            }
+          }
+        }}
         sx={{
           ...sx,
           '& input[type=number]': {
