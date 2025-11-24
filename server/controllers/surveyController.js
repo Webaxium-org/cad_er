@@ -94,7 +94,6 @@ const createSurvey = async (req, res, next) => {
           instrumentNo,
           chainageMultiple,
           reducedLevel: Number(reducedLevel).toFixed(3),
-          createdBy: req.user?._id,
         },
       ],
       { session }
