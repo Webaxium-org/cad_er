@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 const checkSurveyExists = async (req, res, next) => {
   try {
     const survey = await Survey.findOne({ isSurveyFinish: false });
-    console.log('haii');
+
     res.status(200).json({
       success: true,
       message: `${survey ? 'Active survey found' : 'No active survey found'}`,
@@ -59,13 +59,16 @@ const createSurvey = async (req, res, next) => {
 
   try {
     const {
-      project,
-      purpose,
-      instrumentNo,
-      reducedLevel,
-      backSight,
-      chainageMultiple,
-    } = req.body;
+      user: { userId },
+      body: {
+        project,
+        purpose,
+        instrumentNo,
+        reducedLevel,
+        backSight,
+        chainageMultiple,
+      },
+    } = req;
 
     // 🔹 Input validation
     if (
@@ -87,6 +90,7 @@ const createSurvey = async (req, res, next) => {
       [
         {
           project,
+          createdBy: userId,
           instrumentNo,
           chainageMultiple,
           reducedLevel: Number(reducedLevel).toFixed(3),
@@ -103,6 +107,7 @@ const createSurvey = async (req, res, next) => {
       [
         {
           surveyId: surveyDoc._id,
+          createdBy: userId,
           type: purpose,
           isSurveyFinish: false,
         },
@@ -118,6 +123,7 @@ const createSurvey = async (req, res, next) => {
         {
           surveyId: surveyDoc._id,
           purposeId: purposeObj._id,
+          createdBy: userId,
           type: 'Instrument setup',
           backSight: Number(backSight).toFixed(3),
           remarks: ['TBM'],
@@ -138,7 +144,7 @@ const createSurvey = async (req, res, next) => {
           entityId: surveyDoc._id,
           action: 'Create',
           notes: `Survey created with purpose ${purpose}`,
-          performedBy: req.user?._id,
+          performedBy: userId,
         },
       ],
       { session }
@@ -217,6 +223,7 @@ const createSurveyRow = async (req, res, next) => {
   try {
     const {
       params: { id },
+      user: { userId },
       body: {
         type,
         backSight,
@@ -330,8 +337,9 @@ const createSurveyRow = async (req, res, next) => {
     }
 
     const newReading = {
-      purposeId: purpose._id,
       type,
+      purposeId: purpose._id,
+      createdBy: userId,
       chainage: type === 'Chainage' ? chainage : undefined,
       spacing: type === 'Chainage' ? spacing : undefined,
       roadWidth: roadWidth ? Number(roadWidth).toFixed(3) : undefined,
@@ -484,6 +492,7 @@ const createSurveyPurpose = async (req, res, next) => {
 
     const {
       params: { surveyId },
+      user: { userId },
       body: {
         purpose,
         proposal,
@@ -591,6 +600,7 @@ const createSurveyPurpose = async (req, res, next) => {
         {
           surveyId,
           type,
+          createdBy: userId,
           phase: proposal ? 'Proposal' : 'Actual',
           ...(proposal && {
             proposedLevel,
@@ -624,6 +634,7 @@ const createSurveyPurpose = async (req, res, next) => {
           {
             surveyId: survey._id,
             purposeId: purposeDoc._id,
+            createdBy: userId,
             type: 'Instrument setup',
             backSight: tbmReading.backSight,
             reducedLevels: tbmReading.reducedLevels,
@@ -814,6 +825,7 @@ const pauseSurveyPurpose = async (req, res, next) => {
   try {
     const {
       params: { id },
+      user: { userId },
       query: { foreSight },
     } = req;
 
@@ -856,10 +868,11 @@ const pauseSurveyPurpose = async (req, res, next) => {
     await SurveyRow.create(
       [
         {
-          purposeId: survey._id,
           type: 'CP',
           foreSight,
           remarks: ['CP'],
+          createdBy: userId,
+          purposeId: survey._id,
         },
       ],
       { session }
@@ -886,6 +899,7 @@ const generateSurveyPurpose = async (req, res, next) => {
   try {
     const {
       params: { id },
+      user: { userId },
       body: {
         purpose,
         proposal,
@@ -1000,6 +1014,7 @@ const generateSurveyPurpose = async (req, res, next) => {
           surveyId: id,
           type: proposal,
           phase: 'Proposal',
+          createdBy: userId,
           quantity,
           lSection,
           lsSlop,
@@ -1052,6 +1067,7 @@ const generateSurveyPurpose = async (req, res, next) => {
         insertOne: {
           document: {
             surveyId: id,
+            createdBy: userId,
             purposeId: purposeDoc._id,
             type: 'Chainage',
             chainage: reading.chainage,

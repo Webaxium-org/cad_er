@@ -14,7 +14,7 @@ const SurveySchema = new Schema(
     instrumentNo: { type: String, required: true },
     chainageMultiple: { type: Number, required: true },
     reducedLevel: { type: String, required: true },
-    createdBy: { type: Types.ObjectId, ref: 'User' },
+    createdBy: { type: Types.ObjectId, ref: 'User', required: true },
     isSurveyFinish: { type: Boolean, default: false, index: true },
     DateOfSurvey: { type: Date, default: Date.now },
     surveyFinishDate: Date,

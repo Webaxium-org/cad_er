@@ -106,7 +106,7 @@ const DrawerList = ({ toggleDrawer }) => {
         spacing={2}
         sx={{
           p: 2,
-          backgroundColor: '#2775ad',
+          backgroundColor: '#6334FA',
           color: 'white',
         }}
       >

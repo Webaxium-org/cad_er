@@ -14,6 +14,7 @@ const SurveyRowSchema = new Schema(
       enum: ['Instrument setup', 'Chainage', 'TBM', 'CP'],
       required: true,
     },
+    createdBy: { type: Types.ObjectId, ref: 'User', required: true },
     backSight: String,
     reducedLevels: [String],
     heightOfInstrument: String,

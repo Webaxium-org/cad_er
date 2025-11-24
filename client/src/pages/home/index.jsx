@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, Box, Typography, Grid, Paper, Avatar } from '@mui/material';
 import { IoAddCircleOutline } from 'react-icons/io5';
 import { RiSurveyLine } from 'react-icons/ri';
@@ -14,6 +14,9 @@ import BasicInput from '../../components/BasicInput';
 import BackgroundImage from '../../assets/background-img.png';
 
 import { IoMdNotifications } from 'react-icons/io';
+import Lottie from 'lottie-react';
+
+import MenuIcon from '../../assets/icons/Menu - Open and close.json';
 
 import {
   WiDaySunny,
@@ -53,7 +56,7 @@ const actions = [
 const colors = [
   {
     bg: '#F5F9FC',
-    icon: '#2775AD',  // your theme as accent
+    icon: '#2775AD', // your theme as accent
     hover: '#E8F1F8',
   },
   {
@@ -73,7 +76,6 @@ const colors = [
   },
 ];
 
-
 const otherLinks = [];
 
 const Home = () => {
@@ -82,6 +84,23 @@ const Home = () => {
   const navigate = useNavigate();
 
   const { user } = useSelector((state) => state.user);
+
+  const lottieRef = useRef();
+  const [open, setOpen] = useState(false);
+
+  const handleClick = () => {
+    if (!lottieRef.current) return;
+
+    if (!open) {
+      // Play first half (open)
+      lottieRef.current.playSegments([0, 70], true);
+    } else {
+      // Play second half (close)
+      lottieRef.current.playSegments([70, 140], true);
+    }
+
+    setOpen(!open);
+  };
 
   const handleNavigate = (link) => {
     navigate(link);
@@ -232,14 +251,14 @@ const Home = () => {
       </Stack>
 
       {/* ⚡ Quick Actions */}
-      <Box px={2}>
-        <Typography fontWeight={700} fontSize="16px" mb={1}>
+      <Box>
+        <Typography fontWeight={700} fontSize="16px" mb={1} px={2}>
           Quick Links
         </Typography>
-        <Grid container spacing={2} justifyContent={'center'}>
+        <Box display={'flex'} justifyContent={'space-evenly'}>
           {' '}
           {actions.map((item, idx) => (
-            <Grid key={idx} size={{ xs: 3 }}>
+            <Box key={idx}>
               <Stack alignItems={'center'} spacing={0.5}>
                 {' '}
                 <Paper
@@ -268,9 +287,9 @@ const Home = () => {
                   {item.label}{' '}
                 </Typography>{' '}
               </Stack>
-            </Grid>
+            </Box>
           ))}{' '}
-        </Grid>{' '}
+        </Box>{' '}
       </Box>
 
       {/* 🧾 Payment List */}
@@ -305,7 +324,7 @@ const Home = () => {
       {/* <Box px={2}>
         <Paper
           sx={{
-            mt: 3,
+            mt: 2,
             p: 2,
             borderRadius: '16px',
             background: 'linear-gradient(90deg, #4F8CFF, #6B4EFF)',
@@ -321,6 +340,15 @@ const Home = () => {
           </Typography>
         </Paper>
       </Box> */}
+
+      {/* <div onClick={handleClick} style={{ width: 50, cursor: 'pointer' }}>
+        <Lottie
+          lottieRef={lottieRef}
+          animationData={MenuIcon}
+          autoplay={false}
+          loop={false}
+        />
+      </div> */}
     </Stack>
   );
 };
