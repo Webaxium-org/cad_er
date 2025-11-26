@@ -137,7 +137,23 @@ const CrossSectionReport = () => {
   }, [tableData]);
 
   return (
-    <>
+    <Box
+      sx={{
+        textAlign: 'center',
+        mt: 4,
+        p: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+    >
+      <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
+        CROSS SECTION AT CHAINAGE {selectedCs?.chainage}
+      </Typography>
+      <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
+        Datum: {selectedCs?.datum}
+      </Typography>
+
       {selectedCs && selectedCs?.series && (
         <CrossSectionChart
           selectedCs={selectedCs}
@@ -145,6 +161,14 @@ const CrossSectionReport = () => {
           download={true}
         />
       )}
+
+      {/* Footer */}
+      <Typography
+        variant="caption"
+        sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
+      >
+        [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
+      </Typography>
 
       <TableContainer
         component={Paper}
@@ -184,7 +208,7 @@ const CrossSectionReport = () => {
           </TableBody>
         </Table>
       </TableContainer>
-    </>
+    </Box>
   );
 };
 

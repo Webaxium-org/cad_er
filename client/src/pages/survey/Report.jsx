@@ -115,7 +115,10 @@ const Report = () => {
 
   const generateReport = () => {
     try {
-      if (reportType !== 'cross' && selectedPurposes.length > 2) {
+      if (
+        (reportType === 'area' || reportType === 'volume') &&
+        selectedPurposes.length > 2
+      ) {
         throw Error(
           `Only two surveys can be selected for the ${reportType} report.`
         );

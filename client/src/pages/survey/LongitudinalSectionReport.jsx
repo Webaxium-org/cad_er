@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { handleFormError } from '../../utils/handleFormError';
 import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { getSurvey } from '../../services/surveyServices';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import CrossSectionChart from './components/CrossSectionChart';
 import { initialChartOptions } from '../../constants';
 
@@ -131,19 +131,34 @@ const LongitudinalSectionReport = () => {
       sx={{
         textAlign: 'center',
         mt: 4,
+        p: 2,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
       }}
     >
+      <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
+        LONGITUDINAL SECTION
+      </Typography>
+      <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
+        Datum: {selectedCs?.datum}
+      </Typography>
+
       {selectedCs && selectedCs?.series?.length && (
         <CrossSectionChart
           selectedCs={selectedCs}
           chartOptions={chartOptions}
           download={true}
-          title="Longitudinal Section"
         />
       )}
+
+      {/* Footer */}
+      <Typography
+        variant="caption"
+        sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
+      >
+        [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
+      </Typography>
     </Box>
   );
 };
