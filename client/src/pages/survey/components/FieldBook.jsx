@@ -280,6 +280,13 @@ export default function FieldBook() {
           onClick={exportToExcel}
           value="Download Excel 📥"
         />
+
+        <BasicButtons
+          variant="contained"
+          sx={{ mb: 2 }}
+          onClick={() => navigate(`/survey/${purpose?.surveyId?._id}/report`)}
+          value="Go To Reports"
+        />
       </Stack>
 
       <TableContainer component={Paper}>

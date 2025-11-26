@@ -54,7 +54,7 @@ const LongitudinalSectionReport = () => {
 
     const safeChainages = row.map((r) => getSafeChainage(r.chainage)) || [];
     const safeInitial = row.map((r) => {
-      const offsetPointIndex = r.offsets?.findIndex((o) => Number(0) === 0);
+      const offsetPointIndex = r.offsets?.findIndex((o) => Number(o) === 0);
 
       return r.reducedLevels[offsetPointIndex];
     });
@@ -136,7 +136,7 @@ const LongitudinalSectionReport = () => {
         alignItems: 'center',
       }}
     >
-      {selectedCs && selectedCs?.series && (
+      {selectedCs && selectedCs?.series?.length && (
         <CrossSectionChart
           selectedCs={selectedCs}
           chartOptions={chartOptions}

@@ -233,6 +233,7 @@ const createSurveyRow = async (req, res, next) => {
         spacing,
         offsets,
         reducedLevels,
+        remark,
       },
     } = req;
 
@@ -303,7 +304,7 @@ const createSurveyRow = async (req, res, next) => {
         else remarks.push('RHS');
       });
     } else {
-      remarks.push(type);
+      remarks.push(remark);
     }
 
     const initialSurvey = survey.purposes?.find(

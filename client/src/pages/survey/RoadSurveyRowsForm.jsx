@@ -60,19 +60,13 @@ const initialFormValues = {
   intermediateSight: '',
   foreSight: '',
   backSight: '',
-  remarks: 'skipping ....',
+  remark: '',
 };
 
 const values = {
-  Chainage: [
-    'chainage',
-    'roadWidth',
-    'spacing',
-    'intermediateOffsets',
-    'remarks',
-  ],
-  CP: ['foreSight', 'backSight', 'remarks'],
-  TBM: ['intermediateSight', 'remarks'],
+  Chainage: ['chainage', 'roadWidth', 'spacing', 'intermediateOffsets'],
+  CP: ['foreSight', 'backSight', 'remark'],
+  TBM: ['intermediateSight', 'remark'],
 };
 
 const inputDetails = [
@@ -81,6 +75,7 @@ const inputDetails = [
   { label: 'Spacing*', name: 'spacing', type: 'number' },
   { label: 'Fore sight*', name: 'foreSight', type: 'number' },
   { label: 'Back sight*', name: 'backSight', type: 'number' },
+  { label: 'Remark*', name: 'remark', type: 'text' },
 ];
 
 const RoadSurveyRowsForm = () => {
@@ -112,7 +107,10 @@ const RoadSurveyRowsForm = () => {
       then: (schema) =>
         schema
           .required('Chainage is required')
-          .matches(/^\d\/\d{3}$/, 'Chainage must be in the format 0/000'),
+          .matches(
+            /^\d+\/\d+(\.\d{1,3})?$/,
+            'Invalid chainage format. Use ####/###.###'
+          ),
       otherwise: (schema) => schema.nullable(),
     }),
 
@@ -214,11 +212,11 @@ const RoadSurveyRowsForm = () => {
         otherwise: (schema) => schema.nullable(),
       }),
 
-    remarks: Yup.string()
+    remark: Yup.string()
       .trim()
       .when('type', {
-        is: (val) => ['Chainage', 'CP', 'TBM'].includes(val),
-        then: (schema) => schema.required('Remarks are required'),
+        is: (val) => ['CP', 'TBM'].includes(val),
+        then: (schema) => schema.required('Remark is required'),
         otherwise: (schema) => schema.nullable(),
       }),
   });
@@ -227,11 +225,12 @@ const RoadSurveyRowsForm = () => {
     const inpFinalForesight = document.getElementById('finalForesight');
 
     const lastReading = purpose.rows.at(-1);
-    const reducedLevel = purpose.surveyId?.reducedLevel || 0;
+    // const reducedLevel = purpose.surveyId?.reducedLevel || 0;
+    const reducedLevel = lastReading.reducedLevels[0] || 0;
 
     const value = Number(lastReading.heightOfInstrument) - Number(reducedLevel);
 
-    inpFinalForesight.value = e.target.checked ? value : '';
+    inpFinalForesight.value = e.target.checked ? value.toFixed(3) : '';
   };
 
   const handleClickOpen = (action) => {
@@ -297,7 +296,7 @@ const RoadSurveyRowsForm = () => {
     );
 
     if (rowType === 'TBM') {
-      filteredInputData.push({
+      filteredInputData.unshift({
         label: 'Intermediate sight*',
         name: 'intermediateSight',
         type: 'number',
@@ -952,6 +951,14 @@ const RoadSurveyRowsForm = () => {
                     Default offset
                   </Typography>
                 </Stack>
+                <Typography
+                  fontSize={'16px'}
+                  fontWeight={600}
+                  color="black"
+                  mb={1}
+                >
+                  Chainage: {formValues.chainage}
+                </Typography>
                 <Stack spacing={2}>
                   {formValues.intermediateOffsets.map((row, idx) => (
                     <Stack
@@ -1156,6 +1163,31 @@ const RoadSurveyRowsForm = () => {
                 sx={{ backgroundColor: '#e7c400ff' }}
               />
             )}
+
+          {page === 0 && (
+            <>
+              <BasicButtons
+                value={
+                  <Box display={'flex'} gap={1} alignItems={'center'}>
+                    <IoIosAddCircleOutline fontSize={'20px'} />
+                    Branch
+                  </Box>
+                }
+                onClick={() => {}}
+                sx={{ backgroundColor: '#9C27B0' }}
+              />
+              <BasicButtons
+                value={
+                  <Box display={'flex'} gap={1} alignItems={'center'}>
+                    <IoIosAddCircleOutline fontSize={'20px'} />
+                    Break
+                  </Box>
+                }
+                onClick={() => {}}
+                sx={{ backgroundColor: '#FF5722' }}
+              />
+            </>
+          )}
         </Stack>
       </Stack>
     </Box>

@@ -137,15 +137,7 @@ const CrossSectionReport = () => {
   }, [tableData]);
 
   return (
-    <Box
-      sx={{
-        textAlign: 'center',
-        mt: 4,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
-    >
+    <>
       {selectedCs && selectedCs?.series && (
         <CrossSectionChart
           selectedCs={selectedCs}
@@ -157,10 +149,8 @@ const CrossSectionReport = () => {
       <TableContainer
         component={Paper}
         sx={{
-          maxWidth: 420,
           border: '1px solid black',
           mt: 2,
-          overflow: 'visible',
         }}
       >
         <Table>
@@ -168,7 +158,6 @@ const CrossSectionReport = () => {
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Chainage</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>CS</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>LS</TableCell>
             </TableRow>
           </TableHead>
 
@@ -177,21 +166,25 @@ const CrossSectionReport = () => {
               (row, index) =>
                 row.type === 'Chainage' && (
                   <TableRow key={index}>
-                    <TableCell>{row.chainage}</TableCell>
+                    <TableCell
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => handleClickCs(row._id)}
+                    >
+                      {row.chainage}
+                    </TableCell>
                     <TableCell
                       sx={{ cursor: 'pointer' }}
                       onClick={() => handleClickCs(row._id)}
                     >
                       View
                     </TableCell>
-                    <TableCell>N/A</TableCell>
                   </TableRow>
                 )
             )}
           </TableBody>
         </Table>
       </TableContainer>
-    </Box>
+    </>
   );
 };
 
