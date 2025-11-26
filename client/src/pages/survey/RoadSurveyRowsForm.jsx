@@ -1103,7 +1103,7 @@ const RoadSurveyRowsForm = () => {
           </Stack>
         </Box>
 
-        <Stack direction={'row'} justifyContent={'end'} gap={2}>
+        <Stack direction={'row'} justifyContent={'end'} gap={1}>
           {purpose &&
             purpose?.status === 'Active' &&
             purpose?.type === 'Initial Level' &&
@@ -1163,7 +1163,9 @@ const RoadSurveyRowsForm = () => {
                 sx={{ backgroundColor: '#e7c400ff' }}
               />
             )}
+        </Stack>
 
+        <Stack direction={'row'} justifyContent={'end'} gap={1}>
           {page === 0 && (
             <>
               <BasicButtons

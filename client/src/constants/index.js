@@ -52,7 +52,7 @@ export const initialChartOptions = {
   },
   stroke: {
     curve: 'straight',
-    width: 2,
+    width: 1,
   },
   colors: ['blue', 'green', 'red', '#9B59B6', '#F1C40F', '#34495E'],
   grid: {
@@ -68,7 +68,7 @@ export const initialChartOptions = {
     min: 0,
     labels: { show: false },
     axisTicks: { show: false },
-    axisBorder: { show: true, color: '#000000' },
+    axisBorder: { show: false },
   },
   legend: { show: false },
   tooltip: { enabled: false },
