@@ -225,8 +225,8 @@ const RoadSurveyRowsForm = () => {
     const inpFinalForesight = document.getElementById('finalForesight');
 
     const lastReading = purpose.rows.at(-1);
-    // const reducedLevel = purpose.surveyId?.reducedLevel || 0;
-    const reducedLevel = lastReading.reducedLevels[0] || 0;
+
+    const reducedLevel = purpose.surveyId?.reducedLevel || 0;
 
     const value = Number(lastReading.heightOfInstrument) - Number(reducedLevel);
 
