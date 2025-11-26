@@ -27,7 +27,7 @@ export const calculateReducedLevel = (survey, newReading, purposeId) => {
 
   // STEP 2: Start slice
   const startIndex = lastCPIndex === -1 ? 0 : lastCPIndex;
-  const rowsToProcess = [...purpose.rows.slice(startIndex), newReading];
+  const rowsToProcess = [...purpose.rows.slice(startIndex + 1), newReading]; // +1 is used to remove the CP itself
 
   let hi = null;
   let rl = null;
@@ -40,12 +40,15 @@ export const calculateReducedLevel = (survey, newReading, purposeId) => {
       rl = Number(survey.reducedLevel || 0);
       hi = rl + Number(first.backSight || 0);
     }
+  } else {
+    rl = purpose.rows[startIndex].reducedLevels[0];
+    hi = purpose.rows[startIndex].heightOfInstrument;
   }
 
   // STEP 3: Loop only CP→end or whole thing if no CP
   for (const row of rowsToProcess) {
     switch (row.type) {
-      case 'Instrument setup':
+      case 'Instrument setup': // Does not need these
         rl = Number(survey.reducedLevel || 0);
         hi = rl + Number(row.backSight || 0);
         finalRLArray = [rl.toFixed(3)];
@@ -66,7 +69,7 @@ export const calculateReducedLevel = (survey, newReading, purposeId) => {
         }
         break;
 
-      case 'CP':
+      case 'CP': // Does not need these
         rl = Number(hi) - Number(row.foreSight || 0);
         hi = rl + Number(row.backSight || 0);
         finalRLArray = [rl.toFixed(3)];

@@ -19,6 +19,7 @@ import { MdOutlineSearch } from 'react-icons/md';
 
 import Lottie from 'lottie-react';
 
+import BackgroundImage from '../../assets/back-ground-img.png';
 import totalStationIcon from '../../assets/icons/compass.json';
 import DGPSIcon from '../../assets/icons/GPS Navigation.json';
 import DroneIcon from '../../assets/icons/Drone Camera.json';
@@ -31,7 +32,11 @@ const actions = [
     icon: <RiSurveyLine size={28} />,
     link: '/survey/tasks',
   },
-  { label: 'Reports', icon: <TbReportAnalytics size={28} />, link: '/survey/report' },
+  {
+    label: 'Reports',
+    icon: <TbReportAnalytics size={28} />,
+    link: '/survey/report',
+  },
   {
     label: 'Add Project',
     icon: <IoAddCircleOutline size={28} />,
@@ -142,6 +147,17 @@ const Home = () => {
     <Stack spacing={2} pb={2}>
       {/* 🌈 HEADER */}
       <Stack spacing={2} p={2} bgcolor={'#EAF2FF'}>
+        {/* <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `url(${BackgroundImage})`,
+            backgroundSize: '200%',
+            backgroundPosition: 'center',
+            opacity: 0.25,
+            zIndex: 0,
+          }}
+        ></div> */}
         <Box
           display={'flex'}
           justifyContent={'space-between'}
