@@ -16,7 +16,14 @@ import {
   Typography,
 } from '@mui/material';
 import CrossSectionChart from './components/CrossSectionChart';
-import { initialChartOptions } from '../../constants';
+import { advancedChartOptions, initialChartOptions } from '../../constants';
+import BasicMenu from '../../components/BasicMenu';
+
+const menuItems = [
+  { label: 'V1', value: 'v1' },
+  { label: 'V2', value: 'v2' },
+  { label: 'V3', value: 'v3' },
+];
 
 const CrossSectionReport = () => {
   const navigate = useNavigate();
@@ -36,6 +43,11 @@ const CrossSectionReport = () => {
   const [tableData, setTableData] = useState([]);
 
   const [selectedCs, setSelectedCs] = useState(null);
+
+  const handleMenuSelect = (item) => {
+    if (item.value === 'v1') setChartOptions(initialChartOptions);
+    if (item.value === 'v2') setChartOptions(advancedChartOptions);
+  };
 
   const handleSetTableData = (survey) => {
     const data = [];
@@ -137,77 +149,88 @@ const CrossSectionReport = () => {
   }, [tableData]);
 
   return (
-    <Box
-      sx={{
-        textAlign: 'center',
-        mt: 4,
-        p: 2,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
-    >
-      <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
-        CROSS SECTION AT CHAINAGE {selectedCs?.chainage}
-      </Typography>
-      <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
-        Datum: {selectedCs?.datum}
-      </Typography>
-
-      {selectedCs && selectedCs?.series && (
-        <CrossSectionChart
-          selectedCs={selectedCs}
-          chartOptions={chartOptions}
-          download={true}
+    <Box p={2} mt={4}>
+      <Box textAlign={'end'}>
+        <BasicMenu
+          label="Options"
+          items={menuItems}
+          onSelect={handleMenuSelect}
         />
-      )}
-
-      {/* Footer */}
-      <Typography
-        variant="caption"
-        sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
-      >
-        [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
-      </Typography>
-
-      <TableContainer
-        component={Paper}
+      </Box>
+      <Box
         sx={{
-          border: '1px solid black',
-          mt: 2,
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 3,
         }}
       >
-        <Table>
-          <TableHead sx={{ backgroundColor: '#f4f6f8' }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Chainage</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>CS</TableCell>
-            </TableRow>
-          </TableHead>
+        <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
+          CROSS SECTION AT CHAINAGE {selectedCs?.chainage}
+        </Typography>
+        <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
+          Datum: {selectedCs?.datum}
+        </Typography>
 
-          <TableBody>
-            {tableData[0]?.rows?.map(
-              (row, index) =>
-                row.type === 'Chainage' && (
-                  <TableRow key={index}>
-                    <TableCell
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => handleClickCs(row._id)}
-                    >
-                      {row.chainage}
-                    </TableCell>
-                    <TableCell
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => handleClickCs(row._id)}
-                    >
-                      View
-                    </TableCell>
-                  </TableRow>
-                )
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+        {selectedCs && selectedCs?.series && (
+          <CrossSectionChart
+            selectedCs={selectedCs}
+            chartOptions={chartOptions}
+            download={true}
+          />
+        )}
+
+        {/* Footer */}
+        <Typography
+          variant="caption"
+          sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
+        >
+          [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
+        </Typography>
+
+        <TableContainer
+          component={Paper}
+          sx={{
+            border: '1px solid black',
+            mt: 2,
+            maxHeight: 440,
+          }}
+        >
+          <Table stickyHeader>
+            <TableHead sx={{ backgroundColor: '#f4f6f8' }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Chainage</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>CS</TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {tableData[0]?.rows?.map(
+                (row, index) =>
+                  row.type === 'Chainage' && (
+                    <TableRow key={index}>
+                      <TableCell
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => handleClickCs(row._id)}
+                      >
+                        {row.chainage}
+                      </TableCell>
+                      <TableCell
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => handleClickCs(row._id)}
+                      >
+                        View
+                      </TableCell>
+                    </TableRow>
+                  )
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
     </Box>
   );
 };

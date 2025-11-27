@@ -363,12 +363,12 @@ const AreaReport = () => {
         />
       </Stack>
 
-      <Typography variant="h5" fontWeight={700} align="center" mb={2}>
+      <Typography variant="h6" fontSize={18} fontWeight={700} align="center" mb={2}>
         Area Report Between {reportDetails.current.initialEntry} and{' '}
         {reportDetails.current.secondaryEntry}
       </Typography>
 
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ maxHeight: '90vh' }}>
         <Table sx={{ minWidth: 650 }} size="small">
           <TableHead
             sx={{
@@ -377,6 +377,8 @@ const AreaReport = () => {
                 border: '1px solid rgba(224, 224, 224, 1)',
                 fontWeight: 700,
               },
+              position: 'sticky',
+              top: 0,
             }}
           >
             <TableRow>

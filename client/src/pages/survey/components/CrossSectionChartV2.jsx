@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Paper,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -17,7 +16,6 @@ import { IoMdDownload } from 'react-icons/io';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useRef } from 'react';
-import BasicDivider from '../../../components/BasicDevider';
 
 const colors = {
   Initial: 'green',
@@ -25,7 +23,7 @@ const colors = {
   Final: 'red',
 };
 
-const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
+const CrossSectionChartV2 = ({ selectedCs, chartOptions, download }) => {
   const pdfRef = useRef();
 
   const downloadPDF = async () => {
@@ -55,7 +53,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
     pdf.save('cross-section.pdf');
   };
 
-  return chartOptions.chart.id === 'cross-section' ? (
+  return (
     <TableContainer
       component={Paper}
       sx={{
@@ -69,33 +67,29 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
           <TableRow>
             <TableCell
               sx={{
-                border: 'none',
                 bgcolor: 'white',
-                position: 'sticky',
-                left: 0,
-                zIndex: 10,
               }}
             ></TableCell>
 
             <TableCell
-              sx={{ border: 'none', px: '14px', bgcolor: 'transparent' }}
+              sx={{ border: 'none', px: '14px', bgcolor: 'transparent', p: 0 }}
               colSpan={(selectedCs?.offsets ?? selectedCs.chainages)?.length}
             >
               <Box
                 sx={{
-                  height: 100,
-                  width: '100%',
+                  height: 500,
+                  width: 'calc(100% + 20px)',
                   display: 'flex',
                   position: 'relative',
                 }}
               >
                 <Box
                   sx={{
-                    width: 'calc(100% - 30px)',
-                    height: 100,
+                    width: '100%',
+                    height: 500,
                     position: 'absolute',
                     top: '5px',
-                    left: '7.5px',
+                    left: '-30px',
                   }}
                 >
                   <Chart
@@ -110,6 +104,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
               </Box>
             </TableCell>
           </TableRow>
+
           {selectedCs?.series?.length &&
             selectedCs.series.map((s, idx) => (
               <TableRow key={idx}>
@@ -142,13 +137,13 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                             : 'Final'
                         ],
                       fontWeight: 500,
-                      height: '85px',
+                      height: '55px',
                       overflow: 'visible',
                       border: '1px solid black',
                       p: 0,
-                      width: '90px',
-                      minWidth: '90px',
-                      maxWidth: '90px',
+                      width: '60px',
+                      minWidth: '60px',
+                      maxWidth: '60px',
                     }}
                   >
                     <div style={{ rotate: '-90deg' }}>{val[1]}</div>
@@ -181,13 +176,13 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                   position: 'relative',
                   color: 'green',
                   fontWeight: 500,
-                  height: '85px',
+                  height: '55px',
                   overflow: 'visible',
                   border: '1px solid black',
                   p: 0,
-                  width: '90px',
-                  minWidth: '90px',
-                  maxWidth: '90px',
+                  width: '60px',
+                  minWidth: '60px',
+                  maxWidth: '60px',
                 }}
               >
                 <div style={{ rotate: '-90deg' }}>{Number(val).toFixed(3)}</div>
@@ -198,96 +193,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
         </TableBody>
       </Table>
     </TableContainer>
-  ) : (
-    <>
-      <Paper sx={{ width: '100%', p: 2 }}>
-        <Box width={'calc(100% - 38px)'} marginLeft={'38px'} height={'300px'}>
-          <Chart
-            key={selectedCs.id}
-            options={chartOptions}
-            series={selectedCs?.series || []}
-            type="line"
-            height="100%"
-            width="100%"
-          />
-        </Box>
-
-        <Stack spacing={0} pr={1}>
-          {selectedCs?.series?.length &&
-            selectedCs.series.map((s, idx) => (
-              <Stack
-                direction={'row'}
-                alignItems={'start'}
-                spacing={1}
-                key={idx}
-              >
-                <Typography
-                  color={
-                    colors[
-                      s.name?.includes('Initial')
-                        ? 'Initial'
-                        : s.name?.includes('Proposed')
-                        ? 'Proposed'
-                        : 'Final'
-                    ]
-                  }
-                  fontSize={'12px'}
-                  minWidth={'100px'}
-                  maxWidth={'100px'}
-                  pt={1}
-                  textAlign={'end'}
-                >
-                  {s.name}
-                </Typography>
-                <Box width="calc(100% - 100px)" minHeight={'90px'}>
-                  <BasicDivider
-                    style={{}}
-                    color={
-                      colors[
-                        s.name?.includes('Initial')
-                          ? 'Initial'
-                          : s.name?.includes('Proposed')
-                          ? 'Proposed'
-                          : 'Final'
-                      ]
-                    }
-                  />
-
-                  <Box position={'relative'}>
-                    <Box
-                      position={'absolute'}
-                      width={'100%'}
-                      display={'flex'}
-                      justifyContent={'space-between'}
-                    >
-                      {s.data?.map((val, i) => (
-                        <Typography
-                          color={
-                            colors[
-                              s.name?.includes('Initial')
-                                ? 'Initial'
-                                : s.name?.includes('Proposed')
-                                ? 'Proposed'
-                                : 'Final'
-                            ]
-                          }
-                          fontSize={'10px'}
-                          sx={{ rotate: '-90deg' }}
-                          mb={0}
-                          key={i}
-                        >
-                          {val[1]}
-                        </Typography>
-                      ))}
-                    </Box>
-                  </Box>
-                </Box>
-              </Stack>
-            ))}
-        </Stack>
-      </Paper>
-    </>
   );
 };
 
-export default CrossSectionChart;
+export default CrossSectionChartV2;

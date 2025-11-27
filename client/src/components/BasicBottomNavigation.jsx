@@ -80,7 +80,7 @@ export default function BasicBottomNavigation() {
         bottom={0}
         left={0}
         right={0}
-        zIndex={1}
+        zIndex={100000}
         sx={{
           backgroundColor: '#fff',
           borderTop: '1px solid #eee',

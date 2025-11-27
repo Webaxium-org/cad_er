@@ -6,7 +6,8 @@ import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { getSurvey } from '../../services/surveyServices';
 import { Box, Typography } from '@mui/material';
 import CrossSectionChart from './components/CrossSectionChart';
-import { initialChartOptions } from '../../constants';
+import { advancedChartOptions, initialChartOptions } from '../../constants';
+import CrossSectionChartV2 from './components/CrossSectionChartV2';
 
 const LongitudinalSectionReport = () => {
   const navigate = useNavigate();
@@ -56,7 +57,12 @@ const LongitudinalSectionReport = () => {
     const safeInitial = row.map((r) => {
       const offsetPointIndex = r.offsets?.findIndex((o) => Number(o) === 0);
 
-      return r.reducedLevels[offsetPointIndex];
+      const safeOffsetPointIndex =
+        offsetPointIndex === -1
+          ? Math.round(r.offsets.length / 2)
+          : offsetPointIndex;
+
+      return r.reducedLevels[safeOffsetPointIndex];
     });
 
     const data = {
@@ -78,9 +84,13 @@ const LongitudinalSectionReport = () => {
         if (!newRow.length) continue;
 
         const safeProposal = newRow.map((r) => {
-          const offsetPointIndex = r.offsets?.findIndex((o) => Number(0) === 0);
+          const offsetPointIndex = r.offsets?.findIndex((o) => Number(o) === 0);
+          const safeOffsetPointIndex =
+            offsetPointIndex === -1
+              ? Math.round(r.offsets.length / 2)
+              : offsetPointIndex;
 
-          return r.reducedLevels[offsetPointIndex];
+          return r.reducedLevels[safeOffsetPointIndex];
         });
 
         data.series.push({

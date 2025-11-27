@@ -386,13 +386,19 @@ const VolumeReport = () => {
         />
       </Stack>
 
-      <Typography variant="h5" fontWeight={700} align="center" mb={2}>
+      <Typography
+        variant="h6"
+        fontSize={18}
+        fontWeight={700}
+        align="center"
+        mb={2}
+      >
         Volume Report
         {reportDetails.current.initialEntry} and{' '}
         {reportDetails.current.secondaryEntry}
       </Typography>
 
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ maxHeight: '90vh' }}>
         <Table sx={{ minWidth: 650 }} size="small">
           <TableHead
             sx={{
@@ -401,6 +407,8 @@ const VolumeReport = () => {
                 border: '1px solid rgba(224, 224, 224, 1)',
                 fontWeight: 700,
               },
+              position: 'sticky',
+              top: 0,
             }}
           >
             <TableRow>

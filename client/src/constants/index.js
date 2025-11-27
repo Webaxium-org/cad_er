@@ -74,6 +74,64 @@ export const initialChartOptions = {
   tooltip: { enabled: false },
 };
 
+export const advancedChartOptions = {
+  chart: {
+    id: 'cross-section-v2',
+    toolbar: { show: false },
+    zoom: { enabled: false },
+  },
+
+  stroke: {
+    curve: 'straight',
+    width: 1,
+  },
+
+  colors: ['blue', 'green', 'red', '#9B59B6', '#F1C40F', '#34495E'],
+
+  grid: {
+    show: true,
+    borderColor: '#ccc',
+    strokeDashArray: 0,
+    xaxis: {
+      lines: { show: true },
+    },
+    yaxis: {
+      lines: { show: true },
+    },
+  },
+
+  xaxis: {
+    type: 'numeric',
+    tickAmount: 10,
+    labels: { show: false },
+    axisBorder: {
+      show: true,
+      color: '#222222',
+    },
+    axisTicks: {
+      show: true,
+      color: '#222222',
+    },
+  },
+
+  yaxis: {
+    tickAmount: 10,
+    min: 0,
+    labels: { show: true },
+    axisBorder: {
+      show: true,
+      color: '#222222',
+    },
+    axisTicks: {
+      show: true,
+      color: '#222222',
+    },
+  },
+
+  legend: { show: true },
+  tooltip: { enabled: true },
+};
+
 export const calculateReducedLevel = (survey) => {
   if (!survey?.purposes?.length) return survey;
 
