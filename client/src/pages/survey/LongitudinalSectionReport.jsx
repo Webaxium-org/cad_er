@@ -8,6 +8,13 @@ import { Box, Typography } from '@mui/material';
 import CrossSectionChart from './components/CrossSectionChart';
 import { advancedChartOptions, initialChartOptions } from '../../constants';
 import CrossSectionChartV2 from './components/CrossSectionChartV2';
+import BasicMenu from '../../components/BasicMenu';
+
+const menuItems = [
+  { label: 'V1', value: 'v1' },
+  { label: 'V2', value: 'v2' },
+  { label: 'V3', value: 'v3' },
+];
 
 const LongitudinalSectionReport = () => {
   const navigate = useNavigate();
@@ -25,6 +32,11 @@ const LongitudinalSectionReport = () => {
   const [tableData, setTableData] = useState([]);
 
   const [selectedCs, setSelectedCs] = useState(null);
+
+  const handleMenuSelect = (item) => {
+    if (item.value === 'v1') setChartOptions(initialChartOptions);
+    if (item.value === 'v2') setChartOptions(advancedChartOptions);
+  };
 
   const handleSetTableData = (survey) => {
     const data = [];
@@ -137,38 +149,53 @@ const LongitudinalSectionReport = () => {
   }, [tableData]);
 
   return (
-    <Box
-      sx={{
-        textAlign: 'center',
-        mt: 4,
-        p: 2,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
-    >
-      <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
-        LONGITUDINAL SECTION
-      </Typography>
-      <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
-        Datum: {selectedCs?.datum}
-      </Typography>
-
-      {selectedCs && selectedCs?.series?.length && (
-        <CrossSectionChart
-          selectedCs={selectedCs}
-          chartOptions={chartOptions}
-          download={true}
+    <Box p={2} mt={4}>
+      <Box textAlign={'end'}>
+        <BasicMenu
+          label="Options"
+          items={menuItems}
+          onSelect={handleMenuSelect}
         />
-      )}
-
-      {/* Footer */}
-      <Typography
-        variant="caption"
-        sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
+      </Box>
+      <Box
+        sx={{
+          textAlign: 'center',
+          mt: 4,
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
       >
-        [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
-      </Typography>
+        <Typography
+          variant="h6"
+          fontSize={18}
+          fontWeight={700}
+          align="center"
+          mb={2}
+        >
+          LONGITUDINAL SECTION
+        </Typography>
+        <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
+          Datum: {selectedCs?.datum}
+        </Typography>
+
+        {selectedCs && selectedCs?.series?.length && (
+          <CrossSectionChart
+            selectedCs={selectedCs}
+            chartOptions={chartOptions}
+            download={true}
+          />
+        )}
+
+        {/* Footer */}
+        <Typography
+          variant="caption"
+          sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
+        >
+          [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
+        </Typography>
+      </Box>
     </Box>
   );
 };

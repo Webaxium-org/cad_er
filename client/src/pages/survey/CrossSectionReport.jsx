@@ -168,7 +168,13 @@ const CrossSectionReport = () => {
           zIndex: 3,
         }}
       >
-        <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
+        <Typography
+          variant="h6"
+          fontSize={18}
+          fontWeight={700}
+          align="center"
+          mb={2}
+        >
           CROSS SECTION AT CHAINAGE {selectedCs?.chainage}
         </Typography>
         <Typography variant="subtitle2" sx={{ mt: 0.5 }}>

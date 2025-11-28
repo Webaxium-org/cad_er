@@ -91,7 +91,6 @@ const RoadSurveyRowsForm = () => {
   const [inputData, setInputData] = useState([]);
   const [rowType, setRowType] = useState('Chainage');
   const [page, setPage] = useState(0);
-  const [autoOffset, setAutoOffset] = useState(false);
   const [btnLoading, setBtnLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [isLastProposalReading, setIsLastProposalReading] = useState(false); // only for proposal's
@@ -336,13 +335,14 @@ const RoadSurveyRowsForm = () => {
       if (value >= halfWidth) break;
     }
 
-    const previousLength = formValues.intermediateOffsets.length;
-    const updatedRows = [...formValues.intermediateOffsets];
+    const updatedRows = [...formValues.intermediateOffsets].filter(
+      (o) => o.intermediateSight.length
+    );
 
     intermediateOffsets
       ?.sort((a, b) => a - b)
       ?.forEach((entry, i) => {
-        if (i >= previousLength) {
+        if (i >= updatedRows.length) {
           updatedRows[i] = {
             offset: entry,
             intermediateSight: '',
@@ -356,15 +356,6 @@ const RoadSurveyRowsForm = () => {
 
     setFormValues((prev) => ({ ...prev, intermediateOffsets: updatedRows }));
     handleChangeReducedLevel(updatedRows);
-  };
-
-  const handleChangeAutoOffset = (e) => {
-    const checked = e.target.checked;
-    setAutoOffset(checked);
-
-    if (!checked) return;
-
-    calculateOffset();
   };
 
   const handleInputChange = async (event, index, field) => {
@@ -528,13 +519,12 @@ const RoadSurveyRowsForm = () => {
             chainage: '0/000',
           }));
         } else {
-          let lastChainage = null;
-          purpose?.rows?.forEach((row) => {
-            if (row.type === 'Chainage') lastChainage = row.chainage;
-          });
+          const lastChainage = purpose?.rows
+            ?.reverse()
+            .find((r) => r.type === 'Chainage');
 
           const chainageMultiple = purpose?.surveyId?.chainageMultiple;
-          const lastDigit = Number(lastChainage.split('/')[1]);
+          const lastDigit = Number(lastChainage.chainage.split('/')[1]);
 
           const remainder = lastDigit % chainageMultiple;
           const nextNumber =
@@ -547,6 +537,8 @@ const RoadSurveyRowsForm = () => {
           setFormValues((prev) => ({
             ...prev,
             chainage: nextChainage,
+            roadWidth: lastChainage?.roadWidth || '',
+            spacing: lastChainage?.spacing || '',
           }));
         }
       }
@@ -602,6 +594,7 @@ const RoadSurveyRowsForm = () => {
           }
         }
 
+        calculateOffset();
         setBtnLoading(false);
         return setPage(1);
       }
@@ -661,7 +654,6 @@ const RoadSurveyRowsForm = () => {
 
         if (rowType === 'Chainage') {
           setPage(0);
-          setAutoOffset(false);
         }
 
         if (
@@ -942,7 +934,7 @@ const RoadSurveyRowsForm = () => {
             {/* ✅ Dynamic Intermediate + Offset Rows */}
             {page === 1 && rowType === 'Chainage' && (
               <Grid size={{ xs: 12 }}>
-                <Stack direction={'row'} alignItems={'center'}>
+                {/* <Stack direction={'row'} alignItems={'center'}>
                   <BasicCheckbox
                     checked={autoOffset}
                     onChange={(e) => handleChangeAutoOffset(e)}
@@ -950,7 +942,7 @@ const RoadSurveyRowsForm = () => {
                   <Typography fontSize={'16px'} fontWeight={600} color="black">
                     Default offset
                   </Typography>
-                </Stack>
+                </Stack> */}
                 <Typography
                   fontSize={'16px'}
                   fontWeight={600}

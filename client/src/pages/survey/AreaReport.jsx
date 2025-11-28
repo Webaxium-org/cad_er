@@ -363,7 +363,13 @@ const AreaReport = () => {
         />
       </Stack>
 
-      <Typography variant="h6" fontSize={18} fontWeight={700} align="center" mb={2}>
+      <Typography
+        variant="h6"
+        fontSize={18}
+        fontWeight={700}
+        align="center"
+        mb={2}
+      >
         Area Report Between {reportDetails.current.initialEntry} and{' '}
         {reportDetails.current.secondaryEntry}
       </Typography>

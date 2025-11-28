@@ -128,7 +128,7 @@ export const advancedChartOptions = {
     },
   },
 
-  legend: { show: true },
+  legend: { show: false },
   tooltip: { enabled: true },
 };
 

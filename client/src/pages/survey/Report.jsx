@@ -136,11 +136,11 @@ const Report = () => {
   return (
     <Box p={2} sx={{ maxWidth: 900, mx: 'auto' }}>
       <Typography
-        variant="h5"
-        fontWeight="bold"
-        mb={3}
-        textAlign="center"
-        sx={{ fontSize: { xs: '1.2rem', sm: '1.6rem' } }}
+        variant="h6"
+        fontSize={18}
+        fontWeight={700}
+        align="center"
+        mb={2}
       >
         Generate Survey Report
       </Typography>

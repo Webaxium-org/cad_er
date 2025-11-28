@@ -16,7 +16,7 @@ import { IoMdDownload } from 'react-icons/io';
 
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import BasicDivider from '../../../components/BasicDevider';
 
 const colors = {
@@ -27,6 +27,8 @@ const colors = {
 
 const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
   const pdfRef = useRef();
+
+  const [width, setWidth] = useState(window.innerWidth);
 
   const downloadPDF = async () => {
     // Let ApexCharts finish rendering
@@ -54,6 +56,19 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     pdf.save('cross-section.pdf');
   };
+
+  const calcWidth = () => {
+    const length = selectedCs?.chainages?.length ?? selectedCs?.offsets?.length;
+    const isWidth = width > length * 60;
+
+    return isWidth ? width - 30 : length * 60 - 20;
+  };
+
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return chartOptions.chart.id === 'cross-section' ? (
     <TableContainer
@@ -200,92 +215,114 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
     </TableContainer>
   ) : (
     <>
-      <Paper sx={{ width: '100%', p: 2 }}>
-        <Box width={'calc(100% - 38px)'} marginLeft={'38px'} height={'300px'}>
-          <Chart
-            key={selectedCs.id}
-            options={chartOptions}
-            series={selectedCs?.series || []}
-            type="line"
-            height="100%"
-            width="100%"
-          />
-        </Box>
-
-        <Stack spacing={0} pr={1}>
-          {selectedCs?.series?.length &&
-            selectedCs.series.map((s, idx) => (
-              <Stack
-                direction={'row'}
-                alignItems={'start'}
-                spacing={1}
-                key={idx}
-              >
-                <Typography
-                  color={
-                    colors[
-                      s.name?.includes('Initial')
-                        ? 'Initial'
-                        : s.name?.includes('Proposed')
-                        ? 'Proposed'
-                        : 'Final'
-                    ]
-                  }
-                  fontSize={'12px'}
-                  minWidth={'100px'}
-                  maxWidth={'100px'}
-                  pt={1}
-                  textAlign={'end'}
-                >
-                  {s.name}
-                </Typography>
-                <Box width="calc(100% - 100px)" minHeight={'90px'}>
-                  <BasicDivider
-                    style={{}}
-                    color={
-                      colors[
-                        s.name?.includes('Initial')
-                          ? 'Initial'
-                          : s.name?.includes('Proposed')
-                          ? 'Proposed'
-                          : 'Final'
-                      ]
-                    }
+      <TableContainer
+        component={Paper}
+        sx={{
+          mt: 0,
+          bgcolor: 'transparent',
+          overflowX: 'auto',
+        }}
+      >
+        <Table size="small" sx={{ tableLayout: 'fixed' }}>
+          <TableBody>
+            {/* CHART ROW */}
+            <TableRow>
+              <TableCell sx={{ border: 'none', p: 0 }}>
+                <Box minWidth={`${calcWidth()}px`} ml="37px" height="300px">
+                  <Chart
+                    key={selectedCs.id}
+                    options={chartOptions}
+                    series={selectedCs?.series || []}
+                    type="line"
+                    height="100%"
+                    width="100%"
                   />
-
-                  <Box position={'relative'}>
-                    <Box
-                      position={'absolute'}
-                      width={'100%'}
-                      display={'flex'}
-                      justifyContent={'space-between'}
-                    >
-                      {s.data?.map((val, i) => (
-                        <Typography
-                          color={
-                            colors[
-                              s.name?.includes('Initial')
-                                ? 'Initial'
-                                : s.name?.includes('Proposed')
-                                ? 'Proposed'
-                                : 'Final'
-                            ]
-                          }
-                          fontSize={'10px'}
-                          sx={{ rotate: '-90deg' }}
-                          mb={0}
-                          key={i}
-                        >
-                          {val[1]}
-                        </Typography>
-                      ))}
-                    </Box>
-                  </Box>
                 </Box>
-              </Stack>
-            ))}
-        </Stack>
-      </Paper>
+              </TableCell>
+            </TableRow>
+
+            {/* LEVEL / DIST ROWS */}
+            {selectedCs?.series?.map((s, idx) => {
+              // detect color for series
+              const color =
+                colors[
+                  s.name?.includes('Initial')
+                    ? 'Initial'
+                    : s.name?.includes('Proposed')
+                    ? 'Proposed'
+                    : 'Final'
+                ];
+
+              return (
+                <TableRow key={idx}>
+                  <TableCell sx={{ border: 'none', p: 0 }}>
+                    <Stack direction="row" width="fit-content">
+                      {/* Name column */}
+                      <Typography
+                        color={color}
+                        fontSize="12px"
+                        sx={{
+                          minWidth: '90px',
+                          maxWidth: '90px',
+                          textAlign: 'right',
+                          pr: 1,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {s.name}
+                      </Typography>
+
+                      {/* Data section */}
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          height: '80px',
+                          flexShrink: 0,
+                          minWidth: `
+                          ${calcWidth() - 74}px`,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: '10px',
+                            left: 0,
+                            right: 0,
+                            height: '2px',
+                            backgroundColor: color,
+                          }}
+                        />
+
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: '28px',
+                            left: 0,
+                            right: 0,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            width: '100%',
+                          }}
+                        >
+                          {s.data.map((val, i) => (
+                            <Typography
+                              key={i}
+                              fontSize="12px"
+                              sx={{ transform: 'rotate(-90deg)', color }}
+                            >
+                              {val[1]}
+                            </Typography>
+                          ))}
+                        </Box>
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </>
   );
 };
