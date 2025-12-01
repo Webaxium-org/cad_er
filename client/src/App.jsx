@@ -22,6 +22,7 @@ import UsersDashboard from './pages/user';
 import LongitudinalSectionReport from './pages/survey/LongitudinalSectionReport';
 import ProjectsList from './pages/survey/ProjectsList';
 import SurveyList from './pages/survey/SurveyList';
+import CameraPage from './pages/home/components/CameraPage';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<RootLayout />}>
               <Route index element={<Home />} />
+              <Route path="/camera" element={<CameraPage />} />
 
               <Route path="/profile" element={<Profile />} />
 

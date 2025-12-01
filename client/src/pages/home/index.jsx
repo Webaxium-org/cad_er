@@ -114,9 +114,8 @@ const Home = () => {
     },
     {
       label: 'Camera',
-      icon: <MdGpsFixed fontSize={above400 ? 32 : 28} />,
-      link: null,
-      onClick: openCamera,
+      icon: <MdGpsFixed size={28} />,
+      link: '/camera',
     },
   ];
 
@@ -263,10 +262,7 @@ const Home = () => {
                       transform: 'scale(1.05)',
                     },
                   }}
-                  onClick={() => {
-                    if (item.onClick) return item.onClick();
-                    if (item.link) return navigate(item.link);
-                  }}
+                  onClick={() => navigate(item.link)}
                 >
                   <Stack
                     justifyContent={'center'}
