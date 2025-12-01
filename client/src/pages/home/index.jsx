@@ -39,7 +39,7 @@ const openCamera = () => {
 
   input.onchange = (e) => {
     const file = e.target.files[0];
-    console.log('Captured Image:', file);
+    console.log('Captured:', file);
   };
 };
 
@@ -278,8 +278,8 @@ const Home = () => {
                 <Paper
                   elevation={3}
                   sx={{
-                    px: 2,
-                    py: 1.5,
+                    px: 2.5,
+                    py: 2,
                     borderRadius: '22px',
                     textAlign: 'center',
                     cursor: 'pointer',
@@ -290,7 +290,10 @@ const Home = () => {
                       transform: 'scale(1.05)',
                     },
                   }}
-                  onClick={() => handleNavigate(item.link)}
+                  onClick={() => {
+                    if (item.onClick) return item.onClick();
+                    if (item.link) return navigate(item.link);
+                  }}
                 >
                   <Stack
                     justifyContent={'center'}
