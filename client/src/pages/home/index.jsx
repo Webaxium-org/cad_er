@@ -17,6 +17,7 @@ import { GrTask } from 'react-icons/gr';
 
 import { MdGpsFixed } from 'react-icons/md';
 import { GoArrowSwitch } from 'react-icons/go';
+import { GoChecklist } from 'react-icons/go';
 
 import Lottie from 'lottie-react';
 
@@ -42,30 +43,6 @@ const openCamera = () => {
     console.log('Captured:', file);
   };
 };
-
-const actions = [
-  {
-    label: 'Projects',
-    icon: <TbReport size={28} />,
-    link: '/survey',
-  },
-  {
-    label: 'Reports',
-    icon: <TbReportSearch size={28} />,
-    link: '/survey/report',
-  },
-  {
-    label: 'Unit Con',
-    icon: <GoArrowSwitch size={28} />,
-    link: '#',
-  },
-  {
-    label: 'Camera',
-    icon: <MdGpsFixed size={28} />,
-    link: null,
-    onClick: openCamera,
-  },
-];
 
 const upcomingList = [
   {
@@ -107,29 +84,6 @@ const animations = [
   { initial: { opacity: 0, x: 20 }, animate: { opacity: 1, x: 0 } },
 ];
 
-const colors = [
-  {
-    bg: '#F5F9FC',
-    icon: '#2775AD', // your theme as accent
-    hover: '#E8F1F8',
-  },
-  {
-    bg: '#F6FAF8',
-    icon: '#3A7F6C',
-    hover: '#EAF3EE',
-  },
-  {
-    bg: '#FBF9F4',
-    icon: '#AA7A33',
-    hover: '#F4EEDF',
-  },
-  {
-    bg: '#FCF6F7',
-    icon: '#B5545C',
-    hover: '#F4E4E6',
-  },
-];
-
 const Home = () => {
   const dispatch = useDispatch();
 
@@ -139,11 +93,32 @@ const Home = () => {
 
   const { global } = useSelector((state) => state.loading);
 
-  const above412 = useMediaQuery('(min-width:370px)');
+  const above370 = useMediaQuery('(min-width:370px)');
+  const above400 = useMediaQuery('(min-width:400px)');
 
-  const handleNavigate = (link) => {
-    navigate(link);
-  };
+  const actions = [
+    {
+      label: 'Projects',
+      icon: <TbReport fontSize={above400 ? 32 : 28} />,
+      link: '/survey',
+    },
+    {
+      label: 'Reports',
+      icon: <TbReportSearch fontSize={above400 ? 32 : 28} />,
+      link: '/survey/report',
+    },
+    {
+      label: 'Unit Con.',
+      icon: <GoArrowSwitch fontSize={above400 ? 32 : 28} />,
+      link: '#',
+    },
+    {
+      label: 'Camera',
+      icon: <MdGpsFixed fontSize={above400 ? 32 : 28} />,
+      link: null,
+      onClick: openCamera,
+    },
+  ];
 
   useEffect(() => {
     dispatch(stopLoading());
@@ -195,20 +170,18 @@ const Home = () => {
           mt={2}
         >
           <Stack direction={'row'} alignItems={'center'} spacing={1}>
-            <Box>
-              <ImageAvatars
-                sx={{
-                  width: '48px',
-                  height: '48px',
-                  backgroundColor: '#fff',
-                  color: 'rgba(40, 151, 255, 1)',
-                  '& .css-1mo2pzk-MuiSvgIcon-root-MuiAvatar-fallback': {
-                    width: '60%',
-                    height: '60%',
-                  },
-                }}
-              />
-            </Box>
+            <ImageAvatars
+              sx={{
+                width: '48px',
+                height: '48px',
+                backgroundColor: '#fff',
+                color: 'rgba(40, 151, 255, 1)',
+                '& .css-1mo2pzk-MuiSvgIcon-root-MuiAvatar-fallback': {
+                  width: '60%',
+                  height: '60%',
+                },
+              }}
+            />
 
             <Box color="white">
               <Typography fontWeight={700} fontSize="14px">
@@ -278,13 +251,13 @@ const Home = () => {
                 <Paper
                   elevation={3}
                   sx={{
-                    px: 2.5,
-                    py: 2,
+                    px: 2,
+                    py: 1.5,
                     borderRadius: '22px',
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    width: 'fit-content',
+                    width: `${above400 ? '55px' : '46px'}`,
                     backgroundColor: 'white',
                     '&:hover': {
                       transform: 'scale(1.05)',
@@ -303,7 +276,7 @@ const Home = () => {
                   >
                     {item.icon}
                     <Typography
-                      fontSize="10px"
+                      fontSize={above400 ? '12px' : '10px'}
                       fontWeight={700}
                       color="black"
                       align="center"
@@ -326,7 +299,7 @@ const Home = () => {
         </Typography>
 
         <Grid container columns={12} spacing={2}>
-          <Grid size={{ xs: above412 ? 6 : 12 }}>
+          <Grid size={{ xs: above370 ? 6 : 12 }}>
             <BasicCard
               key={global}
               component={motion.div}
@@ -379,7 +352,7 @@ const Home = () => {
               }
             />
           </Grid>
-          <Grid size={{ xs: above412 ? 6 : 12 }}>
+          <Grid size={{ xs: above370 ? 6 : 12 }}>
             <BasicCard
               key={global}
               component={motion.div}
@@ -410,7 +383,7 @@ const Home = () => {
                       borderRadius={'6px'}
                       padding={'8px 8px 6px'}
                     >
-                      <GrTask
+                      <GoChecklist
                         size={20}
                         style={{
                           color: 'rgba(57, 104, 58, 1)',
@@ -445,7 +418,7 @@ const Home = () => {
           {upcomingList.map((upcoming, idx) => (
             <Grid
               key={idx}
-              size={{ xs: above412 ? 6 : 12 }}
+              size={{ xs: above370 ? 6 : 12 }}
               sx={{
                 '& .MuiCard-root': {
                   height: '100%',
