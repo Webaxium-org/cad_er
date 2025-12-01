@@ -25,6 +25,7 @@ const BasicMenu = ({ label = 'Menu', items = [], onSelect }) => {
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
         onClick={handleClick}
+        sx={{ p: 1 }}
       >
         {label}
       </Button>

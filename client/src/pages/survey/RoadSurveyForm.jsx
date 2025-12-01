@@ -36,6 +36,79 @@ const inputDetails = [
     for: 'All',
   },
   {
+    label: 'Agreement no*',
+    name: 'agreementNo',
+    type: 'text',
+    for: 'Initial Level',
+  },
+  {
+    label: 'Contractor*',
+    name: 'contractor',
+    type: 'text',
+    for: 'Initial Level',
+    size: 6,
+  },
+  {
+    label: 'Department*',
+    name: 'department',
+    type: 'text',
+    for: 'Initial Level',
+    size: 6,
+  },
+  {
+    label: 'Category',
+    name: 'category',
+    mode: 'checkbox',
+    hidden: false,
+    for: 'Initial Level',
+    options: [
+      {
+        name: 'administrativeUnits',
+        label: 'Administrative units',
+      },
+      {
+        name: 'externalParties',
+        label: 'External parties',
+      },
+    ],
+  },
+  {
+    label: 'Division*',
+    name: 'division',
+    type: 'text',
+    for: 'Initial Level',
+    size: 6,
+  },
+  {
+    label: 'Sub division*',
+    name: 'subDivision',
+    type: 'text',
+    for: 'Initial Level',
+    size: 6,
+  },
+  {
+    label: 'Section*',
+    name: 'section',
+    type: 'text',
+    for: 'Initial Level',
+  },
+  {
+    label: 'Consultant*',
+    name: 'consultant',
+    type: 'text',
+    for: 'Initial Level',
+    size: 6,
+    hidden: true,
+  },
+  {
+    label: 'Client*',
+    name: 'client',
+    type: 'text',
+    for: 'Initial Level',
+    size: 6,
+    hidden: true,
+  },
+  {
     label: 'Select purpose*',
     name: 'purpose',
     mode: 'select',
@@ -176,6 +249,14 @@ const inputDetails = [
 
 const initialFormValues = {
   project: '',
+  agreementNo: '',
+  contractor: '',
+  department: '',
+  division: '',
+  subDivision: '',
+  section: '',
+  consultant: '',
+  client: '',
   purpose: '',
   proposal: '',
   instrumentNo: '',
@@ -210,6 +291,8 @@ const RoadSurveyForm = () => {
 
   const [entryType, setEntryType] = useState('manualEntry');
 
+  const [category, setCategory] = useState('administrativeUnits');
+
   const [formValues, setFormValues] = useState(initialFormValues);
 
   const [formErrors, setFormErrors] = useState(null);
@@ -221,6 +304,43 @@ const RoadSurveyForm = () => {
   const schema = Yup.object().shape({
     project: Yup.string().required('Project name is required'),
     purpose: Yup.string().required('Purpose is required'),
+
+    agreementNo: !id
+      ? Yup.number().required('Agreement no is required')
+      : Yup.string().nullable(),
+
+    contractor: !id
+      ? Yup.string().required('Contractor is required')
+      : Yup.string().nullable(),
+
+    department: !id
+      ? Yup.string().required('Department is required')
+      : Yup.string().nullable(),
+
+    division:
+      !id && category === 'administrativeUnits'
+        ? Yup.string().required('Division is required')
+        : Yup.string().nullable(),
+
+    subDivision:
+      !id && category === 'administrativeUnits'
+        ? Yup.string().required('Sub division is required')
+        : Yup.string().nullable(),
+
+    section:
+      !id && category === 'administrativeUnits'
+        ? Yup.string().required('Section is required')
+        : Yup.string().nullable(),
+
+    consultant:
+      !id && category === 'externalParties'
+        ? Yup.string().required('Consultant is required')
+        : Yup.string().nullable(),
+
+    client:
+      !id && category === 'externalParties'
+        ? Yup.string().required('Client is required')
+        : Yup.string().nullable(),
 
     proposal: type
       ? Yup.string().required('Proposal is required')
@@ -296,6 +416,10 @@ const RoadSurveyForm = () => {
   });
 
   const handleGoBack = () => navigate(-1);
+
+  const handleChangeCategory = (name) => {
+    setFormValues((prev) => ({ ...prev, category: name }));
+  };
 
   const handleInputChange = async (event) => {
     const { name, value } = event.target;
@@ -400,64 +524,79 @@ const RoadSurveyForm = () => {
   };
 
   const updateInputData = (completedLevels, lastPhase) => {
-    setInputData(
-      !id
-        ? [...inputDetails]
-        : (prev) =>
-            prev.map((e) => {
-              if (e.for === 'All') {
-                if (e.name === 'purpose') {
-                  return {
-                    ...e,
-                    hidden: false,
-                    options: type
-                      ? [
-                          ...purposeLevels,
-                          ...(lastPhase === 'Proposal' ? purposeLevels : []),
-                        ].map((p) => ({ label: p, value: p }))
-                      : purposeLevels
-                          ?.filter((p) => !completedLevels.includes(p))
-                          .map((p) => ({ label: p, value: p })),
-                    size: type ? 6 : null,
-                  };
-                }
+    setInputData((prev) =>
+      prev.map((e) => {
+        if (id) {
+          if (e.for === 'All') {
+            if (e.name === 'purpose') {
+              return {
+                ...e,
+                hidden: false,
+                options: type
+                  ? [
+                      ...purposeLevels,
+                      ...(lastPhase === 'Proposal' ? purposeLevels : []),
+                    ].map((p) => ({ label: p, value: p }))
+                  : purposeLevels
+                      ?.filter((p) => !completedLevels.includes(p))
+                      .map((p) => ({ label: p, value: p })),
+                size: type ? 6 : null,
+              };
+            }
 
-                if (e.name === 'project')
-                  return { ...e, hidden: false, disabled: true };
+            if (e.name === 'project')
+              return { ...e, hidden: false, disabled: true };
 
-                return { ...e, hidden: false };
-              }
+            return { ...e, hidden: false };
+          }
 
-              if (type && e.for === 'Proposed Level') {
-                if (e.name === 'cSection' || e.name === 'csSlop') {
-                  return { ...e, hidden: crossSection === 'camper' };
-                }
+          if (type && e.for === 'Proposed Level') {
+            if (e.name === 'cSection' || e.name === 'csSlop') {
+              return { ...e, hidden: crossSection === 'camper' };
+            }
 
-                if (e.name === 'csCamper') {
-                  return { ...e, hidden: crossSection === 'slop' };
-                }
+            if (e.name === 'csCamper') {
+              return { ...e, hidden: crossSection === 'slop' };
+            }
 
-                if (e.name === 'proposedLevel') {
-                  return { ...e, hidden: entryType === 'autoGenerate' };
-                }
+            if (e.name === 'proposedLevel') {
+              return { ...e, hidden: entryType === 'autoGenerate' };
+            }
 
-                if (e.name === 'quantity') {
-                  return { ...e, hidden: entryType === 'manualEntry' };
-                }
+            if (e.name === 'quantity') {
+              return { ...e, hidden: entryType === 'manualEntry' };
+            }
 
-                if (e.name === 'length') {
-                  return { ...e, hidden: entryType === 'manualEntry' };
-                }
+            if (e.name === 'length') {
+              return { ...e, hidden: entryType === 'manualEntry' };
+            }
 
-                return { ...e, hidden: false };
-              }
+            return { ...e, hidden: false };
+          }
 
-              if (!type && e.for === 'Rest') {
-                return { ...e, hidden: false };
-              }
+          if (!type && e.for === 'Rest') {
+            return { ...e, hidden: false };
+          }
 
-              return { ...e, hidden: true };
-            })
+          return { ...e, hidden: true };
+        } else {
+          if (e.for === 'Initial Level') {
+            if (
+              e.name === 'division' ||
+              e.name === 'subDivision' ||
+              e.name === 'section'
+            ) {
+              return { ...e, hidden: category !== 'administrativeUnits' };
+            }
+
+            if (e.name === 'consultant' || e.name === 'client') {
+              return { ...e, hidden: category !== 'externalParties' };
+            }
+          }
+
+          return e;
+        }
+      })
     );
   };
 
@@ -475,10 +614,12 @@ const RoadSurveyForm = () => {
     } else {
       didMount.current = true;
     }
-  }, [type, crossSection, entryType]);
+  }, [type, crossSection, entryType, category]);
 
   useEffect(() => {
     if (!id) {
+      setFormValues((prev) => ({ ...prev, purpose: 'Initial Level' }));
+
       dispatch(stopLoading());
       return;
     }
@@ -516,7 +657,7 @@ const RoadSurveyForm = () => {
       <Stack alignItems={'center'} spacing={5}>
         <Stack alignItems={'center'}>
           <Typography fontSize={'26px'} fontWeight={700}>
-            Create New Survey
+            Create New {id ? 'Survey' : 'Project'}
           </Typography>
           <Typography fontSize={'16px'} fontWeight={400} color="#434343">
             Please Enter The Following Values
@@ -593,11 +734,15 @@ const RoadSurveyForm = () => {
                               checked={
                                 (input.name === 'crossSectionType'
                                   ? crossSection
+                                  : input.name === 'category'
+                                  ? category
                                   : entryType) === option.name
                               }
                               onChange={() =>
                                 input.name === 'crossSectionType'
                                   ? setCrossSection(option.name)
+                                  : input.name === 'category'
+                                  ? setCategory(option.name)
                                   : setEntryType(option.name)
                               }
                             />

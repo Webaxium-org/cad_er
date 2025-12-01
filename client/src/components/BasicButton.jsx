@@ -40,8 +40,9 @@ const BasicButton = ({
         textTransform: 'none',
         fontWeight: 600,
         fontSize: '0.95rem',
+        minWidth: 0,
         py: 1.2,
-        px: 3,
+        px: 1,
         transition: 'background-color 0.2s ease, border-color 0.2s ease',
         '&:hover': hoverStyles,
         '&:disabled': {

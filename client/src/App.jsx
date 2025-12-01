@@ -47,7 +47,7 @@ function App() {
               </Route>
 
               <Route path="survey">
-                <Route index element={<SurveyList />} />
+                <Route index element={<ProjectsList />} />
                 <Route path="add-survey" element={<SurveyLanding />} />
                 <Route path="report" element={<Report />} />
                 <Route path=":id/report" element={<Report />} />

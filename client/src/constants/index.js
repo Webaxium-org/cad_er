@@ -86,7 +86,7 @@ export const advancedChartOptions = {
     width: 1,
   },
 
-  colors: ['blue', 'green', 'red', '#9B59B6', '#F1C40F', '#34495E'],
+  // colors: ['blue', 'green', 'red', '#9B59B6', '#F1C40F', '#34495E'],
 
   grid: {
     show: true,
@@ -102,7 +102,7 @@ export const advancedChartOptions = {
 
   xaxis: {
     type: 'numeric',
-    tickAmount: 10,
+    tickAmount: 'dataPoints',
     labels: { show: false },
     axisBorder: {
       show: true,

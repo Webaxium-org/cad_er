@@ -37,7 +37,7 @@ const pauseSurveyAlertData = {
   description:
     'Pausing this survey will save your current progress. You can resume later',
   content: (
-    <Box mt={2}>
+    <Stack spacing={2} mt={2}>
       <BasicInput
         label="Foresight*"
         placeholder="Enter foresight"
@@ -45,7 +45,15 @@ const pauseSurveyAlertData = {
         name="foreSight"
         id="inpPauseForeSight"
       />
-    </Box>
+
+      <BasicInput
+        label="Remark*"
+        placeholder="Enter remark"
+        type="text"
+        name="inpPauseRemark"
+        id="inpPauseRemark"
+      />
+    </Stack>
   ),
   cancelButtonText: 'Cancel',
   submitButtonText: 'Pause',
@@ -88,6 +96,7 @@ const RoadSurveyRowsForm = () => {
   const [purpose, setPurpose] = useState(null);
   const [formValues, setFormValues] = useState(initialFormValues);
   const [formErrors, setFormErrors] = useState({});
+  const [formWarnings, setFormWarnings] = useState({});
   const [inputData, setInputData] = useState([]);
   const [rowType, setRowType] = useState('Chainage');
   const [page, setPage] = useState(0);
@@ -366,6 +375,24 @@ const RoadSurveyRowsForm = () => {
         ? `intermediateOffsets[${index}].${field}`
         : name;
 
+    if (name === 'intermediateOffsets' || name === 'intermediateSight') {
+      if (value) {
+        const numValue = Number(value);
+        if (!isNaN(numValue)) {
+          const decimalPlaces = (value.toString().split('.')[1] || '').length;
+
+          if (decimalPlaces > 0 && !value.endsWith('005')) {
+            setFormWarnings({
+              ...formWarnings,
+              [target]: 'Floating values should end with .005',
+            });
+          } else {
+            setFormWarnings({ ...formWarnings, [target]: null });
+          }
+        }
+      }
+    }
+
     if (name === 'intermediateOffsets') {
       const updated = [...formValues.intermediateOffsets];
       updated[index][field] = value;
@@ -537,7 +564,7 @@ const RoadSurveyRowsForm = () => {
           setFormValues((prev) => ({
             ...prev,
             chainage: nextChainage,
-            roadWidth: lastChainage?.roadWidth || '',
+            roadWidth: Number(lastChainage?.roadWidth) || '',
             spacing: lastChainage?.spacing || '',
           }));
         }
@@ -685,6 +712,8 @@ const RoadSurveyRowsForm = () => {
           inpFinalForesight.parentElement.parentElement.classList.add(
             'inp-err'
           );
+
+          return;
         } else {
           inpFinalForesight.parentElement.parentElement.classList.remove(
             'inp-err'
@@ -722,16 +751,29 @@ const RoadSurveyRowsForm = () => {
 
   const handlePauseSurvey = async () => {
     try {
-      const inpForeSight = document.getElementById('inpPauseForeSight');
+      const inputsToMap = {
+        inpPauseForeSight: '',
+        inpPauseRemark: '',
+      };
 
-      if (!inpForeSight?.value?.trim()) {
-        inpForeSight.parentElement.parentElement.classList.add('inp-err');
-        return;
-      } else {
-        inpForeSight.parentElement.parentElement.classList.remove('inp-err');
+      for (const i in inputsToMap) {
+        const inp = document.getElementById(i);
+
+        inputsToMap[i] = inp.value;
+
+        if (!inp?.value?.trim()) {
+          inp.parentElement.parentElement.classList.add('inp-err');
+          return;
+        } else {
+          inp.parentElement.parentElement.classList.remove('inp-err');
+        }
       }
 
-      const { data } = await pauseSurveyPurpose(id, inpForeSight.value);
+      const { data } = await pauseSurveyPurpose(
+        id,
+        inputsToMap.inpPauseForeSight,
+        inputsToMap.inpPauseRemark
+      );
 
       if (data.success) {
         dispatch(
@@ -841,7 +883,11 @@ const RoadSurveyRowsForm = () => {
         if (purposeDoc.status === 'Paused') {
           const lastRow = purposeDoc.rows[purposeDoc.rows.length - 1];
 
-          setFormValues((prev) => ({ ...prev, foreSight: lastRow.foreSight }));
+          setFormValues((prev) => ({
+            ...prev,
+            foreSight: lastRow.foreSight,
+            remark: lastRow.remarks[0],
+          }));
           setRowType('CP');
         } else {
           getNewChainage(purposeDoc);
@@ -889,11 +935,16 @@ const RoadSurveyRowsForm = () => {
 
         <Stack spacing={2}>
           <Box display={'flex'} flexDirection={'column'} alignItems={'center'}>
-            <Typography fontSize={'26px'} fontWeight={700}>
-              Please Set The {page === 1 ? 'IS' : rowType}:
-            </Typography>
-            <Typography fontSize={'16px'} fontWeight={400} color="#434343">
-              Please Enter The Following Values
+            <Typography
+              variant="h6"
+              fontSize={18}
+              fontWeight={700}
+              align="center"
+            >
+              {page === 1
+                ? `Please Enter Intermediate Sight`
+                : `Please Enter ${rowType} and Values`}
+              :
             </Typography>
           </Box>
         </Stack>
@@ -924,6 +975,7 @@ const RoadSurveyRowsForm = () => {
                       {...input}
                       value={formValues[input.name] || ''}
                       error={(formErrors && formErrors[input.name]) || ''}
+                      warning={(formWarnings && formWarnings[input.name]) || ''}
                       sx={{ width: '100%' }}
                       onChange={(e) => handleInputChange(e)}
                     />
@@ -992,6 +1044,12 @@ const RoadSurveyRowsForm = () => {
                             error={
                               formErrors &&
                               formErrors[
+                                `intermediateOffsets[${idx}].intermediateSight`
+                              ]
+                            }
+                            warning={
+                              formWarnings &&
+                              formWarnings[
                                 `intermediateOffsets[${idx}].intermediateSight`
                               ]
                             }

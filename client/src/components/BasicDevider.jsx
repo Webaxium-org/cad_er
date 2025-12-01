@@ -4,7 +4,8 @@ import { Divider } from '@mui/material';
 const BasicDivider = ({
   orientation = 'horizontal',
   color = '#e0e0e0',
-  thickness = 1,
+  thickness = 0,
+  borderBottomWidth = 0,
   margin = '16px 0',
   flexItem = false,
   style = {},
@@ -17,6 +18,7 @@ const BasicDivider = ({
       sx={{
         borderColor: color,
         borderWidth: thickness,
+        borderBottomWidth: borderBottomWidth,
         margin,
         ...style,
       }}

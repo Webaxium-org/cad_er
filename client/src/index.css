@@ -5,7 +5,7 @@
 }
 
 body {
-  background-color: #FFFFFF;
+  background-color: #ffffff;
 }
 
 .w-100 {
@@ -164,12 +164,14 @@ body {
   color: red !important;
 }
 
-.inp-err .css-i79v29-MuiInputBase-root-MuiInput-root {
+.inp-err .css-i79v29-MuiInputBase-root-MuiInput-root,
+.inp-err .css-1oaomxi-MuiInputBase-root-MuiInput-root {
   border-color: #d32f2f !important;
   background-color: rgba(211, 47, 47, 0.05) !important;
   box-shadow: rgba(211, 47, 47, 0.35) 0 0 0 2px !important;
 }
-.inp-err .css-i79v29-MuiInputBase-root-MuiInput-root.Mui-focused {
+.inp-err .css-i79v29-MuiInputBase-root-MuiInput-root.Mui-focused,
+.inp-err .css-1oaomxi-MuiInputBase-root-MuiInput-root.Mui-focused {
   box-shadow: rgb(255, 0, 0) 0 0 3px !important;
 }
 

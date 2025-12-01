@@ -47,6 +47,7 @@ const StyledInput = styled(Input)(({ theme }) => ({
 const BasicInput = ({
   label,
   error = '',
+  warning = '',
   helperText = '',
   sx = {},
   ...props
@@ -59,7 +60,7 @@ const BasicInput = ({
           sx={{
             mb: 0.5,
             fontWeight: 600,
-            color: error ? 'error.main' : 'black',
+            color: error ? 'error.main' : warning ? 'warning.main' : 'black',
           }}
         >
           {label}
@@ -88,13 +89,13 @@ const BasicInput = ({
             },
         }}
       />
-      {helperText || error ? (
+      {helperText || error || warning ? (
         <Typography
           variant="caption"
-          color={error ? 'error' : 'text.secondary'}
+          color={error ? 'error' : warning ? 'warning' : 'text.secondary'}
           sx={{ mt: 0.5, ml: 1, display: 'block' }}
         >
-          {error || helperText}
+          {error || warning || helperText}
         </Typography>
       ) : null}
     </Box>

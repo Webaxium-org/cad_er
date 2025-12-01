@@ -67,6 +67,14 @@ const createSurvey = async (req, res, next) => {
         reducedLevel,
         backSight,
         chainageMultiple,
+        agreementNo,
+        contractor,
+        department,
+        division,
+        subDivision,
+        section,
+        consultant,
+        client,
       },
     } = req;
 
@@ -77,14 +85,43 @@ const createSurvey = async (req, res, next) => {
       !instrumentNo ||
       !reducedLevel ||
       !backSight ||
-      !chainageMultiple
+      !chainageMultiple ||
+      !agreementNo ||
+      !contractor ||
+      !department
     ) {
       throw createHttpError(
         400,
-        'All fields (project, purpose, instrumentNo, reducedLevel, backSight, chainageMultiple) are required'
+        'All fields (Project, Purpose, Instrument No, Reduced Level, Back Sight, Chainage Multiple, Agreement No, Contractor, department) are required'
       );
     }
-    console.log('im here', userId);
+
+    const hasDivision =
+      division !== undefined &&
+      division !== null &&
+      division !== '' &&
+      subDivision !== undefined &&
+      subDivision !== null &&
+      subDivision !== '' &&
+      section !== undefined &&
+      section !== null &&
+      section !== '';
+
+    const hasConsultantPair =
+      consultant !== undefined &&
+      consultant !== null &&
+      consultant !== '' &&
+      client !== undefined &&
+      client !== null &&
+      client !== '';
+
+    if (!hasDivision && !hasConsultantPair) {
+      throw createHttpError(
+        400,
+        'Please provide either Administrative units or External parties'
+      );
+    }
+
     // 🔹 Create Survey
     const survey = await Survey.create(
       [
@@ -94,6 +131,11 @@ const createSurvey = async (req, res, next) => {
           instrumentNo,
           chainageMultiple,
           reducedLevel: Number(reducedLevel).toFixed(3),
+          agreementNo,
+          contractor,
+          department,
+          ...(hasDivision ? { division, subDivision, section } : {}),
+          ...(hasConsultantPair ? { consultant, client } : {}),
         },
       ],
       { session }
@@ -304,7 +346,7 @@ const createSurveyRow = async (req, res, next) => {
         else remarks.push('RHS');
       });
     } else {
-      remarks.push(remark);
+      remarks.push(`${type} - ${remark}`);
     }
 
     const initialSurvey = survey.purposes?.find(
@@ -387,6 +429,7 @@ const createSurveyRow = async (req, res, next) => {
           foreSight: foreSight ? Number(foreSight).toFixed(3) : undefined,
           reducedLevels: newReading.reducedLevels,
           heightOfInstrument: newReading.heightOfInstrument,
+          remarks,
         },
         { new: true, session }
       );
@@ -504,6 +547,7 @@ const createSurveyPurpose = async (req, res, next) => {
         csCamper,
       },
     } = req;
+    console.log(req.body);
 
     // 🔹 Basic validation
     if (!purpose || !surveyId) {
@@ -826,14 +870,11 @@ const pauseSurveyPurpose = async (req, res, next) => {
     const {
       params: { id },
       user: { userId },
-      query: { foreSight },
+      query: { foreSight, remark },
     } = req;
 
-    if (!foreSight?.trim()) {
-      throw createHttpError(
-        400,
-        'foresight value is required to pause the survey.'
-      );
+    if (!foreSight?.trim() || !remark?.trim()) {
+      throw createHttpError(400, 'Missing required fields');
     }
 
     // 1) Validate survey
@@ -870,7 +911,7 @@ const pauseSurveyPurpose = async (req, res, next) => {
         {
           type: 'CP',
           foreSight,
-          remarks: ['CP'],
+          remarks: [remark],
           createdBy: userId,
           purposeId: survey._id,
         },

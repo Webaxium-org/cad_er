@@ -7,6 +7,7 @@ import { getSurvey } from '../../services/surveyServices';
 import {
   Box,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -17,13 +18,19 @@ import {
 } from '@mui/material';
 import CrossSectionChart from './components/CrossSectionChart';
 import { advancedChartOptions, initialChartOptions } from '../../constants';
+import { BsThreeDots } from 'react-icons/bs';
 import BasicMenu from '../../components/BasicMenu';
 
 const menuItems = [
   { label: 'V1', value: 'v1' },
   { label: 'V2', value: 'v2' },
-  { label: 'V3', value: 'v3' },
 ];
+
+const colors = {
+  Initial: 'green',
+  Proposed: 'blue',
+  Final: 'red',
+};
 
 const CrossSectionReport = () => {
   const navigate = useNavigate();
@@ -36,7 +43,7 @@ const CrossSectionReport = () => {
 
   const { global } = useSelector((state) => state.loading);
 
-  const [chartOptions, setChartOptions] = useState(initialChartOptions);
+  const [chartOptions, setChartOptions] = useState(advancedChartOptions);
 
   const [survey, setSurvey] = useState([]);
 
@@ -45,8 +52,8 @@ const CrossSectionReport = () => {
   const [selectedCs, setSelectedCs] = useState(null);
 
   const handleMenuSelect = (item) => {
-    if (item.value === 'v1') setChartOptions(initialChartOptions);
-    if (item.value === 'v2') setChartOptions(advancedChartOptions);
+    if (item.value === 'v1') setChartOptions(advancedChartOptions);
+    if (item.value === 'v2') setChartOptions(initialChartOptions);
   };
 
   const handleSetTableData = (survey) => {
@@ -63,6 +70,12 @@ const CrossSectionReport = () => {
     }
 
     setTableData(data);
+  };
+
+  const getColor = (type) => {
+    if (type.includes('Initial')) return colors.Initial;
+    if (type.includes('Proposed')) return colors.Proposed;
+    return colors.Final;
   };
 
   const handleClickCs = (id) => {
@@ -103,6 +116,7 @@ const CrossSectionReport = () => {
 
         data.series.push({
           name: table.type,
+          color: getColor(table.type),
           data: makeSeries(table.type, safeOffsets, safeProposal),
         });
       }
@@ -111,6 +125,7 @@ const CrossSectionReport = () => {
     // Add the Initial Entry at the end
     data.series.push({
       name: initialEntry.type,
+      color: getColor(initialEntry.type),
       data: makeSeries(initialEntry.type, safeOffsets, safeInitial),
     });
 
@@ -149,14 +164,25 @@ const CrossSectionReport = () => {
   }, [tableData]);
 
   return (
-    <Box p={2} mt={4}>
-      <Box textAlign={'end'}>
-        <BasicMenu
-          label="Options"
-          items={menuItems}
-          onSelect={handleMenuSelect}
-        />
-      </Box>
+    <Box p={2}>
+      <Stack
+        direction={'row'}
+        justifyContent={'space-between'}
+        alignItems={'center'}
+        spacing={2}
+        mb={2}
+      >
+        <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
+          CS AT CHAINAGE {selectedCs?.chainage}
+        </Typography>
+        <Box textAlign={'end'}>
+          <BasicMenu
+            label={<BsThreeDots />}
+            items={menuItems}
+            onSelect={handleMenuSelect}
+          />
+        </Box>
+      </Stack>
       <Box
         sx={{
           textAlign: 'center',
@@ -168,19 +194,6 @@ const CrossSectionReport = () => {
           zIndex: 3,
         }}
       >
-        <Typography
-          variant="h6"
-          fontSize={18}
-          fontWeight={700}
-          align="center"
-          mb={2}
-        >
-          CROSS SECTION AT CHAINAGE {selectedCs?.chainage}
-        </Typography>
-        <Typography variant="subtitle2" sx={{ mt: 0.5 }}>
-          Datum: {selectedCs?.datum}
-        </Typography>
-
         {selectedCs && selectedCs?.series && (
           <CrossSectionChart
             selectedCs={selectedCs}

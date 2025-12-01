@@ -12,12 +12,9 @@ import {
 } from '@mui/material';
 import Chart from 'react-apexcharts';
 
-import { IoMdDownload } from 'react-icons/io';
-
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useEffect, useRef, useState } from 'react';
-import BasicDivider from '../../../components/BasicDevider';
 
 const colors = {
   Initial: 'green',
@@ -228,7 +225,11 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
             {/* CHART ROW */}
             <TableRow>
               <TableCell sx={{ border: 'none', p: 0 }}>
-                <Box minWidth={`${calcWidth()}px`} ml="37px" height="300px">
+                <Box
+                  minWidth={`${calcWidth()}px`}
+                  // ml="37px"
+                  height="250px"
+                >
                   <Chart
                     key={selectedCs.id}
                     options={chartOptions}
@@ -237,6 +238,46 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                     height="100%"
                     width="100%"
                   />
+                </Box>
+
+                <Typography variant="subtitle2" textAlign={'center'} sx={{ mt: 0.5 }}>
+                  Datum: {selectedCs?.datum}
+                </Typography>
+
+                <Box display="flex" justifyContent={'center'} gap={2} px={2}>
+                  {selectedCs?.series?.map((s, idx) => {
+                    const color =
+                      colors[
+                        s.name?.includes('Initial')
+                          ? 'Initial'
+                          : s.name?.includes('Proposed')
+                          ? 'Proposed'
+                          : 'Final'
+                      ];
+
+                    return (
+                      <Box
+                        key={idx}
+                        display="flex"
+                        alignItems="center"
+                        mb={0.5}
+                      >
+                        <Typography fontSize="12px" mr={0.5}>
+                          {s.name}
+                        </Typography>
+
+                        {/* Colored dot */}
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            backgroundColor: color,
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
                 </Box>
               </TableCell>
             </TableRow>
@@ -254,7 +295,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                 ];
 
               return (
-                <TableRow key={idx}>
+                <TableRow key={idx} sx={{ display: 'none' }}>
                   <TableCell sx={{ border: 'none', p: 0 }}>
                     <Stack direction="row" width="fit-content">
                       {/* Name column */}

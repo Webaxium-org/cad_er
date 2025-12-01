@@ -55,7 +55,7 @@ export default function BasicBottomNavigation() {
     setValue(newValue);
 
     if (newValue === 'Menu') {
-      toggleDrawer(true)();
+      toggleDrawer(!open)();
     } else {
       navigate(item.path);
     }
@@ -80,7 +80,7 @@ export default function BasicBottomNavigation() {
         bottom={0}
         left={0}
         right={0}
-        zIndex={100000}
+        zIndex={1000}
         sx={{
           backgroundColor: '#fff',
           borderTop: '1px solid #eee',
@@ -130,14 +130,14 @@ export default function BasicBottomNavigation() {
                 width: 0,
                 height: 0,
                 borderRadius: '50%',
-                backgroundColor: '#6334FA',
+                backgroundColor: 'rgba(0, 111, 253, 1)',
                 transition: 'all 0.3s ease',
                 zIndex: -5,
               },
             },
 
             '& .Mui-selected': {
-              color: '#6334FA',
+              color: 'rgba(0, 111, 253, 1)',
               fontWeight: 600,
               '&::before': {
                 width: 50,
@@ -148,7 +148,7 @@ export default function BasicBottomNavigation() {
                 height: 10,
               },
             },
-            '& .Mui-selected svg': { color: '#6334FA' },
+            '& .Mui-selected svg': { color: 'rgba(0, 111, 253, 1)' },
           }}
           value={value}
           onChange={handleChange}

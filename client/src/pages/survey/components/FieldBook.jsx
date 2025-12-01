@@ -20,7 +20,10 @@ import {
   Typography,
   Stack,
 } from '@mui/material';
+import { MdDownload } from 'react-icons/md';
+
 import { purposeCode } from '../../../constants';
+import { IoIosAddCircleOutline } from 'react-icons/io';
 
 export default function FieldBook() {
   const { id } = useParams();
@@ -256,37 +259,62 @@ export default function FieldBook() {
 
   return (
     <Box p={2}>
-      <Stack direction={'row'} spacing={2} mb={2}>
-        <Box
+      <Stack
+        direction={'row'}
+        justifyContent={'space-between'}
+        alignItems={'center'}
+        spacing={2}
+        mb={2}
+      >
+        <BasicButtons
+          variant="outlined"
           sx={{
-            border: '1px solid #EFEFEF',
-            borderRadius: '9px',
-            width: '40px',
             height: '40px',
+            width: '40px',
+            minWidth: '40px',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             cursor: 'pointer',
-            mb: '24px',
           }}
           onClick={() => navigate(-1)}
-        >
-          <MdArrowBackIosNew />
-        </Box>
-
-        <BasicButtons
-          variant="contained"
-          sx={{ mb: 2 }}
-          onClick={exportToExcel}
-          value="Download Excel 📥"
+          value={<MdArrowBackIosNew fontSize={'16px'} />}
         />
 
-        <BasicButtons
-          variant="contained"
-          sx={{ mb: 2 }}
-          onClick={() => navigate(`/survey/${purpose?.surveyId?._id}/report`)}
-          value="Go To Reports"
-        />
+        <Stack direction={'row'} alignItems={'center'} spacing={2}>
+          <BasicButtons
+            variant="contained"
+            sx={{ py: 1, px: 2, fontSize: '12px' }}
+            onClick={exportToExcel}
+            value={
+              <Stack direction={'row'} alignItems={'center'}>
+                Excel
+                <MdDownload fontSize={'16px'} />
+              </Stack>
+            }
+          />
+
+          <BasicButtons
+            variant="contained"
+            sx={{ py: 1, px: 2, fontSize: '12px' }}
+            onClick={() => navigate(`/survey/${purpose?.surveyId?._id}/report`)}
+            value="Reports"
+          />
+
+          <BasicButtons
+            variant="contained"
+            sx={{ py: 1, px: 2, fontSize: '12px' }}
+            onClick={() =>
+              navigate(`/survey/road-survey/${purpose?.surveyId?._id}`)
+            }
+            value={
+              <Stack direction={'row'} gap={0.5} alignItems={'center'}>
+                <IoIosAddCircleOutline fontSize={'16px'} />
+                PL
+              </Stack>
+            }
+          />
+        </Stack>
       </Stack>
 
       <TableContainer component={Paper}>
