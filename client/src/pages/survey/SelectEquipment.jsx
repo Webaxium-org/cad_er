@@ -15,6 +15,7 @@ import DGPSIcon from '../../assets/icons/GPS Navigation.json';
 import DroneIcon from '../../assets/icons/Drone Camera.json';
 import BathymetryIcon from '../../assets/icons/Boat-Looking-For-Land.json';
 import { IoIosArrowForward } from 'react-icons/io';
+import SmallHeader from '../../components/SmallHeader';
 
 const equipmentList = [
   {
@@ -77,7 +78,7 @@ const SelectEquipment = () => {
   const handleChangeActive = (value) => setActive(value);
 
   const handleSubmit = () => {
-    if (active === 1) {
+    if (active > 0) {
       return setShowAlert(true);
     }
 
@@ -90,72 +91,74 @@ const SelectEquipment = () => {
   }, []);
 
   return (
-    <Box p={2} overflow={'hidden'}>
+    <Box overflow={'hidden'}>
       {showAlert && <SimpleAlert {...alertData} />}
+      <SmallHeader />
+      <Box className="overlapping-header">
+        <Typography
+          variant="h6"
+          fontSize={18}
+          fontWeight={700}
+          align="center"
+          mb={2}
+        >
+          Select Your Equipment
+        </Typography>
 
-      <Typography
-        variant="h6"
-        fontSize={18}
-        fontWeight={700}
-        align="center"
-        mb={2}
-      >
-        Select Your Equipment
-      </Typography>
-
-      <Grid container columns={12} spacing={2}>
-        {equipmentList.map((equipment, idx) => (
-          <Grid
-            key={idx}
-            size={{ xs: equipment.size ? equipment.size : above290 ? 6 : 12 }}
-            sx={{
-              '& .MuiCard-root': {
-                height: '100%',
-              },
-            }}
-          >
-            <BasicCard
-              key={global}
-              component={motion.div}
-              {...animations[idx % 2]}
-              whileHover={{
-                y: -5,
-                boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
-              }}
-              transition={{ duration: 0.4, delay: idx * 0.1 }}
+        <Grid container columns={12} spacing={2}>
+          {equipmentList.map((equipment, idx) => (
+            <Grid
+              key={idx}
+              size={{ xs: equipment.size ? equipment.size : above290 ? 6 : 12 }}
               sx={{
-                borderRadius: '16px',
-                cursor: 'pointer',
-                border: idx === active ? '2px solid blue' : '2px solid white',
+                '& .MuiCard-root': {
+                  height: '100%',
+                },
               }}
-              content={
-                <Stack spacing={1}>
-                  <Box width={'70px'}>
-                    <Lottie animationData={equipment.icon} />
-                  </Box>
-                  <Typography fontWeight={700} fontSize="14px">
-                    {equipment.label}
-                  </Typography>
-                </Stack>
-              }
-              onClick={() => handleChangeActive(idx)}
-            />
-          </Grid>
-        ))}
-      </Grid>
+            >
+              <BasicCard
+                key={global}
+                component={motion.div}
+                {...animations[idx % 2]}
+                whileHover={{
+                  y: -5,
+                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+                }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                sx={{
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  border: idx === active ? '2px solid blue' : '2px solid white',
+                }}
+                content={
+                  <Stack spacing={1}>
+                    <Box width={'70px'}>
+                      <Lottie animationData={equipment.icon} />
+                    </Box>
+                    <Typography fontWeight={700} fontSize="14px">
+                      {equipment.label}
+                    </Typography>
+                  </Stack>
+                }
+                onClick={() => handleChangeActive(idx)}
+              />
+            </Grid>
+          ))}
+        </Grid>
 
-      <Box mt={2} className="landing-btn">
-        <BasicButton
-          value={
-            <Box display={'flex'} gap={1} alignItems={'center'}>
-              Continue
-              <IoIosArrowForward fontSize={'20px'} />
-            </Box>
-          }
-          sx={{ backgroundColor: 'rgba(24, 195, 127, 1)', height: '45px' }}
-          fullWidth={true}
-          onClick={handleSubmit}
-        />
+        <Box mt={2} className="landing-btn">
+          <BasicButton
+            value={
+              <Box display={'flex'} gap={1} alignItems={'center'}>
+                Continue
+                <IoIosArrowForward fontSize={'20px'} />
+              </Box>
+            }
+            sx={{ backgroundColor: 'rgba(24, 195, 127, 1)', height: '45px' }}
+            fullWidth={true}
+            onClick={handleSubmit}
+          />
+        </Box>
       </Box>
     </Box>
   );

@@ -7,7 +7,7 @@ import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { Box, Stack, Typography, Grid, InputAdornment } from '@mui/material';
 import BasicButtons from '../../components/BasicButton';
 import { IoAdd, IoPauseCircleOutline } from 'react-icons/io5';
-import { IoIosAddCircleOutline } from 'react-icons/io';
+import { IoIosAddCircleOutline, IoIosArrowForward } from 'react-icons/io';
 import { IoIosRemove } from 'react-icons/io';
 import BasicCheckbox from '../../components/BasicCheckbox';
 import { showAlert } from '../../redux/alertSlice';
@@ -22,6 +22,7 @@ import AlertDialogSlide from '../../components/AlertDialogSlide';
 import BasicInput from '../../components/BasicInput';
 import { calculateReducedLevel, initialChartOptions } from '../../constants';
 import CrossSectionChart from './components/CrossSectionChart';
+import { MdDone } from 'react-icons/md';
 
 const finishSurveyAlertData = {
   title: 'Confirm End of Survey',
@@ -1115,23 +1116,24 @@ const RoadSurveyRowsForm = () => {
           <Stack direction={'row'} spacing={2}>
             <BasicButtons
               value={
-                (purpose?.phase === 'Proposal' &&
-                  isLastProposalReading &&
-                  page === 1) ||
-                (rowType !== 'Chainage' && isLastProposalReading)
-                  ? `Finish ${purpose?.type}`
-                  : 'Continue'
-              }
-              sx={{
-                backgroundColor:
-                  (purpose?.phase === 'Proposal' &&
+                <Box display={'flex'} gap={1} alignItems={'center'}>
+                  {(purpose?.phase === 'Proposal' &&
                     isLastProposalReading &&
                     page === 1) ||
-                  (rowType !== 'Chainage' && isLastProposalReading)
-                    ? '#4caf50'
-                    : '#0059E7',
-                height: '45px',
-              }}
+                  (rowType !== 'Chainage' && isLastProposalReading) ? (
+                    <>
+                      <Typography mb={0}>Finish ${purpose?.type}</Typography>
+                      <MdDone fontSize={'20px'} />
+                    </>
+                  ) : (
+                    <>
+                      <Typography mb={0}>Continue</Typography>
+                      <IoIosArrowForward fontSize={'20px'} />
+                    </>
+                  )}
+                </Box>
+              }
+              sx={{ backgroundColor: 'rgba(24, 195, 127, 1)', height: '45px' }}
               fullWidth={true}
               onClick={handleSubmit}
               loading={btnLoading}
@@ -1139,7 +1141,12 @@ const RoadSurveyRowsForm = () => {
 
             {rowType === 'CP' && purpose.type === 'Initial Level' && (
               <BasicButtons
-                value={'Finish Survey'}
+                value={
+                  <Box display={'flex'} gap={1} alignItems={'center'}>
+                    Finish Survey
+                    <MdDone fontSize={'20px'} />
+                  </Box>
+                }
                 sx={{ backgroundColor: '#4caf50', height: '45px' }}
                 fullWidth={true}
                 onClick={() => handleClickOpen('Finish Survey')}

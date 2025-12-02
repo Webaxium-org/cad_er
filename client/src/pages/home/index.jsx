@@ -81,7 +81,7 @@ const Home = () => {
             backgroundPosition: 'center',
             opacity: 0.25,
             zIndex: 0,
-            height: '100%',
+            height: '60dvh',
             width: '100%',
           }}
         ></div>

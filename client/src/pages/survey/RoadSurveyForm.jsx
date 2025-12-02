@@ -19,6 +19,7 @@ import {
   getSurvey,
 } from '../../services/surveyServices';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
+import { IoIosArrowForward } from 'react-icons/io';
 
 const alertData = {
   title: 'Generate Proposal',
@@ -654,7 +655,7 @@ const RoadSurveyForm = () => {
         <MdArrowBackIosNew />
       </Box>
 
-      <Stack alignItems={'center'} spacing={5}>
+      <Stack alignItems={'center'} spacing={2}>
         <Stack alignItems={'center'}>
           <Typography fontSize={'26px'} fontWeight={700}>
             Create New {id ? 'Survey' : 'Project'}
@@ -764,10 +765,15 @@ const RoadSurveyForm = () => {
           </Grid>
         </Stack>
 
-        <Box px={'24px'} className="landing-btn">
+        <Box width={'100%'}>
           <BasicButtons
-            value={'Continue'}
-            sx={{ backgroundColor: '#0059E7', height: '45px' }}
+            value={
+              <Box display={'flex'} gap={1} alignItems={'center'}>
+                Continue
+                <IoIosArrowForward fontSize={'20px'} />
+              </Box>
+            }
+            sx={{ backgroundColor: 'rgba(24, 195, 127, 1)', height: '45px' }}
             fullWidth={true}
             onClick={preSubmitCheck}
             loading={btnLoading}

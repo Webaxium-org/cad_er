@@ -11,6 +11,7 @@ import OutlinedCard from './components/OutlinedCard';
 import { stopLoading } from '../../redux/loadingSlice';
 import { useDispatch } from 'react-redux';
 import { IoIosArrowForward } from 'react-icons/io';
+import BigHeader from '../../components/BigHeader';
 
 const cardData = [
   {
@@ -48,7 +49,7 @@ const Index = () => {
   const handleChangeActive = (value) => setActive(value);
 
   const handleSubmit = () => {
-    if (active === 1) {
+    if (active > 0) {
       return setShowAlert(true);
     }
 
@@ -61,9 +62,12 @@ const Index = () => {
   }, []);
 
   return (
-    <Box p={2} mt={12}>
+    <Box>
+      <BigHeader />
+
       {showAlert && <SimpleAlert {...alertData} />}
-      <Stack spacing={2}>
+
+      <Stack spacing={2} p={2} className='overlapping-header'>
         <Stack alignItems={'center'}>
           <Typography
             variant="h6"

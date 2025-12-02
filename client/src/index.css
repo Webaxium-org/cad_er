@@ -213,6 +213,16 @@ body {
   background-color: black;
 }
 
+/* Nav overlapping headers */
+.overlapping-header {
+  margin-top: -50px;
+  border-radius: 20px 20px 0 0;
+  background-color: white;
+  position: relative;
+  z-index: 2;
+  padding: 16px;
+}
+
 /* ---------------------------
     Preloader
     --------------------------- */
