@@ -11,7 +11,7 @@ const RootLayout = () => {
     <>
       <Preloader />
 
-      <Box width={'100%'} mb={'76.5px'}>
+      <Box width={'100%'} mb={'67px'}>
         {/* Global Alert Start*/}
 
         <CustomSnackbar />
