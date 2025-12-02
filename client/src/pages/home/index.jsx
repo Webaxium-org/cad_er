@@ -13,63 +13,15 @@ import { MdOutlineSearch } from 'react-icons/md';
 import { TbReport } from 'react-icons/tb';
 import { TbReportSearch } from 'react-icons/tb';
 
-import { GrTask } from 'react-icons/gr';
-
+import { TbRefresh } from 'react-icons/tb';
 import { MdGpsFixed } from 'react-icons/md';
-import { GoArrowSwitch } from 'react-icons/go';
 import { GoChecklist } from 'react-icons/go';
 
-import Lottie from 'lottie-react';
-
 import BackgroundImage from '../../assets/background-img.png';
-import totalStationIcon from '../../assets/icons/compass.json';
-import DGPSIcon from '../../assets/icons/GPS Navigation.json';
-import DroneIcon from '../../assets/icons/Drone Camera.json';
-import BathymetryIcon from '../../assets/icons/Boat-Looking-For-Land.json';
 import ImageAvatars from '../../components/ImageAvatar';
 import BasicButton from '../../components/BasicButton';
 import { IoIosAddCircleOutline } from 'react-icons/io';
 import BasicDivider from '../../components/BasicDevider';
-
-const upcomingList = [
-  {
-    label: 'Total Station',
-    icon: totalStationIcon,
-    link: '#',
-    color: '#006FFD',
-    description:
-      'High-precision land surveying using electronic distance and angle measurements.',
-  },
-  {
-    label: 'DGPS',
-    icon: DGPSIcon,
-    link: '#',
-    color: '#D98500',
-    description:
-      'Centimeter-level positioning using GPS enhanced by base-station corrections.',
-  },
-  {
-    label: 'Drone',
-    icon: DroneIcon,
-    link: '#',
-    color: '#7A2EFF',
-    description:
-      'Aerial mapping and 3D modelling using high-resolution drone imagery.',
-  },
-  {
-    label: 'Bathymetry',
-    icon: BathymetryIcon,
-    link: '#',
-    color: '#00A79D',
-    description:
-      'Underwater depth mapping using sonar or echo-sounder measurement systems.',
-  },
-];
-
-const animations = [
-  { initial: { opacity: 0, x: -20 }, animate: { opacity: 1, x: 0 } },
-  { initial: { opacity: 0, x: 20 }, animate: { opacity: 1, x: 0 } },
-];
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -80,7 +32,7 @@ const Home = () => {
 
   const { global } = useSelector((state) => state.loading);
 
-  const above370 = useMediaQuery('(min-width:370px)');
+  const above385 = useMediaQuery('(min-width:386px)');
   const above400 = useMediaQuery('(min-width:400px)');
 
   const actions = [
@@ -96,7 +48,7 @@ const Home = () => {
     },
     {
       label: 'Unit Con.',
-      icon: <GoArrowSwitch fontSize={above400 ? 32 : 28} />,
+      icon: <TbRefresh fontSize={above400 ? 32 : 28} />,
       link: '#',
     },
     {
@@ -115,7 +67,6 @@ const Home = () => {
       {/* 🌈 HEADER */}
       <Stack
         p={2}
-        bgcolor={''}
         sx={{
           position: 'relative',
           backgroundColor: 'rgba(40, 151, 255, 1)',
@@ -140,7 +91,7 @@ const Home = () => {
           alignItems={'center'}
           color="white"
         >
-          <Typography textAlign={'center'} fontWeight={900} fontSize="20px">
+          <Typography textAlign={'center'} fontWeight={900} fontSize="24px">
             CADer
           </Typography>
 
@@ -198,7 +149,7 @@ const Home = () => {
                   </Typography>
                 </Box>
               }
-              onClick={() => navigate('/survey/add-survey')}
+              onClick={() => navigate('/survey/select-equipment')}
               sx={{
                 backgroundColor: '#ffffff',
                 height: '45px',
@@ -233,7 +184,7 @@ const Home = () => {
 
       {/* ⚡ Quick Actions */}
       <Stack spacing={2} px={2}>
-        <Typography fontWeight={700} fontSize="14px">
+        <Typography fontWeight={700} fontSize="16px">
           Quick Actions
         </Typography>
         <Box display={'flex'} justifyContent={'space-between'}>
@@ -281,15 +232,14 @@ const Home = () => {
         </Box>
       </Stack>
 
-      {/* Overview */}
-
       <Box px={2}>
-        <Typography fontWeight={700} fontSize="14px" mt={2} mb={1}>
+        {/* Overview */}
+        <Typography fontWeight={700} fontSize="16px" mb={1}>
           Overview
         </Typography>
 
         <Grid container columns={12} spacing={2}>
-          <Grid size={{ xs: above370 ? 6 : 12 }}>
+          <Grid size={{ xs: above385 ? 6 : 12 }}>
             <BasicCard
               key={global}
               component={motion.div}
@@ -310,7 +260,7 @@ const Home = () => {
                     alignItems={'center'}
                     gap={1.5}
                   >
-                    <Typography fontWeight={700} fontSize="12px">
+                    <Typography fontWeight={600} fontSize="14px">
                       Total Projects
                     </Typography>
 
@@ -332,8 +282,8 @@ const Home = () => {
                   </Typography>
 
                   <Typography
-                    fontWeight={700}
-                    fontSize="12px"
+                    fontWeight={600}
+                    fontSize="14px"
                     color="rgba(40, 151, 255, 1)"
                   >
                     Today +2
@@ -342,7 +292,7 @@ const Home = () => {
               }
             />
           </Grid>
-          <Grid size={{ xs: above370 ? 6 : 12 }}>
+          <Grid size={{ xs: above385 ? 6 : 12 }}>
             <BasicCard
               key={global}
               component={motion.div}
@@ -364,7 +314,7 @@ const Home = () => {
                     alignItems={'center'}
                     gap={1.5}
                   >
-                    <Typography fontWeight={700} fontSize="12px">
+                    <Typography fontWeight={600} fontSize="14px">
                       Total Tasks
                     </Typography>
 
@@ -386,8 +336,8 @@ const Home = () => {
                   </Typography>
 
                   <Typography
-                    fontWeight={700}
-                    fontSize="12px"
+                    fontWeight={600}
+                    fontSize="14px"
                     color="rgba(57, 104, 58, 1)"
                   >
                     Today 0
@@ -397,54 +347,12 @@ const Home = () => {
             />
           </Grid>
         </Grid>
-      </Box>
 
-      <Box p={2} overflow={'hidden'}>
-        <Typography fontWeight={700} fontSize="14px" mb={1}>
-          Upcoming
-        </Typography>
-
-        <Grid container columns={12} spacing={2}>
-          {upcomingList.map((upcoming, idx) => (
-            <Grid
-              key={idx}
-              size={{ xs: above370 ? 6 : 12 }}
-              sx={{
-                '& .MuiCard-root': {
-                  height: '100%',
-                },
-              }}
-            >
-              <BasicCard
-                key={global}
-                component={motion.div}
-                {...animations[idx % 2]}
-                whileHover={{
-                  y: -5,
-                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
-                }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
-                sx={{
-                  borderRadius: '16px',
-                  cursor: 'pointer',
-                }}
-                content={
-                  <Stack spacing={1}>
-                    <Box width={'70px'}>
-                      <Lottie animationData={upcoming.icon} />
-                    </Box>
-                    <Typography fontWeight={700} fontSize="24px">
-                      {upcoming.label}
-                    </Typography>
-                    <Typography fontWeight={500} fontSize="16px">
-                      {upcoming.description}
-                    </Typography>
-                  </Stack>
-                }
-              />
-            </Grid>
-          ))}
-        </Grid>
+        <Stack spacing={2} mt={2} sx={{ display: 'none' }}>
+          <Typography fontWeight={700} fontSize="16px">
+            Tasks
+          </Typography>
+        </Stack>
       </Box>
     </Stack>
   );

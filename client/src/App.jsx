@@ -23,6 +23,7 @@ import LongitudinalSectionReport from './pages/survey/LongitudinalSectionReport'
 import ProjectsList from './pages/survey/ProjectsList';
 import SurveyList from './pages/survey/SurveyList';
 import CameraPage from './pages/home/components/CameraPage';
+import SelectEquipment from './pages/survey/SelectEquipment';
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
 
               <Route path="survey">
                 <Route index element={<ProjectsList />} />
+                <Route path="select-equipment" element={<SelectEquipment />} />
                 <Route path="add-survey" element={<SurveyLanding />} />
                 <Route path="report" element={<Report />} />
                 <Route path=":id/report" element={<Report />} />

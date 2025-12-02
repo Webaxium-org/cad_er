@@ -120,6 +120,7 @@ export default function BasicBottomNavigation() {
                 backgroundColor: '#fff',
                 transition: 'all 0.3s ease',
                 zIndex: -5,
+                boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.05)'
               },
               '&::after': {
                 content: '""',

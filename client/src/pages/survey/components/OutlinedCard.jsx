@@ -15,16 +15,8 @@ export default function OutlinedCard({ card, selected, onClick }) {
         <CardContent className="card-content">
           <Stack alignItems={'center'} spacing={1}>
             <Box className="icon-bg-area">{card.icon}</Box>
-            <Typography fontSize={'16px'} fontWeight={700} textAlign={'center'}>
+            <Typography fontSize={'12px'} fontWeight={700} textAlign={'center'}>
               {card.title}
-            </Typography>
-            <Typography
-              fontSize={'10px'}
-              fontWeight={300}
-              color="#A7A7A7"
-              textAlign={'center'}
-            >
-              {card.description}
             </Typography>
           </Stack>
         </CardContent>

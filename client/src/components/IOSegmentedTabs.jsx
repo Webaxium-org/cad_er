@@ -46,7 +46,7 @@ const IOSegmentedTabs = ({ value, onChange, tabs }) => {
               textTransform: 'none',
               minHeight: '34px',
               px: 2.5,
-              py: 1,
+              py: 1.5,
               borderRadius: '14px',
               fontSize: '14px',
               fontWeight: 600,

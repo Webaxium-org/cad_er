@@ -2,6 +2,7 @@ import { Box, Stack, Typography } from '@mui/material';
 import BasicButtons from '../../components/BasicButton';
 import { FaRoad } from 'react-icons/fa6';
 import { FaWater } from 'react-icons/fa';
+import { SiLevelsdotfyi } from 'react-icons/si';
 import { useEffect, useState } from 'react';
 import SimpleAlert from '../../components/SimpleAlert';
 import { GoAlert } from 'react-icons/go';
@@ -9,21 +10,23 @@ import { useNavigate } from 'react-router-dom';
 import OutlinedCard from './components/OutlinedCard';
 import { stopLoading } from '../../redux/loadingSlice';
 import { useDispatch } from 'react-redux';
+import { IoIosArrowForward } from 'react-icons/io';
 
 const cardData = [
   {
     id: 0,
     icon: <FaRoad fontSize={'26px'} color="#B8B8B8" />,
     title: 'Road survey',
-    description:
-      'Sed ut perspiciatis unde omnis iste natus error sit voluptatem',
   },
   {
     id: 1,
     icon: <FaWater fontSize={'26px'} color="#B8B8B8" />,
     title: 'Water way',
-    description:
-      'Sed ut perspiciatis unde omnis iste natus error sit voluptatem',
+  },
+  {
+    id: 2,
+    icon: <SiLevelsdotfyi fontSize={'26px'} color="#B8B8B8" />,
+    title: 'Fly level',
   },
 ];
 
@@ -58,33 +61,24 @@ const Index = () => {
   }, []);
 
   return (
-    <Box>
+    <Box p={2} mt={12}>
       {showAlert && <SimpleAlert {...alertData} />}
-      <Stack spacing={5}>
-        <Box className="landing-img-wrapper">
-          {/* <img
-            src={''}
-            srcSet={``}
-            sizes="100vw"
-            alt="landing"
-            className="landing-img"
-          /> */}
-        </Box>
-
+      <Stack spacing={2}>
         <Stack alignItems={'center'}>
           <Typography
-            fontSize={'26px'}
+            variant="h6"
+            fontSize={18}
             fontWeight={700}
-            sx={{ cursor: 'pointer' }}
+            align="center"
           >
-            Welcome To CADer
+            Select Your Survey
           </Typography>
-          <Typography fontSize={'16px'} fontWeight={400} color="#434343">
+          <Typography fontSize={12} fontWeight={400} color="#434343">
             What type of survey do you want to perform using Auto Level?
           </Typography>
         </Stack>
 
-        <Stack direction={'row'} justifyContent={'center'} px={'24px'} gap={3}>
+        <Stack direction={'row'} justifyContent={'center'} px={'24px'} gap={1}>
           {cardData.map((data, idx) => (
             <OutlinedCard
               key={idx}
@@ -97,8 +91,13 @@ const Index = () => {
 
         <Box px={'24px'} className="landing-btn">
           <BasicButtons
-            value={'Continue'}
-            sx={{ backgroundColor: '#0059E7', height: '45px' }}
+            value={
+              <Box display={'flex'} gap={1} alignItems={'center'}>
+                Continue
+                <IoIosArrowForward fontSize={'20px'} />
+              </Box>
+            }
+            sx={{ backgroundColor: 'rgba(24, 195, 127, 1)', height: '45px' }}
             fullWidth={true}
             onClick={handleSubmit}
           />

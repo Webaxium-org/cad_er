@@ -88,6 +88,7 @@ body {
   border: 3px solid #efefef;
   box-shadow: none;
   cursor: pointer;
+  min-width: 74px;
 }
 
 .landing-card .card-wrapper .card-content {
@@ -95,7 +96,7 @@ body {
 }
 
 .landing-card .icon-bg-area {
-  padding: 18px;
+  padding: 14px;
   background-color: #efefef;
   border-radius: 50%;
   display: flex;

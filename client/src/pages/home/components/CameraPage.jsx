@@ -43,21 +43,13 @@ const CameraPage = () => {
 
     const ctx = canvas.getContext('2d');
 
-    // 1️⃣ Draw camera frame
+    // Draw camera frame
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // 2️⃣ Draw your overlay background (same as MUI Box)
-    const overlayHeight = 260; // adjust if you add/remove lines
-    ctx.fillStyle = 'rgba(40,40,40,0.5)'; // #282828 @ 0.5 opacity
-    ctx.fillRect(0, canvas.height - overlayHeight, canvas.width, overlayHeight);
-
-    // 3️⃣ Draw your text lines (white, left-aligned)
-    ctx.fillStyle = 'white';
-    ctx.font = '14px Arial';
-    ctx.textAlign = 'left';
-
-    const startY = canvas.height - overlayHeight + 40;
-    const lineHeight = 40;
+    // Dynamic scaling
+    const baseFont = canvas.height * 0.018; // scalable font (2% of screen)
+    const padding = canvas.height * 0.015; // top/bottom padding
+    const lineHeight = baseFont * 1.6; // proper spacing
 
     const lines = [
       'Company: Webaxium',
@@ -70,21 +62,33 @@ const CameraPage = () => {
       'Address: Kozhippilly, Kothamangalam 686691',
     ];
 
-    lines.forEach((line, i) => {
-      ctx.fillText(line, 20, startY + i * lineHeight);
+    const overlayHeight = padding * 2 + lines.length * lineHeight;
+
+    // Background
+    ctx.fillStyle = 'rgba(40,40,40,0.6)';
+    ctx.fillRect(0, canvas.height - overlayHeight, canvas.width, overlayHeight);
+
+    // Text
+    ctx.fillStyle = 'white';
+    ctx.font = `${baseFont}px Arial`;
+    ctx.textAlign = 'left';
+
+    let y = canvas.height - overlayHeight + padding + baseFont;
+
+    lines.forEach((line) => {
+      ctx.fillText(line, 20, y);
+      y += lineHeight;
     });
 
-    // 4️⃣ Export final photo
+    // Export
     const imgData = canvas.toDataURL('image/png');
     setCaptured(imgData);
 
-    // 5️⃣ Trigger download
+    // Download
     const link = document.createElement('a');
     link.href = imgData;
     link.download = `photo_${Date.now()}.png`;
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
   };
 
   useEffect(() => {

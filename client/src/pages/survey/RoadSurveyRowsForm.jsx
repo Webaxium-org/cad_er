@@ -79,10 +79,10 @@ const values = {
 
 const inputDetails = [
   { label: 'Chainage*', name: 'chainage', placeholder: '0/000', type: 'text' },
-  { label: 'Road width*', name: 'roadWidth', type: 'number' },
-  { label: 'Spacing*', name: 'spacing', type: 'number' },
-  { label: 'Fore sight*', name: 'foreSight', type: 'number' },
-  { label: 'Back sight*', name: 'backSight', type: 'number' },
+  { label: 'Road width*', name: 'roadWidth', type: 'number', size: 6 },
+  { label: 'Spacing*', name: 'spacing', type: 'number', size: 6 },
+  { label: 'Fore sight*', name: 'foreSight', type: 'number', size: 6 },
+  { label: 'Back sight*', name: 'backSight', type: 'number', size: 6 },
   { label: 'Remark*', name: 'remark', type: 'text' },
 ];
 
@@ -952,14 +952,10 @@ const RoadSurveyRowsForm = () => {
         <Box width={'100%'} maxWidth={'md'}>
           <Grid container spacing={3} columns={12}>
             {page === 0 &&
-              inputData.map((input, index) => (
+              inputData.map(({ size, ...input }, index) => (
                 <Grid
                   size={{
-                    xs: 12,
-                    sm:
-                      input.name === 'roadWidth' || input.name === 'spacing'
-                        ? 6
-                        : 12,
+                    xs: size ? size : 12,
                   }}
                   key={index}
                 >

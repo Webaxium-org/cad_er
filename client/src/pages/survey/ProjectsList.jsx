@@ -351,20 +351,6 @@ export default function ProjectsList() {
         </Box>
       </Box>
 
-      {/* <Box
-        position={'fixed'}
-        display={'flex'}
-        justifyContent={'center'}
-        bottom={'66px'}
-        left={0}
-        width={'100%'}
-        bgcolor={'white'}
-        py={2}
-        zIndex={999}
-      >
-        <BasicPagination count={10} color={'primary'} />
-      </Box> */}
-
       {/* Animate tab content */}
       <Box px={2}>
         {loading ? (
