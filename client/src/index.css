@@ -215,7 +215,7 @@ body {
 
 /* Nav overlapping headers */
 .overlapping-header {
-  margin-top: -50px;
+  margin-top: -50px !important;
   border-radius: 20px 20px 0 0;
   background-color: white;
   position: relative;

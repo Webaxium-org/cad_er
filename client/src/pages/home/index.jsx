@@ -67,6 +67,7 @@ const Home = () => {
       {/* 🌈 HEADER */}
       <Stack
         p={2}
+        height={'228px'}
         sx={{
           position: 'relative',
           backgroundColor: 'rgba(40, 151, 255, 1)',
@@ -182,57 +183,57 @@ const Home = () => {
         </Box>
       </Stack>
 
-      {/* ⚡ Quick Actions */}
-      <Stack spacing={2} px={2}>
-        <Typography fontWeight={700} fontSize="16px">
-          Quick Actions
-        </Typography>
-        <Box display={'flex'} justifyContent={'space-between'}>
-          {actions.map((item, idx) => (
-            <Box key={idx}>
-              <Stack alignItems={'center'} height={'100%'} spacing={0.5}>
-                <Paper
-                  elevation={3}
-                  sx={{
-                    px: 2,
-                    py: 1.5,
-                    borderRadius: '14px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    width: `${above400 ? '55px' : '46px'}`,
-                    height: '100%',
-                    backgroundColor: 'white',
-                    '&:hover': {
-                      transform: 'scale(1.05)',
-                    },
-                  }}
-                  onClick={() => navigate(item.link)}
-                >
-                  <Stack
-                    justifyContent={'center'}
-                    alignItems={'center'}
-                    spacing={0.5}
-                    sx={{ color: 'rgba(0, 111, 253, 1)' }}
+      <Box px={2} className="overlapping-header">
+        {/* ⚡ Quick Actions */}
+        <Stack spacing={2} >
+          <Typography fontWeight={700} fontSize="16px">
+            Quick Actions
+          </Typography>
+          <Box display={'flex'} justifyContent={'space-between'}>
+            {actions.map((item, idx) => (
+              <Box key={idx}>
+                <Stack alignItems={'center'} height={'100%'} spacing={0.5}>
+                  <Paper
+                    elevation={3}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      borderRadius: '14px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      width: `${above400 ? '55px' : '46px'}`,
+                      height: '100%',
+                      backgroundColor: 'white',
+                      '&:hover': {
+                        transform: 'scale(1.05)',
+                      },
+                    }}
+                    onClick={() => navigate(item.link)}
                   >
-                    {item.icon}
-                    <Typography
-                      fontSize={above400 ? '12px' : '10px'}
-                      fontWeight={700}
-                      color="black"
-                      align="center"
+                    <Stack
+                      justifyContent={'center'}
+                      alignItems={'center'}
+                      spacing={0.5}
+                      sx={{ color: 'rgba(0, 111, 253, 1)' }}
                     >
-                      {item.label}
-                    </Typography>
-                  </Stack>
-                </Paper>
-              </Stack>
-            </Box>
-          ))}
-        </Box>
-      </Stack>
+                      {item.icon}
+                      <Typography
+                        fontSize={above400 ? '12px' : '10px'}
+                        fontWeight={700}
+                        color="black"
+                        align="center"
+                      >
+                        {item.label}
+                      </Typography>
+                    </Stack>
+                  </Paper>
+                </Stack>
+              </Box>
+            ))}
+          </Box>
+        </Stack>
 
-      <Box px={2}>
         {/* Overview */}
         <Typography fontWeight={700} fontSize="16px" mb={1}>
           Overview

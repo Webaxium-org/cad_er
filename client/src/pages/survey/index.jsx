@@ -12,6 +12,7 @@ import { stopLoading } from '../../redux/loadingSlice';
 import { useDispatch } from 'react-redux';
 import { IoIosArrowForward } from 'react-icons/io';
 import BigHeader from '../../components/BigHeader';
+import { SlTarget } from 'react-icons/sl';
 
 const cardData = [
   {
@@ -67,17 +68,19 @@ const Index = () => {
 
       {showAlert && <SimpleAlert {...alertData} />}
 
-      <Stack spacing={2} p={2} className='overlapping-header'>
-        <Stack alignItems={'center'}>
-          <Typography
-            variant="h6"
-            fontSize={18}
-            fontWeight={700}
-            align="center"
-          >
-            Select Your Survey
-          </Typography>
-          <Typography fontSize={12} fontWeight={400} color="#434343">
+      <Stack spacing={2} p={2} className="overlapping-header">
+        <Stack alignItems={'center'} spacing={2}>
+          <BasicButtons
+            value={
+              <Box display={'flex'} gap={1} alignItems={'center'}>
+                Calibration
+                <SlTarget fontSize={'20px'} />
+              </Box>
+            }
+            sx={{ backgroundColor: 'rgb(0 111 253)', height: '45px' }}
+            fullWidth={true}
+          />
+          <Typography fontSize={13} fontWeight={400} color="#434343">
             What type of survey do you want to perform using Auto Level?
           </Typography>
         </Stack>
@@ -93,7 +96,7 @@ const Index = () => {
           ))}
         </Stack>
 
-        <Box px={'24px'} className="landing-btn">
+        <Box>
           <BasicButtons
             value={
               <Box display={'flex'} gap={1} alignItems={'center'}>
