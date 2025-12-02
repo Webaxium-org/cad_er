@@ -80,13 +80,24 @@ const CameraPage = () => {
         sx={{
           position: 'absolute',
           bottom: 20,
+          left: 0,
           width: '100%',
-          textAlign: 'center',
           opacity: 0.5,
           pointerEvents: 'none',
+          backgroundColor: '#282828',
+          color: 'white',
         }}
       >
-        <Typography fontWeight={700}>© CADer Surveying</Typography>
+        <Typography fontWeight={500}>Company: Webaxium</Typography>
+        <Typography fontWeight={500}>Project: Charles</Typography>
+        <Typography fontWeight={500}>Ref.No: 120</Typography>
+        <Typography fontWeight={500}>Notes: TBM Over Culvert</Typography>
+        <Typography fontWeight={500}>
+          Date & time: {new Date().toLocaleString('en-IN')}
+        </Typography>
+        <Typography fontWeight={500}>WGS84: 10.24324, 76.65456 (+4m)</Typography>
+        <Typography fontWeight={500}>Altitude: -72m</Typography>
+        <Typography fontWeight={500}>Address: Kozhippilly, Kothamangalam 686691</Typography>
       </Box>
 
       {/* Capture Button */}

@@ -1,16 +1,12 @@
 import { Accordion, AccordionDetails, AccordionSummary } from '@mui/material';
-import { MdOutlineExpandMore } from 'react-icons/md';
 
-const BasicAccordion = ({ summary, details, sx = {} }) => {
+const BasicAccordion = ({ summary, details, expandIcon, sx = {} }) => {
   return (
     <Accordion sx={sx}>
-      <AccordionSummary
-        expandIcon={<MdOutlineExpandMore fontSize={28} />}
-        sx={{ padding: 0 }}
-      >
+      <AccordionSummary expandIcon={expandIcon} sx={{ padding: 0 }}>
         {summary}
       </AccordionSummary>
-      <AccordionDetails>{details}</AccordionDetails>
+      <AccordionDetails sx={{ padding: 0 }}>{details}</AccordionDetails>
     </Accordion>
   );
 };

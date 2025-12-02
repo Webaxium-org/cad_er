@@ -1,25 +1,94 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, IconButton, Stack } from '@mui/material';
+import { Box, Typography, IconButton, Stack, styled } from '@mui/material';
 import { MdOutlineSearch } from 'react-icons/md';
 import IOSegmentedTabs from '../../components/IOSegmentedTabs';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { stopLoading } from '../../redux/loadingSlice';
 import { handleFormError } from '../../utils/handleFormError';
 import { getAllSurvey } from '../../services/surveyServices';
 import { motion, AnimatePresence } from 'framer-motion';
 import BasicAccordion from '../../components/BasicAccordion';
 import LetterAvatar from '../../components/LetterAvatar';
-import { deepOrange, deepPurple } from '@mui/material/colors';
 import BasicDivider from '../../components/BasicDevider';
-import BasicChip from '../../components/BasicChip';
+import { MdOutlineExpandMore } from 'react-icons/md';
 import BasicCard from '../../components/BasicCard';
+import StatusChip from '../../components/StatusChip';
+import { TiEye } from 'react-icons/ti';
+import BasicPagination from '../../components/BasicPagination';
+import { ProjectListCardSkeleton } from './components/ProjectListCardSkeleton';
+
+const colors = {
+  Initial: 'green',
+  Proposed: 'blue',
+  Final: 'red',
+};
+
+const Item = styled(Box)(({ theme }) => ({
+  ...theme.typography.body2,
+  padding: theme.spacing(0.5),
+  marginBottom: 0,
+  color: 'rgba(0, 0, 0, 0.74)',
+  fontSize: '14px',
+  display: 'flex',
+  justifyContent: 'space-between',
+}));
+
+const fieldsToMap = [
+  {
+    key: 'type',
+    value: 'Type',
+  },
+  {
+    key: 'lastPurpose',
+    value: 'Purpose',
+  },
+  {
+    key: 'updatedAt',
+    value: 'Last Edited',
+    type: 'Date',
+  },
+  {
+    key: <TiEye fontSize={20} color="rgba(0, 111, 253, 1)" />,
+    value: 'Field Book',
+    type: 'Icon',
+  },
+  {
+    key: <TiEye fontSize={20} color="rgba(0, 111, 253, 1)" />,
+    value: 'Reports',
+    type: 'Icon',
+  },
+];
+
+const getLink = (survey, target) => {
+  if (target === 'reports') {
+    return `/survey/${survey._id}/report`;
+  }
+
+  const initialLevel = survey?.purposes?.find(
+    (p) => p.type === 'Initial Level'
+  );
+
+  if (target === 'Field Book') {
+    if (initialLevel?.isPurposeFinish) {
+      return `/survey/road-survey/${initialLevel._id}/field-book`;
+    } else {
+      return '#';
+    }
+  } else {
+    return `/survey/${survey._id}/report`;
+  }
+};
 
 export default function ProjectsList() {
   const navigate = useNavigate();
+
   const dispatch = useDispatch();
 
   const [tab, setTab] = useState('two');
+
+  const [loading, setLoading] = useState(true);
+
   const [surveys, setSurveys] = useState([]);
 
   const handleChange = (e, newValue) => setTab(newValue);
@@ -52,13 +121,26 @@ export default function ProjectsList() {
     try {
       const { data } = await getAllSurvey();
       if (data.success) {
-        setSurveys(data.surveys || []);
+        const updatedSurveys =
+          data?.surveys?.map((survey) => {
+            const lastPurposeDoc = survey?.purposes
+              ?.reverse()
+              ?.find((p) => p.phase === 'Actual');
+
+            return {
+              ...survey,
+              lastPurpose: lastPurposeDoc?.type || 'N/A',
+            };
+          }) || [];
+
+        setSurveys(updatedSurveys);
       } else {
         throw Error('Failed to fetch surveys');
       }
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     } finally {
+      setLoading(false);
       dispatch(stopLoading());
     }
   };
@@ -105,9 +187,7 @@ export default function ProjectsList() {
                         >
                           <LetterAvatar
                             letter={survey.project.slice(0, 1)}
-                            bgcolor={
-                              idx % 2 === 0 ? deepOrange[500] : deepPurple[500]
-                            }
+                            bgcolor={'rgba(0, 111, 253, 1)'}
                             onClick={() => handleContinueSurvey(survey._id)}
                           />
 
@@ -127,29 +207,89 @@ export default function ProjectsList() {
                           </Box>
                         </Stack>
                       }
+                      details={
+                        <Stack>
+                          {fieldsToMap.map(({ key, value, type }, idx) => (
+                            <Item key={idx}>
+                              {value}
+
+                              {type === 'Icon' ? (
+                                <Link to={getLink(survey, value)}>{key}</Link>
+                              ) : (
+                                <Typography
+                                  color={
+                                    key === 'lastPurpose'
+                                      ? colors[
+                                          survey[key]?.includes('Initial')
+                                            ? 'Initial'
+                                            : survey[key]?.includes('Final')
+                                            ? 'Final'
+                                            : ''
+                                        ]
+                                      : ''
+                                  }
+                                  fontSize={14}
+                                  fontWeight={700}
+                                >
+                                  {type === 'Date'
+                                    ? new Date(survey[key])?.toLocaleDateString(
+                                        'en-IN'
+                                      )
+                                    : survey[key]}
+                                </Typography>
+                              )}
+                            </Item>
+                          ))}
+                        </Stack>
+                      }
+                      expandIcon={
+                        <MdOutlineExpandMore
+                          color="rgba(161, 161, 170, 1)"
+                          fontSize={28}
+                        />
+                      }
                       sx={{ boxShadow: 'none' }}
                     />
 
-                    <BasicDivider
-                      borderBottomWidth={0.5}
-                      color="rgba(194, 194, 194, 1)"
-                    />
+                    <BasicDivider borderBottomWidth={0.5} color="#d9d9d9" />
 
                     <Stack
                       direction={'row'}
                       justifyContent={'space-between'}
                       alignItems={'center'}
                     >
-                      <Typography fontWeight={600} fontSize="14px">
+                      <Typography
+                        fontWeight={600}
+                        fontSize="14px"
+                        color="rgba(0, 0, 0, 0.74)"
+                      >
                         Status
                       </Typography>
 
-                      <BasicChip label={survey.status} />
+                      <StatusChip status={survey.status} />
                     </Stack>
                   </Box>
                 }
+                sx={{
+                  borderRadius: '12px',
+                  boxShadow: '0px 4px 8px 0px #1c252c2a',
+                }}
               />
             ))}
+
+            <Box
+              position={'fixed'}
+              display={'flex'}
+              justifyContent={'center'}
+              bottom={'66px'}
+              left={0}
+              width={'100%'}
+              bgcolor={'white'}
+              py={2}
+              zIndex={999}
+            >
+              <BasicPagination count={10} color={'primary'} />
+            </Box>
           </Stack>
         ) : (
           <Box textAlign="center" mt={6}>
@@ -178,39 +318,65 @@ export default function ProjectsList() {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
-      {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          mb: 3,
-          alignItems: 'center',
-        }}
-      >
-        <Typography fontWeight={700} fontSize="20px">
-          Projects
-        </Typography>
-        <IconButton>
-          <MdOutlineSearch sx={{ fontSize: 26 }} />
-        </IconButton>
+    <Box>
+      <Box position={'sticky'} p={2} top={0} bgcolor={'white'} zIndex={1}>
+        {/* Header */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            mb: 2,
+          }}
+        >
+          <Typography fontWeight={700} fontSize="20px">
+            Projects
+          </Typography>
+          {/* <IconButton>
+            <MdOutlineSearch sx={{ fontSize: 26 }} />
+          </IconButton> */}
+        </Box>
+
+        {/* iOS Tabs display: 'flex', justifyContent: 'center', */}
+        <Box>
+          <IOSegmentedTabs
+            value={tab}
+            onChange={handleChange}
+            tabs={[
+              { label: 'To do', value: 'one' },
+              { label: 'In progress', value: 'two' },
+              { label: 'Finished', value: 'three' },
+            ]}
+          />
+        </Box>
       </Box>
 
-      {/* iOS Tabs */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-        <IOSegmentedTabs
-          value={tab}
-          onChange={handleChange}
-          tabs={[
-            { label: 'To do', value: 'one' },
-            { label: 'In progress', value: 'two' },
-            { label: 'Finished', value: 'three' },
-          ]}
-        />
-      </Box>
+      {/* <Box
+        position={'fixed'}
+        display={'flex'}
+        justifyContent={'center'}
+        bottom={'66px'}
+        left={0}
+        width={'100%'}
+        bgcolor={'white'}
+        py={2}
+        zIndex={999}
+      >
+        <BasicPagination count={10} color={'primary'} />
+      </Box> */}
 
       {/* Animate tab content */}
-      <AnimatePresence mode="popLayout">{tabContent[tab]}</AnimatePresence>
+      <Box px={2}>
+        {loading ? (
+          <Stack spacing={2}>
+            {Array.from({ length: 7 }).map((_, idx) => (
+              <ProjectListCardSkeleton key={idx} />
+            ))}
+          </Stack>
+        ) : (
+          <AnimatePresence mode="popLayout">{tabContent[tab]}</AnimatePresence>
+        )}
+      </Box>
     </Box>
   );
 }

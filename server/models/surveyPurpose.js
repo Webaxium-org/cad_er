@@ -57,7 +57,7 @@ const SurveyPurposeSchema = new Schema(
     lsSlop: Number,
     cSection: Number,
     csSlop: Number,
-    csCamper: String,
+    csCamper: { type: String, trim: true },
     isPurposeFinish: { type: Boolean, default: false, index: true },
     DateOfSurvey: { type: Date, default: Date.now },
     purposeFinishDate: Date,

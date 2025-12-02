@@ -31,19 +31,6 @@ import BasicButton from '../../components/BasicButton';
 import { IoIosAddCircleOutline } from 'react-icons/io';
 import BasicDivider from '../../components/BasicDevider';
 
-const openCamera = () => {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.capture = 'environment';
-  input.click();
-
-  input.onchange = (e) => {
-    const file = e.target.files[0];
-    console.log('Captured:', file);
-  };
-};
-
 const upcomingList = [
   {
     label: 'Total Station',
@@ -212,7 +199,13 @@ const Home = () => {
                 </Box>
               }
               onClick={() => navigate('/survey/add-survey')}
-              sx={{ backgroundColor: '#ffffffff', height: '45px' }}
+              sx={{
+                backgroundColor: '#ffffff',
+                height: '45px',
+                '&:hover': {
+                  backgroundColor: '#ffffff',
+                },
+              }}
             />
           </Box>
         </Stack>
@@ -246,17 +239,18 @@ const Home = () => {
         <Box display={'flex'} justifyContent={'space-between'}>
           {actions.map((item, idx) => (
             <Box key={idx}>
-              <Stack alignItems={'center'} spacing={0.5}>
+              <Stack alignItems={'center'} height={'100%'} spacing={0.5}>
                 <Paper
                   elevation={3}
                   sx={{
                     px: 2,
                     py: 1.5,
-                    borderRadius: '22px',
+                    borderRadius: '14px',
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     width: `${above400 ? '55px' : '46px'}`,
+                    height: '100%',
                     backgroundColor: 'white',
                     '&:hover': {
                       transform: 'scale(1.05)',

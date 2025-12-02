@@ -9,7 +9,8 @@ const IOSegmentedTabs = ({ value, onChange, tabs }) => {
         display: 'inline-flex',
         p: '4px',
         borderRadius: '16px',
-        backgroundColor: '#f1f1f5',
+        backgroundColor: 'rgba(234, 242, 255, 1)',
+        width: 'calc(100% - 8px)',
       }}
     >
       <Tabs
@@ -20,8 +21,11 @@ const IOSegmentedTabs = ({ value, onChange, tabs }) => {
         scrollButtons={false}
         sx={{
           minHeight: 0,
+          width: '100%',
           '& .MuiTabs-flexContainer': {
             gap: '4px',
+            display: 'flex',
+            justifyContent: 'space-between',
           },
         }}
       >
@@ -42,6 +46,7 @@ const IOSegmentedTabs = ({ value, onChange, tabs }) => {
               textTransform: 'none',
               minHeight: '34px',
               px: 2.5,
+              py: 1,
               borderRadius: '14px',
               fontSize: '14px',
               fontWeight: 600,
