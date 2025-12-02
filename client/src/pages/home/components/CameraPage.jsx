@@ -39,7 +39,7 @@ const CameraPage = () => {
     // Draw camera image
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Draw your watermark
+    // Draw watermark
     ctx.font = '48px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.textAlign = 'center';
@@ -47,10 +47,24 @@ const CameraPage = () => {
 
     const imgData = canvas.toDataURL('image/png');
     setCaptured(imgData);
+
+    // 👉 Trigger phone download
+    const link = document.createElement('a');
+    link.href = imgData;
+    link.download = `photo_${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
-    <Box sx={{ position: 'relative', height: 'calc(100vh - 67px)', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        height: 'calc(100vh - 67px)',
+        overflow: 'hidden',
+      }}
+    >
       {/* Video Camera Preview */}
       {!captured && (
         <video
