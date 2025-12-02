@@ -111,7 +111,7 @@ const Home = () => {
   }, []);
 
   return (
-    <Stack spacing={2} pb={2}>
+    <Stack spacing={2} pb={2} sx={{ userSelect: 'none' }}>
       {/* 🌈 HEADER */}
       <Stack
         p={2}

@@ -53,7 +53,7 @@ const CameraPage = () => {
 
     // 3️⃣ Draw your text lines (white, left-aligned)
     ctx.fillStyle = 'white';
-    ctx.font = '32px Arial';
+    ctx.font = '14px Arial';
     ctx.textAlign = 'left';
 
     const startY = canvas.height - overlayHeight + 40;
