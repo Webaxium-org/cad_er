@@ -50,7 +50,7 @@ const CameraPage = () => {
   };
 
   return (
-    <Box sx={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
+    <Box sx={{ position: 'relative', height: 'calc(100vh - 67px)', overflow: 'hidden' }}>
       {/* Video Camera Preview */}
       {!captured && (
         <video
