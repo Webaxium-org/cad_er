@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
+import { useDispatch } from 'react-redux';
+import { stopLoading } from '../../../redux/loadingSlice';
 
 const CameraPage = () => {
+  const dispatch = useDispatch();
+
   const videoRef = useRef(null);
+
   const canvasRef = useRef(null);
+
   const [stream, setStream] = useState(null);
+
   const [captured, setCaptured] = useState(null);
 
   useEffect(() => {
@@ -36,19 +43,42 @@ const CameraPage = () => {
 
     const ctx = canvas.getContext('2d');
 
-    // Draw camera image
+    // 1️⃣ Draw camera frame
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Draw watermark
-    ctx.font = '48px Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.textAlign = 'center';
-    ctx.fillText('© CADer Surveying', canvas.width / 2, canvas.height - 50);
+    // 2️⃣ Draw your overlay background (same as MUI Box)
+    const overlayHeight = 260; // adjust if you add/remove lines
+    ctx.fillStyle = 'rgba(40,40,40,0.5)'; // #282828 @ 0.5 opacity
+    ctx.fillRect(0, canvas.height - overlayHeight, canvas.width, overlayHeight);
 
+    // 3️⃣ Draw your text lines (white, left-aligned)
+    ctx.fillStyle = 'white';
+    ctx.font = '32px Arial';
+    ctx.textAlign = 'left';
+
+    const startY = canvas.height - overlayHeight + 40;
+    const lineHeight = 40;
+
+    const lines = [
+      'Company: Webaxium',
+      'Project: Charles',
+      'Ref.No: 120',
+      'Notes: TBM Over Culvert',
+      `Date & time: ${new Date().toLocaleString('en-IN')}`,
+      'WGS84: 10.24324, 76.65456 (+4m)',
+      'Altitude: -72m',
+      'Address: Kozhippilly, Kothamangalam 686691',
+    ];
+
+    lines.forEach((line, i) => {
+      ctx.fillText(line, 20, startY + i * lineHeight);
+    });
+
+    // 4️⃣ Export final photo
     const imgData = canvas.toDataURL('image/png');
     setCaptured(imgData);
 
-    // 👉 Trigger phone download
+    // 5️⃣ Trigger download
     const link = document.createElement('a');
     link.href = imgData;
     link.download = `photo_${Date.now()}.png`;
@@ -56,6 +86,10 @@ const CameraPage = () => {
     link.click();
     document.body.removeChild(link);
   };
+
+  useEffect(() => {
+    dispatch(stopLoading());
+  }, []);
 
   return (
     <Box
@@ -71,7 +105,11 @@ const CameraPage = () => {
           ref={videoRef}
           autoPlay
           playsInline
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{
+            width: '100%',
+            height: 'calc(100vh - 67px)',
+            objectFit: 'cover',
+          }}
         />
       )}
 
@@ -95,9 +133,13 @@ const CameraPage = () => {
         <Typography fontWeight={500}>
           Date & time: {new Date().toLocaleString('en-IN')}
         </Typography>
-        <Typography fontWeight={500}>WGS84: 10.24324, 76.65456 (+4m)</Typography>
+        <Typography fontWeight={500}>
+          WGS84: 10.24324, 76.65456 (+4m)
+        </Typography>
         <Typography fontWeight={500}>Altitude: -72m</Typography>
-        <Typography fontWeight={500}>Address: Kozhippilly, Kothamangalam 686691</Typography>
+        <Typography fontWeight={500}>
+          Address: Kozhippilly, Kothamangalam 686691
+        </Typography>
       </Box>
 
       {/* Capture Button */}
