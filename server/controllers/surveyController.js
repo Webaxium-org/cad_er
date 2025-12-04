@@ -67,6 +67,7 @@ const createSurvey = async (req, res, next) => {
         reducedLevel,
         backSight,
         chainageMultiple,
+        separator,
         agreementNo,
         contractor,
         department,
@@ -86,6 +87,7 @@ const createSurvey = async (req, res, next) => {
       !reducedLevel ||
       !backSight ||
       !chainageMultiple ||
+      !separator ||
       !agreementNo ||
       !contractor
     ) {
@@ -132,6 +134,7 @@ const createSurvey = async (req, res, next) => {
           createdBy: userId,
           instrumentNo,
           chainageMultiple,
+          separator,
           reducedLevel: Number(reducedLevel).toFixed(3),
           agreementNo,
           contractor,
@@ -554,7 +557,6 @@ const createSurveyPurpose = async (req, res, next) => {
         csCamper,
       },
     } = req;
-    console.log(req.body);
 
     // 🔹 Basic validation
     if (!purpose || !surveyId) {
@@ -563,7 +565,8 @@ const createSurveyPurpose = async (req, res, next) => {
 
     // 🔹 Proposal field validation (if proposal mode)
     if (proposal) {
-      const requiredFields = [proposedLevel, lSection, lsSlop];
+      const requiredFields = [proposedLevel];
+      // const requiredFields = [proposedLevel, lSection, lsSlop];
 
       // Check if any of the always-required fields are missing
       const missingRequired = requiredFields.some(
@@ -761,7 +764,7 @@ const endSurveyPurpose = async (req, res, next) => {
   try {
     const {
       params: { id },
-      query: { finalForesight },
+      query: { finalForesight, pls },
     } = req;
 
     // 🔹 Step 1: Find the purpose
@@ -784,10 +787,11 @@ const endSurveyPurpose = async (req, res, next) => {
       );
 
     if (purpose.type === 'Initial Level') {
-      if (!finalForesight)
-        throw createHttpError(400, 'Final fore sight is required');
+      if (!finalForesight || !pls)
+        throw createHttpError(400, 'Missing required field');
 
       purpose.finalForesight = finalForesight;
+      purpose.pls = pls;
     }
 
     // 🔹 Step 4: Mark purpose as finished
@@ -1099,7 +1103,8 @@ const generateSurveyPurpose = async (req, res, next) => {
       const lastReading = readingsToCreate.at(-1);
 
       // chainage format "X/Y" → get Y safely
-      const limit = Number(lastReading?.chainage?.split('/')?.[1]) || 0;
+      const limit =
+        Number(lastReading?.chainage?.split(survey.separator || '/')?.[1]) || 0;
 
       // quantity MUST be non-zero
       const safeQuantity = Number(quantity) || 1;

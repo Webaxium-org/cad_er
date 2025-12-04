@@ -35,6 +35,7 @@ const SurveyPurposeSchema = new Schema(
       required: true,
       default: 'Actual',
     },
+    pls: String,
     createdBy: { type: Types.ObjectId, ref: 'User', required: true },
     type: {
       type: String,

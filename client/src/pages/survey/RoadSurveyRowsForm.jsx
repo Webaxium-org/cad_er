@@ -237,6 +237,7 @@ const RoadSurveyRowsForm = () => {
 
   const handleCalculateFinalForesight = (e) => {
     const inpFinalForesight = document.getElementById('finalForesight');
+    const inpPLS = document.getElementById('pls');
 
     const lastReading = purpose.rows.at(-1);
 
@@ -245,6 +246,7 @@ const RoadSurveyRowsForm = () => {
     const value = Number(lastReading.heightOfInstrument) - Number(reducedLevel);
 
     inpFinalForesight.value = e.target.checked ? value.toFixed(3) : '';
+    inpPLS.value = e.target.checked ? '0.000' : '';
   };
 
   const speedDialActions = [
@@ -310,6 +312,16 @@ const RoadSurveyRowsForm = () => {
                 name="finalForesight"
                 id="finalForesight"
               />
+
+              <Box mt={2}>
+                <BasicInput
+                  label="PLS*"
+                  placeholder="Enter pls"
+                  type="number"
+                  name="pls"
+                  id="pls"
+                />
+              </Box>
             </Box>
           ),
         };
@@ -587,7 +599,9 @@ const RoadSurveyRowsForm = () => {
             .find((r) => r.type === 'Chainage');
 
           const chainageMultiple = purpose?.surveyId?.chainageMultiple;
-          const lastDigit = Number(lastChainage.chainage.split('/')[1]);
+          const lastDigit = Number(
+            lastChainage.chainage.split(purpose?.surveyId?.separator || '/')[1]
+          );
 
           const remainder = lastDigit % chainageMultiple;
           const nextNumber =
@@ -747,9 +761,11 @@ const RoadSurveyRowsForm = () => {
   const handleEndSurveyPurpose = async () => {
     try {
       let finalForesight = null;
+      let pls = null;
 
       if (purpose.type === 'Initial Level') {
         const inpFinalForesight = document.getElementById('finalForesight');
+        const inpPLS = document.getElementById('pls');
 
         if (!inpFinalForesight?.value?.trim()) {
           inpFinalForesight.parentElement.parentElement.classList.add(
@@ -764,9 +780,19 @@ const RoadSurveyRowsForm = () => {
 
           finalForesight = inpFinalForesight.value;
         }
+
+        if (!inpPLS?.value?.trim()) {
+          inpPLS.parentElement.parentElement.classList.add('inp-err');
+
+          return;
+        } else {
+          inpPLS.parentElement.parentElement.classList.remove('inp-err');
+
+          pls = inpPLS.value;
+        }
       }
 
-      const { data } = await endSurveyPurpose(id, finalForesight);
+      const { data } = await endSurveyPurpose(id, finalForesight, pls);
 
       if (data.success) {
         dispatch(

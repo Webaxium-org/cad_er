@@ -56,9 +56,9 @@ export const getSurveyPurpose = (id) => {
   return axiosInstance.get(`surveys/${id}/purposes`);
 };
 
-export const endSurveyPurpose = (id, finalForesight) => {
+export const endSurveyPurpose = (id, finalForesight, pls) => {
   return axiosInstance.patch(
-    `surveys/${id}/purposes/end?finalForesight=${finalForesight}`
+    `surveys/${id}/purposes/end?finalForesight=${finalForesight}&pls=${pls}`
   );
 };
 

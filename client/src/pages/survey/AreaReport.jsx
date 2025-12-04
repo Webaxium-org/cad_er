@@ -103,7 +103,7 @@ const AreaReport = () => {
         const proposedRow = proposedRows?.find(
           (p) => p.chainage === row.chainage
         );
-        const chainage = row.chainage?.split('/')?.[1] ?? '';
+        const chainage = row.chainage?.split(survey?.separator || '/')?.[1] ?? '';
 
         const data = (row?.offsets ?? []).map((entry, idx) => {
           const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;

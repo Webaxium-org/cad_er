@@ -182,6 +182,13 @@ const inputDetails = [
     for: 'Initial Level',
   },
   {
+    label: 'Select separator*',
+    name: 'separator',
+    mode: 'select',
+    options: ['/', '+', ','].map((n) => ({ label: n, value: n })),
+    for: 'Initial Level',
+  },
+  {
     label: 'Length*',
     name: 'length',
     mode: 'select',
@@ -189,22 +196,22 @@ const inputDetails = [
     hidden: true,
     for: 'Proposed Level',
   },
-  {
-    label: '',
-    name: 'lSection',
-    type: 'number',
-    hidden: true,
-    for: 'Proposed Level',
-    size: 6,
-  },
-  {
-    label: '',
-    name: 'lsSlop',
-    type: 'number',
-    hidden: true,
-    for: 'Proposed Level',
-    size: 6,
-  },
+  // {
+  //   label: '',
+  //   name: 'lSection',
+  //   type: 'number',
+  //   hidden: true,
+  //   for: 'Proposed Level',
+  //   size: 6,
+  // },
+  // {
+  //   label: '',
+  //   name: 'lsSlop',
+  //   type: 'number',
+  //   hidden: true,
+  //   for: 'Proposed Level',
+  //   size: 6,
+  // },
   {
     label: 'Cross section type',
     name: 'crossSectionType',
@@ -268,6 +275,7 @@ const initialFormValues = {
   cSection: '',
   csSlop: '',
   csCamper: '',
+  separator: '',
 };
 
 const RoadSurveyForm = () => {
@@ -385,18 +393,25 @@ const RoadSurveyForm = () => {
           .typeError('Chainage multiple is required')
           .required('Chainage multiple is required')
       : Yup.string().nullable(),
-
-    lSection: type
-      ? Yup.number()
-          .typeError('Longitudinal section slop is required')
-          .required('Longitudinal section slop is required')
+    separator: !id
+      ? Yup.string()
+          .required('Separator is required')
+          .matches(/^[/+,]$/, "Only '/', '+', ',' are allowed")
       : Yup.string().nullable(),
 
-    lsSlop: type
-      ? Yup.number()
-          .typeError('Longitudinal section slop is required')
-          .required('Longitudinal section slop is required')
-      : Yup.string().nullable(),
+    lSection: Yup.string().nullable(),
+    lsSlop: Yup.string().nullable(),
+
+    // lSection: type
+    //   ? Yup.number()
+    //       .typeError('Longitudinal section slop is required')
+    //       .required('Longitudinal section slop is required')
+    //   : Yup.string().nullable(),
+    // lsSlop: type
+    //   ? Yup.number()
+    //       .typeError('Longitudinal section slop is required')
+    //       .required('Longitudinal section slop is required')
+    //   : Yup.string().nullable(),
     cSection:
       type && crossSection === 'slop'
         ? Yup.number()

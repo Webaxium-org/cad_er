@@ -21,6 +21,7 @@ const SurveySchema = new Schema(
     },
     instrumentNo: { type: String, required: true, trim: true },
     chainageMultiple: { type: Number, required: true },
+    separator: { type: String, required: true },
     reducedLevel: { type: String, required: true, trim: true },
     createdBy: { type: Types.ObjectId, ref: 'User', required: true },
     isSurveyFinish: { type: Boolean, default: false, index: true },

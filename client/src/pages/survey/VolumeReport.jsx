@@ -112,7 +112,8 @@ const VolumeReport = () => {
         const secondaryRow = secondaryRows?.find(
           (p) => p.chainage === row.chainage
         );
-        const chainage = row.chainage?.split('/')?.[1] ?? '';
+        const chainage =
+          row.chainage?.split(survey?.separator || '/')?.[1] ?? '';
 
         // --- Compute area for each offset ---
         const data = (row?.offsets ?? []).map((entry, idx) => {

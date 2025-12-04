@@ -35,6 +35,8 @@ const LongitudinalSectionReport = () => {
 
   const [chartOptions, setChartOptions] = useState(advancedChartOptions);
 
+  const [survey, setSurvey] = useState(null);
+
   const [tableData, setTableData] = useState([]);
 
   const [selectedCs, setSelectedCs] = useState(null);
@@ -61,7 +63,7 @@ const LongitudinalSectionReport = () => {
   };
 
   const getSafeChainage = (chainage) => {
-    return Number(chainage?.split('/')[1]);
+    return Number(chainage?.split(survey.separator || '/')[1]);
   };
 
   const getColor = (type) => {
@@ -77,9 +79,11 @@ const LongitudinalSectionReport = () => {
     const row = initialEntry.rows.filter((row) => row.type === 'Chainage');
     if (!row.length) return;
 
+    const pls = Number(initialEntry.pls || 0);
+
     const safeChainages = row.map((r) => getSafeChainage(r.chainage)) || [];
     const safeInitial = row.map((r) => {
-      const offsetPointIndex = r.offsets?.findIndex((o) => Number(o) === 0);
+      const offsetPointIndex = r.offsets?.findIndex((o) => Number(o) === pls);
 
       const safeOffsetPointIndex =
         offsetPointIndex === -1
@@ -108,7 +112,9 @@ const LongitudinalSectionReport = () => {
         if (!newRow.length) continue;
 
         const safeProposal = newRow.map((r) => {
-          const offsetPointIndex = r.offsets?.findIndex((o) => Number(o) === 0);
+          const offsetPointIndex = r.offsets?.findIndex(
+            (o) => Number(o) === pls
+          );
           const safeOffsetPointIndex =
             offsetPointIndex === -1
               ? Math.round(r.offsets.length / 2)
@@ -142,6 +148,8 @@ const LongitudinalSectionReport = () => {
 
       if (data.success) {
         handleSetTableData(data.survey);
+
+        setSurvey(data.survey);
       } else {
         throw Error('Failed to fetch survey');
       }

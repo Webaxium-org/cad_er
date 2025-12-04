@@ -154,7 +154,7 @@ const Report = () => {
           borderRadius: 3,
         }}
       >
-        {!id && (
+        {!id ? (
           <Box mb={2}>
             <BasicAutocomplete
               label={'Select Survey'}
@@ -168,6 +168,14 @@ const Report = () => {
               placeholder={'Select...'}
             />
           </Box>
+        ) : (
+          <Typography
+            variant="subtitle1"
+            fontWeight="bold"
+            sx={{ mb: 1, fontSize: { xs: '0.85rem', sm: '1rem' } }}
+          >
+            Project Name: <span style={{fontWeight: '500'}}>{survey?.project}</span>
+          </Typography>
         )}
 
         <Typography
