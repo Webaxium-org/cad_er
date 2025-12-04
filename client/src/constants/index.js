@@ -130,83 +130,82 @@ export const advancedChartOptions = {
   tooltip: { enabled: true },
 };
 
-export const calculateReducedLevel = (survey) => {
-  if (!survey?.purposes?.length) return survey;
+export const calculateReducedLevel = (survey, newReading, purposeId) => {
+  const purpose = survey.purposes?.find(
+    (p) => String(p._id) === String(purposeId)
+  );
 
-  // Find the Initial Level purpose
-  const initialSurvey = survey.purposes.find((p) => p.type === 'Initial Level');
+  if (!purpose) return { hi: null, rl: [] };
 
-  if (!initialSurvey || !initialSurvey.rows?.length) return survey;
+  if (purpose.status === 'Paused') {
+    purpose.rows?.pop();
+  }
 
-  let hi = 0; // Height of Instrument
-  let rl = Number(survey.reducedLevel || 0); // Starting Reduced Level
-  const updatedRows = [];
+  // STEP 1: Find last CP
+  const lastCPIndex =
+    [...purpose.rows]
+      .map((r, i) => (r.type === 'CP' ? i : -1))
+      .filter((i) => i >= 0)
+      .pop() ?? -1;
 
-  for (const row of initialSurvey.rows) {
-    const updatedRow = { ...(row.toObject?.() ?? row) }; // Safe clone (works for Mongoose docs too)
+  // STEP 2: Start slice
+  const startIndex = lastCPIndex === -1 ? 0 : lastCPIndex;
+  const rowsToProcess = [...purpose.rows.slice(startIndex + 1), newReading]; // +1 is used to remove the CP itself
 
+  let hi = null;
+  let rl = null;
+  let finalRLArray = [];
+
+  // If no CP and slice starts from 0, ensure instrument setup starts RL
+  if (startIndex === 0 && purpose.rows.length > 0) {
+    const first = purpose.rows[0];
+    if (first.type === 'Instrument setup') {
+      rl = Number(survey.reducedLevel || 0);
+      hi = rl + Number(first.backSight || 0);
+    }
+  } else {
+    rl = purpose.rows[startIndex].reducedLevels[0];
+    hi = purpose.rows[startIndex].heightOfInstrument;
+  }
+
+  // STEP 3: Loop only CP→end or whole thing if no CP
+  for (const row of rowsToProcess) {
     switch (row.type) {
-      case 'Instrument setup':
+      case 'Instrument setup': // Does not need these
+        rl = Number(survey.reducedLevel || 0);
         hi = rl + Number(row.backSight || 0);
-        updatedRow.RL = Number(rl.toFixed(3));
-        updatedRow.HI = Number(hi.toFixed(3));
+        finalRLArray = [rl.toFixed(3)];
         break;
 
       case 'Chainage':
-        updatedRow.reducedLevels = (row.intermediateSight || []).map(
-          (isVal) => {
-            const calcRL = hi - Number(isVal || 0);
-            rl = calcRL; // Update RL for next iteration
-            return Number(calcRL.toFixed(3));
-          }
-        );
-        updatedRow.RL = rl; // last RL after loop
-        updatedRow.HI = Number(hi.toFixed(3));
-        break;
-
       case 'TBM':
-        updatedRow.reducedLevels = (row.intermediateSight || []).map(
-          (isVal) => {
-            const calcRL = hi - Number(isVal || 0);
-            rl = calcRL;
-            return Number(calcRL.toFixed(3));
-          }
-        );
-        updatedRow.RL = rl;
-        updatedRow.HI = Number(hi.toFixed(3));
+        if (
+          Array.isArray(row.intermediateSight) &&
+          row.intermediateSight.length
+        ) {
+          const rls = row.intermediateSight.map((isVal) =>
+            (Number(hi) - Number(isVal || 0)).toFixed(3)
+          );
+
+          rl = Number(rls[rls.length - 1]);
+          finalRLArray = rls;
+        }
         break;
 
-      case 'CP':
-        rl = hi - Number(row.foreSight || 0);
+      case 'CP': // Does not need these
+        rl = Number(hi) - Number(row.foreSight || 0);
         hi = rl + Number(row.backSight || 0);
-        updatedRow.RL = Number(rl.toFixed(3));
-        updatedRow.HI = Number(hi.toFixed(3));
+        finalRLArray = [rl.toFixed(3)];
         break;
 
       default:
-        updatedRow.RL = Number(rl.toFixed(3));
-        updatedRow.HI = Number(hi.toFixed(3));
         break;
     }
-
-    updatedRows.push(updatedRow);
   }
 
-  // Replace the updated rows in the Initial Level purpose
-  const updatedInitialSurvey = {
-    ...initialSurvey,
-    rows: updatedRows,
-  };
-
-  // Replace the modified purpose in the survey
-  const updatedPurposes = survey.purposes.map((p) =>
-    p.type === 'Initial Level' ? updatedInitialSurvey : p
-  );
-
-  // Attach the final RL as the survey's reducedLevel
+  // STEP 4: Return values FOR NEW READING ONLY
   return {
-    ...survey,
-    purposes: updatedPurposes,
-    reducedLevel: Number(rl.toFixed(3)),
+    hi: hi ? Number(hi).toFixed(3) : null,
+    rl: finalRLArray,
   };
 };

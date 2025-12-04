@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
-import { useEffect, useRef, useState } from 'react';
+import Chart from 'react-apexcharts';
+import { Activity, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { handleFormError } from '../../utils/handleFormError';
@@ -24,9 +25,21 @@ import { AiOutlinePauseCircle } from 'react-icons/ai';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
 import BasicInput from '../../components/BasicInput';
 import { calculateReducedLevel, initialChartOptions } from '../../constants';
-import CrossSectionChart from './components/CrossSectionChart';
 import { MdDone } from 'react-icons/md';
 import BasicSpeedDial from '../../components/BasicSpeedDial';
+import BasicSelect from '../../components/BasicSelect';
+
+const colors = {
+  Initial: 'green',
+  Proposed: 'blue',
+  Final: 'red',
+};
+
+const getColor = (type) => {
+  if (type.includes('Initial')) return colors.Initial;
+  if (type.includes('Proposed')) return colors.Proposed;
+  return colors.Final;
+};
 
 const finishSurveyAlertData = {
   title: 'Confirm End of Survey',
@@ -111,6 +124,7 @@ const RoadSurveyRowsForm = () => {
   const [chartOptions, setChartOptions] = useState(initialChartOptions);
   const [selectedCs, setSelectedCs] = useState(null);
   const [alertData, setAlertData] = useState(null);
+  const [compareData, setCompareData] = useState(null);
 
   const schema = Yup.object().shape({
     type: Yup.string().required('Type is required'),
@@ -532,12 +546,6 @@ const RoadSurveyRowsForm = () => {
               (r) => r.type === 'Chainage'
             );
           }
-
-          updateSelectedCs(
-            purpose.surveyId,
-            currentReading?.chainage,
-            purpose.type
-          );
         } else {
           const nextIndex = purpose?.rows?.length ?? 0;
           currentReading = initialSurvey?.rows?.[nextIndex] || null;
@@ -609,7 +617,9 @@ const RoadSurveyRowsForm = () => {
               ? lastDigit + chainageMultiple
               : lastDigit + (chainageMultiple - remainder);
 
-          const nextChainage = `0${purpose?.surveyId?.separator || '/'}${String(nextNumber).padStart(3, '0')}`;
+          const nextChainage = `0${purpose?.surveyId?.separator || '/'}${String(
+            nextNumber
+          ).padStart(3, '0')}`;
 
           setFormValues((prev) => ({
             ...prev,
@@ -864,15 +874,31 @@ const RoadSurveyRowsForm = () => {
   const handleChangeReducedLevel = (values) => {
     if (!selectedCs?.series?.[0]?.data) return;
 
+    let reducedLevels = null;
+
+    if (purpose.phase === 'Actual') {
+      const newReading = {
+        type: rowType,
+        intermediateSight: values.map((v) => v.intermediateSight),
+      };
+      const calculatedData = calculateReducedLevel(
+        purpose.surveyId,
+        newReading,
+        purpose._id
+      );
+
+      reducedLevels = calculatedData.rl;
+    } else {
+      reducedLevels = values.map((v) => v.reducedLevel);
+    }
+
     // Create deep copies of what you mutate
     const newSeries = selectedCs.series.map((s, i) => {
-      if (i === 0) {
-        const updatedData = s.data.map(([x]) => {
-          const matched = values.find((e) => Number(e.offset) === Number(x));
-          const rl = matched ? Number(matched.reducedLevel)?.toFixed(3) : null;
-
-          return [Number(x), rl];
-        });
+      if (s.name === purpose.type) {
+        const updatedData = values?.map((v, idx) => [
+          Number(v.offset),
+          Number(reducedLevels[idx] || 0),
+        ]);
 
         return { ...s, data: updatedData };
       }
@@ -882,6 +908,7 @@ const RoadSurveyRowsForm = () => {
 
     const updated = {
       ...selectedCs,
+      offsets: values.map((v) => v.offset),
       series: newSeries,
       // change id to force Chart remount
       id: `${selectedCs.id}-r${Date.now()}`,
@@ -890,41 +917,32 @@ const RoadSurveyRowsForm = () => {
     setSelectedCs(updated);
   };
 
-  const updateSelectedCs = (survey, chainage, type) => {
-    const initialLevel = survey.purposes?.find(
-      (p) => p.type === 'Initial Level'
+  const makeSeries = (name, offsets, levels) =>
+    offsets.map((o, i) => [Number(o), Number(levels?.[i] ?? 0).toFixed(3)]);
+
+  const handleChangeCompare = (value) => {
+    const findPurpose = purpose.surveyId?.purposes?.find(
+      (p) => p.type === value
     );
 
-    const row = initialLevel.rows?.find(
-      (row) => row.type === 'Chainage' && row.chainage === chainage
+    const newRow = findPurpose?.rows?.find(
+      (r) => r.chainage === formValues.chainage
     );
-    if (!row) return;
 
-    const safeOffsets = row.offsets || [];
-    const safeInitial = row.reducedLevels || [];
+    const safeProposal =
+      newRow.reducedLevels?.slice(0, selectedCs?.offsets?.length) || [];
 
-    const makeSeries = (name, offsets, levels) =>
-      offsets.map((o, i) => [Number(o), Number(levels?.[i] ?? 0).toFixed(3)]);
-
-    const data = {
-      id: id,
-      datum: 9.4,
-      offsets: safeOffsets,
-      chainage,
-      series: [],
+    const newData = {
+      name: findPurpose.type,
+      color: getColor(findPurpose.type),
+      data: makeSeries(findPurpose.type, selectedCs?.offsets, safeProposal),
     };
 
-    data.series.push({
-      name: type,
-      data: makeSeries(type, safeOffsets, null),
+    setSelectedCs({
+      ...selectedCs,
+      series: [selectedCs.series[0], newData],
     });
-
-    data.series.push({
-      name: 'Initial Level',
-      data: makeSeries(type, safeOffsets, safeInitial),
-    });
-
-    setSelectedCs(data);
+    setCompareData(findPurpose);
   };
 
   useEffect(() => {
@@ -936,6 +954,12 @@ const RoadSurveyRowsForm = () => {
   }, [rowType, purpose]);
 
   useEffect(() => {
+    if (page === 1 && compareData) {
+      handleChangeCompare(compareData.type);
+    }
+  }, [page]);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         if (!global) dispatch(startLoading());
@@ -943,6 +967,25 @@ const RoadSurveyRowsForm = () => {
         const { data } = await getSurveyPurpose(id);
 
         const purposeDoc = data.purpose;
+
+        // for live graph
+        setSelectedCs({
+          id,
+          datum: 9.4,
+          offsets: [0, 0, 0],
+          chainage: formValues.chainage,
+          series: [
+            {
+              name: purposeDoc.type,
+              color: getColor(purposeDoc.type),
+              data: [
+                [0, 0],
+                [0, 0],
+                [0, 0],
+              ],
+            },
+          ],
+        });
 
         if (purposeDoc?.isPurposeFinish) {
           navigate('/survey');
@@ -994,13 +1037,6 @@ const RoadSurveyRowsForm = () => {
         </Box>
       )}
       <Stack alignItems={'center'} spacing={2}>
-        {selectedCs && selectedCs?.series && (
-          <CrossSectionChart
-            selectedCs={selectedCs}
-            chartOptions={chartOptions}
-          />
-        )}
-
         <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
           {page === 1
             ? `Please Enter Intermediate Sight`
@@ -1026,6 +1062,41 @@ const RoadSurveyRowsForm = () => {
             </Box>
           </Stack>
         )}
+
+        {rowType === 'Chainage' &&
+          page === 1 &&
+          selectedCs &&
+          selectedCs?.series && (
+            <Box>
+              <Activity
+                mode={purpose.type === 'Initial Level' ? 'hidden' : 'visible'}
+              >
+                <Box display={'flex'} justifyContent={'end'}>
+                  <BasicSelect
+                    label="Compare"
+                    options={purpose.surveyId?.purposes
+                      ?.filter((p) => p.type !== purpose.type)
+                      .map((p) => ({ label: p.type, value: p.type }))}
+                    value={compareData?.type || ''}
+                    onChange={(e) => handleChangeCompare(e.target.value)}
+                    sx={{
+                      width: '62px',
+                      '& .MuiOutlinedInput-root': { padding: '4px 14px' },
+                    }}
+                  />
+                </Box>
+              </Activity>
+
+              <Chart
+                key={selectedCs?.id}
+                options={chartOptions}
+                series={selectedCs?.series || []}
+                type="line"
+                height="100px"
+                width="100%"
+              />
+            </Box>
+          )}
 
         <Box width={'100%'} maxWidth={'md'}>
           <Grid container spacing={2} columns={12}>
@@ -1094,7 +1165,7 @@ const RoadSurveyRowsForm = () => {
                       >
                         {purpose.phase === 'Proposal' ? (
                           <BasicInput
-                            label={idx === 0 ? 'Reduced Level' : ''}
+                            label={idx === 0 ? 'RL*' : ''}
                             type="number"
                             name="intermediateOffsets"
                             value={row.reducedLevel || ''}
@@ -1111,7 +1182,7 @@ const RoadSurveyRowsForm = () => {
                           />
                         ) : (
                           <BasicInput
-                            label={idx === 0 ? 'IS' : ''}
+                            label={idx === 0 ? 'IS*' : ''}
                             type="number"
                             name="intermediateOffsets"
                             value={row.intermediateSight || ''}
@@ -1135,7 +1206,7 @@ const RoadSurveyRowsForm = () => {
                         )}
 
                         <BasicInput
-                          label={idx === 0 ? 'Offset' : ''}
+                          label={idx === 0 ? 'Offset*' : ''}
                           type="number"
                           name="intermediateOffsets"
                           value={row.offset}
@@ -1146,7 +1217,7 @@ const RoadSurveyRowsForm = () => {
                           }
                         />
                         <BasicInput
-                          label={idx === 0 ? 'Remark' : ''}
+                          label={idx === 0 ? 'Remark*' : ''}
                           type="text"
                           name="intermediateOffsets"
                           value={row.remark}

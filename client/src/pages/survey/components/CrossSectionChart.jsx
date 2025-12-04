@@ -91,7 +91,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
 
             <TableCell
               sx={{ border: 'none', px: '14px', bgcolor: 'transparent' }}
-              colSpan={(selectedCs?.offsets ?? selectedCs.chainages)?.length}
+              colSpan={(selectedCs?.offsets ?? selectedCs?.chainages)?.length}
             >
               <Box
                 sx={{
@@ -111,7 +111,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                   }}
                 >
                   <Chart
-                    key={selectedCs.id}
+                    key={selectedCs?.id}
                     options={chartOptions}
                     series={selectedCs?.series || []}
                     type="line"
@@ -185,7 +185,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
               {selectedCs?.offsets ? 'Offset' : 'Chainage'}
             </TableCell>
 
-            {(selectedCs?.offsets ?? selectedCs.chainages)?.map((val, i) => (
+            {(selectedCs?.offsets ?? selectedCs?.chainages)?.map((val, i) => (
               <TableCell
                 key={i}
                 align="center"
@@ -231,7 +231,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                   height="250px"
                 >
                   <Chart
-                    key={selectedCs.id}
+                    key={selectedCs?.id}
                     options={chartOptions}
                     series={selectedCs?.series || []}
                     type="line"
