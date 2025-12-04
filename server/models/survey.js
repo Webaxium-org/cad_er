@@ -7,7 +7,7 @@ const SurveySchema = new Schema(
     project: { type: String, required: true, trim: true },
     agreementNo: { type: String, required: true, trim: true },
     contractor: { type: String, required: true, trim: true },
-    department: { type: String, required: true, trim: true },
+    department: { type: String, trim: true },
     division: { type: String, trim: true },
     subDivision: { type: String, trim: true },
     section: { type: String, trim: true },

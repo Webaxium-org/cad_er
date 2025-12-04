@@ -87,8 +87,7 @@ const createSurvey = async (req, res, next) => {
       !backSight ||
       !chainageMultiple ||
       !agreementNo ||
-      !contractor ||
-      !department
+      !contractor
     ) {
       throw createHttpError(
         400,
@@ -96,7 +95,10 @@ const createSurvey = async (req, res, next) => {
       );
     }
 
-    const hasDivision =
+    const isPublicProject =
+      department !== undefined &&
+      department !== null &&
+      department !== '' &&
       division !== undefined &&
       division !== null &&
       division !== '' &&
@@ -107,7 +109,7 @@ const createSurvey = async (req, res, next) => {
       section !== null &&
       section !== '';
 
-    const hasConsultantPair =
+    const isPrivateProject =
       consultant !== undefined &&
       consultant !== null &&
       consultant !== '' &&
@@ -115,7 +117,7 @@ const createSurvey = async (req, res, next) => {
       client !== null &&
       client !== '';
 
-    if (!hasDivision && !hasConsultantPair) {
+    if (!isPublicProject && !isPrivateProject) {
       throw createHttpError(
         400,
         'Please provide either Administrative units or External parties'
@@ -133,9 +135,10 @@ const createSurvey = async (req, res, next) => {
           reducedLevel: Number(reducedLevel).toFixed(3),
           agreementNo,
           contractor,
-          department,
-          ...(hasDivision ? { division, subDivision, section } : {}),
-          ...(hasConsultantPair ? { consultant, client } : {}),
+          ...(isPublicProject
+            ? { department, division, subDivision, section }
+            : {}),
+          ...(isPrivateProject ? { consultant, client } : {}),
         },
       ],
       { session }
@@ -311,6 +314,13 @@ const createSurveyRow = async (req, res, next) => {
     if (!survey || survey.deleted)
       throw createHttpError(404, 'Survey not found or has been deleted');
 
+    const isChainageExist = await SurveyRow.findOne({
+      purposeId: id,
+      chainage: chainage?.trim(),
+    });
+
+    if (isChainageExist) throw createHttpError(409, 'Chainage already exist');
+
     const isProposal = purpose.phase === 'Proposal';
     const isSurveyPaused = purpose.status === 'Paused';
     let isLastReading = false;
@@ -335,16 +345,11 @@ const createSurveyRow = async (req, res, next) => {
         400,
         `Missing required fields: ${missing.join(', ')}`
       );
-
+console.log(remark)
     // 🔹 Remarks logic
     const remarks = [];
     if (type === 'Chainage') {
-      (offsets || []).forEach((offset) => {
-        const n = Number(offset);
-        if (n < 0) remarks.push('LHS');
-        else if (n === 0) remarks.push('PLS');
-        else remarks.push('RHS');
-      });
+      remarks.push(...remark);
     } else {
       remarks.push(`${type} - ${remark}`);
     }

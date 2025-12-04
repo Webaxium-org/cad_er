@@ -70,10 +70,6 @@ function App() {
                   <Route path=":id/area-report" element={<AreaReport />} />
                   <Route path=":id/volume-report" element={<VolumeReport />} />
                 </Route>
-
-                <Route path="purpose">
-                  <Route index element={<PurposeList />} />
-                </Route>
               </Route>
 
               {/* Error Pages */}

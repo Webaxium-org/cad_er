@@ -18,11 +18,15 @@ import {
   getSurveyPurpose,
   pauseSurveyPurpose,
 } from '../../services/surveyServices';
+import { PiLinkSimpleBreakBold } from 'react-icons/pi';
+import { IoGitBranchOutline } from 'react-icons/io5';
+import { AiOutlinePauseCircle } from 'react-icons/ai';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
 import BasicInput from '../../components/BasicInput';
 import { calculateReducedLevel, initialChartOptions } from '../../constants';
 import CrossSectionChart from './components/CrossSectionChart';
 import { MdDone } from 'react-icons/md';
+import BasicSpeedDial from '../../components/BasicSpeedDial';
 
 const finishSurveyAlertData = {
   title: 'Confirm End of Survey',
@@ -65,7 +69,7 @@ const initialFormValues = {
   chainage: '',
   roadWidth: '',
   spacing: '',
-  intermediateOffsets: [{ intermediateSight: '', offset: '' }],
+  intermediateOffsets: [{ intermediateSight: '', offset: '', remark: '' }],
   intermediateSight: '',
   foreSight: '',
   backSight: '',
@@ -177,6 +181,7 @@ const RoadSurveyRowsForm = () => {
             .nullable()
             .typeError('Offset is required')
             .required('Offset is required'),
+          remark: Yup.string().required('Remark is required'),
         })
       )
       .when('type', {
@@ -241,6 +246,31 @@ const RoadSurveyRowsForm = () => {
 
     inpFinalForesight.value = e.target.checked ? value.toFixed(3) : '';
   };
+
+  const speedDialActions = [
+    {
+      icon: <PiLinkSimpleBreakBold />,
+      name: 'Add Break',
+      onClick: () => {},
+      show: true,
+    },
+    {
+      icon: <IoGitBranchOutline />,
+      name: 'Add Branch',
+      onClick: () => {},
+      show: true,
+    },
+    {
+      icon: <AiOutlinePauseCircle />,
+      name: 'Pause Survey',
+      onClick: () => handleClickOpen('Pause Survey'),
+      show:
+        purpose &&
+        purpose?.type === 'Initial Level' &&
+        purpose?.status !== 'Paused' &&
+        page === 0,
+    },
+  ];
 
   const handleClickOpen = (action) => {
     if (
@@ -353,14 +383,18 @@ const RoadSurveyRowsForm = () => {
       ?.sort((a, b) => a - b)
       ?.forEach((entry, i) => {
         if (i >= updatedRows.length) {
+          const parsedEntry = Number(entry);
+
           updatedRows[i] = {
             offset: entry,
             intermediateSight: '',
+            remark: parsedEntry < 0 ? 'LHS' : parsedEntry === 0 ? 'PLS' : 'RHS',
           };
         } else {
           updatedRows[i].offset = entry;
           updatedRows[i].intermediateSight =
             updatedRows[i].intermediateSight || '';
+          updatedRows[i].remark = updatedRows[i].remark;
         }
       });
 
@@ -425,7 +459,7 @@ const RoadSurveyRowsForm = () => {
       ...prev,
       intermediateOffsets: [
         ...(formValues.intermediateOffsets || []),
-        { intermediateSight: '', offset: '' },
+        { intermediateSight: '', offset: '', remark: '' },
       ],
     }));
 
@@ -515,6 +549,7 @@ const RoadSurveyRowsForm = () => {
                 currentReading?.intermediateSight?.map((entry, idx) => ({
                   intermediateSight: entry,
                   offset: currentReading?.offsets[idx],
+                  remark: currentReading?.remarks[idx],
                 }));
             } else if (type === 'TBM') {
               updatedValues.intermediateSight =
@@ -596,14 +631,17 @@ const RoadSurveyRowsForm = () => {
                 {
                   reducedLevel: '',
                   offset: '',
+                  remark: '',
                 },
                 {
                   reducedLevel: '',
                   offset: '',
+                  remark: '',
                 },
                 {
                   reducedLevel: '',
                   offset: '',
+                  remark: '',
                 },
               ],
             }));
@@ -615,8 +653,9 @@ const RoadSurveyRowsForm = () => {
                 {
                   intermediateSight: '',
                   offset: '',
+                  remark: '',
                 },
-                { intermediateSight: '', offset: '' },
+                { intermediateSight: '', offset: '', remark: '' },
               ],
             }));
           }
@@ -647,6 +686,7 @@ const RoadSurveyRowsForm = () => {
               ? []
               : sortedOffsets.map((r) => r.intermediateSight),
           offsets: sortedOffsets.map((r) => r.offset),
+          remark: sortedOffsets.map((r) => r.remark),
         };
       } else {
         payload = { ...formValues, chainage: null };
@@ -667,7 +707,7 @@ const RoadSurveyRowsForm = () => {
         // );
 
         if (isLastProposalReading) {
-          navigate('/survey/purpose');
+          navigate('/survey');
           return;
         }
 
@@ -675,7 +715,9 @@ const RoadSurveyRowsForm = () => {
 
         setFormValues({
           ...initialFormValues,
-          intermediateOffsets: [{ intermediateSight: '', offset: '' }],
+          intermediateOffsets: [
+            { intermediateSight: '', offset: '', remark: '' },
+          ],
         });
 
         getNewChainage(purposeDoc);
@@ -877,7 +919,7 @@ const RoadSurveyRowsForm = () => {
         const purposeDoc = data.purpose;
 
         if (purposeDoc?.isPurposeFinish) {
-          navigate('/survey/purpose');
+          navigate('/survey');
           throw Error(`${data?.purpose?.type} already completed`);
         }
 
@@ -919,14 +961,13 @@ const RoadSurveyRowsForm = () => {
             justifyContent: 'center',
             alignItems: 'center',
             cursor: 'pointer',
-            mb: '24px',
           }}
           onClick={() => setPage(0)}
         >
           <MdArrowBackIosNew />
         </Box>
       )}
-      <Stack alignItems={'center'} spacing={5}>
+      <Stack alignItems={'center'} spacing={2}>
         {selectedCs && selectedCs?.series && (
           <CrossSectionChart
             selectedCs={selectedCs}
@@ -934,24 +975,34 @@ const RoadSurveyRowsForm = () => {
           />
         )}
 
-        <Stack spacing={2}>
-          <Box display={'flex'} flexDirection={'column'} alignItems={'center'}>
-            <Typography
-              variant="h6"
-              fontSize={18}
-              fontWeight={700}
-              align="center"
-            >
-              {page === 1
-                ? `Please Enter Intermediate Sight`
-                : `Please Enter ${rowType} and Values`}
-              :
-            </Typography>
-          </Box>
-        </Stack>
+        <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
+          {page === 1
+            ? `Please Enter Intermediate Sight`
+            : `Please Enter ${rowType} and Values`}
+          :
+        </Typography>
+
+        {page === 0 && (
+          <Stack direction={'row'} justifyContent={'end'} width={'100%'}>
+            <Box width={'40px'} zIndex={2}>
+              <BasicSpeedDial
+                actions={speedDialActions?.filter((a) => a.show)}
+                direction={'down'}
+                sx={{
+                  top: '-8px',
+                  right: 0,
+                  '& button': {
+                    width: '40px',
+                    height: '40px',
+                  },
+                }}
+              />
+            </Box>
+          </Stack>
+        )}
 
         <Box width={'100%'} maxWidth={'md'}>
-          <Grid container spacing={3} columns={12}>
+          <Grid container spacing={2} columns={12}>
             {page === 0 &&
               inputData.map(({ size, ...input }, index) => (
                 <Grid
@@ -1017,7 +1068,7 @@ const RoadSurveyRowsForm = () => {
                       >
                         {purpose.phase === 'Proposal' ? (
                           <BasicInput
-                            label="Reduced Level"
+                            label={idx === 0 ? 'Reduced Level' : ''}
                             type="number"
                             name="intermediateOffsets"
                             value={row.reducedLevel || ''}
@@ -1034,7 +1085,7 @@ const RoadSurveyRowsForm = () => {
                           />
                         ) : (
                           <BasicInput
-                            label="Intermediate Sight"
+                            label={idx === 0 ? 'IS' : ''}
                             type="number"
                             name="intermediateOffsets"
                             value={row.intermediateSight || ''}
@@ -1058,7 +1109,7 @@ const RoadSurveyRowsForm = () => {
                         )}
 
                         <BasicInput
-                          label="Offset"
+                          label={idx === 0 ? 'Offset' : ''}
                           type="number"
                           name="intermediateOffsets"
                           value={row.offset}
@@ -1066,6 +1117,17 @@ const RoadSurveyRowsForm = () => {
                           error={
                             formErrors &&
                             formErrors[`intermediateOffsets[${idx}].offset`]
+                          }
+                        />
+                        <BasicInput
+                          label={idx === 0 ? 'Remark' : ''}
+                          type="text"
+                          name="intermediateOffsets"
+                          value={row.remark}
+                          onChange={(e) => handleInputChange(e, idx, 'remark')}
+                          error={
+                            formErrors &&
+                            formErrors[`intermediateOffsets[${idx}].remark`]
                           }
                         />
                       </Stack>
@@ -1112,51 +1174,7 @@ const RoadSurveyRowsForm = () => {
           </Grid>
         </Box>
 
-        <Box px={'24px'} width={'100%'} maxWidth={'md'}>
-          <Stack direction={'row'} spacing={2}>
-            <BasicButtons
-              value={
-                <Box display={'flex'} gap={1} alignItems={'center'}>
-                  {(purpose?.phase === 'Proposal' &&
-                    isLastProposalReading &&
-                    page === 1) ||
-                  (rowType !== 'Chainage' && isLastProposalReading) ? (
-                    <>
-                      <Typography mb={0}>Finish ${purpose?.type}</Typography>
-                      <MdDone fontSize={'20px'} />
-                    </>
-                  ) : (
-                    <>
-                      <Typography mb={0}>Continue</Typography>
-                      <IoIosArrowForward fontSize={'20px'} />
-                    </>
-                  )}
-                </Box>
-              }
-              sx={{ backgroundColor: 'rgba(24, 195, 127, 1)', height: '45px' }}
-              fullWidth={true}
-              onClick={handleSubmit}
-              loading={btnLoading}
-            />
-
-            {rowType === 'CP' && purpose.type === 'Initial Level' && (
-              <BasicButtons
-                value={
-                  <Box display={'flex'} gap={1} alignItems={'center'}>
-                    Finish Survey
-                    <MdDone fontSize={'20px'} />
-                  </Box>
-                }
-                sx={{ backgroundColor: '#4caf50', height: '45px' }}
-                fullWidth={true}
-                onClick={() => handleClickOpen('Finish Survey')}
-                loading={btnLoading}
-              />
-            )}
-          </Stack>
-        </Box>
-
-        <Stack direction={'row'} justifyContent={'end'} gap={1}>
+        <Stack direction={'row'} justifyContent={'end'} width={'100%'} gap={1}>
           {purpose &&
             purpose?.status === 'Active' &&
             purpose?.type === 'Initial Level' &&
@@ -1167,11 +1185,13 @@ const RoadSurveyRowsForm = () => {
                     value={
                       <Box display={'flex'} gap={1} alignItems={'center'}>
                         <IoIosAddCircleOutline fontSize={'20px'} />
-                        Chainage
+                        <Typography fontSize={'16px'} fontWeight={600}>
+                          Chainage
+                        </Typography>
                       </Box>
                     }
                     onClick={() => handleChangeRowType('Chainage')}
-                    sx={{ backgroundColor: '#0059E7' }}
+                    sx={{ backgroundColor: '#0059E7', flex: 1 }}
                   />
                 )}
                 {rowType !== 'CP' && (
@@ -1179,11 +1199,13 @@ const RoadSurveyRowsForm = () => {
                     value={
                       <Box display={'flex'} gap={1} alignItems={'center'}>
                         <IoIosAddCircleOutline fontSize={'20px'} />
-                        CP
+                        <Typography fontSize={'16px'} fontWeight={600}>
+                          CP
+                        </Typography>
                       </Box>
                     }
                     onClick={() => handleChangeRowType('CP')}
-                    sx={{ backgroundColor: '#0059E7' }}
+                    sx={{ backgroundColor: '#0059E7', flex: 1 }}
                   />
                 )}
                 {rowType !== 'TBM' && (
@@ -1191,59 +1213,68 @@ const RoadSurveyRowsForm = () => {
                     value={
                       <Box display={'flex'} gap={1} alignItems={'center'}>
                         <IoIosAddCircleOutline fontSize={'20px'} />
-                        TBM
+                        <Typography fontSize={'16px'} fontWeight={600}>
+                          TBM
+                        </Typography>
                       </Box>
                     }
                     onClick={() => handleChangeRowType('TBM')}
-                    sx={{ backgroundColor: '#0059E7' }}
+                    sx={{ backgroundColor: '#0059E7', flex: 1 }}
                   />
                 )}
               </>
             )}
 
-          {purpose &&
-            purpose?.type === 'Initial Level' &&
-            purpose?.status !== 'Paused' &&
-            page === 0 && (
-              <BasicButtons
-                value={
-                  <Box display={'flex'} gap={1} alignItems={'center'}>
-                    <IoPauseCircleOutline fontSize={'20px'} />
-                    Survey
-                  </Box>
-                }
-                onClick={() => handleClickOpen('Pause Survey')}
-                sx={{ backgroundColor: '#e7c400ff' }}
-              />
-            )}
+          <BasicButtons
+            value={
+              <Box display={'flex'} gap={1} alignItems={'center'}>
+                {(purpose?.phase === 'Proposal' &&
+                  isLastProposalReading &&
+                  page === 1) ||
+                (rowType !== 'Chainage' && isLastProposalReading) ? (
+                  <>
+                    <Typography fontSize={'16px'} fontWeight={600}>
+                      Finish ${purpose?.type}
+                    </Typography>
+                    <MdDone fontSize={'20px'} />
+                  </>
+                ) : (
+                  <>
+                    <Typography fontSize={'16px'} fontWeight={600}>
+                      Continue
+                    </Typography>
+                    <IoIosArrowForward fontSize={'20px'} />
+                  </>
+                )}
+              </Box>
+            }
+            sx={{
+              backgroundColor: 'rgba(24, 195, 127, 1)',
+              height: '45px',
+              flex: 1,
+            }}
+            fullWidth={true}
+            onClick={handleSubmit}
+            loading={btnLoading}
+          />
         </Stack>
 
-        <Stack direction={'row'} justifyContent={'end'} gap={1}>
-          {page === 0 && (
-            <>
-              <BasicButtons
-                value={
-                  <Box display={'flex'} gap={1} alignItems={'center'}>
-                    <IoIosAddCircleOutline fontSize={'20px'} />
-                    Branch
-                  </Box>
-                }
-                onClick={() => {}}
-                sx={{ backgroundColor: '#9C27B0' }}
-              />
-              <BasicButtons
-                value={
-                  <Box display={'flex'} gap={1} alignItems={'center'}>
-                    <IoIosAddCircleOutline fontSize={'20px'} />
-                    Break
-                  </Box>
-                }
-                onClick={() => {}}
-                sx={{ backgroundColor: '#FF5722' }}
-              />
-            </>
-          )}
-        </Stack>
+        {rowType === 'CP' && purpose.type === 'Initial Level' && (
+          <BasicButtons
+            value={
+              <Box display={'flex'} gap={1} alignItems={'center'}>
+                <Typography fontSize={'16px'} fontWeight={600}>
+                  Finish Survey
+                </Typography>
+                <MdDone fontSize={'20px'} />
+              </Box>
+            }
+            sx={{ backgroundColor: '#4caf50', height: '45px', flex: 1 }}
+            fullWidth={true}
+            onClick={() => handleClickOpen('Finish Survey')}
+            loading={btnLoading}
+          />
+        )}
       </Stack>
     </Box>
   );

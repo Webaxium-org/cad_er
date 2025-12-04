@@ -30,5 +30,11 @@ const SurveyRowSchema = new Schema(
   { timestamps: true }
 );
 
+// 🚫 Prevent duplicate chainage inside the same purpose
+SurveyRowSchema.index(
+  { purposeId: 1, chainage: 1 },
+  { unique: true, sparse: true } // Only index documents where the indexed field exists and is not null.
+);
+
 export default model('SurveyRow', SurveyRowSchema);
 //Survey Reading

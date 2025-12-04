@@ -10,7 +10,8 @@ import BasicButton from '../../components/BasicButton';
 import SimpleAlert from '../../components/SimpleAlert';
 
 import { GoAlert } from 'react-icons/go';
-import totalStationIcon from '../../assets/icons/compass.json';
+import autoLevelIcon from '../../assets/icons/compass.json';
+import totalStationIcon from '../../assets/total-station.png';
 import DGPSIcon from '../../assets/icons/GPS Navigation.json';
 import DroneIcon from '../../assets/icons/Drone Camera.json';
 import BathymetryIcon from '../../assets/icons/Boat-Looking-For-Land.json';
@@ -20,7 +21,7 @@ import SmallHeader from '../../components/SmallHeader';
 const equipmentList = [
   {
     label: 'Auto Level',
-    icon: totalStationIcon,
+    icon: autoLevelIcon,
     link: '#',
     color: '#006FFD',
     size: 12,
@@ -133,7 +134,11 @@ const SelectEquipment = () => {
                 content={
                   <Stack spacing={1}>
                     <Box width={'70px'}>
-                      <Lottie animationData={equipment.icon} />
+                      {equipment.label === 'Total Station' ? (
+                        <img width={60} src={equipment.icon} alt={equipment.label} />
+                      ) : (
+                        <Lottie animationData={equipment.icon} />
+                      )}
                     </Box>
                     <Typography fontWeight={700} fontSize="14px">
                       {equipment.label}
@@ -150,7 +155,9 @@ const SelectEquipment = () => {
           <BasicButton
             value={
               <Box display={'flex'} gap={1} alignItems={'center'}>
-                Continue
+                <Typography fontSize={'16px'} fontWeight={600}>
+                  Continue
+                </Typography>
                 <IoIosArrowForward fontSize={'20px'} />
               </Box>
             }

@@ -281,10 +281,10 @@ export default function FieldBook() {
           value={<MdArrowBackIosNew fontSize={'16px'} />}
         />
 
-        <Stack direction={'row'} alignItems={'center'} spacing={2}>
+        <Stack direction={'row'} alignItems={'center'} spacing={1}>
           <BasicButtons
             variant="contained"
-            sx={{ py: 1, px: 2, fontSize: '12px' }}
+            sx={{ py: 1, px: 2, fontSize: '12px', minWidth: '82px' }}
             onClick={exportToExcel}
             value={
               <Stack direction={'row'} alignItems={'center'}>
@@ -296,14 +296,14 @@ export default function FieldBook() {
 
           <BasicButtons
             variant="contained"
-            sx={{ py: 1, px: 2, fontSize: '12px' }}
+            sx={{ py: 1, px: 2, fontSize: '12px', minWidth: '82px' }}
             onClick={() => navigate(`/survey/${purpose?.surveyId?._id}/report`)}
             value="Reports"
           />
 
           <BasicButtons
             variant="contained"
-            sx={{ py: 1, px: 2, fontSize: '12px' }}
+            sx={{ py: 1, px: 2, fontSize: '12px', minWidth: '82px' }}
             onClick={() =>
               navigate(`/survey/road-survey/${purpose?.surveyId?._id}`)
             }

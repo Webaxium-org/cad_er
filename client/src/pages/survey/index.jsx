@@ -73,11 +73,15 @@ const Index = () => {
           <BasicButtons
             value={
               <Box display={'flex'} gap={1} alignItems={'center'}>
-                Calibration
-                <SlTarget fontSize={'20px'} />
+                <Typography fontSize={'16px'} fontWeight={600}>Calibration</Typography>
+                <SlTarget
+                  strokeWidth={'50px'}
+                  fontSize={'20px'}
+                  fontWeight={900}
+                />
               </Box>
             }
-            sx={{ backgroundColor: 'rgb(0 111 253)', height: '45px' }}
+            sx={{ backgroundColor: 'rgb(0 111 253)', padding: '24px' }}
             fullWidth={true}
           />
           <Typography fontSize={13} fontWeight={400} color="#434343">
@@ -100,7 +104,7 @@ const Index = () => {
           <BasicButtons
             value={
               <Box display={'flex'} gap={1} alignItems={'center'}>
-                Continue
+                <Typography fontSize={'16px'} fontWeight={600}>Continue</Typography>
                 <IoIosArrowForward fontSize={'20px'} />
               </Box>
             }

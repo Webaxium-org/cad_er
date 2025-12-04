@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, IconButton, Stack, styled } from '@mui/material';
-import { MdOutlineSearch } from 'react-icons/md';
+import {
+  Box,
+  Typography,
+  Stack,
+  styled,
+  IconButton,
+  TextField,
+} from '@mui/material';
 import IOSegmentedTabs from '../../components/IOSegmentedTabs';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
@@ -11,12 +17,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BasicAccordion from '../../components/BasicAccordion';
 import LetterAvatar from '../../components/LetterAvatar';
 import BasicDivider from '../../components/BasicDevider';
-import { MdOutlineExpandMore } from 'react-icons/md';
+import { MdOutlineExpandMore, MdOutlineSearch } from 'react-icons/md';
+import { MdSort } from 'react-icons/md';
 import BasicCard from '../../components/BasicCard';
 import StatusChip from '../../components/StatusChip';
 import { TiEye } from 'react-icons/ti';
-import BasicPagination from '../../components/BasicPagination';
 import { ProjectListCardSkeleton } from './components/ProjectListCardSkeleton';
+import { highlightText } from '../../internals';
 
 const colors = {
   Initial: 'green',
@@ -91,7 +98,15 @@ export default function ProjectsList() {
 
   const [surveys, setSurveys] = useState([]);
 
+  const [searchMode, setSearchMode] = useState(false);
+
+  const [search, setSearch] = useState('');
+
   const handleChange = (e, newValue) => setTab(newValue);
+
+  const filteredSurveys = surveys.filter((s) =>
+    s.project.toLowerCase().includes(search.toLowerCase())
+  );
 
   const handleContinueSurvey = async (id) => {
     try {
@@ -171,9 +186,9 @@ export default function ProjectsList() {
     ),
     two: (
       <motion.div {...fadeSlide}>
-        {surveys?.length ? (
+        {filteredSurveys?.length ? (
           <Stack spacing={2}>
-            {surveys?.map((survey, idx) => (
+            {filteredSurveys?.map((survey, idx) => (
               <BasicCard
                 key={idx}
                 content={
@@ -193,7 +208,7 @@ export default function ProjectsList() {
 
                           <Box>
                             <Typography fontWeight={600} fontSize="14px">
-                              {survey.project}
+                              {highlightText(survey.project, search)}
                             </Typography>
                             <Typography
                               fontWeight={500}
@@ -276,20 +291,6 @@ export default function ProjectsList() {
                 }}
               />
             ))}
-
-            <Box
-              position={'fixed'}
-              display={'flex'}
-              justifyContent={'center'}
-              bottom={'66px'}
-              left={0}
-              width={'100%'}
-              bgcolor={'white'}
-              py={2}
-              zIndex={999}
-            >
-              <BasicPagination count={10} color={'primary'} />
-            </Box>
           </Stack>
         ) : (
           <Box textAlign="center" mt={6}>
@@ -324,17 +325,76 @@ export default function ProjectsList() {
         <Box
           sx={{
             display: 'flex',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
             alignItems: 'center',
             mb: 2,
           }}
         >
-          <Typography fontWeight={700} fontSize="20px">
-            Projects
-          </Typography>
-          {/* <IconButton>
-            <MdOutlineSearch sx={{ fontSize: 26 }} />
-          </IconButton> */}
+          {/* 🔍 Left Icon */}
+          <IconButton onClick={() => setSearchMode(true)}>
+            <MdOutlineSearch size={26} />
+          </IconButton>
+
+          {/* 🔄 Title / Search Input with Animation */}
+          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <AnimatePresence mode="wait">
+              {!searchMode ? (
+                // 🏷️ Projects Title
+                <motion.div
+                  key="title"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <Typography fontWeight={700} fontSize="20px">
+                    Projects
+                  </Typography>
+                </motion.div>
+              ) : (
+                // 🔍 Search Input
+                <motion.div
+                  key="searchInput"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.25 }}
+                  style={{ width: '100%' }}
+                >
+                  <TextField
+                    autoFocus
+                    size="small"
+                    placeholder="Search projects..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    sx={{
+                      width: '85%',
+                      background: '#F3F3F3',
+                      borderRadius: '8px',
+                      '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <IconButton
+                          onClick={() => {
+                            setSearch('');
+                            setSearchMode(false);
+                          }}
+                        >
+                          ❌
+                        </IconButton>
+                      ),
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Box>
+
+          {/* ↕ Sort Icon */}
+          <IconButton>
+            <MdSort size={26} />
+          </IconButton>
         </Box>
 
         {/* iOS Tabs display: 'flex', justifyContent: 'center', */}
@@ -352,7 +412,7 @@ export default function ProjectsList() {
       </Box>
 
       {/* Animate tab content */}
-      <Box px={2}>
+      <Box px={2} mb={'82px'}>
         {loading ? (
           <Stack spacing={2}>
             {Array.from({ length: 7 }).map((_, idx) => (

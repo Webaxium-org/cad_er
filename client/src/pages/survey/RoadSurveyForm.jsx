@@ -43,6 +43,23 @@ const inputDetails = [
     for: 'Initial Level',
   },
   {
+    label: 'Category',
+    name: 'category',
+    mode: 'checkbox',
+    hidden: false,
+    for: 'Initial Level',
+    options: [
+      {
+        name: 'publicProject',
+        label: 'Public project',
+      },
+      {
+        name: 'privateProject',
+        label: 'Private project',
+      },
+    ],
+  },
+  {
     label: 'Contractor*',
     name: 'contractor',
     type: 'text',
@@ -55,23 +72,6 @@ const inputDetails = [
     type: 'text',
     for: 'Initial Level',
     size: 6,
-  },
-  {
-    label: 'Category',
-    name: 'category',
-    mode: 'checkbox',
-    hidden: false,
-    for: 'Initial Level',
-    options: [
-      {
-        name: 'administrativeUnits',
-        label: 'Administrative units',
-      },
-      {
-        name: 'externalParties',
-        label: 'External parties',
-      },
-    ],
   },
   {
     label: 'Division*',
@@ -106,7 +106,6 @@ const inputDetails = [
     name: 'client',
     type: 'text',
     for: 'Initial Level',
-    size: 6,
     hidden: true,
   },
   {
@@ -292,7 +291,7 @@ const RoadSurveyForm = () => {
 
   const [entryType, setEntryType] = useState('manualEntry');
 
-  const [category, setCategory] = useState('administrativeUnits');
+  const [category, setCategory] = useState('publicProject');
 
   const [formValues, setFormValues] = useState(initialFormValues);
 
@@ -314,32 +313,33 @@ const RoadSurveyForm = () => {
       ? Yup.string().required('Contractor is required')
       : Yup.string().nullable(),
 
-    department: !id
-      ? Yup.string().required('Department is required')
-      : Yup.string().nullable(),
+    department:
+      !id && category === 'publicProject'
+        ? Yup.string().required('Department is required')
+        : Yup.string().nullable(),
 
     division:
-      !id && category === 'administrativeUnits'
+      !id && category === 'publicProject'
         ? Yup.string().required('Division is required')
         : Yup.string().nullable(),
 
     subDivision:
-      !id && category === 'administrativeUnits'
+      !id && category === 'publicProject'
         ? Yup.string().required('Sub division is required')
         : Yup.string().nullable(),
 
     section:
-      !id && category === 'administrativeUnits'
+      !id && category === 'publicProject'
         ? Yup.string().required('Section is required')
         : Yup.string().nullable(),
 
     consultant:
-      !id && category === 'externalParties'
+      !id && category === 'privateProject'
         ? Yup.string().required('Consultant is required')
         : Yup.string().nullable(),
 
     client:
-      !id && category === 'externalParties'
+      !id && category === 'privateProject'
         ? Yup.string().required('Client is required')
         : Yup.string().nullable(),
 
@@ -583,15 +583,16 @@ const RoadSurveyForm = () => {
         } else {
           if (e.for === 'Initial Level') {
             if (
+              e.name === 'department' ||
               e.name === 'division' ||
               e.name === 'subDivision' ||
               e.name === 'section'
             ) {
-              return { ...e, hidden: category !== 'administrativeUnits' };
+              return { ...e, hidden: category !== 'publicProject' };
             }
 
             if (e.name === 'consultant' || e.name === 'client') {
-              return { ...e, hidden: category !== 'externalParties' };
+              return { ...e, hidden: category !== 'privateProject' };
             }
           }
 
@@ -648,7 +649,6 @@ const RoadSurveyForm = () => {
           justifyContent: 'center',
           alignItems: 'center',
           cursor: 'pointer',
-          mb: '24px',
         }}
         onClick={handleGoBack}
       >
@@ -657,15 +657,21 @@ const RoadSurveyForm = () => {
 
       <Stack alignItems={'center'} spacing={2}>
         <Stack alignItems={'center'}>
-          <Typography fontSize={'26px'} fontWeight={700}>
+          <Typography
+            variant="h6"
+            fontSize={18}
+            fontWeight={700}
+            align="center"
+          >
             Create New {id ? 'Survey' : 'Project'}
           </Typography>
-          <Typography fontSize={'16px'} fontWeight={400} color="#434343">
+
+          <Typography fontSize={13} fontWeight={400} color="#434343">
             Please Enter The Following Values
           </Typography>
         </Stack>
 
-        <Stack width={'100%'} spacing={3} className="input-wrapper">
+        <Stack width={'100%'} spacing={2} className="input-wrapper">
           {id && (
             <Box display={'flex'} alignItems={'center'} justifyContent={'end'}>
               <Typography
@@ -769,7 +775,9 @@ const RoadSurveyForm = () => {
           <BasicButtons
             value={
               <Box display={'flex'} gap={1} alignItems={'center'}>
-                Continue
+                <Typography fontSize={'16px'} fontWeight={600}>
+                  Continue
+                </Typography>
                 <IoIosArrowForward fontSize={'20px'} />
               </Box>
             }
