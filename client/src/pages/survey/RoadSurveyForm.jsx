@@ -306,7 +306,7 @@ const RoadSurveyForm = () => {
     purpose: Yup.string().required('Purpose is required'),
 
     agreementNo: !id
-      ? Yup.number().required('Agreement no is required')
+      ? Yup.string().required('Agreement no is required')
       : Yup.string().nullable(),
 
     contractor: !id

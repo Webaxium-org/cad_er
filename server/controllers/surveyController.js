@@ -314,12 +314,14 @@ const createSurveyRow = async (req, res, next) => {
     if (!survey || survey.deleted)
       throw createHttpError(404, 'Survey not found or has been deleted');
 
-    const isChainageExist = await SurveyRow.findOne({
-      purposeId: id,
-      chainage: chainage?.trim(),
-    });
+    if (type === 'Chainage') {
+      const isChainageExist = await SurveyRow.findOne({
+        purposeId: id,
+        chainage: chainage?.trim(),
+      });
 
-    if (isChainageExist) throw createHttpError(409, 'Chainage already exist');
+      if (isChainageExist) throw createHttpError(409, 'Chainage already exist');
+    }
 
     const isProposal = purpose.phase === 'Proposal';
     const isSurveyPaused = purpose.status === 'Paused';
@@ -345,7 +347,7 @@ const createSurveyRow = async (req, res, next) => {
         400,
         `Missing required fields: ${missing.join(', ')}`
       );
-console.log(remark)
+
     // 🔹 Remarks logic
     const remarks = [];
     if (type === 'Chainage') {
