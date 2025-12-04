@@ -52,14 +52,14 @@ const CameraPage = () => {
     const lineHeight = baseFont * 1.6; // proper spacing
 
     const lines = [
-      'Company: Webaxium',
-      'Project: Charles',
-      'Ref.No: 120',
-      'Notes: TBM Over Culvert',
+      'Company: N/A',
+      'Project: N/A',
+      'Ref.No: N/A',
+      'Notes: N/A',
       `Date & time: ${new Date().toLocaleString('en-IN')}`,
-      'WGS84: 10.24324, 76.65456 (+4m)',
-      'Altitude: -72m',
-      'Address: Kozhippilly, Kothamangalam 686691',
+      'WGS84: N/A',
+      'Altitude: N/A',
+      'Address: N/A',
     ];
 
     const overlayHeight = padding * 2 + lines.length * lineHeight;
@@ -130,19 +130,19 @@ const CameraPage = () => {
           color: 'white',
         }}
       >
-        <Typography fontWeight={500}>Company: Webaxium</Typography>
-        <Typography fontWeight={500}>Project: Charles</Typography>
-        <Typography fontWeight={500}>Ref.No: 120</Typography>
-        <Typography fontWeight={500}>Notes: TBM Over Culvert</Typography>
+        <Typography fontWeight={500}>Company: N/A</Typography>
+        <Typography fontWeight={500}>Project: N/A</Typography>
+        <Typography fontWeight={500}>Ref.No: N/A</Typography>
+        <Typography fontWeight={500}>Notes: N/A</Typography>
         <Typography fontWeight={500}>
           Date & time: {new Date().toLocaleString('en-IN')}
         </Typography>
         <Typography fontWeight={500}>
-          WGS84: 10.24324, 76.65456 (+4m)
+          WGS84: N/A
         </Typography>
-        <Typography fontWeight={500}>Altitude: -72m</Typography>
+        <Typography fontWeight={500}>Altitude: N/A</Typography>
         <Typography fontWeight={500}>
-          Address: Kozhippilly, Kothamangalam 686691
+          Address: N/A
         </Typography>
       </Box>
 

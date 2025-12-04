@@ -525,10 +525,11 @@ const RoadSurveyForm = () => {
 
       const completedLevels = surveyDoc?.purposes?.map((p) => p.type) || [];
 
-      const lastPhase =
-        surveyDoc.purposes[surveyDoc.purposes?.length - 1]?.phase;
+      const completedPurposes = surveyDoc?.purposes
+        ?.filter((p) => p.phase === 'Proposal')
+        .map((p) => p.type);
 
-      updateInputData(completedLevels, lastPhase);
+      updateInputData(completedLevels, completedPurposes);
 
       setFormValues(updatedFormValues);
       setSurvey(surveyDoc);
@@ -539,7 +540,7 @@ const RoadSurveyForm = () => {
     }
   };
 
-  const updateInputData = (completedLevels, lastPhase) => {
+  const updateInputData = (completedLevels, completedPurposes) => {
     setInputData((prev) =>
       prev.map((e) => {
         if (id) {
@@ -550,8 +551,9 @@ const RoadSurveyForm = () => {
                 hidden: false,
                 options: type
                   ? [
-                      ...purposeLevels,
-                      ...(lastPhase === 'Proposal' ? purposeLevels : []),
+                      completedPurposes.length
+                        ? completedPurposes?.at(-1)
+                        : 'Initial Level',
                     ].map((p) => ({ label: p, value: p }))
                   : purposeLevels
                       ?.filter((p) => !completedLevels.includes(p))
@@ -625,9 +627,11 @@ const RoadSurveyForm = () => {
     if (didMount.current) {
       const completedLevels = survey?.purposes?.map((p) => p.type) || [];
 
-      const lastPhase = survey?.purposes[survey.purposes?.length - 1]?.phase;
+      const completedPurposes = survey?.purposes
+        ?.filter((p) => p.phase === 'Proposal')
+        .map((p) => p.type);
 
-      updateInputData(completedLevels, lastPhase);
+      updateInputData(completedLevels, completedPurposes);
     } else {
       didMount.current = true;
     }

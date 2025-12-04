@@ -121,8 +121,8 @@ const RoadSurveyRowsForm = () => {
         schema
           .required('Chainage is required')
           .matches(
-            /^\d+\/\d+(\.\d{1,3})?$/,
-            'Invalid chainage format. Use ####/###.###'
+            /^\d+(\/|\+|,)\d+(\.\d{1,3})?$/,
+            "Invalid chainage format. Use ####/###.### or '####+###.###' or '####,###.###'"
           ),
       otherwise: (schema) => schema.nullable(),
     }),
@@ -591,7 +591,7 @@ const RoadSurveyRowsForm = () => {
         if (!isFirstChainage) {
           setFormValues((prev) => ({
             ...prev,
-            chainage: '0/000',
+            chainage: `0${purpose?.surveyId?.separator || '/'}000`,
           }));
         } else {
           const lastChainage = purpose?.rows
@@ -609,7 +609,7 @@ const RoadSurveyRowsForm = () => {
               ? lastDigit + chainageMultiple
               : lastDigit + (chainageMultiple - remainder);
 
-          const nextChainage = `0/${String(nextNumber).padStart(3, '0')}`;
+          const nextChainage = `0${purpose?.surveyId?.separator || '/'}${String(nextNumber).padStart(3, '0')}`;
 
           setFormValues((prev) => ({
             ...prev,
