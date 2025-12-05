@@ -33,11 +33,8 @@ const SmallHeader = () => {
         alignItems={'center'}
         color="white"
       >
-        <img src={logo} alt="CADer" style={{ width: '90px' }} />
-
-        <Box>
-          <IoNotificationsOutline fontSize={'24px'} />
-        </Box>
+        <img src={logo} alt="CADer" style={{ width: '65px' }} />
+        <IoNotificationsOutline fontSize={'28px'} />
       </Box>
     </Stack>
   );

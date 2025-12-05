@@ -30,7 +30,7 @@ const BigHeader = () => {
 
       <Box display={'flex'} justifyContent={'end'} alignItems={'center'}>
         <Box>
-          <IoNotificationsOutline fontSize={'24px'} />
+          <IoNotificationsOutline fontSize={'28px'} />
         </Box>
       </Box>
 
@@ -40,7 +40,7 @@ const BigHeader = () => {
         alignItems={'center'}
         height={'100%'}
       >
-        <img src={logo} alt="CADer" style={{ width: '150px', paddingBottom: '60px' }} />
+        <img src={logo} alt="CADer" style={{ width: '150px', paddingBottom: '65px' }} />
       </Box>
     </Stack>
   );
