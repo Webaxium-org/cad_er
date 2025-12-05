@@ -101,6 +101,7 @@ const CrossSectionReport = () => {
       offsets: safeOffsets,
       chainage: row.chainage,
       series: [],
+      allRl: [],
     };
 
     const makeSeries = (name, offsets, levels) =>
@@ -122,6 +123,8 @@ const CrossSectionReport = () => {
           color: getColor(table.type),
           data: makeSeries(table.type, safeOffsets, safeProposal),
         });
+
+        data.allRl.push(...safeProposal);
       }
     }
 
@@ -131,6 +134,8 @@ const CrossSectionReport = () => {
       color: getColor(initialEntry.type),
       data: makeSeries(initialEntry.type, safeOffsets, safeInitial),
     });
+
+    data.allRl.push(...safeInitial);
 
     setSelectedCs(data);
   };
@@ -156,10 +161,11 @@ const CrossSectionReport = () => {
 
   const handleInputChange = (value) => {
     const maxVal = Number(value);
+    const highestRl = Math.max(...selectedCs?.allRl);
 
     setChartOptions((prev) => ({
       ...prev,
-      yaxis: { ...prev.yaxis, max: maxVal },
+      yaxis: { ...prev.yaxis, max: maxVal > highestRl ? maxVal : highestRl },
     }));
 
     setMaxValue(maxVal);

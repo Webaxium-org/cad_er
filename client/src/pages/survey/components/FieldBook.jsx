@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getSurveyPurpose } from '../../../services/surveyServices';
 import ExcelJS from 'exceljs';
@@ -24,142 +24,24 @@ import { MdDownload } from 'react-icons/md';
 
 import { purposeCode } from '../../../constants';
 import { IoIosAddCircleOutline } from 'react-icons/io';
+import BasicInput from '../../../components/BasicInput';
 
 export default function FieldBook() {
   const { id } = useParams();
+
   const navigate = useNavigate();
+
   const dispatch = useDispatch();
+
   const { global } = useSelector((state) => state.loading);
+
+  const [tableData, setTableData] = useState([]);
 
   const [purpose, setPurpose] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!global) dispatch(startLoading());
-        const { data } = await getSurveyPurpose(id);
-        if (data.success) {
-          setPurpose(data.purpose);
-        } else {
-          throw Error('Something went wrong');
-        }
-      } catch (error) {
-        handleFormError(error, null, dispatch, navigate);
-      } finally {
-        dispatch(stopLoading());
-      }
-    };
-    fetchData();
-  }, [id]);
+  const [loading, setLoading] = useState(false);
 
-  // 🔸 Compute table data from survey rows
-  const tableData = useMemo(() => {
-    if (!purpose) return [];
-
-    const survey = purpose.surveyId;
-
-    let hi = 0; // Height of Instrument
-    let rl = 0; // Reduced Level
-    const rows = [];
-
-    for (const row of purpose.rows) {
-      switch (row.type) {
-        case 'Instrument setup':
-          rl = Number(survey.reducedLevel || 0);
-          hi = rl + Number(row.backSight || 0);
-          rows.push({
-            CH: '-',
-            BS: row.backSight || '-',
-            IS: '-',
-            FS: '-',
-            HI: hi.toFixed(3),
-            RL: rl.toFixed(3),
-            Offset: '-',
-            Remarks: row.remarks?.[0] || '-',
-          });
-          break;
-
-        case 'Chainage':
-          row.intermediateSight?.forEach((isVal, i) => {
-            const rlValue = (hi - Number(isVal || 0)).toFixed(3);
-            rows.push({
-              CH: i === 0 ? row.chainage : '',
-              BS: '-',
-              IS: isVal || '-',
-              FS: '-',
-              HI: hi.toFixed(3),
-              RL: rlValue,
-              Offset: row.offsets?.[i] || '-',
-              Remarks: row.remarks?.[i] || '-',
-            });
-          });
-          break;
-
-        case 'TBM':
-          row.intermediateSight?.forEach((isVal, i) => {
-            const rlValue = (hi - Number(isVal || 0)).toFixed(3);
-            rows.push({
-              CH: '-',
-              BS: '-',
-              IS: isVal || '-',
-              FS: '-',
-              HI: hi.toFixed(3),
-              RL: rlValue,
-              Offset: row.offsets?.[i] || '-',
-              Remarks: row.remarks?.[i] || '-',
-            });
-          });
-          break;
-
-        case 'CP':
-          rl = Number(hi) - Number(row.foreSight);
-          hi = Number(rl) + Number(row.backSight || 0);
-          rows.push({
-            CH: '-',
-            BS: row.backSight || '-',
-            IS: '-',
-            FS: row.foreSight || '-',
-            HI: hi.toFixed(3),
-            RL: rl.toFixed(3),
-            Offset: '-',
-            Remarks: row.remarks?.[0] || '-',
-          });
-          break;
-
-        default:
-          break;
-      }
-    }
-
-    const finalForeSight = Number(purpose.finalForesight);
-
-    // const finalForeSight =
-    //   Number(rows[rows.length - 1].HI) - Number(survey.reducedLevel);
-
-    const finalRl = Number(rows[rows.length - 1].HI) - finalForeSight;
-
-    const diff = finalRl - Number(survey.reducedLevel);
-
-    rows.push({
-      CH: '',
-      BS: '',
-      IS: '',
-      FS: finalForeSight?.toFixed(3),
-      HI: '',
-      RL: Number(finalRl)?.toFixed(3),
-      Offset: '',
-      diff,
-      Remarks: `Closed on Starting TBM at ${
-        diff === 0
-          ? '±0.000'
-          : diff < 0
-          ? `${diff?.toFixed(3)}`
-          : `+${diff?.toFixed(3)}`
-      }`,
-    });
-
-    return rows;
-  }, [purpose]);
+  const [isEditing, setIsEditing] = useState(false);
 
   const exportToExcel = async () => {
     if (!purpose) return;
@@ -225,7 +107,7 @@ export default function FieldBook() {
         data.HI,
         data.RL,
         data.Offset,
-        data.Remarks,
+        data.remarks,
       ]);
 
       row.eachCell((cell, colNumber) => {
@@ -253,9 +135,175 @@ export default function FieldBook() {
     saveAs(blob, `Survey_${purpose?.type || 'Report'}.xlsx`);
   };
 
-  if (!purpose) {
-    return <Typography p={2}>Loading survey details...</Typography>;
-  }
+  const calculateTableData = () => {
+    const survey = purpose.surveyId;
+
+    let hi = 0;
+    let rl = 0;
+    const rows = [];
+    let rowIndex = 0;
+
+    for (const row of purpose.rows) {
+      switch (row.type) {
+        case 'Instrument setup':
+          rl = Number(survey.reducedLevel || 0);
+          hi = rl + Number(row.backSight || 0);
+          rows.push({
+            rowIndex,
+            rowType: row.type,
+            CH: '-',
+            BS: row.backSight || 0,
+            IS: '-',
+            FS: '-',
+            HI: hi.toFixed(3),
+            RL: rl.toFixed(3),
+            Offset: '-',
+            remarks: row.remarks?.[0] || '',
+          });
+          break;
+
+        case 'Chainage':
+          row.intermediateSight?.forEach((isVal, i) => {
+            const rlValue = (hi - Number(isVal || 0)).toFixed(3);
+            rows.push({
+              rowIndex,
+              rowType: row.type,
+              index: i,
+              CH: i === 0 ? row.chainage : '',
+              BS: '-',
+              IS: isVal || 0,
+              FS: '-',
+              HI: hi.toFixed(3),
+              RL: rlValue,
+              Offset: row.offsets?.[i] || 0,
+              remarks: row.remarks?.[i] || 0,
+            });
+          });
+          break;
+
+        case 'TBM':
+          row.intermediateSight?.forEach((isVal, i) => {
+            const rlValue = (hi - Number(isVal || 0)).toFixed(3);
+            rows.push({
+              rowIndex,
+              rowType: row.type,
+              CH: '-',
+              BS: '-',
+              IS: isVal || 0,
+              FS: '-',
+              HI: hi.toFixed(3),
+              RL: rlValue,
+              Offset: '-',
+              remarks: row.remarks?.[i] || '',
+            });
+          });
+          break;
+
+        case 'CP':
+          rl = Number(hi) - Number(row.foreSight);
+          hi = Number(rl) + Number(row.backSight || 0);
+          rows.push({
+            rowIndex,
+            rowType: row.type,
+            CH: '-',
+            BS: row.backSight || 0,
+            IS: '-',
+            FS: row.foreSight || 0,
+            HI: hi.toFixed(3),
+            RL: rl.toFixed(3),
+            Offset: '-',
+            remarks: row.remarks?.[0] || '',
+          });
+          break;
+
+        default:
+          break;
+      }
+
+      rowIndex += 1;
+    }
+
+    const finalForeSight = Number(purpose.finalForesight);
+
+    // const finalForeSight =
+    //   Number(rows[rows.length - 1].HI) - Number(survey.reducedLevel);
+
+    const finalRl = Number(rows[rows.length - 1].HI) - finalForeSight;
+
+    const diff = finalRl - Number(survey.reducedLevel);
+
+    rows.push({
+      CH: '',
+      BS: '',
+      IS: '',
+      FS: finalForeSight?.toFixed(3),
+      HI: '',
+      RL: Number(finalRl)?.toFixed(3),
+      Offset: '',
+      diff,
+      remarks: `Closed on Starting TBM at ${
+        diff === 0
+          ? '±0.000'
+          : diff < 0
+          ? `${diff?.toFixed(3)}`
+          : `+${diff?.toFixed(3)}`
+      }`,
+    });
+
+    return rows;
+  };
+
+  const handleFieldChange = (rowType, rowIndex, field, value, nestedIndex) => {
+    const updatedRows = purpose.rows?.map((row, index) => {
+      if (rowIndex === index) {
+        if (
+          field === 'intermediateSight' ||
+          field === 'offsets' ||
+          (field === 'remarks' && rowType === 'Chainage')
+        ) {
+          row[field][nestedIndex] = value;
+
+          return row;
+        } else {
+          return {
+            ...row,
+            [field]: field === 'remarks' ? [value] : value,
+          };
+        }
+      }
+
+      return row;
+    });
+
+    setPurpose((prev) => ({ ...prev, rows: updatedRows }));
+  };
+
+  useEffect(() => {
+    if (purpose) {
+      const tableRows = calculateTableData();
+
+      setTableData(tableRows);
+    }
+  }, [purpose]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (!global) dispatch(startLoading());
+        const { data } = await getSurveyPurpose(id);
+        if (data.success) {
+          setPurpose(data.purpose);
+        } else {
+          throw Error('Something went wrong');
+        }
+      } catch (error) {
+        handleFormError(error, null, dispatch, navigate);
+      } finally {
+        dispatch(stopLoading());
+      }
+    };
+    fetchData();
+  }, [id]);
 
   return (
     <Box p={2}>
@@ -317,7 +365,15 @@ export default function FieldBook() {
         </Stack>
       </Stack>
 
-      <TableContainer component={Paper}>
+      <BasicButtons
+        variant="contained"
+        sx={{ py: 1, px: 2, fontSize: '12px' }}
+        onClick={() => setIsEditing((prev) => !prev)}
+        value={isEditing ? 'Save' : 'Edit'}
+        loading={loading}
+      />
+
+      <TableContainer component={Paper} sx={{ mt: 2 }}>
         <Table sx={{ minWidth: 650 }} size="small">
           <TableHead sx={{ backgroundColor: '#f4f6f8' }}>
             <TableRow>
@@ -349,13 +405,109 @@ export default function FieldBook() {
           <TableBody>
             {tableData.map((row, index) => (
               <TableRow key={index}>
-                <TableCell>{row.CH}</TableCell>
-                <TableCell align="right">{row.BS}</TableCell>
-                <TableCell align="right">{row.IS}</TableCell>
-                <TableCell align="right">{row.FS}</TableCell>
+                <TableCell>
+                  {isEditing &&
+                  row.rowType === 'Chainage' &&
+                  row.index === 0 ? (
+                    <BasicInput
+                      type="text"
+                      value={row.CH || ''}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          row.rowType,
+                          row.rowIndex,
+                          'backSight',
+                          e.target.value
+                        )
+                      }
+                      sx={{ minWidth: '90px' }}
+                    />
+                  ) : (
+                    row.CH
+                  )}
+                </TableCell>
+                <TableCell align="right">
+                  {isEditing &&
+                  (row.rowType === 'Instrument setup' ||
+                    row.rowType === 'CP') ? (
+                    <BasicInput
+                      type="number"
+                      value={row.BS || ''}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          row.rowType,
+                          row.rowIndex,
+                          'backSight',
+                          e.target.value
+                        )
+                      }
+                      sx={{ minWidth: '90px' }}
+                    />
+                  ) : (
+                    row.BS
+                  )}
+                </TableCell>
+                <TableCell align="right">
+                  {isEditing && row.rowType === 'Chainage' ? (
+                    <BasicInput
+                      type="number"
+                      value={row.IS || ''}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          row.rowType,
+                          row.rowIndex,
+                          'intermediateSight',
+                          e.target.value,
+                          row.index
+                        )
+                      }
+                      sx={{ minWidth: '90px' }}
+                    />
+                  ) : (
+                    row.IS
+                  )}
+                </TableCell>
+                <TableCell align="right">
+                  {isEditing && (row.rowType === 'CP' || !row.rowType) ? (
+                    <BasicInput
+                      type="number"
+                      value={row.FS || ''}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          row.rowType,
+                          row.rowIndex,
+                          'foreSight',
+                          e.target.value
+                        )
+                      }
+                      sx={{ minWidth: '90px' }}
+                    />
+                  ) : (
+                    row.FS
+                  )}
+                </TableCell>
                 <TableCell align="right">{row.HI}</TableCell>
                 <TableCell align="right">{row.RL}</TableCell>
-                <TableCell align="right">{row.Offset}</TableCell>
+                <TableCell align="right">
+                  {isEditing && row.rowType === 'Chainage' ? (
+                    <BasicInput
+                      type="number"
+                      value={row.Offset || ''}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          row.rowType,
+                          row.rowIndex,
+                          'offsets',
+                          e.target.value,
+                          row.index
+                        )
+                      }
+                      sx={{ minWidth: '90px' }}
+                    />
+                  ) : (
+                    row.Offset
+                  )}
+                </TableCell>
                 <TableCell
                   align="right"
                   sx={{
@@ -367,7 +519,24 @@ export default function FieldBook() {
                         : '',
                   }}
                 >
-                  {row.Remarks}
+                  {isEditing ? (
+                    <BasicInput
+                      type="text"
+                      value={row.remarks || ''}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          row.rowType,
+                          row.rowIndex,
+                          'remarks',
+                          e.target.value,
+                          row.index
+                        )
+                      }
+                      sx={{ minWidth: '90px' }}
+                    />
+                  ) : (
+                    row.remarks
+                  )}
                 </TableCell>
               </TableRow>
             ))}
