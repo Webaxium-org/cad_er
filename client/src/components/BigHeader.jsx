@@ -1,5 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material';
 import BackgroundImage from '../assets/background-img.png';
+import logo from '../assets/logo/CADer logo-main.png';
 import { IoNotificationsOutline } from 'react-icons/io5';
 
 const BigHeader = () => {
@@ -33,10 +34,13 @@ const BigHeader = () => {
         </Box>
       </Box>
 
-      <Box display={'flex'} justifyContent={'center'} alignItems={'center'} height={'100%'}>
-        <Typography textAlign={'center'} fontWeight={900} fontSize="24px">
-          CADer
-        </Typography>
+      <Box
+        display={'flex'}
+        justifyContent={'center'}
+        alignItems={'center'}
+        height={'100%'}
+      >
+        <img src={logo} alt="CADer" style={{ width: '150px', paddingBottom: '60px' }} />
       </Box>
     </Stack>
   );

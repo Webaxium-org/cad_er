@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import { useSelector } from 'react-redux';
 
-import gradientLogo from '../assets/logo/CADer gradient.png'
+import logo from '../assets/logo/CADer logo-loader.png'
 
 const Preloader = () => {
   const { global } = useSelector((state) => state.loading);
@@ -31,7 +31,7 @@ const Preloader = () => {
         aria-busy={loading}
         aria-label="Loading"
       >
-        <img src={gradientLogo} alt="Logo" className="logo" />
+        <img src={logo} alt="Logo" className="logo" />
       </Box>
     )
   );

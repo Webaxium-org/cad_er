@@ -1,5 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material';
 import BackgroundImage from '../assets/background-img.png';
+import logo from '../assets/logo/CADer logo-main.png';
 import { IoNotificationsOutline } from 'react-icons/io5';
 
 const SmallHeader = () => {
@@ -32,9 +33,7 @@ const SmallHeader = () => {
         alignItems={'center'}
         color="white"
       >
-        <Typography textAlign={'center'} fontWeight={900} fontSize="24px">
-          CADer
-        </Typography>
+        <img src={logo} alt="CADer" style={{ width: '90px' }} />
 
         <Box>
           <IoNotificationsOutline fontSize={'24px'} />

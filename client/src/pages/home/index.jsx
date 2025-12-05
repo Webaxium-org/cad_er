@@ -18,6 +18,7 @@ import { MdGpsFixed } from 'react-icons/md';
 import { GoChecklist } from 'react-icons/go';
 
 import BackgroundImage from '../../assets/background-img.png';
+import logo from '../../assets/logo/CADer logo-main.png';
 import ImageAvatars from '../../components/ImageAvatar';
 import BasicButton from '../../components/BasicButton';
 import { IoIosAddCircleOutline } from 'react-icons/io';
@@ -92,10 +93,7 @@ const Home = () => {
           alignItems={'center'}
           color="white"
         >
-          <Typography textAlign={'center'} fontWeight={900} fontSize="24px">
-            CADer
-          </Typography>
-
+          <img src={logo} alt="CADer" style={{ width: '90px' }} />
           <Box>
             <IoNotificationsOutline fontSize={'24px'} />
           </Box>
