@@ -20,6 +20,7 @@ import CrossSectionChart from './components/CrossSectionChart';
 import { advancedChartOptions, initialChartOptions } from '../../constants';
 import { BsThreeDots } from 'react-icons/bs';
 import BasicMenu from '../../components/BasicMenu';
+import BasicInput from '../../components/BasicInput';
 
 const menuItems = [
   { label: 'V1', value: 'v1' },
@@ -46,6 +47,8 @@ const CrossSectionReport = () => {
   const [chartOptions, setChartOptions] = useState(advancedChartOptions);
 
   const [survey, setSurvey] = useState([]);
+
+  const [maxValue, setMaxValue] = useState('');
 
   const [tableData, setTableData] = useState([]);
 
@@ -151,6 +154,17 @@ const CrossSectionReport = () => {
     }
   };
 
+  const handleInputChange = (value) => {
+    const maxVal = Number(value);
+
+    setChartOptions((prev) => ({
+      ...prev,
+      yaxis: { ...prev.yaxis, max: maxVal },
+    }));
+
+    setMaxValue(maxVal);
+  };
+
   useEffect(() => {
     fetchSurvey();
   }, []);
@@ -183,6 +197,16 @@ const CrossSectionReport = () => {
           />
         </Box>
       </Stack>
+
+      <Box mb={2}>
+        <BasicInput
+          label={'Change Y-Axis Limit'}
+          placeholder="Enter"
+          value={maxValue || ''}
+          onChange={(e) => handleInputChange(e.target.value)}
+        />
+      </Box>
+
       <Box
         sx={{
           textAlign: 'center',

@@ -240,11 +240,11 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                   />
                 </Box>
 
-                <Typography variant="subtitle2" textAlign={'center'} sx={{ mt: 0.5 }}>
-                  Datum: {selectedCs?.datum}
-                </Typography>
-
                 <Box display="flex" justifyContent={'center'} gap={2} px={2}>
+                  <Typography fontSize="12px" mr={0.5}>
+                    Datum: {selectedCs?.datum}
+                  </Typography>
+
                   {selectedCs?.series?.map((s, idx) => {
                     const color =
                       colors[

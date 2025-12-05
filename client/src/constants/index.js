@@ -101,7 +101,7 @@ export const advancedChartOptions = {
   xaxis: {
     type: 'numeric',
     tickAmount: 'dataPoints',
-    labels: { show: false },
+    labels: { show: true },
     axisBorder: {
       show: true,
       color: '#222222',

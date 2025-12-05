@@ -20,6 +20,7 @@ export default function BasicSpeedDial({ actions, direction, sx = {} }) {
             key={action.name}
             icon={action.icon}
             onClick={action.onClick}
+            sx={{ fontSize: 20, fontWeight: 900 }}
             slotProps={{
               tooltip: {
                 title: action.name,
