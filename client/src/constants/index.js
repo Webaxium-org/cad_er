@@ -71,7 +71,7 @@ export const initialChartOptions = {
     axisBorder: { show: false },
   },
   legend: { show: false },
-  tooltip: { enabled: false },
+  tooltip: { enabled: true },
 };
 
 export const advancedChartOptions = {

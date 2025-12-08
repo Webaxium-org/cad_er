@@ -19,6 +19,7 @@ import {
   createSurveyPurpose,
   pauseSurveyPurpose,
   generateSurveyPurpose,
+  editSurveyPurpose,
 } from '../controllers/surveyController.js';
 import { isAuthenticated, requireAuth } from '../middleware/auth.js';
 
@@ -42,6 +43,7 @@ router.post('/:surveyId/purposes', createSurveyPurpose);
 router.patch('/:id/purposes/end', endSurveyPurpose);
 router.patch('/:id/purposes/pause', pauseSurveyPurpose);
 router.post('/:id/purposes/generate', generateSurveyPurpose);
+router.put('/:id/purposes/:purposeId/edit', editSurveyPurpose);
 
 // 🔹 Row routes (nested under a survey)
 router.post('/:id/rows', createSurveyRow);
