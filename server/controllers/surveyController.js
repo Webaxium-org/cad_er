@@ -1,10 +1,10 @@
-import Survey from "../models/survey.js";
-import SurveyPurpose from "../models/surveyPurpose.js";
-import SurveyRow from "../models/surveyRowSchema.js";
-import History from "../models/historySchema.js";
-import { isValidObjectId, calculateReducedLevel } from "../helper/index.js";
-import createHttpError from "http-errors";
-import mongoose from "mongoose";
+import Survey from '../models/survey.js';
+import SurveyPurpose from '../models/surveyPurpose.js';
+import SurveyRow from '../models/surveyRowSchema.js';
+import History from '../models/historySchema.js';
+import { isValidObjectId, calculateReducedLevel } from '../helper/index.js';
+import createHttpError from 'http-errors';
+import mongoose from 'mongoose';
 
 const checkSurveyExists = async (req, res, next) => {
   try {
@@ -12,7 +12,7 @@ const checkSurveyExists = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `${survey ? "Active survey found" : "No active survey found"}`,
+      message: `${survey ? 'Active survey found' : 'No active survey found'}`,
       survey,
     });
   } catch (err) {
@@ -27,15 +27,15 @@ const getAllSurvey = async (req, res, next) => {
     const filter = { deleted: false };
 
     // 🔹 Flexible filters
-    if (status === "active") filter.isSurveyFinish = false;
-    else if (status === "finished") filter.isSurveyFinish = true;
+    if (status === 'active') filter.isSurveyFinish = false;
+    else if (status === 'finished') filter.isSurveyFinish = true;
 
     if (project) filter.project = project;
     if (type) filter.type = type;
 
     const surveys = await Survey.find(filter)
       .sort({ createdAt: -1 })
-      .populate("purposes")
+      .populate('purposes')
       // .populate('createdBy', 'name email')
       .lean();
 
@@ -44,8 +44,8 @@ const getAllSurvey = async (req, res, next) => {
       count: surveys.length,
       message:
         surveys.length > 0
-          ? `${surveys.length} survey${surveys.length > 1 ? "s" : ""} found`
-          : "No surveys found",
+          ? `${surveys.length} survey${surveys.length > 1 ? 's' : ''} found`
+          : 'No surveys found',
       surveys,
     });
   } catch (err) {
@@ -93,36 +93,36 @@ const createSurvey = async (req, res, next) => {
     ) {
       throw createHttpError(
         400,
-        "All fields (Project, Purpose, Instrument No, Reduced Level, Back Sight, Chainage Multiple, Agreement No, Contractor, department) are required"
+        'All fields (Project, Purpose, Instrument No, Reduced Level, Back Sight, Chainage Multiple, Agreement No, Contractor, department) are required'
       );
     }
 
     const isPublicProject =
       department !== undefined &&
       department !== null &&
-      department !== "" &&
+      department !== '' &&
       division !== undefined &&
       division !== null &&
-      division !== "" &&
+      division !== '' &&
       subDivision !== undefined &&
       subDivision !== null &&
-      subDivision !== "" &&
+      subDivision !== '' &&
       section !== undefined &&
       section !== null &&
-      section !== "";
+      section !== '';
 
     const isPrivateProject =
       consultant !== undefined &&
       consultant !== null &&
-      consultant !== "" &&
+      consultant !== '' &&
       client !== undefined &&
       client !== null &&
-      client !== "";
+      client !== '';
 
     if (!isPublicProject && !isPrivateProject) {
       throw createHttpError(
         400,
-        "Please provide either Administrative units or External parties"
+        'Please provide either Administrative units or External parties'
       );
     }
 
@@ -171,9 +171,9 @@ const createSurvey = async (req, res, next) => {
           surveyId: surveyDoc._id,
           purposeId: purposeObj._id,
           createdBy: userId,
-          type: "Instrument setup",
+          type: 'Instrument setup',
           backSight: Number(backSight).toFixed(3),
-          remarks: ["TBM"],
+          remarks: ['TBM'],
           reducedLevels: [Number(reducedLevel).toFixed(3)],
           heightOfInstrument: Number(
             Number(reducedLevel) + Number(backSight)
@@ -187,9 +187,9 @@ const createSurvey = async (req, res, next) => {
     await History.create(
       [
         {
-          entityType: "Survey",
+          entityType: 'Survey',
           entityId: surveyDoc._id,
-          action: "Create",
+          action: 'Create',
           notes: `Survey created with purpose ${purpose}`,
           performedBy: userId,
         },
@@ -203,7 +203,7 @@ const createSurvey = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Survey created successfully",
+      message: 'Survey created successfully',
       survey: {
         ...surveyDoc.toObject(),
         purposeId: purposeObj._id,
@@ -230,29 +230,29 @@ const getSurvey = async (req, res, next) => {
     if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid survey ID",
+        message: 'Invalid survey ID',
       });
     }
 
     // Find active (non-deleted) survey
     const survey = await Survey.findOne({ _id: id, deleted: false })
       .populate({
-        path: "purposes",
+        path: 'purposes',
         match: { deleted: false },
-        populate: { path: "rows", match: { deleted: false } },
+        populate: { path: 'rows', match: { deleted: false } },
       })
       .lean();
 
     if (!survey) {
       return res.status(404).json({
         success: false,
-        message: "Survey not found or has been deleted",
+        message: 'Survey not found or has been deleted',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Survey retrieved successfully",
+      message: 'Survey retrieved successfully',
       survey,
     });
   } catch (err) {
@@ -286,58 +286,58 @@ const createSurveyRow = async (req, res, next) => {
     } = req;
 
     // 🔹 Validate purpose
-    if (!id) throw createHttpError(400, "Purpose ID is required");
+    if (!id) throw createHttpError(400, 'Purpose ID is required');
 
     const purpose = await SurveyPurpose.findOne({ _id: id, deleted: false })
       .populate({
-        path: "surveyId",
+        path: 'surveyId',
         match: { deleted: false },
         populate: {
-          path: "purposes",
+          path: 'purposes',
           match: { deleted: false },
           populate: {
-            path: "rows",
+            path: 'rows',
             match: { deleted: false },
           },
         },
       })
       .populate({
-        path: "rows",
+        path: 'rows',
         match: { deleted: false },
       })
       .session(session);
 
-    if (!purpose) throw createHttpError(404, "Purpose not found");
+    if (!purpose) throw createHttpError(404, 'Purpose not found');
     if (purpose.isPurposeFinish)
       throw createHttpError(409, `${purpose.type} already completed`);
 
     const survey = purpose.surveyId;
     if (survey.isSurveyFinish)
-      throw createHttpError(409, "Survey is already finished");
+      throw createHttpError(409, 'Survey is already finished');
     if (!survey || survey.deleted)
-      throw createHttpError(404, "Survey not found or has been deleted");
+      throw createHttpError(404, 'Survey not found or has been deleted');
 
-    if (type === "Chainage") {
+    if (type === 'Chainage') {
       const isChainageExist = await SurveyRow.findOne({
         purposeId: id,
         chainage: chainage?.trim(),
       });
 
-      if (isChainageExist) throw createHttpError(409, "Chainage already exist");
+      if (isChainageExist) throw createHttpError(409, 'Chainage already exist');
     }
 
-    const isProposal = purpose.phase === "Proposal";
-    const isSurveyPaused = purpose.status === "Paused";
+    const isProposal = purpose.phase === 'Proposal';
+    const isSurveyPaused = purpose.status === 'Paused';
     let isLastReading = false;
 
     // 🔹 Validate type and required fields (same as before)
     const types = {
-      Chainage: ["chainage", "roadWidth", "spacing", "offsets"],
-      CP: ["foreSight", "backSight"],
-      TBM: ["intermediateSight"],
+      Chainage: ['chainage', 'roadWidth', 'spacing', 'offsets'],
+      CP: ['foreSight', 'backSight'],
+      TBM: ['intermediateSight'],
     };
 
-    types["Chainage"].push(isProposal ? "reducedLevels" : "intermediateSight");
+    types['Chainage'].push(isProposal ? 'reducedLevels' : 'intermediateSight');
 
     if (!type || !Object.keys(types).includes(type))
       throw createHttpError(400, `Invalid or missing row type: ${type}`);
@@ -348,24 +348,24 @@ const createSurveyRow = async (req, res, next) => {
     if (missing.length)
       throw createHttpError(
         400,
-        `Missing required fields: ${missing.join(", ")}`
+        `Missing required fields: ${missing.join(', ')}`
       );
 
     // 🔹 Remarks logic
     const remarks = [];
-    if (type === "Chainage") {
+    if (type === 'Chainage') {
       remarks.push(...remark);
     } else {
       remarks.push(`${type} - ${remark}`);
     }
 
     const initialSurvey = survey.purposes?.find(
-      (p) => p.type === "Initial Level"
+      (p) => p.type === 'Initial Level'
     );
 
     if (isProposal) {
       const filteredInitialSurvey =
-        initialSurvey?.rows?.filter((entry) => entry.type === "Chainage") || [];
+        initialSurvey?.rows?.filter((entry) => entry.type === 'Chainage') || [];
 
       const totalReadings = filteredInitialSurvey.length;
       const currentIndex = filteredInitialSurvey.findIndex(
@@ -392,8 +392,8 @@ const createSurveyRow = async (req, res, next) => {
       type,
       purposeId: purpose._id,
       createdBy: userId,
-      chainage: type === "Chainage" ? chainage : undefined,
-      spacing: type === "Chainage" ? spacing : undefined,
+      chainage: type === 'Chainage' ? chainage : undefined,
+      spacing: type === 'Chainage' ? spacing : undefined,
       roadWidth: roadWidth ? Number(roadWidth).toFixed(3) : undefined,
 
       backSight: backSight ? Number(backSight).toFixed(3) : undefined,
@@ -404,7 +404,7 @@ const createSurveyRow = async (req, res, next) => {
         : [],
 
       intermediateSight:
-        type === "Chainage"
+        type === 'Chainage'
           ? (intermediateSight || []).map((n) => Number(n).toFixed(3))
           : intermediateSight || [],
 
@@ -425,10 +425,10 @@ const createSurveyRow = async (req, res, next) => {
     if (isSurveyPaused) {
       const lastRow = purpose.rows[purpose.rows?.length - 1];
 
-      if (lastRow.type !== "CP") {
+      if (lastRow.type !== 'CP') {
         throw createHttpError(
           400,
-          "Invalid state: last row must be CP when resuming a paused survey."
+          'Invalid state: last row must be CP when resuming a paused survey.'
         );
       }
 
@@ -447,11 +447,11 @@ const createSurveyRow = async (req, res, next) => {
       if (!newRow) {
         throw createHttpError(
           500,
-          "Failed to update CP row while resuming survey."
+          'Failed to update CP row while resuming survey.'
         );
       }
 
-      purpose.status = "Active";
+      purpose.status = 'Active';
       await purpose.save({ session });
     } else {
       // Create new row
@@ -460,7 +460,7 @@ const createSurveyRow = async (req, res, next) => {
     }
 
     if (isLastReading) {
-      purpose.status = "Finished";
+      purpose.status = 'Finished';
       purpose.isPurposeFinish = true;
       purpose.purposeFinishDate = new Date();
 
@@ -474,7 +474,7 @@ const createSurveyRow = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Survey row added successfully",
+      message: 'Survey row added successfully',
       row: newRow,
       purpose: {
         ...plainPurpose,
@@ -496,26 +496,26 @@ const getSurveyPurpose = async (req, res, next) => {
     if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid purpose ID",
+        message: 'Invalid purpose ID',
       });
     }
 
     // 🔹 Find the specific survey purpose with related data
     const purpose = await SurveyPurpose.findOne({ _id: id, deleted: false })
       .populate({
-        path: "surveyId",
+        path: 'surveyId',
         match: { deleted: false },
         populate: {
-          path: "purposes",
+          path: 'purposes',
           match: { deleted: false },
           populate: {
-            path: "rows",
+            path: 'rows',
             match: { deleted: false },
           },
         },
       })
       .populate({
-        path: "rows",
+        path: 'rows',
         match: { deleted: false },
       })
       .lean();
@@ -523,13 +523,13 @@ const getSurveyPurpose = async (req, res, next) => {
     if (!purpose) {
       return res.status(404).json({
         success: false,
-        message: "Survey purpose not found or has been deleted",
+        message: 'Survey purpose not found or has been deleted',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Survey purpose retrieved successfully",
+      message: 'Survey purpose retrieved successfully',
       purpose,
     });
   } catch (err) {
@@ -550,6 +550,8 @@ const createSurveyPurpose = async (req, res, next) => {
         purpose,
         proposal,
         proposedLevel,
+        reducedLevel,
+        backSight,
         lSection,
         lsSlop,
         cSection,
@@ -560,7 +562,7 @@ const createSurveyPurpose = async (req, res, next) => {
 
     // 🔹 Basic validation
     if (!purpose || !surveyId) {
-      throw createHttpError(400, "Purpose and surveyId are required");
+      throw createHttpError(400, 'Purpose and surveyId are required');
     }
 
     // 🔹 Proposal field validation (if proposal mode)
@@ -570,30 +572,40 @@ const createSurveyPurpose = async (req, res, next) => {
 
       // Check if any of the always-required fields are missing
       const missingRequired = requiredFields.some(
-        (field) => field === undefined || field === null || field === ""
+        (field) => field === undefined || field === null || field === ''
       );
 
       if (missingRequired) {
-        throw createHttpError(400, "Missing required fields for proposal");
+        throw createHttpError(400, 'Missing required fields for proposal');
       }
 
       // Conditional validation for cross-section inputs
       const hasCsPair =
         cSection !== undefined &&
         cSection !== null &&
-        cSection !== "" &&
+        cSection !== '' &&
         csSlop !== undefined &&
         csSlop !== null &&
-        csSlop !== "";
+        csSlop !== '';
 
       const hasCsCamper =
-        csCamper !== undefined && csCamper !== null && csCamper !== "";
+        csCamper !== undefined && csCamper !== null && csCamper !== '';
 
       if (!hasCsPair && !hasCsCamper) {
         throw createHttpError(
           400,
-          "Please provide either (Cross section slop) or Cross section camper"
+          'Please provide either (Cross section slop) or Cross section camper'
         );
+      }
+    } else {
+      const requiredFields = [reducedLevel, backSight];
+
+      const missingRequired = requiredFields.some(
+        (field) => field === undefined || field === null || field === ''
+      );
+
+      if (missingRequired) {
+        throw createHttpError(400, 'Missing required fields for proposal');
       }
     }
 
@@ -606,17 +618,17 @@ const createSurveyPurpose = async (req, res, next) => {
       deleted: false,
     })
       .populate({
-        path: "purposes",
+        path: 'purposes',
         match: { deleted: false },
         populate: [
-          { path: "rows", match: { deleted: false } },
-          { path: "relation", match: { deleted: false } },
+          { path: 'rows', match: { deleted: false } },
+          { path: 'relation', match: { deleted: false } },
         ],
       })
       .session(session);
 
     if (!survey) {
-      throw createHttpError(404, "Active survey not found");
+      throw createHttpError(404, 'Active survey not found');
     }
 
     let relation = null;
@@ -655,7 +667,7 @@ const createSurveyPurpose = async (req, res, next) => {
           surveyId,
           type,
           createdBy: userId,
-          phase: proposal ? "Proposal" : "Actual",
+          phase: proposal ? 'Proposal' : 'Actual',
           ...(proposal && {
             proposedLevel,
             lSection,
@@ -671,17 +683,6 @@ const createSurveyPurpose = async (req, res, next) => {
     );
 
     if (!proposal) {
-      const initialLevel = survey?.purposes?.find(
-        (p) => p.type === "Initial Level"
-      );
-
-      if (!initialLevel) throw createHttpError(404, "Initial level not found");
-
-      const tbmReading = initialLevel.rows[0];
-
-      if (!tbmReading)
-        throw createHttpError(404, "Initial level reading not found");
-
       // 🔹 Create First Reading (TBM)
       await SurveyRow.create(
         [
@@ -689,11 +690,13 @@ const createSurveyPurpose = async (req, res, next) => {
             surveyId: survey._id,
             purposeId: purposeDoc._id,
             createdBy: userId,
-            type: "Instrument setup",
-            backSight: tbmReading.backSight,
-            reducedLevels: tbmReading.reducedLevels,
-            heightOfInstrument: tbmReading.heightOfInstrument,
-            remarks: ["TBM"],
+            type: 'Instrument setup',
+            backSight: Number(backSight).toFixed(3),
+            remarks: ['TBM'],
+            reducedLevels: [Number(reducedLevel).toFixed(3)],
+            heightOfInstrument: Number(
+              Number(reducedLevel) + Number(backSight)
+            ).toFixed(3),
           },
         ],
         { session }
@@ -705,7 +708,7 @@ const createSurveyPurpose = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Survey purpose created successfully",
+      message: 'Survey purpose created successfully',
       survey: {
         ...survey.toObject(),
         purposeId: purposeDoc._id,
@@ -724,15 +727,15 @@ const getAllSurveyPurpose = async (req, res, next) => {
   try {
     const purposes = await SurveyPurpose.find({ deleted: false })
       .populate({
-        path: "surveyId",
+        path: 'surveyId',
         match: { deleted: false },
       })
       .populate({
-        path: "rows",
+        path: 'rows',
         match: { deleted: false },
       })
       .populate({
-        path: "history",
+        path: 'history',
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -740,7 +743,7 @@ const getAllSurveyPurpose = async (req, res, next) => {
     if (!purposes || purposes.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "No survey purposes found",
+        message: 'No survey purposes found',
       });
     }
 
@@ -748,7 +751,7 @@ const getAllSurveyPurpose = async (req, res, next) => {
       success: true,
       count: purposes.length,
       message: `${purposes.length} survey purpose${
-        purposes.length > 1 ? "s" : ""
+        purposes.length > 1 ? 's' : ''
       } found`,
       purposes,
     });
@@ -770,32 +773,32 @@ const endSurveyPurpose = async (req, res, next) => {
     // 🔹 Step 1: Find the purpose
     const purpose = await SurveyPurpose.findById(id).session(session);
     if (!purpose || purpose.deleted)
-      throw createHttpError(404, "Survey purpose not found");
+      throw createHttpError(404, 'Survey purpose not found');
 
     // 🔹 Step 2: Check if already finished
     if (purpose.isPurposeFinish)
-      throw createHttpError(400, "Purpose is already finished");
+      throw createHttpError(400, 'Purpose is already finished');
 
     // 🔹 Step 3: Ensure its parent survey exists and is active
     const survey = await Survey.findById(purpose.surveyId).session(session);
     if (!survey || survey.deleted)
-      throw createHttpError(404, "Parent survey not found");
+      throw createHttpError(404, 'Parent survey not found');
     if (survey.isSurveyFinish)
       throw createHttpError(
         400,
-        "Cannot finish purpose — survey already finished"
+        'Cannot finish purpose — survey already finished'
       );
 
-    if (purpose.type === "Initial Level") {
+    if (purpose.type === 'Initial Level') {
       if (!finalForesight || !pls)
-        throw createHttpError(400, "Missing required field");
+        throw createHttpError(400, 'Missing required field');
 
       purpose.finalForesight = finalForesight;
       purpose.pls = pls;
     }
 
     // 🔹 Step 4: Mark purpose as finished
-    purpose.status = "Finished";
+    purpose.status = 'Finished';
     purpose.isPurposeFinish = true;
     purpose.purposeFinishDate = new Date();
 
@@ -805,7 +808,7 @@ const endSurveyPurpose = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Purpose ended successfully",
+      message: 'Purpose ended successfully',
       purpose,
     });
   } catch (err) {
@@ -825,9 +828,9 @@ const endSurvey = async (req, res, next) => {
 
     const survey = await Survey.findById(id).session(session);
     if (!survey || survey.deleted)
-      throw createHttpError(404, "Survey not found");
+      throw createHttpError(404, 'Survey not found');
     if (survey.isSurveyFinish)
-      throw createHttpError(400, "Survey already finished");
+      throw createHttpError(400, 'Survey already finished');
 
     const pendingPurpose = await SurveyPurpose.findOne({
       surveyId: survey._id,
@@ -850,7 +853,7 @@ const endSurvey = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Survey ended successfully",
+      message: 'Survey ended successfully',
     });
   } catch (err) {
     await session.abortTransaction();
@@ -885,42 +888,42 @@ const pauseSurveyPurpose = async (req, res, next) => {
     } = req;
 
     if (!foreSight?.trim() || !remark?.trim()) {
-      throw createHttpError(400, "Missing required fields");
+      throw createHttpError(400, 'Missing required fields');
     }
 
     // 1) Validate survey
     const survey = await SurveyPurpose.findById(id).session(session);
     if (!survey || survey.deleted) {
-      throw createHttpError(404, "Survey not found.");
+      throw createHttpError(404, 'Survey not found.');
     }
 
     if (survey.isPurposeFinish) {
       throw createHttpError(
         400,
-        "This survey has already been finished. Cannot pause."
+        'This survey has already been finished. Cannot pause.'
       );
     }
 
-    if (survey.status === "Paused") {
-      throw createHttpError(400, "This survey is already paused.");
+    if (survey.status === 'Paused') {
+      throw createHttpError(400, 'This survey is already paused.');
     }
 
-    if (survey.type !== "Initial Level") {
+    if (survey.type !== 'Initial Level') {
       throw createHttpError(
         400,
-        "This operation is allowed only for Initial Level surveys."
+        'This operation is allowed only for Initial Level surveys.'
       );
     }
 
     // 2) Update survey status
-    survey.status = "Paused";
+    survey.status = 'Paused';
     await survey.save({ session });
 
     // 3) Create CP row
     await SurveyRow.create(
       [
         {
-          type: "CP",
+          type: 'CP',
           foreSight,
           remarks: [remark],
           createdBy: userId,
@@ -935,7 +938,7 @@ const pauseSurveyPurpose = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Survey purpose has been paused successfully.",
+      message: 'Survey purpose has been paused successfully.',
     });
   } catch (err) {
     await session.abortTransaction();
@@ -967,32 +970,32 @@ const generateSurveyPurpose = async (req, res, next) => {
 
     // 🔹 Basic validation
     if (!purpose || !id) {
-      throw createHttpError(400, "Purpose and surveyId are required.");
+      throw createHttpError(400, 'Purpose and surveyId are required.');
     }
 
     // Required fields used for proposal generation
     const requiredFields = [quantity, lSection, lsSlop, length];
     const missingRequired = requiredFields.some(
-      (x) => x === undefined || x === null || x === ""
+      (x) => x === undefined || x === null || x === ''
     );
 
     if (missingRequired) {
       throw createHttpError(
         400,
-        "Missing required fields for proposal generation."
+        'Missing required fields for proposal generation.'
       );
     }
 
     // Conditional validation for cross-section inputs
-    const hasCsPair = cSection && csSlop && cSection !== "" && csSlop !== "";
+    const hasCsPair = cSection && csSlop && cSection !== '' && csSlop !== '';
 
     const hasCsCamper =
-      csCamper !== undefined && csCamper !== null && csCamper !== "";
+      csCamper !== undefined && csCamper !== null && csCamper !== '';
 
     if (!hasCsPair && !hasCsCamper) {
       throw createHttpError(
         400,
-        "Please enter either both cross-section slope fields or a cross-section camber."
+        'Please enter either both cross-section slope fields or a cross-section camber.'
       );
     }
 
@@ -1003,17 +1006,17 @@ const generateSurveyPurpose = async (req, res, next) => {
       deleted: false,
     })
       .populate({
-        path: "purposes",
+        path: 'purposes',
         match: { deleted: false },
         populate: [
-          { path: "rows", match: { deleted: false } },
-          { path: "relation", match: { deleted: false } },
+          { path: 'rows', match: { deleted: false } },
+          { path: 'relation', match: { deleted: false } },
         ],
       })
       .session(session);
 
     if (!survey) {
-      throw createHttpError(404, "Active survey not found.");
+      throw createHttpError(404, 'Active survey not found.');
     }
 
     // 🔹 Does this proposal already exist?
@@ -1049,7 +1052,7 @@ const generateSurveyPurpose = async (req, res, next) => {
 
     // 🔹 Filter chainage rows from base purpose
     const readingsToCreate = basePurpose.rows?.filter(
-      (r) => r.type === "Chainage"
+      (r) => r.type === 'Chainage'
     );
 
     if (!readingsToCreate?.length) {
@@ -1065,7 +1068,7 @@ const generateSurveyPurpose = async (req, res, next) => {
         {
           surveyId: id,
           type: proposal,
-          phase: "Proposal",
+          phase: 'Proposal',
           createdBy: userId,
           quantity,
           lSection,
@@ -1074,7 +1077,7 @@ const generateSurveyPurpose = async (req, res, next) => {
           csSlop,
           csCamper,
           relation,
-          status: "Finished",
+          status: 'Finished',
           isPurposeFinish: true,
           purposeFinishDate: new Date(),
         },
@@ -1104,7 +1107,7 @@ const generateSurveyPurpose = async (req, res, next) => {
 
       // chainage format "X/Y" → get Y safely
       const limit =
-        Number(lastReading?.chainage?.split(survey.separator || "/")?.[1]) || 0;
+        Number(lastReading?.chainage?.split(survey.separator || '/')?.[1]) || 0;
 
       // quantity MUST be non-zero
       const safeQuantity = Number(quantity) || 1;
@@ -1122,7 +1125,7 @@ const generateSurveyPurpose = async (req, res, next) => {
             surveyId: id,
             createdBy: userId,
             purposeId: purposeDoc._id,
-            type: "Chainage",
+            type: 'Chainage',
             chainage: reading.chainage,
             spacing: reading.spacing,
             roadWidth: reading.roadWidth,
@@ -1184,21 +1187,21 @@ const editSurveyPurpose = async (req, res, next) => {
       const row = rows[i];
 
       switch (row.type) {
-        case "Instrument setup":
+        case 'Instrument setup':
           rl = startRL;
           hi = rl + Number(row.backSight);
           row.reducedLevels = [rl.toFixed(3)];
           row.heightOfInstrument = hi.toFixed(3);
           break;
 
-        case "Chainage":
-        case "TBM":
+        case 'Chainage':
+        case 'TBM':
           row.reducedLevels = row.intermediateSight.map((is) =>
             (hi - Number(is)).toFixed(3)
           );
           break;
 
-        case "CP":
+        case 'CP':
           rl = hi - Number(row.foreSight);
           hi = rl + Number(row.backSight);
           row.reducedLevels = [rl.toFixed(3)];
@@ -1230,7 +1233,7 @@ const editSurveyPurpose = async (req, res, next) => {
     return res.json({
       success: true,
       updated: ops.length,
-      message: "Rows recalculated and updated",
+      message: 'Rows recalculated and updated',
     });
   } catch (err) {
     next(err);

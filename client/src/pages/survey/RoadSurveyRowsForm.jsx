@@ -1,59 +1,59 @@
-import * as Yup from "yup";
-import Chart from "react-apexcharts";
-import { Activity, useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
-import { handleFormError } from "../../utils/handleFormError";
-import { startLoading, stopLoading } from "../../redux/loadingSlice";
-import { Box, Stack, Typography, Grid, InputAdornment } from "@mui/material";
-import BasicButtons from "../../components/BasicButton";
-import { IoAdd, IoPauseCircleOutline } from "react-icons/io5";
-import { IoIosAddCircleOutline, IoIosArrowForward } from "react-icons/io";
-import { IoIosRemove } from "react-icons/io";
-import BasicCheckbox from "../../components/BasicCheckbox";
-import { showAlert } from "../../redux/alertSlice";
-import { MdArrowBackIosNew } from "react-icons/md";
+import * as Yup from 'yup';
+import Chart from 'react-apexcharts';
+import { Activity, useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
+import { handleFormError } from '../../utils/handleFormError';
+import { startLoading, stopLoading } from '../../redux/loadingSlice';
+import { Box, Stack, Typography, Grid, InputAdornment } from '@mui/material';
+import BasicButtons from '../../components/BasicButton';
+import { IoAdd, IoPauseCircleOutline } from 'react-icons/io5';
+import { IoIosAddCircleOutline, IoIosArrowForward } from 'react-icons/io';
+import { IoIosRemove } from 'react-icons/io';
+import BasicCheckbox from '../../components/BasicCheckbox';
+import { showAlert } from '../../redux/alertSlice';
+import { MdArrowBackIosNew } from 'react-icons/md';
 import {
   createSurveyRow,
   endSurveyPurpose,
   getSurveyPurpose,
   pauseSurveyPurpose,
-} from "../../services/surveyServices";
-import { PiLinkSimpleBreakBold } from "react-icons/pi";
-import { IoGitBranchOutline } from "react-icons/io5";
-import { AiOutlinePauseCircle } from "react-icons/ai";
-import AlertDialogSlide from "../../components/AlertDialogSlide";
-import BasicInput from "../../components/BasicInput";
-import { calculateReducedLevel, initialChartOptions } from "../../constants";
-import { MdDone } from "react-icons/md";
-import BasicSpeedDial from "../../components/BasicSpeedDial";
-import BasicSelect from "../../components/BasicSelect";
+} from '../../services/surveyServices';
+import { PiLinkSimpleBreakBold } from 'react-icons/pi';
+import { IoGitBranchOutline } from 'react-icons/io5';
+import { AiOutlinePauseCircle } from 'react-icons/ai';
+import AlertDialogSlide from '../../components/AlertDialogSlide';
+import BasicInput from '../../components/BasicInput';
+import { calculateReducedLevel, initialChartOptions } from '../../constants';
+import { MdDone } from 'react-icons/md';
+import BasicSpeedDial from '../../components/BasicSpeedDial';
+import BasicSelect from '../../components/BasicSelect';
 
 const colors = {
-  Initial: "green",
-  Proposed: "blue",
-  Final: "red",
+  Initial: 'green',
+  Proposed: 'blue',
+  Final: 'red',
 };
 
 const getColor = (type) => {
-  if (type.includes("Initial")) return colors.Initial;
-  if (type.includes("Proposed")) return colors.Proposed;
+  if (type.includes('Initial')) return colors.Initial;
+  if (type.includes('Proposed')) return colors.Proposed;
   return colors.Final;
 };
 
 const finishSurveyAlertData = {
-  title: "Confirm End of Survey",
+  title: 'Confirm End of Survey',
   description:
-    "Ending this survey will lock all existing data and prevent any new rows from being added. Do you want to continue?",
-  content: "",
-  cancelButtonText: "Cancel",
-  submitButtonText: "Submit",
+    'Ending this survey will lock all existing data and prevent any new rows from being added. Do you want to continue?',
+  content: '',
+  cancelButtonText: 'Cancel',
+  submitButtonText: 'Submit',
 };
 
 const pauseSurveyAlertData = {
-  title: "Pause Survey?",
+  title: 'Pause Survey?',
   description:
-    "Pausing this survey will save your current progress. You can resume later",
+    'Pausing this survey will save your current progress. You can resume later',
   content: (
     <Stack spacing={2} mt={2}>
       <BasicInput
@@ -73,35 +73,35 @@ const pauseSurveyAlertData = {
       />
     </Stack>
   ),
-  cancelButtonText: "Cancel",
-  submitButtonText: "Pause",
+  cancelButtonText: 'Cancel',
+  submitButtonText: 'Pause',
 };
 
 const initialFormValues = {
-  type: "Chainage",
-  chainage: "",
-  roadWidth: "",
-  spacing: "",
-  intermediateOffsets: [{ intermediateSight: "", offset: "", remark: "" }],
-  intermediateSight: "",
-  foreSight: "",
-  backSight: "",
-  remark: "",
+  type: 'Chainage',
+  chainage: '',
+  roadWidth: '',
+  spacing: '',
+  intermediateOffsets: [{ intermediateSight: '', offset: '', remark: '' }],
+  intermediateSight: '',
+  foreSight: '',
+  backSight: '',
+  remark: '',
 };
 
 const values = {
-  Chainage: ["chainage", "roadWidth", "spacing", "intermediateOffsets"],
-  CP: ["foreSight", "backSight", "remark"],
-  TBM: ["intermediateSight", "remark"],
+  Chainage: ['chainage', 'roadWidth', 'spacing', 'intermediateOffsets'],
+  CP: ['foreSight', 'backSight', 'remark'],
+  TBM: ['intermediateSight', 'remark'],
 };
 
 const inputDetails = [
-  { label: "Chainage*", name: "chainage", placeholder: "0/000", type: "text" },
-  { label: "Road width*", name: "roadWidth", type: "number", size: 6 },
-  { label: "Spacing*", name: "spacing", type: "number", size: 6 },
-  { label: "Fore sight*", name: "foreSight", type: "number", size: 6 },
-  { label: "Back sight*", name: "backSight", type: "number", size: 6 },
-  { label: "Remark*", name: "remark", type: "text" },
+  { label: 'Chainage*', name: 'chainage', placeholder: '0/000', type: 'text' },
+  { label: 'Road width*', name: 'roadWidth', type: 'number', size: 6 },
+  { label: 'Spacing*', name: 'spacing', type: 'number', size: 6 },
+  { label: 'Fore sight*', name: 'foreSight', type: 'number', size: 6 },
+  { label: 'Back sight*', name: 'backSight', type: 'number', size: 6 },
+  { label: 'Remark*', name: 'remark', type: 'text' },
 ];
 
 const RoadSurveyRowsForm = () => {
@@ -116,7 +116,7 @@ const RoadSurveyRowsForm = () => {
   const [formErrors, setFormErrors] = useState({});
   const [formWarnings, setFormWarnings] = useState({});
   const [inputData, setInputData] = useState([]);
-  const [rowType, setRowType] = useState("Chainage");
+  const [rowType, setRowType] = useState('Chainage');
   const [page, setPage] = useState(0);
   const [btnLoading, setBtnLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -127,13 +127,13 @@ const RoadSurveyRowsForm = () => {
   const [compareData, setCompareData] = useState(null);
 
   const schema = Yup.object().shape({
-    type: Yup.string().required("Type is required"),
+    type: Yup.string().required('Type is required'),
 
-    chainage: Yup.string().when("type", {
-      is: "Chainage",
+    chainage: Yup.string().when('type', {
+      is: 'Chainage',
       then: (schema) =>
         schema
-          .required("Chainage is required")
+          .required('Chainage is required')
           .matches(
             /^\d+(\/|\+|,)\d+(\.\d{1,3})?$/,
             "Invalid chainage format. Use ####/###.### or '####+###.###' or '####,###.###'"
@@ -143,27 +143,27 @@ const RoadSurveyRowsForm = () => {
 
     roadWidth: Yup.number()
       .transform((value, originalValue) =>
-        originalValue === "" ? null : value
+        originalValue === '' ? null : value
       )
-      .when("type", {
-        is: "Chainage",
+      .when('type', {
+        is: 'Chainage',
         then: (schema) =>
           schema
-            .typeError("Road width is required")
-            .required("Road width is required"),
+            .typeError('Road width is required')
+            .required('Road width is required'),
         otherwise: (schema) => schema.nullable(),
       }),
 
     spacing: Yup.number()
       .transform((value, originalValue) =>
-        originalValue === "" ? null : value
+        originalValue === '' ? null : value
       )
-      .when("type", {
-        is: "Chainage",
+      .when('type', {
+        is: 'Chainage',
         then: (schema) =>
           schema
-            .typeError("Spacing is required")
-            .required("Spacing is required"),
+            .typeError('Spacing is required')
+            .required('Spacing is required'),
         otherwise: (schema) => schema.nullable(),
       }),
 
@@ -171,87 +171,87 @@ const RoadSurveyRowsForm = () => {
       .of(
         Yup.object().shape({
           reducedLevel:
-            purpose?.phase !== "Proposal"
+            purpose?.phase !== 'Proposal'
               ? Yup.number()
-                  .transform((v, o) => (o === "" ? null : v))
+                  .transform((v, o) => (o === '' ? null : v))
                   .nullable()
               : Yup.number()
-                  .transform((v, o) => (o === "" ? null : v))
+                  .transform((v, o) => (o === '' ? null : v))
                   .nullable()
-                  .typeError("Reduced level is required")
-                  .required("Reduced level is required"),
+                  .typeError('Reduced level is required')
+                  .required('Reduced level is required'),
           intermediateSight:
-            purpose?.phase === "Proposal"
+            purpose?.phase === 'Proposal'
               ? Yup.number()
-                  .transform((v, o) => (o === "" ? null : v))
+                  .transform((v, o) => (o === '' ? null : v))
                   .nullable()
               : Yup.number()
-                  .transform((v, o) => (o === "" ? null : v))
+                  .transform((v, o) => (o === '' ? null : v))
                   .nullable()
-                  .typeError("Intermediate sight is required")
-                  .required("Intermediate sight is required"),
+                  .typeError('Intermediate sight is required')
+                  .required('Intermediate sight is required'),
           offset: Yup.number()
-            .transform((v, o) => (o === "" ? null : v))
+            .transform((v, o) => (o === '' ? null : v))
             .nullable()
-            .typeError("Offset is required")
-            .required("Offset is required"),
-          remark: Yup.string().required("Remark is required"),
+            .typeError('Offset is required')
+            .required('Offset is required'),
+          remark: Yup.string().required('Remark is required'),
         })
       )
-      .when("type", {
-        is: "Chainage",
+      .when('type', {
+        is: 'Chainage',
         then: (schema) =>
           schema
-            .min(1, "At least one row is required")
-            .required("Offsets are required"),
+            .min(1, 'At least one row is required')
+            .required('Offsets are required'),
         otherwise: (schema) => schema.transform(() => null).nullable(),
       }),
 
     foreSight: Yup.number()
-      .transform((v, o) => (o === "" ? null : v))
-      .when("type", {
-        is: "CP",
+      .transform((v, o) => (o === '' ? null : v))
+      .when('type', {
+        is: 'CP',
         then: (schema) =>
           schema
-            .typeError("Fore sight is required")
-            .required("Fore sight is required"),
+            .typeError('Fore sight is required')
+            .required('Fore sight is required'),
         otherwise: (schema) => schema.nullable(),
       }),
 
     intermediateSight: Yup.number()
-      .transform((v, o) => (o === "" ? null : v))
-      .when("type", {
-        is: "TBM",
+      .transform((v, o) => (o === '' ? null : v))
+      .when('type', {
+        is: 'TBM',
         then: (schema) =>
           schema
-            .typeError("Intermediate sight is required")
-            .required("Intermediate sight is required"),
+            .typeError('Intermediate sight is required')
+            .required('Intermediate sight is required'),
         otherwise: (schema) => schema.nullable(),
       }),
 
     backSight: Yup.number()
-      .transform((v, o) => (o === "" ? null : v))
-      .when("type", {
-        is: "CP",
+      .transform((v, o) => (o === '' ? null : v))
+      .when('type', {
+        is: 'CP',
         then: (schema) =>
           schema
-            .typeError("Back sight is required")
-            .required("Back sight is required"),
+            .typeError('Back sight is required')
+            .required('Back sight is required'),
         otherwise: (schema) => schema.nullable(),
       }),
 
     remark: Yup.string()
       .trim()
-      .when("type", {
-        is: (val) => ["CP", "TBM"].includes(val),
-        then: (schema) => schema.required("Remark is required"),
+      .when('type', {
+        is: (val) => ['CP', 'TBM'].includes(val),
+        then: (schema) => schema.required('Remark is required'),
         otherwise: (schema) => schema.nullable(),
       }),
   });
 
   const handleCalculateFinalForesight = (e) => {
-    const inpFinalForesight = document.getElementById("finalForesight");
-    const inpPLS = document.getElementById("pls");
+    const inpFinalForesight = document.getElementById('finalForesight');
+    const inpPLS = document.getElementById('pls');
 
     const lastReading = purpose.rows.at(-1);
 
@@ -259,43 +259,43 @@ const RoadSurveyRowsForm = () => {
 
     const value = Number(lastReading.heightOfInstrument) - Number(reducedLevel);
 
-    inpFinalForesight.value = e.target.checked ? value.toFixed(3) : "";
-    inpPLS.value = e.target.checked ? "0.000" : "";
+    inpFinalForesight.value = e.target.checked ? value.toFixed(3) : '';
+    inpPLS.value = e.target.checked ? '0.000' : '';
   };
 
   const speedDialActions = [
     {
       icon: <PiLinkSimpleBreakBold />,
-      name: "Add Break",
+      name: 'Add Break',
       onClick: () => {},
       show: true,
     },
     {
       icon: <IoGitBranchOutline />,
-      name: "Add Branch",
+      name: 'Add Branch',
       onClick: () => {},
       show: true,
     },
     {
       icon: <AiOutlinePauseCircle />,
-      name: "Pause Survey",
-      onClick: () => handleClickOpen("Pause Survey"),
+      name: 'Pause Survey',
+      onClick: () => handleClickOpen('Pause Survey'),
       show:
         purpose &&
-        purpose?.type === "Initial Level" &&
-        purpose?.status !== "Paused" &&
+        purpose?.type === 'Initial Level' &&
+        purpose?.status !== 'Paused' &&
         page === 0,
     },
   ];
 
   const handleClickOpen = (action) => {
     if (
-      action === "Finish Survey" &&
+      action === 'Finish Survey' &&
       (formValues.foreSight.trim() || formValues.backSight.trim())
     ) {
       dispatch(
         showAlert({
-          type: "error",
+          type: 'error',
           message:
             'If you are trying to add a Change Point (CP), please click "Continue" first, then finish the survey. Otherwise, clear the input fields before proceeding.',
         })
@@ -305,14 +305,14 @@ const RoadSurveyRowsForm = () => {
     } else {
       let updatedAlertData = null;
 
-      if (action === "Finish Survey" && purpose?.type === "Initial Level") {
+      if (action === 'Finish Survey' && purpose?.type === 'Initial Level') {
         updatedAlertData = {
           ...finishSurveyAlertData,
           onSubmit: handleEndSurveyPurpose,
           content: (
             <Box mt={2}>
-              <Stack direction={"row"} alignItems={"center"}>
-                <Typography fontSize={"16px"} fontWeight={600} color="black">
+              <Stack direction={'row'} alignItems={'center'}>
+                <Typography fontSize={'16px'} fontWeight={600} color="black">
                   Auto calculate
                 </Typography>
                 <BasicCheckbox
@@ -360,11 +360,11 @@ const RoadSurveyRowsForm = () => {
       values[rowType]?.includes(d.name)
     );
 
-    if (rowType === "TBM") {
+    if (rowType === 'TBM') {
       filteredInputData.unshift({
-        label: "Intermediate sight*",
-        name: "intermediateSight",
-        type: "number",
+        label: 'Intermediate sight*',
+        name: 'intermediateSight',
+        type: 'number',
       });
     }
 
@@ -378,7 +378,7 @@ const RoadSurveyRowsForm = () => {
     const roadWidth = Number(formValues.roadWidth || 0);
     const spacing = Number(formValues.spacing || 0);
 
-    const intermediateOffsets = ["0.000"];
+    const intermediateOffsets = ['0.000'];
 
     const halfWidth = roadWidth / 2;
     let limit = Math.ceil(halfWidth / spacing);
@@ -413,13 +413,13 @@ const RoadSurveyRowsForm = () => {
 
           updatedRows[i] = {
             offset: entry,
-            intermediateSight: "",
-            remark: parsedEntry < 0 ? "LHS" : parsedEntry === 0 ? "PLS" : "RHS",
+            intermediateSight: '',
+            remark: parsedEntry < 0 ? 'LHS' : parsedEntry === 0 ? 'PLS' : 'RHS',
           };
         } else {
           updatedRows[i].offset = entry;
           updatedRows[i].intermediateSight =
-            updatedRows[i].intermediateSight || "";
+            updatedRows[i].intermediateSight || '';
           updatedRows[i].remark = updatedRows[i].remark;
         }
       });
@@ -432,20 +432,20 @@ const RoadSurveyRowsForm = () => {
     const { name, value } = event.target;
 
     const target =
-      name === "intermediateOffsets"
+      name === 'intermediateOffsets'
         ? `intermediateOffsets[${index}].${field}`
         : name;
 
-    if (name === "intermediateOffsets" || name === "intermediateSight") {
+    if (name === 'intermediateOffsets' || name === 'intermediateSight') {
       if (value) {
         const numValue = Number(value);
         if (!isNaN(numValue)) {
-          const decimalPlaces = (value.toString().split(".")[1] || "").length;
+          const decimalPlaces = (value.toString().split('.')[1] || '').length;
 
-          if (decimalPlaces > 0 && !value.endsWith("005")) {
+          if (decimalPlaces > 0 && !value.endsWith('005')) {
             setFormWarnings({
               ...formWarnings,
-              [target]: "Floating values should end with .005",
+              [target]: 'Floating values should end with .005',
             });
           } else {
             setFormWarnings({ ...formWarnings, [target]: null });
@@ -454,7 +454,7 @@ const RoadSurveyRowsForm = () => {
       }
     }
 
-    if (name === "intermediateOffsets") {
+    if (name === 'intermediateOffsets') {
       const updated = [...formValues.intermediateOffsets];
       updated[index][field] = value;
 
@@ -485,7 +485,7 @@ const RoadSurveyRowsForm = () => {
       ...prev,
       intermediateOffsets: [
         ...(formValues.intermediateOffsets || []),
-        { intermediateSight: "", offset: "", remark: "" },
+        { intermediateSight: '', offset: '', remark: '' },
       ],
     }));
 
@@ -505,110 +505,61 @@ const RoadSurveyRowsForm = () => {
 
   const getNewChainage = (purpose) => {
     try {
-      if (purpose.type !== "Initial Level") {
-        const initialSurvey = purpose?.surveyId?.purposes?.find(
-          (p) => p.type === "Initial Level"
-        );
+      const isProposal = purpose.phase === 'Proposal';
 
-        const isProposal = purpose.phase === "Proposal";
-        let currentReading = null;
+      if (isProposal) {
+        if (purpose?.rows?.length) {
+          const initialSurvey = purpose?.surveyId?.purposes?.find(
+            (p) => p.type === 'Initial Level'
+          );
 
-        if (isProposal) {
-          if (purpose?.rows?.length) {
-            const prevChainage = purpose?.rows?.at(-1)?.chainage;
+          const prevChainage = purpose?.rows?.at(-1)?.chainage;
 
-            const filteredInitialSurvey =
-              initialSurvey?.rows?.filter((r) => r.type === "Chainage") ?? [];
+          const filteredInitialSurvey =
+            initialSurvey?.rows?.filter((r) => r.type === 'Chainage') ?? [];
 
-            const currentIndex = filteredInitialSurvey.findIndex(
-              (r) => r.chainage === prevChainage
-            );
+          const currentIndex = filteredInitialSurvey.findIndex(
+            (r) => r.chainage === prevChainage
+          );
 
-            if (currentIndex === -1) {
-              throw new Error("Previous chainage not found in initial survey");
-            }
-
-            const nextReading = filteredInitialSurvey[currentIndex + 1] || null;
-            const isLastReading =
-              currentIndex + 1 >= filteredInitialSurvey.length - 1;
-
-            if (isLastReading) setIsLastProposalReading(true);
-
-            if (!nextReading) {
-              throw new Error(
-                "Next chainage not found, returning to dashboard"
-              );
-            }
-
-            currentReading = nextReading;
-          } else {
-            currentReading = initialSurvey?.rows?.find(
-              (r) => r.type === "Chainage"
-            );
-          }
-        } else {
-          const nextIndex = purpose?.rows?.length ?? 0;
-          currentReading = initialSurvey?.rows?.[nextIndex] || null;
-        }
-
-        if (currentReading) {
-          const type = currentReading.type;
-
-          const updatedValues = {
-            type,
-            chainage: currentReading?.chainage || "",
-            roadWidth: currentReading?.roadWidth || "",
-            spacing: currentReading?.spacing || "",
-            backSight: currentReading?.backSight || "",
-            foreSight: currentReading?.foreSight || "",
-          };
-
-          if (!isProposal) {
-            if (type === "Chainage") {
-              updatedValues.intermediateOffsets =
-                currentReading?.intermediateSight?.map((entry, idx) => ({
-                  intermediateSight: entry,
-                  offset: currentReading?.offsets[idx],
-                  remark: currentReading?.remarks[idx],
-                }));
-            } else if (type === "TBM") {
-              updatedValues.intermediateSight =
-                currentReading?.intermediateSight || "";
-            }
+          if (currentIndex === -1) {
+            throw new Error('Previous chainage not found in initial survey');
           }
 
-          setFormValues((prev) => ({
-            ...prev,
-            ...updatedValues,
-          }));
-
-          setRowType(type);
-
+          const nextReading = filteredInitialSurvey[currentIndex + 1] || null;
           const isLastReading =
-            purpose?.rows?.length === initialSurvey?.rows?.length - 1;
+            currentIndex + 1 >= filteredInitialSurvey.length - 1;
 
           if (isLastReading) setIsLastProposalReading(true);
+
+          if (!nextReading) {
+            throw new Error('Next chainage not found, returning to dashboard');
+          }
+
+          currentReading = nextReading;
         } else {
-          setRowType("CP");
+          currentReading = initialSurvey?.rows?.find(
+            (r) => r.type === 'Chainage'
+          );
         }
       } else {
         const isFirstChainage = purpose?.rows?.find(
-          (r) => r.type === "Chainage"
+          (r) => r.type === 'Chainage'
         );
 
         if (!isFirstChainage) {
           setFormValues((prev) => ({
             ...prev,
-            chainage: `0${purpose?.surveyId?.separator || "/"}000`,
+            chainage: `0${purpose?.surveyId?.separator || '/'}000`,
           }));
         } else {
           const lastChainage = purpose?.rows
             ?.reverse()
-            .find((r) => r.type === "Chainage");
+            .find((r) => r.type === 'Chainage');
 
           const chainageMultiple = purpose?.surveyId?.chainageMultiple;
           const lastDigit = Number(
-            lastChainage.chainage.split(purpose?.surveyId?.separator || "/")[1]
+            lastChainage.chainage.split(purpose?.surveyId?.separator || '/')[1]
           );
 
           const remainder = lastDigit % chainageMultiple;
@@ -617,20 +568,20 @@ const RoadSurveyRowsForm = () => {
               ? lastDigit + chainageMultiple
               : lastDigit + (chainageMultiple - remainder);
 
-          const nextChainage = `0${purpose?.surveyId?.separator || "/"}${String(
+          const nextChainage = `0${purpose?.surveyId?.separator || '/'}${String(
             nextNumber
-          ).padStart(3, "0")}`;
+          ).padStart(3, '0')}`;
 
           setFormValues((prev) => ({
             ...prev,
             chainage: nextChainage,
-            roadWidth: Number(lastChainage?.roadWidth) || "",
-            spacing: lastChainage?.spacing || "",
+            roadWidth: Number(lastChainage?.roadWidth) || '',
+            spacing: lastChainage?.spacing || '',
           }));
         }
       }
     } catch (error) {
-      navigate("/");
+      navigate('/');
 
       handleFormError(error, null, dispatch, navigate);
     }
@@ -639,10 +590,10 @@ const RoadSurveyRowsForm = () => {
   const handleSubmit = async () => {
     setBtnLoading(true);
     try {
-      if (rowType === "Chainage" && page === 0) {
-        const pickItems = ["chainage", "roadWidth", "spacing"];
+      if (rowType === 'Chainage' && page === 0) {
+        const pickItems = ['chainage', 'roadWidth', 'spacing'];
 
-        const isProposal = purpose.phase === "Proposal";
+        const isProposal = purpose.phase === 'Proposal';
 
         const partialSchema = schema.pick(pickItems);
         await partialSchema.validate(formValues, { abortEarly: false });
@@ -653,19 +604,19 @@ const RoadSurveyRowsForm = () => {
               ...prev,
               intermediateOffsets: [
                 {
-                  reducedLevel: "",
-                  offset: "",
-                  remark: "",
+                  reducedLevel: '',
+                  offset: '',
+                  remark: '',
                 },
                 {
-                  reducedLevel: "",
-                  offset: "",
-                  remark: "",
+                  reducedLevel: '',
+                  offset: '',
+                  remark: '',
                 },
                 {
-                  reducedLevel: "",
-                  offset: "",
-                  remark: "",
+                  reducedLevel: '',
+                  offset: '',
+                  remark: '',
                 },
               ],
             }));
@@ -675,11 +626,11 @@ const RoadSurveyRowsForm = () => {
               intermediateOffsets: [
                 ...prev.intermediateOffsets,
                 {
-                  intermediateSight: "",
-                  offset: "",
-                  remark: "",
+                  intermediateSight: '',
+                  offset: '',
+                  remark: '',
                 },
-                { intermediateSight: "", offset: "", remark: "" },
+                { intermediateSight: '', offset: '', remark: '' },
               ],
             }));
           }
@@ -694,7 +645,7 @@ const RoadSurveyRowsForm = () => {
 
       let payload = null;
 
-      if (rowType === "Chainage") {
+      if (rowType === 'Chainage') {
         const sortedOffsets = [...(formValues.intermediateOffsets || [])].sort(
           (a, b) => a.offset - b.offset
         );
@@ -702,11 +653,11 @@ const RoadSurveyRowsForm = () => {
         payload = {
           ...formValues,
           reducedLevels:
-            purpose.phase !== "Proposal"
+            purpose.phase !== 'Proposal'
               ? []
               : sortedOffsets.map((r) => r.reducedLevel),
           intermediateSight:
-            purpose.phase === "Proposal"
+            purpose.phase === 'Proposal'
               ? []
               : sortedOffsets.map((r) => r.intermediateSight),
           offsets: sortedOffsets.map((r) => r.offset),
@@ -731,7 +682,7 @@ const RoadSurveyRowsForm = () => {
         // );
 
         if (isLastProposalReading) {
-          navigate("/survey");
+          navigate('/survey');
           return;
         }
 
@@ -740,26 +691,26 @@ const RoadSurveyRowsForm = () => {
         setFormValues({
           ...initialFormValues,
           intermediateOffsets: [
-            { intermediateSight: "", offset: "", remark: "" },
+            { intermediateSight: '', offset: '', remark: '' },
           ],
         });
 
         getNewChainage(purposeDoc);
 
-        if (rowType === "Chainage") {
+        if (rowType === 'Chainage') {
           setPage(0);
         }
 
         if (
-          (purpose.type === "Initial Level" && rowType === "TBM") ||
-          purpose.status === "Paused"
+          (purpose.type === 'Initial Level' && rowType === 'TBM') ||
+          purpose.status === 'Paused'
         ) {
-          setRowType("Chainage");
+          setRowType('Chainage');
         }
 
         setPurpose(purposeDoc);
       } else {
-        throw new Error("Something went wrong.");
+        throw new Error('Something went wrong.');
       }
     } catch (error) {
       handleFormError(error, setFormErrors, dispatch, navigate);
@@ -773,30 +724,30 @@ const RoadSurveyRowsForm = () => {
       let finalForesight = null;
       let pls = null;
 
-      if (purpose.type === "Initial Level") {
-        const inpFinalForesight = document.getElementById("finalForesight");
-        const inpPLS = document.getElementById("pls");
+      if (purpose.type === 'Initial Level') {
+        const inpFinalForesight = document.getElementById('finalForesight');
+        const inpPLS = document.getElementById('pls');
 
         if (!inpFinalForesight?.value?.trim()) {
           inpFinalForesight.parentElement.parentElement.classList.add(
-            "inp-err"
+            'inp-err'
           );
 
           return;
         } else {
           inpFinalForesight.parentElement.parentElement.classList.remove(
-            "inp-err"
+            'inp-err'
           );
 
           finalForesight = inpFinalForesight.value;
         }
 
         if (!inpPLS?.value?.trim()) {
-          inpPLS.parentElement.parentElement.classList.add("inp-err");
+          inpPLS.parentElement.parentElement.classList.add('inp-err');
 
           return;
         } else {
-          inpPLS.parentElement.parentElement.classList.remove("inp-err");
+          inpPLS.parentElement.parentElement.classList.remove('inp-err');
 
           pls = inpPLS.value;
         }
@@ -807,19 +758,19 @@ const RoadSurveyRowsForm = () => {
       if (data.success) {
         dispatch(
           showAlert({
-            type: "success",
+            type: 'success',
             message: `${purpose.type} Finished`,
           })
         );
 
         const link =
-          purpose.type === "Initial Level"
+          purpose.type === 'Initial Level'
             ? `/survey/road-survey/${purpose._id}/field-book`
-            : "/survey";
+            : '/survey';
 
         navigate(link);
       } else {
-        throw new Error("Something went wrong.");
+        throw new Error('Something went wrong.');
       }
     } catch (error) {
       handleFormError(error, setFormErrors, dispatch, navigate);
@@ -831,8 +782,8 @@ const RoadSurveyRowsForm = () => {
   const handlePauseSurvey = async () => {
     try {
       const inputsToMap = {
-        inpPauseForeSight: "",
-        inpPauseRemark: "",
+        inpPauseForeSight: '',
+        inpPauseRemark: '',
       };
 
       for (const i in inputsToMap) {
@@ -841,10 +792,10 @@ const RoadSurveyRowsForm = () => {
         inputsToMap[i] = inp.value;
 
         if (!inp?.value?.trim()) {
-          inp.parentElement.parentElement.classList.add("inp-err");
+          inp.parentElement.parentElement.classList.add('inp-err');
           return;
         } else {
-          inp.parentElement.parentElement.classList.remove("inp-err");
+          inp.parentElement.parentElement.classList.remove('inp-err');
         }
       }
 
@@ -857,14 +808,14 @@ const RoadSurveyRowsForm = () => {
       if (data.success) {
         dispatch(
           showAlert({
-            type: "success",
+            type: 'success',
             message: `${purpose.type} Paused`,
           })
         );
 
-        navigate("/survey");
+        navigate('/survey');
       } else {
-        throw new Error("Something went wrong.");
+        throw new Error('Something went wrong.');
       }
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
@@ -876,7 +827,7 @@ const RoadSurveyRowsForm = () => {
 
     let reducedLevels = null;
 
-    if (purpose.phase === "Actual") {
+    if (purpose.phase === 'Actual') {
       const newReading = {
         type: rowType,
         intermediateSight: values.map((v) => v.intermediateSight),
@@ -930,7 +881,7 @@ const RoadSurveyRowsForm = () => {
     );
 
     const safeProposal =
-      newRow.reducedLevels?.slice(0, selectedCs?.offsets?.length) || [];
+      newRow?.reducedLevels?.slice(0, selectedCs?.offsets?.length) || [];
 
     const newData = {
       name: findPurpose.type,
@@ -988,11 +939,11 @@ const RoadSurveyRowsForm = () => {
         });
 
         if (purposeDoc?.isPurposeFinish) {
-          navigate("/survey");
+          navigate('/survey');
           throw Error(`${data?.purpose?.type} already completed`);
         }
 
-        if (purposeDoc.status === "Paused") {
+        if (purposeDoc.status === 'Paused') {
           const lastRow = purposeDoc.rows[purposeDoc.rows.length - 1];
 
           setFormValues((prev) => ({
@@ -1000,7 +951,7 @@ const RoadSurveyRowsForm = () => {
             foreSight: lastRow.foreSight,
             remark: lastRow.remarks[0],
           }));
-          setRowType("CP");
+          setRowType('CP');
         } else {
           getNewChainage(purposeDoc);
         }
@@ -1017,16 +968,16 @@ const RoadSurveyRowsForm = () => {
 
   useEffect(() => {
     // Push the current page again so back button won't leave it
-    window.history.pushState(null, "", window.location.href);
+    window.history.pushState(null, '', window.location.href);
 
     const handlePopState = () => {
-      window.history.pushState(null, "", window.location.href);
+      window.history.pushState(null, '', window.location.href);
     };
 
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener('popstate', handlePopState);
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
@@ -1037,14 +988,14 @@ const RoadSurveyRowsForm = () => {
       {page === 1 && (
         <Box
           sx={{
-            border: "1px solid #EFEFEF",
-            borderRadius: "9px",
-            width: "40px",
-            height: "40px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
+            border: '1px solid #EFEFEF',
+            borderRadius: '9px',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer',
           }}
           onClick={() => setPage(0)}
         >
@@ -1052,25 +1003,25 @@ const RoadSurveyRowsForm = () => {
         </Box>
       )}
 
-      {rowType === "Chainage" &&
+      {rowType === 'Chainage' &&
         page === 1 &&
         selectedCs &&
         selectedCs?.series && (
           <Box>
             <Activity
-              mode={purpose.type === "Initial Level" ? "hidden" : "visible"}
+              mode={purpose.type === 'Initial Level' ? 'hidden' : 'visible'}
             >
-              <Box display={"flex"} justifyContent={"end"}>
+              <Box display={'flex'} justifyContent={'end'}>
                 <BasicSelect
                   label="Compare"
                   options={purpose.surveyId?.purposes
                     ?.filter((p) => p.type !== purpose.type)
                     .map((p) => ({ label: p.type, value: p.type }))}
-                  value={compareData?.type || ""}
+                  value={compareData?.type || ''}
                   onChange={(e) => handleChangeCompare(e.target.value)}
                   sx={{
-                    width: "62px",
-                    "& .MuiOutlinedInput-root": { padding: "4px 14px" },
+                    width: '62px',
+                    '& .MuiOutlinedInput-root': { padding: '4px 14px' },
                   }}
                 />
               </Box>
@@ -1087,7 +1038,7 @@ const RoadSurveyRowsForm = () => {
           </Box>
         )}
 
-      <Stack alignItems={"center"} spacing={2}>
+      <Stack alignItems={'center'} spacing={2}>
         <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
           {page === 1
             ? `Please Enter Intermediate Sight`
@@ -1096,17 +1047,17 @@ const RoadSurveyRowsForm = () => {
         </Typography>
 
         {page === 0 && (
-          <Stack direction={"row"} justifyContent={"end"} width={"100%"}>
-            <Box width={"40px"} zIndex={2}>
+          <Stack direction={'row'} justifyContent={'end'} width={'100%'}>
+            <Box width={'40px'} zIndex={2}>
               <BasicSpeedDial
                 actions={speedDialActions?.filter((a) => a.show)}
-                direction={"down"}
+                direction={'down'}
                 sx={{
-                  top: "-8px",
+                  top: '-8px',
                   right: 0,
-                  "& button": {
-                    width: "40px",
-                    height: "40px",
+                  '& button': {
+                    width: '40px',
+                    height: '40px',
                   },
                 }}
               />
@@ -1114,7 +1065,7 @@ const RoadSurveyRowsForm = () => {
           </Stack>
         )}
 
-        <Box width={"100%"} maxWidth={"md"}>
+        <Box width={'100%'} maxWidth={'md'}>
           <Grid container spacing={2} columns={12}>
             {page === 0 &&
               inputData.map(({ size, ...input }, index) => (
@@ -1126,18 +1077,18 @@ const RoadSurveyRowsForm = () => {
                 >
                   <Box
                     sx={{
-                      "& .MuiOutlinedInput-root, & .MuiFilledInput-root": {
-                        borderRadius: "15px",
+                      '& .MuiOutlinedInput-root, & .MuiFilledInput-root': {
+                        borderRadius: '15px',
                       },
-                      width: "100%",
+                      width: '100%',
                     }}
                   >
                     <BasicInput
                       {...input}
-                      value={formValues[input.name] || ""}
-                      error={(formErrors && formErrors[input.name]) || ""}
-                      warning={(formWarnings && formWarnings[input.name]) || ""}
-                      sx={{ width: "100%" }}
+                      value={formValues[input.name] || ''}
+                      error={(formErrors && formErrors[input.name]) || ''}
+                      warning={(formWarnings && formWarnings[input.name]) || ''}
+                      sx={{ width: '100%' }}
                       onChange={(e) => handleInputChange(e)}
                     />
                   </Box>
@@ -1145,7 +1096,7 @@ const RoadSurveyRowsForm = () => {
               ))}
 
             {/* ✅ Dynamic Intermediate + Offset Rows */}
-            {page === 1 && rowType === "Chainage" && (
+            {page === 1 && rowType === 'Chainage' && (
               <Grid size={{ xs: 12 }}>
                 {/* <Stack direction={'row'} alignItems={'center'}>
                   <BasicCheckbox
@@ -1157,7 +1108,7 @@ const RoadSurveyRowsForm = () => {
                   </Typography>
                 </Stack> */}
                 <Typography
-                  fontSize={"16px"}
+                  fontSize={'16px'}
                   fontWeight={600}
                   color="black"
                   mb={1}
@@ -1168,40 +1119,40 @@ const RoadSurveyRowsForm = () => {
                   {formValues.intermediateOffsets.map((row, idx) => (
                     <Stack
                       key={idx}
-                      direction={"row"}
-                      alignItems={"end"}
+                      direction={'row'}
+                      alignItems={'end'}
                       spacing={1}
                     >
                       <Stack
                         key={idx}
-                        direction={"row"}
-                        alignItems={"center"}
+                        direction={'row'}
+                        alignItems={'center'}
                         spacing={1}
-                        width={"100%"}
+                        width={'100%'}
                       >
-                        {purpose.phase === "Proposal" ? (
+                        {purpose.phase === 'Proposal' ? (
                           <BasicInput
-                            label={idx === 0 ? "RL*" : ""}
+                            label={idx === 0 ? 'RL*' : ''}
                             type="number"
                             name="intermediateOffsets"
-                            value={row.reducedLevel || ""}
+                            value={row.reducedLevel || ''}
                             error={
                               formErrors &&
                               formErrors[
                                 `intermediateOffsets[${idx}].reducedLevel`
                               ]
                             }
-                            sx={{ width: "100%" }}
+                            sx={{ width: '100%' }}
                             onChange={(e) =>
-                              handleInputChange(e, idx, "reducedLevel")
+                              handleInputChange(e, idx, 'reducedLevel')
                             }
                           />
                         ) : (
                           <BasicInput
-                            label={idx === 0 ? "IS*" : ""}
+                            label={idx === 0 ? 'IS*' : ''}
                             type="number"
                             name="intermediateOffsets"
-                            value={row.intermediateSight || ""}
+                            value={row.intermediateSight || ''}
                             error={
                               formErrors &&
                               formErrors[
@@ -1214,30 +1165,30 @@ const RoadSurveyRowsForm = () => {
                                 `intermediateOffsets[${idx}].intermediateSight`
                               ]
                             }
-                            sx={{ width: "100%" }}
+                            sx={{ width: '100%' }}
                             onChange={(e) =>
-                              handleInputChange(e, idx, "intermediateSight")
+                              handleInputChange(e, idx, 'intermediateSight')
                             }
                           />
                         )}
 
                         <BasicInput
-                          label={idx === 0 ? "Offset*" : ""}
+                          label={idx === 0 ? 'Offset*' : ''}
                           type="number"
                           name="intermediateOffsets"
                           value={row.offset}
-                          onChange={(e) => handleInputChange(e, idx, "offset")}
+                          onChange={(e) => handleInputChange(e, idx, 'offset')}
                           error={
                             formErrors &&
                             formErrors[`intermediateOffsets[${idx}].offset`]
                           }
                         />
                         <BasicInput
-                          label={idx === 0 ? "Remark*" : ""}
+                          label={idx === 0 ? 'Remark*' : ''}
                           type="text"
                           name="intermediateOffsets"
                           value={row.remark}
-                          onChange={(e) => handleInputChange(e, idx, "remark")}
+                          onChange={(e) => handleInputChange(e, idx, 'remark')}
                           error={
                             formErrors &&
                             formErrors[`intermediateOffsets[${idx}].remark`]
@@ -1247,14 +1198,14 @@ const RoadSurveyRowsForm = () => {
 
                       <Box>
                         {idx === formValues.intermediateOffsets?.length - 1 ? (
-                          <Stack direction={"row"} spacing={1}>
+                          <Stack direction={'row'} spacing={1}>
                             {formValues.intermediateOffsets?.length > 1 && (
                               <Box
                                 className="remove-new-sight"
                                 onClick={() => handleRemoveRow(idx)}
                               >
                                 <IoIosRemove
-                                  fontSize={"24px"}
+                                  fontSize={'24px'}
                                   color="rgb(231 0 0)"
                                 />
                               </Box>
@@ -1264,7 +1215,7 @@ const RoadSurveyRowsForm = () => {
                               className="add-new-sight"
                               onClick={handleAddRow}
                             >
-                              <IoAdd fontSize={"24px"} color="#0059E7" />
+                              <IoAdd fontSize={'24px'} color="#0059E7" />
                             </Box>
                           </Stack>
                         ) : (
@@ -1273,7 +1224,7 @@ const RoadSurveyRowsForm = () => {
                             onClick={() => handleRemoveRow(idx)}
                           >
                             <IoIosRemove
-                              fontSize={"24px"}
+                              fontSize={'24px'}
                               color="rgb(231 0 0)"
                             />
                           </Box>
@@ -1287,52 +1238,52 @@ const RoadSurveyRowsForm = () => {
           </Grid>
         </Box>
 
-        <Stack direction={"row"} justifyContent={"end"} width={"100%"} gap={1}>
+        <Stack direction={'row'} justifyContent={'end'} width={'100%'} gap={1}>
           {purpose &&
-            purpose?.status === "Active" &&
-            purpose?.type === "Initial Level" &&
+            purpose?.status === 'Active' &&
+            purpose?.phase === 'Actual' &&
             page === 0 && (
               <>
-                {rowType !== "Chainage" && (
+                {rowType !== 'Chainage' && (
                   <BasicButtons
                     value={
-                      <Box display={"flex"} gap={1} alignItems={"center"}>
-                        <IoIosAddCircleOutline fontSize={"20px"} />
-                        <Typography fontSize={"16px"} fontWeight={600}>
+                      <Box display={'flex'} gap={1} alignItems={'center'}>
+                        <IoIosAddCircleOutline fontSize={'20px'} />
+                        <Typography fontSize={'16px'} fontWeight={600}>
                           Chainage
                         </Typography>
                       </Box>
                     }
-                    onClick={() => handleChangeRowType("Chainage")}
-                    sx={{ backgroundColor: "#0059E7", flex: 1 }}
+                    onClick={() => handleChangeRowType('Chainage')}
+                    sx={{ backgroundColor: '#0059E7', flex: 1 }}
                   />
                 )}
-                {rowType !== "CP" && (
+                {rowType !== 'CP' && (
                   <BasicButtons
                     value={
-                      <Box display={"flex"} gap={1} alignItems={"center"}>
-                        <IoIosAddCircleOutline fontSize={"20px"} />
-                        <Typography fontSize={"16px"} fontWeight={600}>
+                      <Box display={'flex'} gap={1} alignItems={'center'}>
+                        <IoIosAddCircleOutline fontSize={'20px'} />
+                        <Typography fontSize={'16px'} fontWeight={600}>
                           CP
                         </Typography>
                       </Box>
                     }
-                    onClick={() => handleChangeRowType("CP")}
-                    sx={{ backgroundColor: "#0059E7", flex: 1 }}
+                    onClick={() => handleChangeRowType('CP')}
+                    sx={{ backgroundColor: '#0059E7', flex: 1 }}
                   />
                 )}
-                {rowType !== "TBM" && (
+                {rowType !== 'TBM' && (
                   <BasicButtons
                     value={
-                      <Box display={"flex"} gap={1} alignItems={"center"}>
-                        <IoIosAddCircleOutline fontSize={"20px"} />
-                        <Typography fontSize={"16px"} fontWeight={600}>
+                      <Box display={'flex'} gap={1} alignItems={'center'}>
+                        <IoIosAddCircleOutline fontSize={'20px'} />
+                        <Typography fontSize={'16px'} fontWeight={600}>
                           TBM
                         </Typography>
                       </Box>
                     }
-                    onClick={() => handleChangeRowType("TBM")}
-                    sx={{ backgroundColor: "#0059E7", flex: 1 }}
+                    onClick={() => handleChangeRowType('TBM')}
+                    sx={{ backgroundColor: '#0059E7', flex: 1 }}
                   />
                 )}
               </>
@@ -1340,30 +1291,30 @@ const RoadSurveyRowsForm = () => {
 
           <BasicButtons
             value={
-              <Box display={"flex"} gap={1} alignItems={"center"}>
-                {(purpose?.phase === "Proposal" &&
+              <Box display={'flex'} gap={1} alignItems={'center'}>
+                {(purpose?.phase === 'Proposal' &&
                   isLastProposalReading &&
                   page === 1) ||
-                (rowType !== "Chainage" && isLastProposalReading) ? (
+                (rowType !== 'Chainage' && isLastProposalReading) ? (
                   <>
-                    <Typography fontSize={"16px"} fontWeight={600}>
+                    <Typography fontSize={'16px'} fontWeight={600}>
                       Finish ${purpose?.type}
                     </Typography>
-                    <MdDone fontSize={"20px"} />
+                    <MdDone fontSize={'20px'} />
                   </>
                 ) : (
                   <>
-                    <Typography fontSize={"16px"} fontWeight={600}>
+                    <Typography fontSize={'16px'} fontWeight={600}>
                       Continue
                     </Typography>
-                    <IoIosArrowForward fontSize={"20px"} />
+                    <IoIosArrowForward fontSize={'20px'} />
                   </>
                 )}
               </Box>
             }
             sx={{
-              backgroundColor: "rgba(24, 195, 127, 1)",
-              height: "45px",
+              backgroundColor: 'rgba(24, 195, 127, 1)',
+              height: '45px',
               flex: 1,
             }}
             fullWidth={true}
@@ -1372,19 +1323,19 @@ const RoadSurveyRowsForm = () => {
           />
         </Stack>
 
-        {rowType === "CP" && purpose.type === "Initial Level" && (
+        {rowType === 'CP' && purpose.phase === 'Actual' && (
           <BasicButtons
             value={
-              <Box display={"flex"} gap={1} alignItems={"center"}>
-                <Typography fontSize={"16px"} fontWeight={600}>
+              <Box display={'flex'} gap={1} alignItems={'center'}>
+                <Typography fontSize={'16px'} fontWeight={600}>
                   Finish Survey
                 </Typography>
-                <MdDone fontSize={"20px"} />
+                <MdDone fontSize={'20px'} />
               </Box>
             }
-            sx={{ backgroundColor: "#4caf50", height: "45px", flex: 1 }}
+            sx={{ backgroundColor: '#4caf50', height: '45px', flex: 1 }}
             fullWidth={true}
-            onClick={() => handleClickOpen("Finish Survey")}
+            onClick={() => handleClickOpen('Finish Survey')}
             loading={btnLoading}
           />
         )}

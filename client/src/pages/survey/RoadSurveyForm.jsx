@@ -165,15 +165,14 @@ const inputDetails = [
     label: 'Reduced level*',
     name: 'reducedLevel',
     type: 'number',
-    for: 'Initial Level',
+    for: 'actual',
   },
   {
     label: 'Back sight*',
     name: 'backSight',
     type: 'number',
-    for: 'Initial Level',
+    for: 'actual',
   },
-
   {
     label: 'Set chainage multiple*',
     name: 'chainageMultiple',
@@ -378,16 +377,18 @@ const RoadSurveyForm = () => {
       ? Yup.string().required('Instrument number is required')
       : Yup.string().nullable(),
 
-    backSight: !id
-      ? Yup.number()
-          .typeError('Backsight is required')
-          .required('Backsight is required')
-      : Yup.string().nullable(),
-    reducedLevel: !id
-      ? Yup.number()
-          .typeError('Reduced level is required')
-          .required('Reduced level is required')
-      : Yup.string().nullable(),
+    backSight:
+      !id || (id && !type)
+        ? Yup.number()
+            .typeError('Backsight is required')
+            .required('Backsight is required')
+        : Yup.string().nullable(),
+    reducedLevel:
+      !id || (id && !type)
+        ? Yup.number()
+            .typeError('Reduced level is required')
+            .required('Reduced level is required')
+        : Yup.string().nullable(),
     chainageMultiple: !id
       ? Yup.number()
           .typeError('Chainage multiple is required')
@@ -521,7 +522,16 @@ const RoadSurveyForm = () => {
 
       const surveyDoc = data.survey;
 
-      const updatedFormValues = { ...formValues, project: surveyDoc?.project };
+      const initialLevel = surveyDoc.purposes?.find(
+        (p) => p.type === 'Initial Level'
+      );
+
+      const updatedFormValues = {
+        ...formValues,
+        project: surveyDoc?.project,
+        reducedLevel: surveyDoc?.reducedLevel || '',
+        backSight: initialLevel?.rows[0]?.backSight || '',
+      };
 
       const completedLevels = surveyDoc?.purposes?.map((p) => p.type) || [];
 
@@ -592,6 +602,10 @@ const RoadSurveyForm = () => {
             return { ...e, hidden: false };
           }
 
+          if (e.for === 'actual' && !type) {
+            return { ...e, hidden: false };
+          }
+
           if (!type && e.for === 'Rest') {
             return { ...e, hidden: false };
           }
@@ -611,6 +625,10 @@ const RoadSurveyForm = () => {
             if (e.name === 'consultant' || e.name === 'client') {
               return { ...e, hidden: category !== 'privateProject' };
             }
+          }
+
+          if (e.for === 'actual') {
+            return { ...e, hidden: false };
           }
 
           return e;
