@@ -305,7 +305,7 @@ const RoadSurveyRowsForm = () => {
     } else {
       let updatedAlertData = null;
 
-      if (action === 'Finish Survey' && purpose?.type === 'Initial Level') {
+      if (action === 'Finish Survey' && purpose?.phase === 'Actual') {
         updatedAlertData = {
           ...finishSurveyAlertData,
           onSubmit: handleEndSurveyPurpose,
@@ -715,6 +715,7 @@ const RoadSurveyRowsForm = () => {
     } catch (error) {
       handleFormError(error, setFormErrors, dispatch, navigate);
     } finally {
+      setFormWarnings({});
       setBtnLoading(false);
     }
   };

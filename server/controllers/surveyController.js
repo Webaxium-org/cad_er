@@ -379,13 +379,6 @@ const createSurveyRow = async (req, res, next) => {
       if (currentIndex === totalReadings - 1) {
         isLastReading = true;
       }
-    } else {
-      const totalReadings = initialSurvey?.rows?.length;
-      const currentIndex = purpose.rows?.length;
-
-      if (totalReadings === currentIndex + 1) {
-        isLastReading = true;
-      }
     }
 
     const newReading = {
