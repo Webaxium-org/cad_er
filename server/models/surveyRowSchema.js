@@ -20,7 +20,7 @@ const SurveyRowSchema = new Schema(
     heightOfInstrument: { type: String, trim: true },
     intermediateSight: [{ type: String, trim: true }],
     foreSight: { type: String, trim: true },
-    chainage: { type: String, trim: true },
+    chainage: { type: String, trim: true, default: null },
     roadWidth: { type: String, trim: true },
     spacing: { type: String, trim: true },
     offsets: [{ type: String, trim: true }],
@@ -33,7 +33,10 @@ const SurveyRowSchema = new Schema(
 // 🚫 Prevent duplicate chainage inside the same purpose
 SurveyRowSchema.index(
   { purposeId: 1, chainage: 1 },
-  { unique: true, sparse: true } // Only index documents where the indexed field exists and is not null.
+  {
+    unique: true,
+    partialFilterExpression: { chainage: { $ne: null } },
+  }
 );
 
 export default model('SurveyRow', SurveyRowSchema);
