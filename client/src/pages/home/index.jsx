@@ -102,7 +102,9 @@ const Home = () => {
           height={'228px'}
           sx={{
             position: 'relative',
-            backgroundColor: 'rgba(40, 151, 255, 1)',
+            // backgroundColor: 'rgba(40, 151, 255, 1)',
+            background:
+                  'linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)',
           }}
         >
           <div
@@ -392,27 +394,29 @@ const Home = () => {
           </Stack>
         </Box>
       </Stack>
-      <Tooltip title="Help" placement="left">
-        <Fab
-          onClick={handleOpen}
-          aria-label="help"
-          sx={{
-            position: 'fixed',
-            bottom: 90,
-            right: 24,
-            borderRadius: 8,
-            textTransform: 'none',
-            zIndex: 2000,
-            width: 56,
-            height: 56,
-            backgroundColor: '#006FFD',
-            color: 'white',
-            ':hover': { backgroundColor: '#006FFD' },
-          }}
-        >
-          <BiSupport size={24} />
-        </Fab>
-      </Tooltip>
+      {!open && (
+        <Tooltip title="Help" placement="left">
+          <Fab
+            onClick={handleOpen}
+            aria-label="help"
+            sx={{
+              position: 'fixed',
+              bottom: 90,
+              right: 24,
+              borderRadius: 8,
+              textTransform: 'none',
+              zIndex: 2000,
+              width: 56,
+              height: 56,
+              backgroundColor: '#006FFD',
+              color: 'white',
+              ':hover': { backgroundColor: '#006FFD' },
+            }}
+          >
+            <BiSupport size={24} />
+          </Fab>
+        </Tooltip>
+      )}
 
       <AlertDialogSlide
         {...alertData}
