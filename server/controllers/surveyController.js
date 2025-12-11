@@ -1168,12 +1168,13 @@ const editSurveyPurpose = async (req, res, next) => {
     // 3. apply user edits to the changed row only
     Object.assign(rows[changedIndex], changes);
 
-    // 4. get starting RL from the purpose
-    const purpose = await SurveyPurpose.findById(purposeId);
-    const startRL = Number(purpose.surveyId.reducedLevel);
+    const startRl = rows.find((r) => r.type === 'Instrument setup')
+      .reducedLevels[0];
 
-    let hi = null;
-    let rl = startRL;
+    if (!startRl) throw Error('Something went wrong!');
+
+    let hi = 0;
+    let rl = Number(startRl);
 
     // 5. Recalculate all rows beginning from changedIndex
     for (let i = changedIndex; i < rows.length; i++) {
@@ -1181,7 +1182,7 @@ const editSurveyPurpose = async (req, res, next) => {
 
       switch (row.type) {
         case 'Instrument setup':
-          rl = startRL;
+          rl = Number(startRl);
           hi = rl + Number(row.backSight);
           row.reducedLevels = [rl.toFixed(3)];
           row.heightOfInstrument = hi.toFixed(3);

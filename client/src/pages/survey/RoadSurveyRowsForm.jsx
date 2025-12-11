@@ -1,5 +1,5 @@
 import * as Yup from 'yup';
-import Chart from 'react-apexcharts';
+import Plot from 'react-plotly.js';
 import { Activity, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -24,7 +24,7 @@ import { IoGitBranchOutline } from 'react-icons/io5';
 import { AiOutlinePauseCircle } from 'react-icons/ai';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
 import BasicInput from '../../components/BasicInput';
-import { calculateReducedLevel, initialChartOptions } from '../../constants';
+import { calculateReducedLevel, v2ChartOptions } from '../../constants';
 import { MdDone } from 'react-icons/md';
 import BasicSpeedDial from '../../components/BasicSpeedDial';
 import BasicSelect from '../../components/BasicSelect';
@@ -121,7 +121,7 @@ const RoadSurveyRowsForm = () => {
   const [btnLoading, setBtnLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [isLastProposalReading, setIsLastProposalReading] = useState(false); // only for proposal's
-  const [chartOptions, setChartOptions] = useState(initialChartOptions);
+  const [chartOptions, setChartOptions] = useState(null);
   const [selectedCs, setSelectedCs] = useState(null);
   const [alertData, setAlertData] = useState(null);
   const [compareData, setCompareData] = useState(null);
@@ -847,10 +847,12 @@ const RoadSurveyRowsForm = () => {
     // Create deep copies of what you mutate
     const newSeries = selectedCs.series.map((s, i) => {
       if (s.name === purpose.type) {
-        const updatedData = values?.map((v, idx) => [
-          Number(v.offset),
-          Number(reducedLevels[idx] || 0),
-        ]);
+        const updatedData = values
+          ?.map((v, idx) => ({
+            x: Number(v.offset),
+            y: Number(reducedLevels[idx] || 0),
+          }))
+          .sort((a, b) => a.x - b.x);
 
         return { ...s, data: updatedData };
       }
@@ -858,9 +860,29 @@ const RoadSurveyRowsForm = () => {
       return s;
     });
 
+    const minY = Math.min(...reducedLevels);
+    const maxY = Math.max(...reducedLevels);
+
+    const pad = (maxY - minY) * 0.1;
+
+    setChartOptions((_) => ({
+      ...v2ChartOptions,
+      layout: {
+        ...v2ChartOptions.layout,
+        yaxis: {
+          ...v2ChartOptions.layout.yaxis,
+          zeroline: false,
+          autorange: false,
+          range: [minY - 2, maxY + pad],
+        },
+      },
+    }));
+
     const updated = {
       ...selectedCs,
-      offsets: values.map((v) => v.offset),
+      minY,
+      maxY,
+      offsets: values.map((v) => Number(v.offset)).sort((a, b) => a - b),
       series: newSeries,
       // change id to force Chart remount
       id: `${selectedCs.id}-r${Date.now()}`,
@@ -869,8 +891,11 @@ const RoadSurveyRowsForm = () => {
     setSelectedCs(updated);
   };
 
-  const makeSeries = (name, offsets, levels) =>
-    offsets.map((o, i) => [Number(o), Number(levels?.[i] ?? 0).toFixed(3)]);
+  const makeSeries = (offsets, levels) =>
+    offsets.map((o, i) => ({
+      x: Number(Number(o).toFixed(3)), // NUMERIC X (IMPORTANT)
+      y: Number(Number(levels?.[i] ?? 0).toFixed(3)),
+    }));
 
   const handleChangeCompare = (value) => {
     const findPurpose = purpose.surveyId?.purposes?.find(
@@ -881,17 +906,21 @@ const RoadSurveyRowsForm = () => {
       (r) => r.chainage === formValues.chainage
     );
 
-    const safeProposal =
-      newRow?.reducedLevels?.slice(0, selectedCs?.offsets?.length) || [];
+    const safeProposal = newRow?.reducedLevels || [];
 
     const newData = {
       name: findPurpose.type,
       color: getColor(findPurpose.type),
-      data: makeSeries(findPurpose.type, selectedCs?.offsets, safeProposal),
+      data: makeSeries(newRow?.offsets, safeProposal),
     };
+
+    const minY = Math.min(...safeProposal);
+    const maxY = Math.max(...safeProposal);
 
     setSelectedCs({
       ...selectedCs,
+      minY: minY < selectedCs.minY ? minY : selectedCs.minY,
+      maxY: maxY > selectedCs.maxY ? maxY : selectedCs.maxY,
       series: [selectedCs.series[0], newData],
     });
     setCompareData(findPurpose);
@@ -923,7 +952,7 @@ const RoadSurveyRowsForm = () => {
         // for live graph
         setSelectedCs({
           id,
-          datum: 9.4,
+          datum: 0,
           offsets: [0, 0, 0],
           chainage: formValues.chainage,
           series: [
@@ -931,9 +960,9 @@ const RoadSurveyRowsForm = () => {
               name: purposeDoc.type,
               color: getColor(purposeDoc.type),
               data: [
-                [0, 0],
-                [0, 0],
-                [0, 0],
+                { x: 0, y: 0 },
+                { x: 0, y: 0 },
+                { x: 0, y: 0 },
               ],
             },
           ],
@@ -1028,13 +1057,18 @@ const RoadSurveyRowsForm = () => {
               </Box>
             </Activity>
 
-            <Chart
-              key={selectedCs?.id}
-              options={chartOptions}
-              series={selectedCs?.series || []}
-              type="line"
-              height="100px"
-              width="100%"
+            <Plot
+              data={selectedCs?.series?.map((s) => ({
+                x: s?.data?.map((p) => p.x),
+                y: s?.data?.map((p) => p.y),
+                type: 'scatter',
+                mode: 'lines',
+                name: s.name,
+                line: { shape: 'linear', width: 1, color: s.color },
+              }))}
+              config={chartOptions.config}
+              layout={chartOptions.layout}
+              style={{ width: '100%', height: 100 }}
             />
           </Box>
         )}

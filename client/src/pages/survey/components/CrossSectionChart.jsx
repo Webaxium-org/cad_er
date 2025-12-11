@@ -10,7 +10,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import Chart from 'react-apexcharts';
+import Plot from 'react-plotly.js';
 
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -55,10 +55,17 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
   };
 
   const calcWidth = () => {
-    const length = selectedCs?.chainages?.length ?? selectedCs?.offsets?.length;
-    const isWidth = width > length * 60;
+    const isLs = selectedCs.type === 'ls';
 
-    return isWidth ? width - 30 : length * 60 - 20;
+    const length = isLs
+      ? selectedCs?.chainages?.length
+      : selectedCs?.offsets?.length;
+
+    const subtractValue = isLs ? 30 : 70;
+
+    const isWidth = width > length * 90;
+
+    return isWidth ? width - 30 : length * 90 - subtractValue;
   };
 
   useEffect(() => {
@@ -67,7 +74,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return chartOptions.chart.id === 'cross-section' ? (
+  return chartOptions.id === 'v2' ? (
     <TableContainer
       component={Paper}
       sx={{
@@ -91,7 +98,12 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
 
             <TableCell
               sx={{ border: 'none', px: '14px', bgcolor: 'transparent' }}
-              colSpan={(selectedCs?.offsets ?? selectedCs?.chainages)?.length}
+              colSpan={
+                (selectedCs.type === 'ls'
+                  ? selectedCs?.chainages
+                  : selectedCs?.offsets
+                )?.length
+              }
             >
               <Box
                 sx={{
@@ -103,20 +115,25 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
               >
                 <Box
                   sx={{
-                    width: 'calc(100% - 30px)',
-                    height: 100,
                     position: 'absolute',
                     top: '5px',
-                    left: '7.5px',
+                    left: '20.5px',
                   }}
+                  maxWidth={'calc(100% - 30px)'}
+                  maxHeight={'100px'}
                 >
-                  <Chart
-                    key={selectedCs?.id}
-                    options={chartOptions}
-                    series={selectedCs?.series || []}
-                    type="line"
-                    height="100%"
-                    width="100%"
+                  <Plot
+                    data={selectedCs?.series?.map((s) => ({
+                      x: s?.data?.map((p) => p.x),
+                      y: s?.data?.map((p) => p.y),
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: s.name,
+                      line: { shape: 'linear', width: 1, color: s.color },
+                    }))}
+                    config={chartOptions.config}
+                    layout={chartOptions.layout}
+                    style={{ width: `${calcWidth() + 5}px`, height: 100 }}
                   />
                 </Box>
               </Box>
@@ -139,7 +156,10 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                   {s.name}
                 </TableCell>
 
-                {s.data?.map((val, i) => (
+                {(selectedCs.type === 'ls'
+                  ? selectedCs?.chainages
+                  : selectedCs?.offsets
+                )?.map((o, i) => (
                   <TableCell
                     key={i}
                     align="center"
@@ -163,7 +183,25 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                       maxWidth: '90px',
                     }}
                   >
-                    <div style={{ rotate: '-90deg' }}>{val[1]}</div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {s?.data
+                        ?.filter((val) => val.x === o)
+                        .map((val, idx) => (
+                          <div
+                            key={idx}
+                            style={{ transform: 'rotate(-90deg)' }}
+                          >
+                            {Number(val.y).toFixed(3)}
+                          </div>
+                        ))}
+                    </div>
+
                     <div className="cs-table-vertical-line" />
                   </TableCell>
                 ))}
@@ -185,7 +223,10 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
               {selectedCs?.offsets ? 'Offset' : 'Chainage'}
             </TableCell>
 
-            {(selectedCs?.offsets ?? selectedCs?.chainages)?.map((val, i) => (
+            {(selectedCs.type === 'ls'
+              ? selectedCs?.chainages
+              : selectedCs?.offsets
+            )?.map((val, i) => (
               <TableCell
                 key={i}
                 align="center"
@@ -225,18 +266,19 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
             {/* CHART ROW */}
             <TableRow>
               <TableCell sx={{ border: 'none', p: 0 }}>
-                <Box
-                  minWidth={`${calcWidth()}px`}
-                  // ml="37px"
-                  height="250px"
-                >
-                  <Chart
-                    key={selectedCs?.id}
-                    options={chartOptions}
-                    series={selectedCs?.series || []}
-                    type="line"
-                    height="100%"
-                    width="100%"
+                <Box maxWidth={`${calcWidth()}px`} height="300px">
+                  <Plot
+                    data={selectedCs?.series?.map((s) => ({
+                      x: s?.data?.map((p) => p.x),
+                      y: s?.data?.map((p) => p.y),
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: s.name,
+                      line: { shape: 'linear', width: 1, color: s.color },
+                    }))}
+                    config={chartOptions.config}
+                    layout={chartOptions.layout}
+                    style={chartOptions.style}
                   />
                 </Box>
 

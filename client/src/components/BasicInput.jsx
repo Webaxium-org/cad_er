@@ -72,7 +72,7 @@ const BasicInput = ({
         {...props}
         onKeyDown={(e) => {
           if (props.type === 'number') {
-            if (['e', 'E', '+', '-'].includes(e.key)) {
+            if (['e', 'E', '+'].includes(e.key)) {
               e.preventDefault();
             }
           }

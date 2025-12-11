@@ -6,8 +6,12 @@ import { startLoading, stopLoading } from '../../redux/loadingSlice';
 import { getSurvey } from '../../services/surveyServices';
 import { Box, Stack, Typography } from '@mui/material';
 import CrossSectionChart from './components/CrossSectionChart';
-import { advancedChartOptions, initialChartOptions } from '../../constants';
-import CrossSectionChartV2 from './components/CrossSectionChartV2';
+import {
+  advancedChartOptions,
+  initialChartOptions,
+  v1ChartOptions,
+  v2ChartOptions,
+} from '../../constants';
 import BasicMenu from '../../components/BasicMenu';
 import { BsThreeDots } from 'react-icons/bs';
 
@@ -33,7 +37,7 @@ const LongitudinalSectionReport = () => {
 
   const { global } = useSelector((state) => state.loading);
 
-  const [chartOptions, setChartOptions] = useState(advancedChartOptions);
+  const [chartOptions, setChartOptions] = useState(v1ChartOptions);
 
   const [survey, setSurvey] = useState(null);
 
@@ -42,8 +46,62 @@ const LongitudinalSectionReport = () => {
   const [selectedCs, setSelectedCs] = useState(null);
 
   const handleMenuSelect = (item) => {
-    if (item.value === 'v1') setChartOptions(advancedChartOptions);
-    if (item.value === 'v2') setChartOptions(initialChartOptions);
+    if (!selectedCs) return;
+
+    // Compute bounds
+    const minY = Math.min(...selectedCs.allRl);
+    const maxY = Math.max(...selectedCs.allRl);
+
+    // Padding - you can tweak the factor
+    const pad = (maxY - minY) * 0.1;
+
+    const minX = Math.min(...selectedCs.chainages);
+    const maxX = Math.max(...selectedCs.chainages);
+
+    const xaxis = {
+      autorange: false,
+      range: [minX, maxX], // No padding, start exactly at the first x
+      tickformat: '.3f', // 3 decimals always
+      dtick: (maxX - minX) / 4, // Generates: min → -2 → 0 → 2 → max
+      zeroline: false,
+      showline: false,
+      mirror: true,
+    };
+
+    if (item.value === 'v1') {
+      setChartOptions((_) => ({
+        ...v1ChartOptions,
+        layout: {
+          ...v1ChartOptions.layout,
+          yaxis: {
+            zeroline: false,
+            autorange: false,
+            range: [minY - 2, maxY + pad],
+          },
+
+          xaxis,
+        },
+      }));
+    }
+    if (item.value === 'v2') {
+      setChartOptions((_) => ({
+        ...v2ChartOptions,
+        layout: {
+          ...v2ChartOptions.layout,
+          yaxis: {
+            ...v2ChartOptions.layout.yaxis,
+            zeroline: false,
+            autorange: false,
+            range: [minY - 2, maxY + pad],
+          },
+
+          xaxis: {
+            ...v2ChartOptions.layout.xaxis,
+            ...xaxis,
+          },
+        },
+      }));
+    }
   };
 
   const handleSetTableData = (survey) => {
@@ -95,13 +153,18 @@ const LongitudinalSectionReport = () => {
 
     const data = {
       id,
+      type: 'ls',
       datum: 9.4,
       chainages: safeChainages,
       series: [],
+      allRl: [],
     };
 
-    const makeSeries = (name, offsets, levels) =>
-      offsets.map((o, i) => [Number(o), Number(levels?.[i] ?? 0).toFixed(3)]);
+    const makeSeries = (offsets, levels) =>
+      offsets.map((o, i) => ({
+        x: Number(Number(o).toFixed(3)), // NUMERIC X (IMPORTANT)
+        y: Number(Number(levels?.[i] ?? 0).toFixed(3)),
+      }));
 
     // Add all additional tableData (Proposed, Level 2, etc.)
     if (tableData.length > 1) {
@@ -123,10 +186,12 @@ const LongitudinalSectionReport = () => {
           return r.reducedLevels[safeOffsetPointIndex];
         });
 
+        data.allRl.push(...safeProposal);
+
         data.series.push({
           name: table.type,
           color: getColor(table.type),
-          data: makeSeries(table.type, safeChainages, safeProposal),
+          data: makeSeries(safeChainages, safeProposal),
         });
       }
     }
@@ -135,9 +200,45 @@ const LongitudinalSectionReport = () => {
     data.series.push({
       name: initialEntry.type,
       color: getColor(initialEntry.type),
-      data: makeSeries(initialEntry.type, safeChainages, safeInitial),
+      data: makeSeries(safeChainages, safeInitial),
     });
 
+    data.allRl.push(...safeInitial);
+
+    // Compute bounds
+    const minY = Math.min(...data.allRl);
+    const maxY = Math.max(...data.allRl);
+
+    const pad = (maxY - minY) * 0.1;
+
+    const minX = Math.min(...data.chainages);
+    const maxX = Math.max(...data.chainages);
+
+    const xaxis = {
+      autorange: false,
+      range: [minX, maxX],
+      tickformat: '.3f',
+      dtick: (maxX - minX) / 4,
+      zeroline: false,
+      showline: false,
+      mirror: true,
+    };
+
+    setChartOptions((_) => ({
+      ...v1ChartOptions,
+      layout: {
+        ...v1ChartOptions.layout,
+        yaxis: {
+          zeroline: false,
+          autorange: false,
+          range: [minY - 2, maxY + pad],
+        },
+
+        xaxis,
+      },
+    }));
+
+    data.datum = Math.round(minY - 2);
     setSelectedCs(data);
   };
 

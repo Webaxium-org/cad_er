@@ -86,21 +86,8 @@ export const advancedChartOptions = {
     width: 1,
   },
 
-  grid: {
-    show: true,
-    borderColor: '#ccc',
-    strokeDashArray: 0,
-    xaxis: {
-      lines: { show: true },
-    },
-    yaxis: {
-      lines: { show: true },
-    },
-  },
-
   xaxis: {
-    type: 'numeric',
-    tickAmount: 'dataPoints',
+    type: 'category',
     labels: { show: true },
     axisBorder: {
       show: true,
@@ -126,8 +113,77 @@ export const advancedChartOptions = {
     },
   },
 
+  grid: {
+    show: true,
+    borderColor: '#ccc',
+    strokeDashArray: 0,
+    xaxis: { lines: { show: true } },
+    yaxis: { lines: { show: true } },
+  },
+
   legend: { show: false },
   tooltip: { enabled: true },
+};
+
+export const v1ChartOptions = {
+  id: 'v1',
+  config: {
+    displayModeBar: false,
+    scrollZoom: false,
+    doubleClick: false,
+    displaylogo: false,
+  },
+  layout: {
+    title: 'CS',
+    dragmode: false,
+    showlegend: false,
+
+    margin: { l: 50, r: 20, t: 30, b: 20 },
+    transition: {
+      duration: 500,
+      easing: 'cubic-in-out',
+    },
+  },
+  style: { width: '100%', height: '250px' },
+};
+
+export const v2ChartOptions = {
+  id: 'v2',
+  config: {
+    displayModeBar: false,
+    scrollZoom: false,
+    doubleClick: false,
+    displaylogo: false,
+  },
+  layout: {
+    title: 'LS',
+    dragmode: false,
+    showlegend: false,
+
+    margin: { l: 10, r: 10, t: 30, b: 20 },
+
+    xaxis: {
+      showgrid: false,
+      zeroline: false,
+      showline: false,
+      showticklabels: false,
+      ticks: '',
+    },
+
+    yaxis: {
+      showgrid: false,
+      zeroline: false,
+      showline: false,
+      showticklabels: false,
+      ticks: '',
+    },
+
+    transition: {
+      duration: 500,
+      easing: 'cubic-in-out',
+    },
+  },
+  style: { width: '100%', height: '100px' },
 };
 
 export const calculateReducedLevel = (survey, newReading, purposeId) => {
