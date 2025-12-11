@@ -272,7 +272,18 @@ const CrossSectionReport = () => {
 
     setChartOptions((prev) => ({
       ...prev,
-      yaxis: { ...prev.yaxis, max: maxVal > highestRl ? maxVal : highestRl },
+
+      layout: {
+        ...chartOptions.layout,
+        yaxis: {
+          zeroline: false,
+          autorange: false,
+          range: [
+            chartOptions?.layout?.yaxis?.range[0] || 0,
+            maxVal > highestRl ? maxVal : highestRl,
+          ],
+        },
+      },
     }));
 
     setMaxValue(maxVal);

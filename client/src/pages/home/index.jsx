@@ -1,6 +1,14 @@
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
-import { Stack, Box, Typography, Grid, Paper } from '@mui/material';
+import { useEffect, useState } from 'react';
+import {
+  Stack,
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  Tooltip,
+  Fab,
+} from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useDispatch, useSelector } from 'react-redux';
 import { stopLoading } from '../../redux/loadingSlice';
@@ -16,6 +24,7 @@ import { TbReportSearch } from 'react-icons/tb';
 import { TbRefresh } from 'react-icons/tb';
 import { MdGpsFixed } from 'react-icons/md';
 import { GoChecklist } from 'react-icons/go';
+import { BiSupport } from 'react-icons/bi';
 
 import BackgroundImage from '../../assets/background-img.png';
 import logo from '../../assets/logo/CADer logo-main.png';
@@ -23,6 +32,17 @@ import ImageAvatars from '../../components/ImageAvatar';
 import BasicButton from '../../components/BasicButton';
 import { IoIosAddCircleOutline } from 'react-icons/io';
 import BasicDivider from '../../components/BasicDevider';
+import AlertDialogSlide from '../../components/AlertDialogSlide';
+
+const alertData = {
+  title: 'Help & Support',
+  description: `If you have any questions or need assistance, we're here to help.
+            Please describe your issue below, and our support team will get back
+            to you as soon as possible.`,
+  content: <BasicInput placeholder="Message" sx={{ mt: 2 }} />,
+  cancelButtonText: 'Cancel',
+  submitButtonText: 'Continue',
+};
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -32,6 +52,8 @@ const Home = () => {
   const { user } = useSelector((state) => state.user);
 
   const { global } = useSelector((state) => state.loading);
+
+  const [open, setOpen] = useState();
 
   const above385 = useMediaQuery('(min-width:386px)');
   const above400 = useMediaQuery('(min-width:400px)');
@@ -59,305 +81,346 @@ const Home = () => {
     },
   ];
 
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   useEffect(() => {
     dispatch(stopLoading());
   }, []);
 
   return (
-    <Stack spacing={2} pb={2} sx={{ userSelect: 'none' }}>
-      {/* 🌈 HEADER */}
-      <Stack
-        p={2}
-        height={'228px'}
-        sx={{
-          position: 'relative',
-          backgroundColor: 'rgba(40, 151, 255, 1)',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `url(${BackgroundImage})`,
-            backgroundSize: '200%',
-            backgroundPosition: 'center',
-            opacity: 0.25,
-            zIndex: 0,
-            height: '60dvh',
-            width: '100%',
-          }}
-        ></div>
-        <Box
-          display={'flex'}
-          justifyContent={'space-between'}
-          alignItems={'center'}
-          color="white"
-        >
-          <img src={logo} alt="CADer" style={{ width: '65px' }} />
-          <IoNotificationsOutline fontSize={'28px'} />
-        </Box>
-
+    <>
+      <Stack spacing={2} pb={2} sx={{ userSelect: 'none' }}>
+        {/* 🌈 HEADER */}
         <Stack
-          direction={'row'}
-          alignItems={'center'}
-          justifyContent={'space-between'}
-          mt={2}
+          p={2}
+          height={'228px'}
+          sx={{
+            position: 'relative',
+            backgroundColor: 'rgba(40, 151, 255, 1)',
+          }}
         >
-          <Stack direction={'row'} alignItems={'center'} spacing={1}>
-            <ImageAvatars
-              sx={{
-                width: '48px',
-                height: '48px',
-                backgroundColor: '#fff',
-                color: 'rgba(40, 151, 255, 1)',
-                '& .css-1mo2pzk-MuiSvgIcon-root-MuiAvatar-fallback': {
-                  width: '60%',
-                  height: '60%',
-                },
-              }}
-            />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: `url(${BackgroundImage})`,
+              backgroundSize: '200%',
+              backgroundPosition: 'center',
+              opacity: 0.25,
+              zIndex: 0,
+              height: '60dvh',
+              width: '100%',
+            }}
+          ></div>
+          <Box
+            display={'flex'}
+            justifyContent={'space-between'}
+            alignItems={'center'}
+            color="white"
+          >
+            <img src={logo} alt="CADer" style={{ width: '65px' }} />
+            <IoNotificationsOutline fontSize={'28px'} />
+          </Box>
 
-            <Box color="white">
-              <Typography fontWeight={700} fontSize="14px">
-                Hello,
-              </Typography>
-              <Typography fontWeight={700} fontSize="14px">
-                {user.name}
-              </Typography>
+          <Stack
+            direction={'row'}
+            alignItems={'center'}
+            justifyContent={'space-between'}
+            mt={2}
+          >
+            <Stack direction={'row'} alignItems={'center'} spacing={1}>
+              <ImageAvatars
+                sx={{
+                  width: '48px',
+                  height: '48px',
+                  backgroundColor: '#fff',
+                  color: 'rgba(40, 151, 255, 1)',
+                  '& .css-1mo2pzk-MuiSvgIcon-root-MuiAvatar-fallback': {
+                    width: '60%',
+                    height: '60%',
+                  },
+                }}
+              />
+
+              <Box color="white">
+                <Typography fontWeight={700} fontSize="14px">
+                  Hello,
+                </Typography>
+                <Typography fontWeight={700} fontSize="14px">
+                  {user.name}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Box minWidth={'123px'}>
+              <BasicButton
+                value={
+                  <Box
+                    display={'flex'}
+                    gap={1}
+                    alignItems={'center'}
+                    color={'rgba(0, 111, 253, 1)'}
+                  >
+                    <IoIosAddCircleOutline
+                      fontSize={'20px'}
+                      fontWeight={'900'}
+                      strokeWidth={'10px'}
+                    />
+                    <Typography fontSize={'13px'} fontWeight={700}>
+                      Add Project
+                    </Typography>
+                  </Box>
+                }
+                onClick={() => navigate('/survey/select-equipment')}
+                sx={{
+                  backgroundColor: '#ffffff',
+                  height: '45px',
+                  '&:hover': {
+                    backgroundColor: '#ffffff',
+                  },
+                }}
+              />
             </Box>
           </Stack>
 
-          <Box minWidth={'123px'}>
-            <BasicButton
-              value={
-                <Box
-                  display={'flex'}
-                  gap={1}
-                  alignItems={'center'}
-                  color={'rgba(0, 111, 253, 1)'}
-                >
-                  <IoIosAddCircleOutline
-                    fontSize={'20px'}
-                    fontWeight={'900'}
-                    strokeWidth={'10px'}
-                  />
-                  <Typography fontSize={'13px'} fontWeight={700}>
-                    Add Project
-                  </Typography>
-                </Box>
-              }
-              onClick={() => navigate('/survey/select-equipment')}
+          <BasicDivider
+            borderBottomWidth={0.5}
+            color="rgba(222, 222, 222, 1)"
+          />
+
+          <Box position={'relative'}>
+            <Box
+              position={'absolute'}
+              zIndex={1}
+              sx={{ top: '10px', left: '10px' }}
+              color={'rgba(145, 145, 145, 1)'}
+            >
+              <MdOutlineSearch fontSize={'24px'} />
+            </Box>
+            <BasicInput
+              placeholder="Search"
               sx={{
-                backgroundColor: '#ffffff',
-                height: '45px',
-                '&:hover': {
-                  backgroundColor: '#ffffff',
-                },
+                paddingLeft: '40px',
+                borderRadius: '14px',
               }}
             />
           </Box>
         </Stack>
 
-        <BasicDivider borderBottomWidth={0.5} color="rgba(222, 222, 222, 1)" />
-
-        <Box position={'relative'}>
-          <Box
-            position={'absolute'}
-            zIndex={1}
-            sx={{ top: '10px', left: '10px' }}
-            color={'rgba(145, 145, 145, 1)'}
-          >
-            <MdOutlineSearch fontSize={'24px'} />
-          </Box>
-          <BasicInput
-            placeholder="Search"
-            sx={{
-              paddingLeft: '40px',
-              borderRadius: '14px',
-            }}
-          />
-        </Box>
-      </Stack>
-
-      <Box px={2} className="overlapping-header">
-        {/* ⚡ Quick Actions */}
-        <Stack spacing={2}>
-          <Typography fontWeight={700} fontSize="16px">
-            Quick Actions
-          </Typography>
-          <Box display={'flex'} justifyContent={'space-between'}>
-            {actions.map((item, idx) => (
-              <Box key={idx}>
-                <Stack alignItems={'center'} height={'100%'} spacing={0.5}>
-                  <Paper
-                    elevation={3}
-                    sx={{
-                      px: 2,
-                      py: 1.5,
-                      borderRadius: '14px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      width: `${above400 ? '55px' : '46px'}`,
-                      height: '100%',
-                      backgroundColor: 'white',
-                      '&:hover': {
-                        transform: 'scale(1.05)',
-                      },
-                    }}
-                    onClick={() => navigate(item.link)}
-                  >
-                    <Stack
-                      justifyContent={'center'}
-                      alignItems={'center'}
-                      spacing={0.5}
-                      sx={{ color: 'rgba(0, 111, 253, 1)' }}
+        <Box px={2} className="overlapping-header">
+          {/* ⚡ Quick Actions */}
+          <Stack spacing={2}>
+            <Typography fontWeight={700} fontSize="16px">
+              Quick Actions
+            </Typography>
+            <Box display={'flex'} justifyContent={'space-between'}>
+              {actions.map((item, idx) => (
+                <Box key={idx}>
+                  <Stack alignItems={'center'} height={'100%'} spacing={0.5}>
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        px: 2,
+                        py: 1.5,
+                        borderRadius: '14px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        width: `${above400 ? '55px' : '46px'}`,
+                        height: '100%',
+                        backgroundColor: 'white',
+                        '&:hover': {
+                          transform: 'scale(1.05)',
+                        },
+                      }}
+                      onClick={() => navigate(item.link)}
                     >
-                      {item.icon}
-                      <Typography
-                        fontSize={above400 ? '12px' : '10px'}
-                        fontWeight={700}
-                        color="black"
-                        align="center"
+                      <Stack
+                        justifyContent={'center'}
+                        alignItems={'center'}
+                        spacing={0.5}
+                        sx={{ color: 'rgba(0, 111, 253, 1)' }}
                       >
-                        {item.label}
+                        {item.icon}
+                        <Typography
+                          fontSize={above400 ? '12px' : '10px'}
+                          fontWeight={700}
+                          color="black"
+                          align="center"
+                        >
+                          {item.label}
+                        </Typography>
+                      </Stack>
+                    </Paper>
+                  </Stack>
+                </Box>
+              ))}
+            </Box>
+
+            {/* Overview */}
+            <Typography fontWeight={700} fontSize="16px">
+              Overview
+            </Typography>
+
+            <Grid container columns={12} spacing={2}>
+              <Grid size={{ xs: above385 ? 6 : 12 }}>
+                <BasicCard
+                  key={global}
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{
+                    y: -5,
+                    boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+                  }}
+                  transition={{ duration: 0.4, delay: 0.6 }}
+                  sx={{
+                    borderBottom: '2px solid #006FFD',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                  }}
+                  content={
+                    <Stack spacing={1}>
+                      <Box
+                        display={'flex'}
+                        justifyContent={'space-between'}
+                        alignItems={'center'}
+                        gap={1.5}
+                      >
+                        <Typography fontWeight={600} fontSize="14px">
+                          Total Projects
+                        </Typography>
+
+                        <Box
+                          bgcolor={'rgba(234, 242, 255, 1)'}
+                          borderRadius={'6px'}
+                          padding={'8px 8px 6px'}
+                        >
+                          <TbReport
+                            size={20}
+                            style={{
+                              color: 'rgba(0, 111, 253, 1)',
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                      <Typography fontWeight={700} fontSize="24px">
+                        12
+                      </Typography>
+
+                      <Typography
+                        fontWeight={600}
+                        fontSize="14px"
+                        color="rgba(40, 151, 255, 1)"
+                      >
+                        Today +2
                       </Typography>
                     </Stack>
-                  </Paper>
-                </Stack>
-              </Box>
-            ))}
-          </Box>
+                  }
+                />
+              </Grid>
+              <Grid size={{ xs: above385 ? 6 : 12 }}>
+                <BasicCard
+                  key={global}
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{
+                    y: -5,
+                    boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+                  }}
+                  transition={{ duration: 0.4, delay: 0.8 }}
+                  sx={{
+                    borderBottom: '2px solid rgba(57, 104, 58, 1)',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                    height: '100%',
+                  }}
+                  content={
+                    <Stack spacing={1}>
+                      <Box
+                        display={'flex'}
+                        justifyContent={'space-between'}
+                        alignItems={'center'}
+                        gap={1.5}
+                      >
+                        <Typography fontWeight={600} fontSize="14px">
+                          Total Tasks
+                        </Typography>
 
-          {/* Overview */}
-          <Typography fontWeight={700} fontSize="16px">
-            Overview
-          </Typography>
-
-          <Grid container columns={12} spacing={2}>
-            <Grid size={{ xs: above385 ? 6 : 12 }}>
-              <BasicCard
-                key={global}
-                component={motion.div}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{
-                  y: -5,
-                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
-                }}
-                transition={{ duration: 0.4, delay: 0.6 }}
-                sx={{
-                  borderBottom: '2px solid #006FFD',
-                  borderRadius: '16px',
-                  cursor: 'pointer',
-                }}
-                content={
-                  <Stack spacing={1}>
-                    <Box
-                      display={'flex'}
-                      justifyContent={'space-between'}
-                      alignItems={'center'}
-                      gap={1.5}
-                    >
-                      <Typography fontWeight={600} fontSize="14px">
-                        Total Projects
+                        <Box
+                          bgcolor={'rgba(57, 104, 58, 0.22)'}
+                          borderRadius={'6px'}
+                          padding={'8px 8px 6px'}
+                        >
+                          <GoChecklist
+                            size={20}
+                            style={{
+                              color: 'rgba(57, 104, 58, 1)',
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                      <Typography fontWeight={700} fontSize="24px">
+                        0
                       </Typography>
 
-                      <Box
-                        bgcolor={'rgba(234, 242, 255, 1)'}
-                        borderRadius={'6px'}
-                        padding={'8px 8px 6px'}
+                      <Typography
+                        fontWeight={600}
+                        fontSize="14px"
+                        color="rgba(57, 104, 58, 1)"
                       >
-                        <TbReport
-                          size={20}
-                          style={{
-                            color: 'rgba(0, 111, 253, 1)',
-                          }}
-                        />
-                      </Box>
-                    </Box>
-                    <Typography fontWeight={700} fontSize="24px">
-                      12
-                    </Typography>
-
-                    <Typography
-                      fontWeight={600}
-                      fontSize="14px"
-                      color="rgba(40, 151, 255, 1)"
-                    >
-                      Today +2
-                    </Typography>
-                  </Stack>
-                }
-              />
-            </Grid>
-            <Grid size={{ xs: above385 ? 6 : 12 }}>
-              <BasicCard
-                key={global}
-                component={motion.div}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{
-                  y: -5,
-                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
-                }}
-                transition={{ duration: 0.4, delay: 0.8 }}
-                sx={{
-                  borderBottom: '2px solid rgba(57, 104, 58, 1)',
-                  borderRadius: '16px',
-                  cursor: 'pointer',
-                  height: '100%',
-                }}
-                content={
-                  <Stack spacing={1}>
-                    <Box
-                      display={'flex'}
-                      justifyContent={'space-between'}
-                      alignItems={'center'}
-                      gap={1.5}
-                    >
-                      <Typography fontWeight={600} fontSize="14px">
-                        Total Tasks
+                        Today 0
                       </Typography>
-
-                      <Box
-                        bgcolor={'rgba(57, 104, 58, 0.22)'}
-                        borderRadius={'6px'}
-                        padding={'8px 8px 6px'}
-                      >
-                        <GoChecklist
-                          size={20}
-                          style={{
-                            color: 'rgba(57, 104, 58, 1)',
-                          }}
-                        />
-                      </Box>
-                    </Box>
-                    <Typography fontWeight={700} fontSize="24px">
-                      0
-                    </Typography>
-
-                    <Typography
-                      fontWeight={600}
-                      fontSize="14px"
-                      color="rgba(57, 104, 58, 1)"
-                    >
-                      Today 0
-                    </Typography>
-                  </Stack>
-                }
-              />
+                    </Stack>
+                  }
+                />
+              </Grid>
             </Grid>
-          </Grid>
-        </Stack>
+          </Stack>
 
-        <Stack spacing={2} mt={2} sx={{ display: 'none' }}>
-          <Typography fontWeight={700} fontSize="16px">
-            Tasks
-          </Typography>
-        </Stack>
-      </Box>
-    </Stack>
+          <Stack spacing={2} mt={2} sx={{ display: 'none' }}>
+            <Typography fontWeight={700} fontSize="16px">
+              Tasks
+            </Typography>
+          </Stack>
+        </Box>
+      </Stack>
+      <Tooltip title="Help" placement="left">
+        <Fab
+          onClick={handleOpen}
+          aria-label="help"
+          sx={{
+            position: 'fixed',
+            bottom: 90,
+            right: 24,
+            borderRadius: 8,
+            textTransform: 'none',
+            zIndex: 2000,
+            width: 56,
+            height: 56,
+            backgroundColor: '#006FFD',
+            color: 'white',
+            ':hover': { backgroundColor: '#006FFD' },
+          }}
+        >
+          <BiSupport size={24} />
+        </Fab>
+      </Tooltip>
+
+      <AlertDialogSlide
+        {...alertData}
+        open={open}
+        onCancel={handleClose}
+        onSubmit={handleClose}
+      />
+    </>
   );
 };
 
