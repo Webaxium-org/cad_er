@@ -24,6 +24,17 @@ import StatusChip from '../../components/StatusChip';
 import { TiEye } from 'react-icons/ti';
 import { ProjectListCardSkeleton } from './components/ProjectListCardSkeleton';
 import { highlightText } from '../../internals';
+import AlertDialogSlide from '../../components/AlertDialogSlide';
+import { showAlert } from '../../redux/alertSlice';
+import BasicButton from '../../components/BasicButton';
+
+const alertDetails = {
+  title: 'Field Book',
+  description: 'Please select the level to go to the field book',
+  content: '',
+  cancelButtonText: 'Cancel',
+  submitButtonText: 'View',
+};
 
 const colors = {
   Initial: 'green',
@@ -67,19 +78,20 @@ const fieldsToMap = [
   },
 ];
 
-const getLink = (survey, target) => {
+const getLink = (survey, target, type) => {
   if (target === 'reports') {
     return `/survey/${survey._id}/report`;
   }
 
-  const initialLevel = survey?.purposes?.find(
-    (p) => p.type === 'Initial Level'
+  const level = survey?.purposes?.find(
+    (p) => p.type === (type || 'Initial Level')
   );
 
   if (target === 'Field Book') {
-    if (initialLevel?.isPurposeFinish) {
-      return `/survey/road-survey/${initialLevel._id}/field-book`;
+    if (level?.isPurposeFinish) {
+      return `/survey/road-survey/${level._id}/field-book`;
     } else {
+      console.log('calling');
       return '#';
     }
   } else {
@@ -99,6 +111,12 @@ export default function ProjectsList() {
   const [surveys, setSurveys] = useState([]);
 
   const [searchMode, setSearchMode] = useState(false);
+
+  const [alertData, setAlertData] = useState(alertDetails);
+
+  const [open, setOpen] = useState(false);
+
+  const [link, setLink] = useState('');
 
   const [search, setSearch] = useState('');
 
@@ -130,6 +148,90 @@ export default function ProjectsList() {
         })
       );
     }
+  };
+
+  const handleClose = () => {
+    setLink('');
+
+    setOpen(false);
+  };
+
+  const handleClickFiledBook = (surveyId) => {
+    const survey = surveys.find((s) => String(s._id) === surveyId);
+    if (!survey) return;
+
+    const fieldBooks = survey.purposes.filter(
+      (p) => p.phase === 'Actual' && p.isPurposeFinish
+    );
+
+    if (!fieldBooks.length) {
+      return dispatch(
+        showAlert({
+          type: 'warning',
+          message: 'Please complete the Initial Level',
+        })
+      );
+    }
+
+    if (fieldBooks.length === 1) {
+      const link = getLink(survey, 'Field Book');
+
+      return navigate(link);
+    }
+
+    setAlertData((prev) => ({
+      ...prev,
+      content: (
+        <Box mt={2}>
+          {fieldBooks.map((fieldBook, idx) => (
+            <BasicButton
+              key={idx}
+              sx={{
+                width: '100%',
+                borderRadius: 1.5,
+                p: 1.5,
+                mb: 1,
+                justifyContent: 'space-between',
+                textAlign: 'left',
+                border: '1px solid #e0e0e0',
+              }}
+              variant="outlined"
+              onClick={() =>
+                setLink(getLink(survey, 'Field Book', fieldBook?.type))
+              }
+              value={
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography
+                    variant="body2"
+                    fontSize="16px"
+                    fontWeight={600}
+                    color="black"
+                  >
+                    {fieldBook?.type}
+                  </Typography>
+                </Stack>
+              }
+            />
+          ))}
+        </Box>
+      ),
+    }));
+
+    setOpen(true);
+  };
+
+  const handleViewFieldBook = () => {
+    console.log(link);
+    if (!link) {
+      return dispatch(
+        showAlert({
+          type: 'warning',
+          message: 'Please select a level to view the field book.',
+        })
+      );
+    }
+
+    navigate(link);
   };
 
   const fetchSurveys = async () => {
@@ -229,7 +331,17 @@ export default function ProjectsList() {
                               {value}
 
                               {type === 'Icon' ? (
-                                <Link to={getLink(survey, value)}>{key}</Link>
+                                value === 'Field Book' ? (
+                                  <Box
+                                    onClick={() =>
+                                      handleClickFiledBook(survey._id)
+                                    }
+                                  >
+                                    {key}
+                                  </Box>
+                                ) : (
+                                  <Link to={getLink(survey, value)}>{key}</Link>
+                                )
                               ) : (
                                 <Typography
                                   color={
@@ -320,6 +432,13 @@ export default function ProjectsList() {
 
   return (
     <Box>
+      <AlertDialogSlide
+        {...alertData}
+        open={open}
+        onCancel={handleClose}
+        onSubmit={handleViewFieldBook}
+      />
+
       <Box position={'sticky'} p={2} top={0} bgcolor={'white'} zIndex={1}>
         {/* Header */}
         <Box

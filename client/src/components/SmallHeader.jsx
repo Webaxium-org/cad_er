@@ -9,7 +9,8 @@ const SmallHeader = () => {
       p={2}
       sx={{
         position: 'relative',
-        backgroundColor: 'rgba(40, 151, 255, 1)',
+        background:
+          'linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)',
       }}
       height={'88px'}
     >

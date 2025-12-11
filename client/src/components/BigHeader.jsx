@@ -9,7 +9,8 @@ const BigHeader = () => {
       p={2}
       sx={{
         position: 'relative',
-        backgroundColor: 'rgba(40, 151, 255, 1)',
+        background:
+          'linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)',
         color: 'white',
       }}
       height={'45dvh'}
@@ -40,7 +41,11 @@ const BigHeader = () => {
         alignItems={'center'}
         height={'100%'}
       >
-        <img src={logo} alt="CADer" style={{ width: '150px', paddingBottom: '65px' }} />
+        <img
+          src={logo}
+          alt="CADer"
+          style={{ width: '150px', paddingBottom: '65px' }}
+        />
       </Box>
     </Stack>
   );
