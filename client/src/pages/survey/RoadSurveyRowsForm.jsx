@@ -13,6 +13,7 @@ import { IoIosRemove } from 'react-icons/io';
 import BasicCheckbox from '../../components/BasicCheckbox';
 import { showAlert } from '../../redux/alertSlice';
 import { MdArrowBackIosNew } from 'react-icons/md';
+import { FaRegEdit } from 'react-icons/fa';
 import {
   createSurveyRow,
   endSurveyPurpose,
@@ -28,6 +29,9 @@ import { calculateReducedLevel, v2ChartOptions } from '../../constants';
 import { MdDone } from 'react-icons/md';
 import BasicSpeedDial from '../../components/BasicSpeedDial';
 import BasicSelect from '../../components/BasicSelect';
+import BasicCard from '../../components/BasicCard';
+import BasicDivider from '../../components/BasicDevider';
+import EditPreviousReading from './components/EditPreviousReading';
 
 const colors = {
   Initial: 'green',
@@ -125,6 +129,7 @@ const RoadSurveyRowsForm = () => {
   const [selectedCs, setSelectedCs] = useState(null);
   const [alertData, setAlertData] = useState(null);
   const [compareData, setCompareData] = useState(null);
+  const [isEdit, setIsEdit] = useState(false);
 
   const schema = Yup.object().shape({
     type: Yup.string().required('Type is required'),
@@ -353,6 +358,12 @@ const RoadSurveyRowsForm = () => {
 
   const handleClose = () => {
     setOpen(false);
+  };
+  const handleClickOpenEdit = () => {
+    setIsEdit(true);
+  };
+  const handleClickCloseEdit = () => {
+    setIsEdit(false);
   };
 
   const updateInputData = () => {
@@ -1375,6 +1386,51 @@ const RoadSurveyRowsForm = () => {
           />
         )}
       </Stack>
+
+      <Activity mode={page === 0 && purpose ? 'visible' : 'hidden'}>
+        <BasicDivider borderBottomWidth={0.5} color="#d9d9d9" />
+
+        <Stack spacing={2} mt={2}>
+          <Typography fontWeight={700} fontSize="16px">
+            Previously added reading
+          </Typography>
+
+          <BasicCard
+            sx={{
+              boxShadow: 1,
+            }}
+            contentSx={{ p: '16px !important' }}
+            content={
+              <Stack>
+                <Stack
+                  direction={'row'}
+                  alignItems={'center'}
+                  justifyContent={'space-between'}
+                >
+                  <Typography fontWeight={700} fontSize="14px">
+                    Type of reading:
+                  </Typography>
+                  <Typography fontSize={14} color="text.secondary">
+                    {purpose?.rows?.at(-1)?.type === 'Instrument setup'
+                      ? 'TBM'
+                      : purpose?.rows?.at(-1)?.type}
+                  </Typography>
+
+                  <FaRegEdit color="#2897FF" onClick={handleClickOpenEdit} />
+
+                  {isEdit && (
+                    <EditPreviousReading
+                      open={isEdit}
+                      onCancel={handleClickCloseEdit}
+                      onSubmit={handleClickCloseEdit}
+                    />
+                  )}
+                </Stack>
+              </Stack>
+            }
+          />
+        </Stack>
+      </Activity>
     </Box>
   );
 };

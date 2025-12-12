@@ -69,7 +69,7 @@ const taskData = [
   {
     title: 'Soil Testing',
     description: 'analyze soil composition and moisture content',
-    status: 'Completed',
+    status: 'Pending',
     createdAt: '09:30 AM',
   },
   {
@@ -87,7 +87,7 @@ const taskData = [
   {
     title: 'Excavation Leveling',
     description: 'ensure excavation is done at correct levels',
-    status: 'Completed',
+    status: 'In Progress',
     createdAt: '11:20 AM',
   },
   {
@@ -105,7 +105,7 @@ const taskData = [
   {
     title: 'Equipment Calibration',
     description: 'calibrate surveying instruments and tools',
-    status: 'Completed',
+    status: 'Pending',
     createdAt: '01:40 PM',
   },
 ];
@@ -203,7 +203,7 @@ const Home = () => {
         </Tooltip>
       )}
 
-      <Stack spacing={2} pb={2} sx={{ userSelect: 'none' }}>
+      <Stack spacing={2} pb={2} sx={{ userSelect: 'none' }} overflow={'hidden'}>
         {/* 🌈 HEADER */}
         <Stack
           p={2}
@@ -497,65 +497,60 @@ const Home = () => {
                 />
               </Grid>
             </Grid>
-          </Stack>
 
-          <Stack spacing={2} mt={2} sx={{ display: 'none' }}>
             <Typography fontWeight={700} fontSize="16px">
               Tasks
             </Typography>
-          </Stack>
-        </Box>
+            {taskData.map((task, idx) => (
+              <BasicCard
+                key={idx}
+                sx={{
+                  borderRadius: 4,
+                  boxShadow: 1,
+                }}
+                component={motion.div}
+                {...animations[idx % 2]}
+                whileHover={{
+                  y: -5,
+                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+                }}
+                transition={{ duration: 0.4, delay: 0.6 + idx * 0.1 }}
+                contentSx={{ p: '16px !important' }}
+                content={
+                  <Box position={'relative'}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      className="task-card-inner"
+                    >
+                      {/* Left Side - Time + Title + Description */}
+                      <Stack spacing={1}>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <IoTime fontSize={18} color="#2897FF" />
+                          <Typography fontSize={14} color="#2897FF">
+                            {task.createdAt}
+                          </Typography>
+                        </Stack>
 
-        <Stack spacing={2} px={2} overflow={'hidden'}>
-          {taskData.map((task, idx) => (
-            <BasicCard
-              key={idx}
-              sx={{
-                borderRadius: 4,
-                boxShadow: 1,
-                bgcolor: '#fff',
-              }}
-              component={motion.div}
-              {...animations[idx % 2]}
-              whileHover={{
-                y: -5,
-                boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
-              }}
-              transition={{ duration: 0.4, delay: 0.6 + idx * 0.1 }}
-              content={
-                <Box position={'relative'}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    className="task-card-inner"
-                  >
-                    {/* Left Side - Time + Title + Description */}
-                    <Stack spacing={1}>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <IoTime fontSize={18} color="#2897FF" />
-                        <Typography fontSize={14} color="#2897FF">
-                          {task.createdAt}
+                        <Typography fontWeight={700} fontSize="14px">
+                          {task.title}
+                        </Typography>
+
+                        <Typography fontSize={14} color="text.secondary">
+                          {task.description}
                         </Typography>
                       </Stack>
 
-                      <Typography fontWeight={700} fontSize="16px">
-                        {task.title}
-                      </Typography>
+                      {/* Status */}
 
-                      <Typography fontSize={14} color="text.secondary">
-                        {task.description}
-                      </Typography>
+                      <StatusChip status={task.status} />
                     </Stack>
-
-                    {/* Status */}
-
-                    <StatusChip status={task.status} />
-                  </Stack>
-                </Box>
-              }
-            />
-          ))}
-        </Stack>
+                  </Box>
+                }
+              />
+            ))}
+          </Stack>
+        </Box>
       </Stack>
     </>
   );

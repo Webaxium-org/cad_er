@@ -35,7 +35,7 @@ SurveyRowSchema.index(
   { purposeId: 1, chainage: 1 },
   {
     unique: true,
-    partialFilterExpression: { chainage: { $ne: null } },
+    partialFilterExpression: { chainage: { $ne: null }, deleted: false },
   }
 );
 

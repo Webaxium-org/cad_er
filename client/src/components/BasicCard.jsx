@@ -5,11 +5,12 @@ export default function BasicCard({
   content,
   sx = {},
   component = 'div',
+  contentSx = {},
   ...rest
 }) {
   return (
     <Card component={component} sx={sx} {...rest}>
-      <CardContent>{content}</CardContent>
+      <CardContent sx={contentSx}>{content}</CardContent>
     </Card>
   );
 }
