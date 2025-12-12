@@ -91,7 +91,6 @@ const getLink = (survey, target, type) => {
     if (level?.isPurposeFinish) {
       return `/survey/road-survey/${level._id}/field-book`;
     } else {
-      console.log('calling');
       return '#';
     }
   } else {
@@ -221,7 +220,6 @@ export default function ProjectsList() {
   };
 
   const handleViewFieldBook = () => {
-    console.log(link);
     if (!link) {
       return dispatch(
         showAlert({

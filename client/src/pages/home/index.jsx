@@ -33,6 +33,7 @@ import BasicButton from '../../components/BasicButton';
 import { IoIosAddCircleOutline } from 'react-icons/io';
 import BasicDivider from '../../components/BasicDevider';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
+import UniversalConverter from '../../components/UniversalConverter';
 
 const alertData = {
   title: 'Help & Support',
@@ -42,6 +43,13 @@ const alertData = {
   content: <BasicInput placeholder="Message" sx={{ mt: 2 }} />,
   cancelButtonText: 'Cancel',
   submitButtonText: 'Continue',
+};
+
+const unitConverterAlertData = {
+  title: 'Unit Converter',
+  description: '',
+  content: '',
+  submitButtonText: 'Cancel',
 };
 
 const Home = () => {
@@ -54,6 +62,8 @@ const Home = () => {
   const { global } = useSelector((state) => state.loading);
 
   const [open, setOpen] = useState();
+
+  const [openUnitConverter, setOpenUnitConverter] = useState();
 
   const above385 = useMediaQuery('(min-width:386px)');
   const above400 = useMediaQuery('(min-width:400px)');
@@ -72,7 +82,7 @@ const Home = () => {
     {
       label: 'Unit Con.',
       icon: <TbRefresh fontSize={above400 ? 32 : 28} />,
-      link: '#',
+      type: 'unit',
     },
     {
       label: 'Camera',
@@ -81,12 +91,14 @@ const Home = () => {
     },
   ];
 
-  const handleOpen = () => {
-    setOpen(true);
+  const handleOpen = (action) => {
+    setOpen(action === 'help & support');
+    setOpenUnitConverter(action === 'unit converter');
   };
 
   const handleClose = () => {
     setOpen(false);
+    setOpenUnitConverter(false);
   };
 
   useEffect(() => {
@@ -104,7 +116,7 @@ const Home = () => {
             position: 'relative',
             // backgroundColor: 'rgba(40, 151, 255, 1)',
             background:
-                  'linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)',
+              'linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)',
           }}
         >
           <div
@@ -241,7 +253,11 @@ const Home = () => {
                           transform: 'scale(1.05)',
                         },
                       }}
-                      onClick={() => navigate(item.link)}
+                      onClick={() => {
+                        item.type === 'unit'
+                          ? handleOpen('unit converter')
+                          : navigate(item.link);
+                      }}
                     >
                       <Stack
                         justifyContent={'center'}
@@ -394,10 +410,10 @@ const Home = () => {
           </Stack>
         </Box>
       </Stack>
-      {!open && (
+      {!open && !openUnitConverter && (
         <Tooltip title="Help" placement="left">
           <Fab
-            onClick={handleOpen}
+            onClick={() => handleOpen('help & support')}
             aria-label="help"
             sx={{
               position: 'fixed',
@@ -422,6 +438,13 @@ const Home = () => {
         {...alertData}
         open={open}
         onCancel={handleClose}
+        onSubmit={handleClose}
+      />
+
+      <AlertDialogSlide
+        {...unitConverterAlertData}
+        content={<UniversalConverter />}
+        open={openUnitConverter}
         onSubmit={handleClose}
       />
     </>

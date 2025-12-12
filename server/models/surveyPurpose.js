@@ -5,7 +5,7 @@ const typeEnum = [
   'Initial Level',
   'Final Level',
   'Final Earth Work',
-  'Quarry Muck',
+  'Final Quarry Muck',
   'Final GSB',
   'Final WMM',
   'Final BM',
