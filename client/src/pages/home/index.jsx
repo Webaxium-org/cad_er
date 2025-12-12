@@ -144,7 +144,7 @@ const Home = () => {
     },
     {
       label: 'Camera',
-      icon: <MdGpsFixed size={28} />,
+      icon: <MdGpsFixed fontSize={above400 ? 32 : 28} />,
       link: '/camera',
     },
   ];
@@ -157,6 +157,15 @@ const Home = () => {
   const handleClose = () => {
     setOpen(false);
     setOpenUnitConverter(false);
+  };
+
+  const handleSubmitSearch = (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const value = formData.get('search');
+
+    navigate('/survey', { state: { search: value } });
   };
 
   useEffect(() => {
@@ -313,13 +322,16 @@ const Home = () => {
             >
               <MdOutlineSearch fontSize={'24px'} />
             </Box>
-            <BasicInput
-              placeholder="Search"
-              sx={{
-                paddingLeft: '40px',
-                borderRadius: '14px',
-              }}
-            />
+            <form onSubmit={(e) => handleSubmitSearch(e)}>
+              <BasicInput
+                name="search"
+                placeholder="Search"
+                sx={{
+                  paddingLeft: '40px',
+                  borderRadius: '14px',
+                }}
+              />
+            </form>
           </Box>
         </Stack>
 
@@ -510,10 +522,6 @@ const Home = () => {
                 }}
                 component={motion.div}
                 {...animations[idx % 2]}
-                whileHover={{
-                  y: -5,
-                  boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
-                }}
                 transition={{ duration: 0.4, delay: 0.6 + idx * 0.1 }}
                 contentSx={{ p: '16px !important' }}
                 content={

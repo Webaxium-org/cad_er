@@ -14,6 +14,7 @@ import BasicCheckbox from '../../components/BasicCheckbox';
 import { showAlert } from '../../redux/alertSlice';
 import { MdArrowBackIosNew } from 'react-icons/md';
 import { FaRegEdit } from 'react-icons/fa';
+import { AiFillDelete } from 'react-icons/ai';
 import {
   createSurveyRow,
   endSurveyPurpose,
@@ -1401,31 +1402,34 @@ const RoadSurveyRowsForm = () => {
             }}
             contentSx={{ p: '16px !important' }}
             content={
-              <Stack>
-                <Stack
-                  direction={'row'}
-                  alignItems={'center'}
-                  justifyContent={'space-between'}
-                >
-                  <Typography fontWeight={700} fontSize="14px">
+              <Stack
+                direction={'row'}
+                alignItems={'center'}
+                justifyContent={'space-between'}
+              >
+                <Stack direction={'row'} spacing={1}>
+                  <Typography fontSize={14} color="text.secondary">
                     Type of reading:
                   </Typography>
-                  <Typography fontSize={14} color="text.secondary">
+                  <Typography fontWeight={700} fontSize="14px">
                     {purpose?.rows?.at(-1)?.type === 'Instrument setup'
                       ? 'TBM'
                       : purpose?.rows?.at(-1)?.type}
                   </Typography>
-
-                  <FaRegEdit color="#2897FF" onClick={handleClickOpenEdit} />
-
-                  {isEdit && (
-                    <EditPreviousReading
-                      open={isEdit}
-                      onCancel={handleClickCloseEdit}
-                      onSubmit={handleClickCloseEdit}
-                    />
-                  )}
                 </Stack>
+
+                <Stack direction={'row'} alignItems={'center'} spacing={1}>
+                  <FaRegEdit color="#2897FF" onClick={handleClickOpenEdit} />
+                  <AiFillDelete color="#fd3636ff" fontSize={17}/>
+                </Stack>
+
+                {isEdit && (
+                  <EditPreviousReading
+                    open={isEdit}
+                    onCancel={handleClickCloseEdit}
+                    onSubmit={handleClickCloseEdit}
+                  />
+                )}
               </Stack>
             }
           />

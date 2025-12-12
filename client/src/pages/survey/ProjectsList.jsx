@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import IOSegmentedTabs from '../../components/IOSegmentedTabs';
 import { useDispatch } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { stopLoading } from '../../redux/loadingSlice';
 import { handleFormError } from '../../utils/handleFormError';
 import { getAllSurvey } from '../../services/surveyServices';
@@ -102,6 +102,8 @@ export default function ProjectsList() {
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
+
+  const { state } = useLocation();
 
   const [tab, setTab] = useState('two');
 
@@ -259,6 +261,15 @@ export default function ProjectsList() {
       dispatch(stopLoading());
     }
   };
+
+  useEffect(() => {
+    const searchText = state?.search?.trim() || '';
+
+    if (searchText) {
+      setSearchMode(true);
+      setSearch(searchText);
+    }
+  }, [state]);
 
   useEffect(() => {
     fetchSurveys();
