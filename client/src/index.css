@@ -223,6 +223,19 @@ body {
   padding: 16px;
 }
 
+.task-card-inner::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 100%;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background-color: #2897FF;
+}
+
 /* ---------------------------
     Preloader
     --------------------------- */

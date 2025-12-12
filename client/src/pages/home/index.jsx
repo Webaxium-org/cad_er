@@ -25,6 +25,7 @@ import { TbRefresh } from 'react-icons/tb';
 import { MdGpsFixed } from 'react-icons/md';
 import { GoChecklist } from 'react-icons/go';
 import { BiSupport } from 'react-icons/bi';
+import { IoTime } from 'react-icons/io5';
 
 import BackgroundImage from '../../assets/background-img.png';
 import logo from '../../assets/logo/CADer logo-main.png';
@@ -34,6 +35,7 @@ import { IoIosAddCircleOutline } from 'react-icons/io';
 import BasicDivider from '../../components/BasicDevider';
 import AlertDialogSlide from '../../components/AlertDialogSlide';
 import UniversalConverter from '../../components/UniversalConverter';
+import StatusChip from '../../components/StatusChip';
 
 const alertData = {
   title: 'Help & Support',
@@ -51,6 +53,62 @@ const unitConverterAlertData = {
   content: '',
   submitButtonText: 'Cancel',
 };
+
+const animations = [
+  { initial: { opacity: 0, x: -20 }, animate: { opacity: 1, x: 0 } },
+  { initial: { opacity: 0, x: 20 }, animate: { opacity: 1, x: 0 } },
+];
+
+const taskData = [
+  {
+    title: 'Auto Level',
+    description: 'create level and accurate road profiles',
+    status: 'Pending',
+    createdAt: '12:00 PM',
+  },
+  {
+    title: 'Soil Testing',
+    description: 'analyze soil composition and moisture content',
+    status: 'Completed',
+    createdAt: '09:30 AM',
+  },
+  {
+    title: 'Site Inspection',
+    description: 'inspect construction site for quality assurance',
+    status: 'In Progress',
+    createdAt: '03:45 PM',
+  },
+  {
+    title: 'Material Check',
+    description: 'verify material delivery and measurements',
+    status: 'Pending',
+    createdAt: '08:15 AM',
+  },
+  {
+    title: 'Excavation Leveling',
+    description: 'ensure excavation is done at correct levels',
+    status: 'Completed',
+    createdAt: '11:20 AM',
+  },
+  {
+    title: 'Boundary Marking',
+    description: 'mark boundaries as per the approved layout plan',
+    status: 'In Progress',
+    createdAt: '10:05 AM',
+  },
+  {
+    title: 'Concrete Mix Test',
+    description: 'test the workability and strength of concrete mix',
+    status: 'Pending',
+    createdAt: '04:10 PM',
+  },
+  {
+    title: 'Equipment Calibration',
+    description: 'calibrate surveying instruments and tools',
+    status: 'Completed',
+    createdAt: '01:40 PM',
+  },
+];
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -107,6 +165,44 @@ const Home = () => {
 
   return (
     <>
+      <AlertDialogSlide
+        {...alertData}
+        open={open}
+        onCancel={handleClose}
+        onSubmit={handleClose}
+      />
+
+      <AlertDialogSlide
+        {...unitConverterAlertData}
+        content={<UniversalConverter />}
+        open={openUnitConverter}
+        onSubmit={handleClose}
+      />
+
+      {!open && !openUnitConverter && (
+        <Tooltip title="Help" placement="left">
+          <Fab
+            onClick={() => handleOpen('help & support')}
+            aria-label="help"
+            sx={{
+              position: 'fixed',
+              bottom: 90,
+              right: 24,
+              borderRadius: 8,
+              textTransform: 'none',
+              zIndex: 2000,
+              width: 56,
+              height: 56,
+              backgroundColor: '#006FFD',
+              color: 'white',
+              ':hover': { backgroundColor: '#006FFD' },
+            }}
+          >
+            <BiSupport size={24} />
+          </Fab>
+        </Tooltip>
+      )}
+
       <Stack spacing={2} pb={2} sx={{ userSelect: 'none' }}>
         {/* 🌈 HEADER */}
         <Stack
@@ -409,44 +505,58 @@ const Home = () => {
             </Typography>
           </Stack>
         </Box>
+
+        <Stack spacing={2} px={2} overflow={'hidden'}>
+          {taskData.map((task, idx) => (
+            <BasicCard
+              key={idx}
+              sx={{
+                borderRadius: 4,
+                boxShadow: 1,
+                bgcolor: '#fff',
+              }}
+              component={motion.div}
+              {...animations[idx % 2]}
+              whileHover={{
+                y: -5,
+                boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+              }}
+              transition={{ duration: 0.4, delay: 0.6 + idx * 0.1 }}
+              content={
+                <Box position={'relative'}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    className="task-card-inner"
+                  >
+                    {/* Left Side - Time + Title + Description */}
+                    <Stack spacing={1}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <IoTime fontSize={18} color="#2897FF" />
+                        <Typography fontSize={14} color="#2897FF">
+                          {task.createdAt}
+                        </Typography>
+                      </Stack>
+
+                      <Typography fontWeight={700} fontSize="16px">
+                        {task.title}
+                      </Typography>
+
+                      <Typography fontSize={14} color="text.secondary">
+                        {task.description}
+                      </Typography>
+                    </Stack>
+
+                    {/* Status */}
+
+                    <StatusChip status={task.status} />
+                  </Stack>
+                </Box>
+              }
+            />
+          ))}
+        </Stack>
       </Stack>
-      {!open && !openUnitConverter && (
-        <Tooltip title="Help" placement="left">
-          <Fab
-            onClick={() => handleOpen('help & support')}
-            aria-label="help"
-            sx={{
-              position: 'fixed',
-              bottom: 90,
-              right: 24,
-              borderRadius: 8,
-              textTransform: 'none',
-              zIndex: 2000,
-              width: 56,
-              height: 56,
-              backgroundColor: '#006FFD',
-              color: 'white',
-              ':hover': { backgroundColor: '#006FFD' },
-            }}
-          >
-            <BiSupport size={24} />
-          </Fab>
-        </Tooltip>
-      )}
-
-      <AlertDialogSlide
-        {...alertData}
-        open={open}
-        onCancel={handleClose}
-        onSubmit={handleClose}
-      />
-
-      <AlertDialogSlide
-        {...unitConverterAlertData}
-        content={<UniversalConverter />}
-        open={openUnitConverter}
-        onSubmit={handleClose}
-      />
     </>
   );
 };

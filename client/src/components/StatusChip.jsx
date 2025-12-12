@@ -1,5 +1,5 @@
 import { Chip } from '@mui/material';
-import { green, red, yellow, grey as gray } from '@mui/material/colors';
+import { green, red, yellow, grey as gray, blue } from '@mui/material/colors';
 import { chipClasses } from '@mui/material/Chip';
 import { svgIconClasses } from '@mui/material/SvgIcon';
 
@@ -9,6 +9,18 @@ const chipStyles = {
     backgroundColor: gray[100],
     labelColor: gray[600],
     iconColor: gray[600],
+  },
+  warning: {
+    borderColor: yellow[700],
+    backgroundColor: yellow[50],
+    labelColor: yellow[800],
+    iconColor: yellow[800],
+  },
+  inProgress: {
+    borderColor: blue[200],
+    backgroundColor: blue[50],
+    labelColor: blue[700],
+    iconColor: blue[700],
   },
   success: {
     borderColor: green[200],
@@ -22,12 +34,6 @@ const chipStyles = {
     labelColor: red[700],
     iconColor: red[700],
   },
-  warning: {
-    borderColor: yellow[200],
-    backgroundColor: yellow[50],
-    labelColor: yellow[800],
-    iconColor: yellow[800],
-  },
 };
 
 const StatusChip = ({ status }) => {
@@ -35,6 +41,8 @@ const StatusChip = ({ status }) => {
     Active: 'default',
     Completed: 'success',
     Paused: 'warning',
+    Pending: 'warning',
+    'In Progress': 'inProgress',
     Ineligible: 'error',
   };
 
