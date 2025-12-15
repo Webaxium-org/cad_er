@@ -399,7 +399,9 @@ const createSurveyRow = async (req, res, next) => {
       intermediateSight:
         type === 'Chainage'
           ? (intermediateSight || []).map((n) => Number(n).toFixed(3))
-          : intermediateSight || [],
+          : intermediateSight
+          ? [intermediateSight]
+          : undefined,
 
       offsets: (offsets || []).map((n) => Number(n).toFixed(3)),
 
@@ -858,12 +860,141 @@ const endSurvey = async (req, res, next) => {
 
 const updateSurveyRow = async (req, res, next) => {
   try {
+    const {
+      params: { id, rowId },
+      body: {
+        type,
+        chainage,
+        intermediateSight,
+        reducedLevels,
+        offsets,
+        foreSight,
+        backSight,
+        remark,
+      },
+    } = req;
+
+    const isPurposeExist = await SurveyPurpose.findById(id).populate(
+      'surveyId'
+    );
+    if (
+      !isPurposeExist ||
+      isPurposeExist?.deleted ||
+      isPurposeExist?.surveyId?.deleted
+    )
+      throw createHttpError(404, 'Purpose not found');
+
+    const isRowExist = await SurveyRow.findById(rowId);
+    if (!isRowExist || isRowExist?.deleted)
+      throw createHttpError(404, 'Reading not found');
+
+    if (type === 'Instrument setup') {
+      isRowExist.backSight = Number(backSight).toFixed(3);
+      isRowExist.heightOfInstrument = Number(
+        Number(isRowExist.reducedLevels[0]) + Number(backSight)
+      ).toFixed(3);
+
+      isRowExist.remarks[0] = remark;
+    }
+
+    if (type === 'TBM') {
+      const prevIS = Number(isRowExist.intermediateSight?.[0] ?? 0);
+      const prevRL = Number(isRowExist.reducedLevels?.[0] ?? 0);
+      const newIS = Number(intermediateSight);
+
+      const diff = prevIS - newIS;
+      const newRL = prevRL + diff;
+
+      isRowExist.reducedLevels[0] = newRL.toFixed(3);
+      isRowExist.intermediateSight[0] = newIS.toFixed(3);
+      isRowExist.remarks[0] = remark;
+    }
+
+    if (type === 'CP') {
+      const prevRL = Number(isRowExist.reducedLevels?.[0] ?? 0);
+      const prevFS = Number(isRowExist.foreSight ?? 0);
+
+      const prevRowHI = prevRL + prevFS;
+
+      const newFS = Number(foreSight);
+      const newBS = Number(backSight);
+
+      const newRL = prevRowHI - newFS;
+      const newHI = newRL + newBS;
+
+      isRowExist.reducedLevels[0] = newRL.toFixed(3);
+      isRowExist.heightOfInstrument = newHI.toFixed(3);
+      isRowExist.backSight = newBS.toFixed(3);
+      isRowExist.foreSight = newFS.toFixed(3);
+      isRowExist.remarks[0] = remark;
+    }
+
+    if (type === 'Chainage') {
+      const prevRL = Number(isRowExist.reducedLevels?.[0] ?? 0);
+      const prevIS = Number(isRowExist.intermediateSight?.[0] ?? 0);
+
+      const prevRowHI = prevRL + prevIS;
+
+      const isProposal = isPurposeExist.phase === 'Proposal';
+
+      isRowExist.chainage = chainage;
+
+      isRowExist.reducedLevels = isProposal
+        ? (reducedLevels || []).map((n) => Number(n).toFixed(3))
+        : (intermediateSight || [])?.map((n) =>
+            (Number(prevRowHI) - Number(n || 0)).toFixed(3)
+          );
+
+      isRowExist.intermediateSight = (intermediateSight || []).map((n) =>
+        Number(n).toFixed(3)
+      );
+
+      isRowExist.offsets = (offsets || []).map((n) => Number(n).toFixed(3));
+
+      isRowExist.remarks = remark;
+    }
+
+    await isRowExist.save();
+
+    return res.status(200).json({
+      success: true,
+      row: isRowExist,
+      message: 'Row updated successfully',
+    });
   } catch (err) {
     next(err);
   }
 };
 const deleteSurveyRow = async (req, res, next) => {
   try {
+    const {
+      params: { id, rowId },
+    } = req;
+
+    const isPurposeExist = await SurveyPurpose.findById(id).populate(
+      'surveyId'
+    );
+    if (
+      !isPurposeExist ||
+      isPurposeExist?.deleted ||
+      isPurposeExist?.surveyId?.deleted
+    )
+      throw createHttpError(404, 'Purpose not found');
+
+    const isRowExist = await SurveyRow.findById(rowId);
+    if (!isRowExist || isRowExist?.deleted)
+      throw createHttpError(404, 'Reading not found');
+
+    if (isRowExist.type === 'Instrument setup')
+      throw createHttpError(400, 'You cannot delete the initial TBM');
+
+    isRowExist.deleted = true;
+    await isRowExist.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Reading deleted successfully',
+    });
   } catch (err) {
     next(err);
   }

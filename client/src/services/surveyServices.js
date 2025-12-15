@@ -1,15 +1,15 @@
-import { axiosInstance } from "../utils/config";
+import { axiosInstance } from '../utils/config';
 
 export const checkSurveyExists = () => {
-  return axiosInstance.get("surveys/exists");
+  return axiosInstance.get('surveys/exists');
 };
 
 export const getAllSurvey = () => {
-  return axiosInstance.get("surveys");
+  return axiosInstance.get('surveys');
 };
 
 export const createSurvey = (formData) => {
-  return axiosInstance.post("surveys", formData);
+  return axiosInstance.post('surveys', formData);
 };
 
 export const getSurvey = (id) => {
@@ -32,16 +32,16 @@ export const endSurvey = (id) => {
   return axiosInstance.patch(`surveys/${id}/end`);
 };
 
-export const updateSurveyRow = (id, rowId) => {
-  return axiosInstance.patch(`surveys/${id}/rows/${rowId}`);
+export const updateSurveyRow = (id, rowId, formData) => {
+  return axiosInstance.patch(`surveys/${id}/rows/${rowId}`, formData);
 };
 
-export const deleteSurveyRow = (id) => {
+export const deleteSurveyRow = (id, rowId) => {
   return axiosInstance.delete(`surveys/${id}/rows/${rowId}`);
 };
 
 export const getAllSurveyPurpose = () => {
-  return axiosInstance.get("surveys/purposes");
+  return axiosInstance.get('surveys/purposes');
 };
 
 export const createSurveyPurpose = (id, formData) => {

@@ -17,6 +17,7 @@ import { FaRegEdit } from 'react-icons/fa';
 import { AiFillDelete } from 'react-icons/ai';
 import {
   createSurveyRow,
+  deleteSurveyRow,
   endSurveyPurpose,
   getSurveyPurpose,
   pauseSurveyPurpose,
@@ -360,11 +361,52 @@ const RoadSurveyRowsForm = () => {
   const handleClose = () => {
     setOpen(false);
   };
+
   const handleClickOpenEdit = () => {
     setIsEdit(true);
   };
+
   const handleClickCloseEdit = () => {
     setIsEdit(false);
+  };
+
+  const handleDeletePrevReading = async () => {
+    try {
+      const prevReading = purpose?.rows?.at(-1);
+
+      const rowId = prevReading?._id;
+
+      const { data } = await deleteSurveyRow(id, rowId);
+
+      if (data.success) {
+        const purposeDoc = {
+          ...purpose,
+          rows: purpose?.rows?.filter((r) => String(r._id) !== String(rowId)),
+        };
+
+        setFormValues({
+          ...initialFormValues,
+          intermediateOffsets: [
+            { intermediateSight: '', offset: '', remark: '' },
+          ],
+        });
+
+        getNewChainage(purposeDoc);
+
+        setPurpose(purposeDoc);
+
+        dispatch(
+          showAlert({
+            type: 'success',
+            message: `${prevReading.type} deleted successfully`,
+          })
+        );
+      } else {
+        throw new Error('Something went wrong.');
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    }
   };
 
   const updateInputData = () => {
@@ -566,8 +608,8 @@ const RoadSurveyRowsForm = () => {
           }));
         } else {
           const lastChainage = purpose?.rows
-            ?.reverse()
-            .find((r) => r.type === 'Chainage');
+            ?.filter((r) => r.type === 'Chainage')
+            ?.at(-1);
 
           const chainageMultiple = purpose?.surveyId?.chainageMultiple;
           const lastDigit = Number(
@@ -682,17 +724,6 @@ const RoadSurveyRowsForm = () => {
       const { data } = await createSurveyRow(id, payload);
 
       if (data.success) {
-        // const message = isLastProposalReading
-        //   ? `${purpose.type} Ended Successfully`
-        //   : `${rowType} Added Successfully`;
-
-        // dispatch(
-        //   showAlert({
-        //     type: 'success',
-        //     message,
-        //   })
-        // );
-
         if (isLastProposalReading) {
           navigate('/survey');
           return;
@@ -1420,16 +1451,27 @@ const RoadSurveyRowsForm = () => {
 
                 <Stack direction={'row'} alignItems={'center'} spacing={1}>
                   <FaRegEdit color="#2897FF" onClick={handleClickOpenEdit} />
-                  <AiFillDelete color="#fd3636ff" fontSize={17}/>
+
+                  <Activity
+                    mode={purpose?.rows?.length > 1 ? 'visible' : 'hidden'}
+                  >
+                    <AiFillDelete
+                      color="#fd3636ff"
+                      fontSize={17}
+                      onClick={handleDeletePrevReading}
+                    />
+                  </Activity>
                 </Stack>
 
-                {isEdit && (
+                <Activity mode={isEdit ? 'visible' : 'hidden'}>
                   <EditPreviousReading
                     open={isEdit}
+                    doc={purpose?.rows?.at(-1) || {}}
+                    updateDoc={setPurpose}
                     onCancel={handleClickCloseEdit}
                     onSubmit={handleClickCloseEdit}
                   />
-                )}
+                </Activity>
               </Stack>
             }
           />
