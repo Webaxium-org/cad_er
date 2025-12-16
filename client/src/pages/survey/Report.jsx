@@ -32,17 +32,19 @@ const toggleButtonSx = {
   flex: 1,
   fontSize: { xs: "0.75rem", sm: "0.9rem" },
   py: { xs: 0.7, sm: 1 },
-  border: "2px solid #1976d2 !important",
+  border: "1px solid rgb(25 118 210 / 50%) !important",
   borderRadius: "10px !important",
+  color: '#1976d2 !important',
+  fontWeight: '600',
   boxShadow:
     "0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12) !important",
   "&.Mui-selected": {
-    backgroundColor: "#1976d2",
-    color: "#fff",
+    backgroundColor: "rgb(25 118 210 / 8%)",
+    borderColor: "#1976d2",
   },
   "&.Mui-selected:hover": {
-    backgroundColor: "#1565c0",
-    fontWeight: "600",
+    backgroundColor: "rgb(25 118 210 / 8%)",
+    borderColor: "#1976d2",
   },
 };
 
@@ -228,7 +230,11 @@ const Report = () => {
         </ToggleButtonGroup>
 
         <Box display={"flex"} justifyContent={"center"} mt={2}>
-          <BasicButton value={"Deduction"} sx={{ minWidth: "250px" }} />
+          <BasicButton
+            value={"Deduction"}
+            variant="outlined"
+            sx={{ minWidth: "250px" }}
+          />
         </Box>
       </Paper>
 
