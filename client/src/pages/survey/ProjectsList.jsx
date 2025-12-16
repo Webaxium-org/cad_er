@@ -376,7 +376,9 @@ export default function ProjectsList() {
                                     ? new Date(survey[key])?.toLocaleDateString(
                                         "en-IN"
                                       )
-                                    : type === 'constant' ? key: survey[key]}
+                                    : type === "constant"
+                                    ? key
+                                    : survey[key]}
                                 </Typography>
                               )}
                             </Item>
