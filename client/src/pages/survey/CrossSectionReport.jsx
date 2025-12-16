@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { handleFormError } from '../../utils/handleFormError';
-import { startLoading, stopLoading } from '../../redux/loadingSlice';
-import { getSurvey } from '../../services/surveyServices';
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { handleFormError } from "../../utils/handleFormError";
+import { startLoading, stopLoading } from "../../redux/loadingSlice";
+import { getSurvey } from "../../services/surveyServices";
 import {
   Box,
   Paper,
@@ -15,22 +15,22 @@ import {
   TableHead,
   TableRow,
   Typography,
-} from '@mui/material';
-import CrossSectionChart from './components/CrossSectionChart';
-import { v1ChartOptions, v2ChartOptions } from '../../constants';
-import { BsThreeDots } from 'react-icons/bs';
-import BasicMenu from '../../components/BasicMenu';
-import BasicInput from '../../components/BasicInput';
+} from "@mui/material";
+import CrossSectionChart from "./components/CrossSectionChart";
+import { v1ChartOptions, v2ChartOptions } from "../../constants";
+import { BsThreeDots } from "react-icons/bs";
+import BasicMenu from "../../components/BasicMenu";
+import BasicInput from "../../components/BasicInput";
 
 const menuItems = [
-  { label: 'V1', value: 'v1' },
-  { label: 'V2', value: 'v2' },
+  { label: "V1", value: "v1" },
+  { label: "V2", value: "v2" },
 ];
 
 const colors = {
-  Initial: 'green',
-  Proposed: 'blue',
-  Final: 'red',
+  Initial: "green",
+  Proposed: "blue",
+  Final: "red",
 };
 
 const CrossSectionReport = () => {
@@ -48,7 +48,7 @@ const CrossSectionReport = () => {
 
   const [survey, setSurvey] = useState([]);
 
-  const [maxValue, setMaxValue] = useState('');
+  const [maxValue, setMaxValue] = useState("");
 
   const [tableData, setTableData] = useState([]);
 
@@ -70,14 +70,14 @@ const CrossSectionReport = () => {
     const xaxis = {
       autorange: false,
       range: [minX, maxX], // No padding, start exactly at the first x
-      tickformat: '.3f', // 3 decimals always
+      tickformat: ".3f", // 3 decimals always
       dtick: (maxX - minX) / 4, // Generates: min → -2 → 0 → 2 → max
       zeroline: false,
       showline: false,
       mirror: true,
     };
 
-    if (item.value === 'v1') {
+    if (item.value === "v1") {
       setChartOptions((_) => ({
         ...v1ChartOptions,
         layout: {
@@ -92,7 +92,7 @@ const CrossSectionReport = () => {
         },
       }));
     }
-    if (item.value === 'v2') {
+    if (item.value === "v2") {
       setChartOptions((_) => ({
         ...v2ChartOptions,
         layout: {
@@ -123,15 +123,15 @@ const CrossSectionReport = () => {
         );
       });
     } else {
-      data.push(survey?.purposes?.find((p) => p.type === 'Initial Level'));
+      data.push(survey?.purposes?.find((p) => p.type === "Initial Level"));
     }
 
     setTableData(data);
   };
 
   const getColor = (type) => {
-    if (type.includes('Initial')) return colors.Initial;
-    if (type.includes('Proposed')) return colors.Proposed;
+    if (type.includes("Initial")) return colors.Initial;
+    if (type.includes("Proposed")) return colors.Proposed;
     return colors.Final;
   };
 
@@ -156,7 +156,7 @@ const CrossSectionReport = () => {
 
     const data = {
       id,
-      type: 'cs',
+      type: "cs",
       offsets: [...uniqueOffsets],
       chainage: row.chainage,
       series: [],
@@ -221,7 +221,7 @@ const CrossSectionReport = () => {
     const xaxis = {
       autorange: false,
       range: [minX, maxX],
-      tickformat: '.3f',
+      tickformat: ".3f",
       dtick: (maxX - minX) / 4,
       zeroline: false,
       showline: false,
@@ -257,7 +257,7 @@ const CrossSectionReport = () => {
 
         handleSetTableData(data.survey);
       } else {
-        throw Error('Failed to fetch survey');
+        throw Error("Failed to fetch survey");
       }
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
@@ -295,7 +295,7 @@ const CrossSectionReport = () => {
 
   useEffect(() => {
     if (tableData.length) {
-      const row = tableData[0].rows?.find((row) => row.type === 'Chainage');
+      const row = tableData[0].rows?.find((row) => row.type === "Chainage");
 
       if (row) handleClickCs(row._id);
     }
@@ -304,16 +304,16 @@ const CrossSectionReport = () => {
   return (
     <Box p={2}>
       <Stack
-        direction={'row'}
-        justifyContent={'space-between'}
-        alignItems={'center'}
+        direction={"row"}
+        justifyContent={"space-between"}
+        alignItems={"center"}
         spacing={2}
         mb={2}
       >
         <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
           CS AT CHAINAGE {selectedCs?.chainage}
         </Typography>
-        <Box textAlign={'end'}>
+        <Box textAlign={"end"}>
           <BasicMenu
             label={<BsThreeDots />}
             items={menuItems}
@@ -322,22 +322,53 @@ const CrossSectionReport = () => {
         </Box>
       </Stack>
 
-      <Box mb={2}>
-        <BasicInput
-          label={'Change Y-Axis Limit'}
-          placeholder="Enter"
-          value={maxValue || ''}
-          onChange={(e) => handleInputChange(e.target.value)}
-        />
-      </Box>
+      <Stack direction={"row"} spacing={2} mb={2}>
+        <Box>
+          <Typography
+            variant="body2"
+            sx={{
+              mb: 0.5,
+              fontWeight: 600,
+              color: "black",
+            }}
+          >
+            Horizontal Scale
+          </Typography>
+          <Stack direction={"row"} spacing={1}>
+            <BasicInput label={""} placeholder={"1"} />
+            <BasicInput label={""} placeholder={"100"} value={""} />
+          </Stack>
+        </Box>
+        <Box>
+          <Typography
+            variant="body2"
+            sx={{
+              mb: 0.5,
+              fontWeight: 600,
+              color: "black",
+            }}
+          >
+            Vertical Scale
+          </Typography>
+          <Stack direction={"row"} spacing={1}>
+            <BasicInput label={""} placeholder={"1"} />
+            <BasicInput
+              label={""}
+              placeholder={"100"}
+              value={maxValue || ""}
+              onChange={(e) => handleInputChange(e.target.value)}
+            />
+          </Stack>
+        </Box>
+      </Stack>
 
       <Box
         sx={{
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          position: 'sticky',
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          position: "sticky",
           top: 0,
           zIndex: 3,
         }}
@@ -350,24 +381,16 @@ const CrossSectionReport = () => {
           />
         )}
 
-        {/* Footer */}
-        <Typography
-          variant="caption"
-          sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
-        >
-          [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
-        </Typography>
-
         <TableContainer
           component={Paper}
           sx={{
-            border: '1px solid black',
+            border: "1px solid black",
             mt: 2,
             maxHeight: 440,
           }}
         >
           <Table stickyHeader>
-            <TableHead sx={{ backgroundColor: '#f4f6f8' }}>
+            <TableHead sx={{ backgroundColor: "#f4f6f8" }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Chainage</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>CS</TableCell>
@@ -377,16 +400,16 @@ const CrossSectionReport = () => {
             <TableBody>
               {tableData[0]?.rows?.map(
                 (row, index) =>
-                  row.type === 'Chainage' && (
+                  row.type === "Chainage" && (
                     <TableRow key={index}>
                       <TableCell
-                        sx={{ cursor: 'pointer' }}
+                        sx={{ cursor: "pointer" }}
                         onClick={() => handleClickCs(row._id)}
                       >
                         {row.chainage}
                       </TableCell>
                       <TableCell
-                        sx={{ cursor: 'pointer' }}
+                        sx={{ cursor: "pointer" }}
                         onClick={() => handleClickCs(row._id)}
                       >
                         View
