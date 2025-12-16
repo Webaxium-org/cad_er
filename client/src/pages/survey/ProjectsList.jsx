@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -6,92 +6,97 @@ import {
   styled,
   IconButton,
   TextField,
-} from '@mui/material';
-import IOSegmentedTabs from '../../components/IOSegmentedTabs';
-import { useDispatch } from 'react-redux';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { stopLoading } from '../../redux/loadingSlice';
-import { handleFormError } from '../../utils/handleFormError';
-import { getAllSurvey } from '../../services/surveyServices';
-import { motion, AnimatePresence } from 'framer-motion';
-import BasicAccordion from '../../components/BasicAccordion';
-import LetterAvatar from '../../components/LetterAvatar';
-import BasicDivider from '../../components/BasicDevider';
-import { MdOutlineExpandMore, MdOutlineSearch } from 'react-icons/md';
-import { MdSort } from 'react-icons/md';
-import BasicCard from '../../components/BasicCard';
-import StatusChip from '../../components/StatusChip';
-import { TiEye } from 'react-icons/ti';
-import { ProjectListCardSkeleton } from './components/ProjectListCardSkeleton';
-import { highlightText } from '../../internals';
-import AlertDialogSlide from '../../components/AlertDialogSlide';
-import { showAlert } from '../../redux/alertSlice';
-import BasicButton from '../../components/BasicButton';
+} from "@mui/material";
+import IOSegmentedTabs from "../../components/IOSegmentedTabs";
+import { useDispatch } from "react-redux";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { stopLoading } from "../../redux/loadingSlice";
+import { handleFormError } from "../../utils/handleFormError";
+import { getAllSurvey } from "../../services/surveyServices";
+import { motion, AnimatePresence } from "framer-motion";
+import BasicAccordion from "../../components/BasicAccordion";
+import LetterAvatar from "../../components/LetterAvatar";
+import BasicDivider from "../../components/BasicDevider";
+import { MdOutlineExpandMore, MdOutlineSearch } from "react-icons/md";
+import { MdSort } from "react-icons/md";
+import BasicCard from "../../components/BasicCard";
+import StatusChip from "../../components/StatusChip";
+import { TiEye } from "react-icons/ti";
+import { ProjectListCardSkeleton } from "./components/ProjectListCardSkeleton";
+import { highlightText } from "../../internals";
+import AlertDialogSlide from "../../components/AlertDialogSlide";
+import { showAlert } from "../../redux/alertSlice";
+import BasicButton from "../../components/BasicButton";
 
 const alertDetails = {
-  title: 'Field Book',
-  description: 'Please select the level to go to the field book',
-  content: '',
-  cancelButtonText: 'Cancel',
-  submitButtonText: 'View',
+  title: "Field Book",
+  description: "Please select the level to go to the field book",
+  content: "",
+  cancelButtonText: "Cancel",
+  submitButtonText: "View",
 };
 
 const colors = {
-  Initial: 'green',
-  Proposed: 'blue',
-  Final: 'red',
+  Initial: "green",
+  Proposed: "blue",
+  Final: "red",
 };
 
 const Item = styled(Box)(({ theme }) => ({
   ...theme.typography.body2,
   padding: theme.spacing(0.5),
   marginBottom: 0,
-  color: 'rgba(0, 0, 0, 0.74)',
-  fontSize: '14px',
-  display: 'flex',
-  justifyContent: 'space-between',
+  color: "rgba(0, 0, 0, 0.74)",
+  fontSize: "14px",
+  display: "flex",
+  justifyContent: "space-between",
 }));
 
 const fieldsToMap = [
   {
-    key: 'type',
-    value: 'Type',
+    key: "Auto Level",
+    value: "Equipment",
+    type: "constant",
   },
   {
-    key: 'lastPurpose',
-    value: 'Purpose',
+    key: "type",
+    value: "Type",
   },
   {
-    key: 'updatedAt',
-    value: 'Last Edited',
-    type: 'Date',
+    key: "lastPurpose",
+    value: "Purpose",
+  },
+  {
+    key: "updatedAt",
+    value: "Last Edited",
+    type: "Date",
   },
   {
     key: <TiEye fontSize={20} color="rgba(0, 111, 253, 1)" />,
-    value: 'Field Book',
-    type: 'Icon',
+    value: "Field Book",
+    type: "Icon",
   },
   {
     key: <TiEye fontSize={20} color="rgba(0, 111, 253, 1)" />,
-    value: 'Reports',
-    type: 'Icon',
+    value: "Reports",
+    type: "Icon",
   },
 ];
 
 const getLink = (survey, target, type) => {
-  if (target === 'reports') {
+  if (target === "reports") {
     return `/survey/${survey._id}/report`;
   }
 
   const level = survey?.purposes?.find(
-    (p) => p.type === (type || 'Initial Level')
+    (p) => p.type === (type || "Initial Level")
   );
 
-  if (target === 'Field Book') {
+  if (target === "Field Book") {
     if (level?.isPurposeFinish) {
       return `/survey/road-survey/${level._id}/field-book`;
     } else {
-      return '#';
+      return "#";
     }
   } else {
     return `/survey/${survey._id}/report`;
@@ -105,7 +110,7 @@ export default function ProjectsList() {
 
   const { state } = useLocation();
 
-  const [tab, setTab] = useState('two');
+  const [tab, setTab] = useState("two");
 
   const [loading, setLoading] = useState(true);
 
@@ -117,9 +122,9 @@ export default function ProjectsList() {
 
   const [open, setOpen] = useState(false);
 
-  const [link, setLink] = useState('');
+  const [link, setLink] = useState("");
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   const handleChange = (e, newValue) => setTab(newValue);
 
@@ -131,8 +136,8 @@ export default function ProjectsList() {
     try {
       const survey = surveys.find((s) => String(s._id) === id);
 
-      if (!survey) throw Error('Something went wrong');
-      if (survey.isSurveyFinish) throw Error('The survey already finished');
+      if (!survey) throw Error("Something went wrong");
+      if (survey.isSurveyFinish) throw Error("The survey already finished");
 
       const activePurpose = survey.purposes?.find((p) => !p.isPurposeFinish);
 
@@ -144,15 +149,15 @@ export default function ProjectsList() {
     } catch (err) {
       dispatch(
         showAlert({
-          type: 'error',
-          message: 'Something went wrong',
+          type: "error",
+          message: "Something went wrong",
         })
       );
     }
   };
 
   const handleClose = () => {
-    setLink('');
+    setLink("");
 
     setOpen(false);
   };
@@ -162,20 +167,20 @@ export default function ProjectsList() {
     if (!survey) return;
 
     const fieldBooks = survey.purposes.filter(
-      (p) => p.phase === 'Actual' && p.isPurposeFinish
+      (p) => p.phase === "Actual" && p.isPurposeFinish
     );
 
     if (!fieldBooks.length) {
       return dispatch(
         showAlert({
-          type: 'warning',
-          message: 'Please complete the Initial Level',
+          type: "warning",
+          message: "Please complete the Initial Level",
         })
       );
     }
 
     if (fieldBooks.length === 1) {
-      const link = getLink(survey, 'Field Book');
+      const link = getLink(survey, "Field Book");
 
       return navigate(link);
     }
@@ -188,17 +193,17 @@ export default function ProjectsList() {
             <BasicButton
               key={idx}
               sx={{
-                width: '100%',
+                width: "100%",
                 borderRadius: 1.5,
                 p: 1.5,
                 mb: 1,
-                justifyContent: 'space-between',
-                textAlign: 'left',
-                border: '1px solid #e0e0e0',
+                justifyContent: "space-between",
+                textAlign: "left",
+                border: "1px solid #e0e0e0",
               }}
               variant="outlined"
               onClick={() =>
-                setLink(getLink(survey, 'Field Book', fieldBook?.type))
+                setLink(getLink(survey, "Field Book", fieldBook?.type))
               }
               value={
                 <Stack direction="row" alignItems="center" spacing={1}>
@@ -225,8 +230,8 @@ export default function ProjectsList() {
     if (!link) {
       return dispatch(
         showAlert({
-          type: 'warning',
-          message: 'Please select a level to view the field book.',
+          type: "warning",
+          message: "Please select a level to view the field book.",
         })
       );
     }
@@ -242,17 +247,17 @@ export default function ProjectsList() {
           data?.surveys?.map((survey) => {
             const lastPurposeDoc = survey?.purposes
               ?.reverse()
-              ?.find((p) => p.phase === 'Actual');
+              ?.find((p) => p.phase === "Actual");
 
             return {
               ...survey,
-              lastPurpose: lastPurposeDoc?.type || 'N/A',
+              lastPurpose: lastPurposeDoc?.type || "N/A",
             };
           }) || [];
 
         setSurveys(updatedSurveys);
       } else {
-        throw Error('Failed to fetch surveys');
+        throw Error("Failed to fetch surveys");
       }
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
@@ -263,7 +268,7 @@ export default function ProjectsList() {
   };
 
   useEffect(() => {
-    const searchText = state?.search?.trim() || '';
+    const searchText = state?.search?.trim() || "";
 
     if (searchText) {
       setSearchMode(true);
@@ -307,13 +312,13 @@ export default function ProjectsList() {
                     <BasicAccordion
                       summary={
                         <Stack
-                          direction={'row'}
-                          alignItems={'center'}
+                          direction={"row"}
+                          alignItems={"center"}
                           spacing={1}
                         >
                           <LetterAvatar
                             letter={survey.project.slice(0, 1)}
-                            bgcolor={'rgba(0, 111, 253, 1)'}
+                            bgcolor={"rgba(0, 111, 253, 1)"}
                             onClick={() => handleContinueSurvey(survey._id)}
                           />
 
@@ -327,7 +332,7 @@ export default function ProjectsList() {
                               fontSize="14px"
                             >
                               {new Date(survey.createdAt)?.toLocaleDateString(
-                                'en-IN'
+                                "en-IN"
                               )}
                             </Typography>
                           </Box>
@@ -339,8 +344,8 @@ export default function ProjectsList() {
                             <Item key={idx}>
                               {value}
 
-                              {type === 'Icon' ? (
-                                value === 'Field Book' ? (
+                              {type === "Icon" ? (
+                                value === "Field Book" ? (
                                   <Box
                                     onClick={() =>
                                       handleClickFiledBook(survey._id)
@@ -354,24 +359,24 @@ export default function ProjectsList() {
                               ) : (
                                 <Typography
                                   color={
-                                    key === 'lastPurpose'
+                                    key === "lastPurpose"
                                       ? colors[
-                                          survey[key]?.includes('Initial')
-                                            ? 'Initial'
-                                            : survey[key]?.includes('Final')
-                                            ? 'Final'
-                                            : ''
+                                          survey[key]?.includes("Initial")
+                                            ? "Initial"
+                                            : survey[key]?.includes("Final")
+                                            ? "Final"
+                                            : ""
                                         ]
-                                      : ''
+                                      : ""
                                   }
                                   fontSize={14}
                                   fontWeight={700}
                                 >
-                                  {type === 'Date'
+                                  {type === "Date"
                                     ? new Date(survey[key])?.toLocaleDateString(
-                                        'en-IN'
+                                        "en-IN"
                                       )
-                                    : survey[key]}
+                                    : type === 'constant' ? key: survey[key]}
                                 </Typography>
                               )}
                             </Item>
@@ -384,15 +389,15 @@ export default function ProjectsList() {
                           fontSize={28}
                         />
                       }
-                      sx={{ boxShadow: 'none' }}
+                      sx={{ boxShadow: "none" }}
                     />
 
                     <BasicDivider borderBottomWidth={0.5} color="#d9d9d9" />
 
                     <Stack
-                      direction={'row'}
-                      justifyContent={'space-between'}
-                      alignItems={'center'}
+                      direction={"row"}
+                      justifyContent={"space-between"}
+                      alignItems={"center"}
                     >
                       <Typography
                         fontWeight={600}
@@ -407,8 +412,8 @@ export default function ProjectsList() {
                   </Box>
                 }
                 sx={{
-                  borderRadius: '12px',
-                  boxShadow: '0px 4px 8px 0px #1c252c2a',
+                  borderRadius: "12px",
+                  boxShadow: "0px 4px 8px 0px #1c252c2a",
                 }}
               />
             ))}
@@ -448,13 +453,13 @@ export default function ProjectsList() {
         onSubmit={handleViewFieldBook}
       />
 
-      <Box position={'sticky'} p={2} top={0} bgcolor={'white'} zIndex={1}>
+      <Box position={"sticky"} p={2} top={0} bgcolor={"white"} zIndex={1}>
         {/* Header */}
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             mb: 2,
           }}
         >
@@ -464,7 +469,7 @@ export default function ProjectsList() {
           </IconButton>
 
           {/* 🔄 Title / Search Input with Animation */}
-          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
             <AnimatePresence mode="wait">
               {!searchMode ? (
                 // 🏷️ Projects Title
@@ -487,7 +492,7 @@ export default function ProjectsList() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.25 }}
-                  style={{ width: '100%' }}
+                  style={{ width: "100%" }}
                 >
                   <TextField
                     autoFocus
@@ -496,16 +501,16 @@ export default function ProjectsList() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     sx={{
-                      width: '85%',
-                      background: '#F3F3F3',
-                      borderRadius: '8px',
-                      '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                      width: "85%",
+                      background: "#F3F3F3",
+                      borderRadius: "8px",
+                      "& .MuiOutlinedInput-notchedOutline": { border: "none" },
                     }}
                     InputProps={{
                       endAdornment: (
                         <IconButton
                           onClick={() => {
-                            setSearch('');
+                            setSearch("");
                             setSearchMode(false);
                           }}
                         >
@@ -531,16 +536,16 @@ export default function ProjectsList() {
             value={tab}
             onChange={handleChange}
             tabs={[
-              { label: 'To do', value: 'one' },
-              { label: 'In progress', value: 'two' },
-              { label: 'Finished', value: 'three' },
+              { label: "To do", value: "one" },
+              { label: "In progress", value: "two" },
+              { label: "Finished", value: "three" },
             ]}
           />
         </Box>
       </Box>
 
       {/* Animate tab content */}
-      <Box px={2} mb={'82px'}>
+      <Box px={2} mb={"82px"}>
         {loading ? (
           <Stack spacing={2}>
             {Array.from({ length: 7 }).map((_, idx) => (
