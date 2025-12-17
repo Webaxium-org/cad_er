@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { handleFormError } from "../../utils/handleFormError";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
-import { getSurvey } from "../../services/surveyServices";
+import { getSurvey, updateReducedLevels } from "../../services/surveyServices";
 import {
   Box,
   Collapse,
@@ -26,6 +26,7 @@ import BasicMenu from "../../components/BasicMenu";
 import BasicInput from "../../components/BasicInput";
 import BasicButton from "../../components/BasicButton";
 import { MdDownload } from "react-icons/md";
+import { showAlert } from "../../redux/alertSlice";
 
 const menuItems = [
   { label: "v1", value: "v1" },
@@ -249,6 +250,8 @@ const CrossSectionReport = () => {
         });
 
         data.series.push({
+          _id: newRow._id,
+          purpose: table._id,
           name: table.type,
           color: getColor(table.type),
           data: makeSeries(rawProposalOffsets, safeProposalLevels),
@@ -258,6 +261,8 @@ const CrossSectionReport = () => {
 
     // Add initial (original)
     data.series.push({
+      _id: row._id,
+      purpose: initialEntry._id,
       name: initialEntry.type,
       color: getColor(initialEntry.type),
       data: makeSeries(rawOffsets, safeInitial),
@@ -370,9 +375,9 @@ const CrossSectionReport = () => {
 
     const xaxis = {
       autorange: false,
-      range: [minX, maxX], // No padding, start exactly at the first x
-      tickformat: ".3f", // 3 decimals always
-      dtick: (maxX - minX) / 4, // Generates: min → -2 → 0 → 2 → max
+      range: [minX, maxX],
+      tickformat: ".3f",
+      dtick: (maxX - minX) / 4,
       zeroline: false,
       showline: false,
       mirror: true,
@@ -451,6 +456,28 @@ const CrossSectionReport = () => {
     }));
 
     setMaxValue(maxVal);
+  };
+
+  const handleUpdateReducedLevels = async () => {
+    try {
+      const { data } = await updateReducedLevels(id, {
+        chainage: selectedCs.chainage,
+        series: selectedCs.series,
+      });
+
+      if (data.success) {
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Reduced levels updated successfully",
+          })
+        );
+      } else {
+        throw Error("Failed to fetch survey");
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    }
   };
 
   useEffect(() => {
@@ -626,6 +653,9 @@ const CrossSectionReport = () => {
                                             <BasicInput
                                               value={rl}
                                               label={idx === 0 ? "RL" : ""}
+                                              error={
+                                                rl === "" ? "Required" : ""
+                                              }
                                               onChange={(e) =>
                                                 handleRlChange(
                                                   r.type,
@@ -656,6 +686,7 @@ const CrossSectionReport = () => {
                                   value={"update"}
                                   variant="outlined"
                                   sx={{ py: 1, px: 2 }}
+                                  onClick={handleUpdateReducedLevels}
                                 />
                               </Box>
                             </Box>

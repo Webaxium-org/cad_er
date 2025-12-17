@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 
 const router = express.Router();
 
@@ -20,34 +20,36 @@ import {
   pauseSurveyPurpose,
   generateSurveyPurpose,
   editSurveyPurpose,
-} from '../controllers/surveyController.js';
-import { isAuthenticated, requireAuth } from '../middleware/auth.js';
+  updateReducedLevels,
+} from "../controllers/surveyController.js";
+import { isAuthenticated, requireAuth } from "../middleware/auth.js";
 
 router.use(requireAuth, isAuthenticated);
 
 // 🔹 Static routes
-router.get('/exists', checkSurveyExists);
-router.get('/purposes', getAllSurveyPurpose);
+router.get("/exists", checkSurveyExists);
+router.get("/purposes", getAllSurveyPurpose);
 
 // 🔹 Survey routes
-router.get('/', getAllSurvey);
-router.post('/', createSurvey);
-router.patch('/:id/end', endSurvey);
-router.get('/:id', getSurvey);
-router.patch('/:id', updateSurvey);
-router.delete('/:id', deleteSurvey);
+router.get("/", getAllSurvey);
+router.post("/", createSurvey);
+router.patch("/:id/end", endSurvey);
+router.get("/:id", getSurvey);
+router.patch("/:id", updateSurvey);
+router.delete("/:id", deleteSurvey);
+router.patch("/:id/reduced-levels/edit", updateReducedLevels);
 
 // 🔹 Purpose routes (nested under a survey)
-router.get('/:id/purposes', getSurveyPurpose);
-router.post('/:surveyId/purposes', createSurveyPurpose);
-router.patch('/:id/purposes/end', endSurveyPurpose);
-router.patch('/:id/purposes/pause', pauseSurveyPurpose);
-router.post('/:id/purposes/generate', generateSurveyPurpose);
-router.put('/:id/purposes/:purposeId/edit', editSurveyPurpose);
+router.get("/:id/purposes", getSurveyPurpose);
+router.post("/:surveyId/purposes", createSurveyPurpose);
+router.patch("/:id/purposes/end", endSurveyPurpose);
+router.patch("/:id/purposes/pause", pauseSurveyPurpose);
+router.post("/:id/purposes/generate", generateSurveyPurpose);
+router.put("/:id/purposes/:purposeId/edit", editSurveyPurpose);
 
 // 🔹 Row routes (nested under a survey)
-router.post('/:id/rows', createSurveyRow);
-router.patch('/:id/rows/:rowId', updateSurveyRow);
-router.delete('/:id/rows/:rowId', deleteSurveyRow);
+router.post("/:id/rows", createSurveyRow);
+router.patch("/:id/rows/:rowId", updateSurveyRow);
+router.delete("/:id/rows/:rowId", deleteSurveyRow);
 
 export default router;

@@ -1373,6 +1373,94 @@ const editSurveyPurpose = async (req, res, next) => {
   }
 };
 
+const updateReducedLevels = async (req, res, next) => {
+  try {
+    const {
+      params: { id },
+      body: { payload },
+    } = req;
+
+    // 1️⃣ Validate parent survey
+    const survey = await Survey.findOne({ _id: id, deleted: false });
+    if (!survey) {
+      throw createHttpError(404, "Parent survey not found");
+    }
+
+    // 2️⃣ Basic payload validation
+    if (
+      !payload ||
+      !payload.chainage ||
+      !Array.isArray(payload.series) ||
+      payload.series.length === 0
+    ) {
+      throw createHttpError(400, "Missing required fields");
+    }
+
+    // 3️⃣ Collect ids
+    const rowIds = payload.series.map((s) => s._id);
+    const purposeIds = payload.series.map((s) => s.purpose);
+
+    // 4️⃣ Validate purposes & rows existence in ONE query each
+    const [purposesCount, rows] = await Promise.all([
+      SurveyPurpose.countDocuments({
+        _id: { $in: purposeIds },
+        deleted: false,
+      }),
+      SurveyRow.find({
+        _id: { $in: rowIds },
+        deleted: false,
+      }).select("_id"),
+    ]);
+
+    if (purposesCount !== new Set(purposeIds).size) {
+      throw createHttpError(404, "One or more purposes not found");
+    }
+
+    if (rows.length !== rowIds.length) {
+      throw createHttpError(404, "One or more survey readings not found");
+    }
+
+    // 5️⃣ Validate reducedLevels BEFORE touching DB
+    const bulkOps = [];
+
+    for (const s of payload.series) {
+      if (!Array.isArray(s.data)) {
+        throw createHttpError(400, "Invalid reduced level data");
+      }
+
+      const reducedLevels = s.data.map((d) => {
+        if (d.y === "" || d.y === null || d.y === undefined) {
+          throw createHttpError(400, "Reduced level cannot be empty");
+        }
+
+        const num = Number(d.y);
+        if (Number.isNaN(num)) {
+          throw createHttpError(400, "Reduced level must be a valid number");
+        }
+
+        return num.toFixed(3);
+      });
+
+      bulkOps.push({
+        updateOne: {
+          filter: { _id: s._id, deleted: false },
+          update: { $set: { reducedLevels } },
+        },
+      });
+    }
+
+    // 6️⃣ Execute bulk update (single operation)
+    await SurveyRow.bulkWrite(bulkOps, { ordered: true });
+
+    res.status(200).json({
+      success: true,
+      message: "Reduced levels updated successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export {
   checkSurveyExists,
   getAllSurvey,
@@ -1391,4 +1479,5 @@ export {
   pauseSurveyPurpose,
   generateSurveyPurpose,
   editSurveyPurpose,
+  updateReducedLevels,
 };
