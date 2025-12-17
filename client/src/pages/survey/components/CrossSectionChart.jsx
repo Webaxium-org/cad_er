@@ -1,3 +1,5 @@
+import Plot from "react-plotly.js";
+import { useEffect, useState } from "react";
 import {
   Box,
   Paper,
@@ -9,9 +11,6 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import Plot from "react-plotly.js";
-
-import { useEffect, useState } from "react";
 
 const colors = {
   Initial: "green",
@@ -236,7 +235,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef }) => {
             {/* CHART ROW */}
             <TableRow>
               <TableCell sx={{ border: "none", p: 0 }}>
-                <Box maxWidth={`${calcWidth()}px`} height="300px">
+                <Box maxWidth={`${calcWidth()}px`} height="250px">
                   <Plot
                     data={selectedCs?.series?.map((s) => ({
                       x: s?.data?.map((p) => p.x),

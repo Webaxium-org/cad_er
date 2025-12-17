@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { handleFormError } from "../../utils/handleFormError";
@@ -8,6 +8,7 @@ import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import { getSurvey } from "../../services/surveyServices";
 import {
   Box,
+  Collapse,
   Paper,
   Stack,
   Table,
@@ -68,6 +69,14 @@ const CrossSectionReport = () => {
   const [tableData, setTableData] = useState([]);
 
   const [selectedCs, setSelectedCs] = useState(null);
+
+  const [openRowId, setOpenRowId] = useState(null);
+
+  const [selectedMenu, setSelectedMenu] = useState("v1");
+
+  const handleToggle = (rowId) => {
+    setOpenRowId((prev) => (prev === rowId ? null : rowId));
+  };
 
   const downloadPDF = async () => {
     if (!pdfRef.current) return;
@@ -156,6 +165,8 @@ const CrossSectionReport = () => {
         },
       }));
     }
+
+    setSelectedMenu(item);
   };
 
   const handleSetTableData = (survey) => {
@@ -210,10 +221,15 @@ const CrossSectionReport = () => {
 
     // Keep duplicates in the plotted series
     const makeSeries = (offsets, levels) =>
-      offsets.map((o, i) => ({
-        x: Number(Number(o).toFixed(3)), // NUMERIC X (IMPORTANT)
-        y: Number(Number(levels?.[i] ?? 0).toFixed(3)),
-      }));
+      offsets.map((o, i) => {
+        const y = Number(Number(levels?.[i] ?? 0).toFixed(3));
+        data.allRl.push(y);
+
+        return {
+          x: Number(Number(o).toFixed(3)),
+          y,
+        };
+      });
 
     // Additional tables (Proposed, Level-2...)
     if (tableData.length > 1) {
@@ -237,8 +253,6 @@ const CrossSectionReport = () => {
           color: getColor(table.type),
           data: makeSeries(rawProposalOffsets, safeProposalLevels),
         });
-
-        data.allRl.push(...safeProposalLevels);
       }
     }
 
@@ -248,8 +262,6 @@ const CrossSectionReport = () => {
       color: getColor(initialEntry.type),
       data: makeSeries(rawOffsets, safeInitial),
     });
-
-    data.allRl.push(...safeInitial);
 
     // Sort offsets for categories
     data.offsets.sort((a, b) => a - b);
@@ -309,6 +321,113 @@ const CrossSectionReport = () => {
     } finally {
       dispatch(stopLoading());
     }
+  };
+
+  const handleRlChange = (type, rowId, rlIndex, value) => {
+    let prevValue = null;
+
+    const updatedCs = {
+      ...selectedCs,
+      series: selectedCs?.series?.map((s) => {
+        if (s.name === type) {
+          return {
+            ...s,
+            data: s?.data?.map((d, idx) => {
+              if (idx === rlIndex) {
+                prevValue = d.y;
+
+                return {
+                  ...d,
+                  y: value,
+                };
+              }
+
+              return d;
+            }),
+          };
+        }
+
+        return s;
+      }),
+    };
+
+    const index = updatedCs.allRl.indexOf(prevValue);
+    if (index === -1) return;
+
+    updatedCs.allRl[index] = String(value);
+
+    setSelectedCs(updatedCs);
+
+    // Compute bounds
+    const minY = Math.min(...updatedCs.allRl);
+    const maxY = Math.max(...updatedCs.allRl);
+
+    // Padding - you can tweak the factor
+    const pad = (maxY - minY) * 0.1;
+
+    const minX = Math.min(...updatedCs.offsets);
+    const maxX = Math.max(...updatedCs.offsets);
+
+    const xaxis = {
+      autorange: false,
+      range: [minX, maxX], // No padding, start exactly at the first x
+      tickformat: ".3f", // 3 decimals always
+      dtick: (maxX - minX) / 4, // Generates: min → -2 → 0 → 2 → max
+      zeroline: false,
+      showline: false,
+      mirror: true,
+    };
+
+    if (selectedMenu === "v1") {
+      setChartOptions((_) => ({
+        ...v1ChartOptions,
+        layout: {
+          ...v1ChartOptions.layout,
+          yaxis: {
+            zeroline: false,
+            autorange: false,
+            range: [minY - 2, maxY + pad],
+          },
+
+          xaxis,
+        },
+      }));
+    }
+    if (selectedMenu === "v2") {
+      setChartOptions((_) => ({
+        ...v2ChartOptions,
+        layout: {
+          ...v2ChartOptions.layout,
+          yaxis: {
+            ...v2ChartOptions.layout.yaxis,
+            zeroline: false,
+            autorange: false,
+            range: [minY - 2, maxY + pad],
+          },
+
+          xaxis: {
+            ...v2ChartOptions.layout.xaxis,
+            ...xaxis,
+          },
+        },
+      }));
+    }
+
+    setTableData((prev) =>
+      prev.map((t) => ({
+        ...t,
+        rows: t.rows?.map((r) => {
+          if (r._id !== rowId) return r;
+
+          return {
+            ...r,
+            reducedLevels: r.reducedLevels.map((rl, idx) =>
+              idx === rlIndex ? value : rl
+            ),
+          };
+        }),
+      }))
+    );
   };
 
   const handleInputChange = (value) => {
@@ -430,7 +549,6 @@ const CrossSectionReport = () => {
         <TableContainer
           component={Paper}
           sx={{
-            border: "1px solid black",
             mt: 2,
             maxHeight: 440,
           }}
@@ -447,20 +565,104 @@ const CrossSectionReport = () => {
               {tableData[0]?.rows?.map(
                 (row, index) =>
                   row.type === "Chainage" && (
-                    <TableRow key={index}>
-                      <TableCell
-                        sx={{ cursor: "pointer" }}
-                        onClick={() => handleClickCs(row._id)}
-                      >
-                        {row.chainage}
-                      </TableCell>
-                      <TableCell
-                        sx={{ cursor: "pointer" }}
-                        onClick={() => handleClickCs(row._id)}
-                      >
-                        View
-                      </TableCell>
-                    </TableRow>
+                    <Fragment key={index}>
+                      <TableRow>
+                        <TableCell
+                          sx={{ cursor: "pointer", border: "none" }}
+                          onClick={() => handleClickCs(row._id)}
+                        >
+                          {row.chainage}
+                        </TableCell>
+                        <TableCell
+                          sx={{ cursor: "pointer", border: "none" }}
+                          onClick={() => handleToggle(row._id)}
+                        >
+                          {openRowId === row._id ? "Hide" : "View"}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell
+                          style={{ paddingBottom: 0, paddingTop: 0 }}
+                          colSpan={6}
+                        >
+                          <Collapse
+                            in={openRowId === row._id}
+                            timeout="auto"
+                            unmountOnExit
+                          >
+                            <Box sx={{ margin: 1 }}>
+                              <Stack spacing={2}>
+                                {tableData
+                                  ?.flatMap((t) =>
+                                    (t.rows || [])
+                                      .filter(
+                                        (r) => r.chainage === row.chainage
+                                      )
+                                      .map((r) => ({
+                                        ...r,
+                                        type: t.type,
+                                      }))
+                                  )
+                                  ?.map((r) => (
+                                    <Box key={r._id}>
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          mb: 0.5,
+                                          fontWeight: 600,
+                                          color: "black",
+                                        }}
+                                      >
+                                        {r.type}
+                                      </Typography>
+
+                                      <Stack spacing={2}>
+                                        {r?.reducedLevels?.map((rl, idx) => (
+                                          <Stack
+                                            direction="row"
+                                            spacing={2}
+                                            key={`${r._id}-${idx}`}
+                                          >
+                                            <BasicInput
+                                              value={rl}
+                                              label={idx === 0 ? "RL" : ""}
+                                              onChange={(e) =>
+                                                handleRlChange(
+                                                  r.type,
+                                                  r._id,
+                                                  idx,
+                                                  e.target.value
+                                                )
+                                              }
+                                            />
+
+                                            <BasicInput
+                                              value={r.offsets[idx]}
+                                              label={idx === 0 ? "Offset" : ""}
+                                            />
+                                          </Stack>
+                                        ))}
+                                      </Stack>
+                                    </Box>
+                                  ))}
+                              </Stack>
+
+                              <Box
+                                display={"flex"}
+                                justifyContent={"end"}
+                                mt={2}
+                              >
+                                <BasicButton
+                                  value={"update"}
+                                  variant="outlined"
+                                  sx={{ py: 1, px: 2 }}
+                                />
+                              </Box>
+                            </Box>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    </Fragment>
                   )
               )}
             </TableBody>
