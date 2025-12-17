@@ -34,8 +34,8 @@ const toggleButtonSx = {
   py: { xs: 0.7, sm: 1 },
   border: "1px solid rgb(25 118 210 / 50%) !important",
   borderRadius: "10px !important",
-  color: '#1976d2 !important',
-  fontWeight: '600',
+  color: "#1976d2 !important",
+  fontWeight: "600",
   boxShadow:
     "0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12) !important",
   "&.Mui-selected": {
@@ -222,20 +222,22 @@ const Report = () => {
             LS
           </ToggleButton>
           <ToggleButton value="area" sx={toggleButtonSx}>
-            Area Report
+            Area
           </ToggleButton>
           <ToggleButton value="volume" sx={toggleButtonSx}>
-            Volume Report
+            Volume
           </ToggleButton>
         </ToggleButtonGroup>
 
-        <Box display={"flex"} justifyContent={"center"} mt={2}>
-          <BasicButton
-            value={"Deduction"}
-            variant="outlined"
-            sx={{ minWidth: "250px" }}
-          />
-        </Box>
+        <Activity mode={reportType === "volume" ? "visible" : "hidden"}>
+          <Box display={"flex"} justifyContent={"center"} mt={2}>
+            <BasicButton
+              value={"Deduction"}
+              variant="outlined"
+              sx={{ minWidth: "250px" }}
+            />
+          </Box>
+        </Activity>
       </Paper>
 
       <Activity mode={reportType ? "visible" : "hidden"}>

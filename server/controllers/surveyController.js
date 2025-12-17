@@ -239,7 +239,11 @@ const getSurvey = async (req, res, next) => {
       .populate({
         path: "purposes",
         match: { deleted: false },
-        populate: { path: "rows", match: { deleted: false } },
+        populate: {
+          path: "rows",
+          match: { deleted: false },
+          options: { sort: { createdAt: 1 } },
+        },
       })
       .lean();
 
@@ -507,12 +511,14 @@ const getSurveyPurpose = async (req, res, next) => {
           populate: {
             path: "rows",
             match: { deleted: false },
+            options: { sort: { createdAt: 1 } },
           },
         },
       })
       .populate({
         path: "rows",
         match: { deleted: false },
+        options: { sort: { createdAt: 1 } },
       })
       .lean();
 
@@ -729,6 +735,7 @@ const getAllSurveyPurpose = async (req, res, next) => {
       .populate({
         path: "rows",
         match: { deleted: false },
+        options: { sort: { createdAt: 1 } },
       })
       .populate({
         path: "history",

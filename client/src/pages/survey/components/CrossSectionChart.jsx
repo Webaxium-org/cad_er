@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Paper,
   Stack,
   Table,
@@ -9,53 +8,22 @@ import {
   TableContainer,
   TableRow,
   Typography,
-} from '@mui/material';
-import Plot from 'react-plotly.js';
+} from "@mui/material";
+import Plot from "react-plotly.js";
 
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from "react";
 
 const colors = {
-  Initial: 'green',
-  Proposed: 'blue',
-  Final: 'red',
+  Initial: "green",
+  Proposed: "blue",
+  Final: "red",
 };
 
-const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
-  const pdfRef = useRef();
-
+const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef }) => {
   const [width, setWidth] = useState(window.innerWidth);
 
-  const downloadPDF = async () => {
-    // Let ApexCharts finish rendering
-    await new Promise((res) => setTimeout(res, 300));
-
-    const element = pdfRef.current;
-    if (!element) return;
-
-    // Capture screenshot
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      scrollX: 0,
-      scrollY: -window.scrollY,
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save('cross-section.pdf');
-  };
-
   const calcWidth = () => {
-    const isLs = selectedCs.type === 'ls';
+    const isLs = selectedCs.type === "ls";
 
     const length = isLs
       ? selectedCs?.chainages?.length
@@ -70,36 +38,37 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
 
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  return chartOptions.id === 'v2' ? (
+  return chartOptions.id === "v2" ? (
     <TableContainer
       component={Paper}
       sx={{
         mt: 0,
-        bgcolor: 'transparent',
-        overflowX: 'auto',
+        bgcolor: "transparent",
+        overflowX: "auto",
       }}
+      ref={pdfRef}
     >
       <Table size="small">
         <TableBody>
           <TableRow>
             <TableCell
               sx={{
-                border: 'none',
-                bgcolor: 'white',
-                position: 'sticky',
+                border: "none",
+                bgcolor: "white",
+                position: "sticky",
                 left: 0,
                 zIndex: 10,
               }}
             ></TableCell>
 
             <TableCell
-              sx={{ border: 'none', px: '14px', bgcolor: 'transparent' }}
+              sx={{ border: "none", px: "14px", bgcolor: "transparent" }}
               colSpan={
-                (selectedCs.type === 'ls'
+                (selectedCs.type === "ls"
                   ? selectedCs?.chainages
                   : selectedCs?.offsets
                 )?.length
@@ -108,28 +77,28 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
               <Box
                 sx={{
                   height: 100,
-                  width: '100%',
-                  display: 'flex',
-                  position: 'relative',
+                  width: "100%",
+                  display: "flex",
+                  position: "relative",
                 }}
               >
                 <Box
                   sx={{
-                    position: 'absolute',
-                    top: '5px',
-                    left: '20.5px',
+                    position: "absolute",
+                    top: "5px",
+                    left: "20.5px",
                   }}
-                  maxWidth={'calc(100% - 30px)'}
-                  maxHeight={'100px'}
+                  maxWidth={"calc(100% - 30px)"}
+                  maxHeight={"100px"}
                 >
                   <Plot
                     data={selectedCs?.series?.map((s) => ({
                       x: s?.data?.map((p) => p.x),
                       y: s?.data?.map((p) => p.y),
-                      type: 'scatter',
-                      mode: 'lines',
+                      type: "scatter",
+                      mode: "lines",
                       name: s.name,
-                      line: { shape: 'linear', width: 1, color: s.color },
+                      line: { shape: "linear", width: 1, color: s.color },
                     }))}
                     config={chartOptions.config}
                     layout={chartOptions.layout}
@@ -144,19 +113,19 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
               <TableRow key={idx}>
                 <TableCell
                   sx={{
-                    fontWeight: 'bold',
-                    border: '1px solid black',
-                    position: 'sticky',
+                    fontWeight: "bold",
+                    border: "1px solid black",
+                    position: "sticky",
                     left: 0,
                     zIndex: 6,
-                    backgroundColor: 'white',
-                    boxShadow: 'inset -1px 0 0 0 black',
+                    backgroundColor: "white",
+                    boxShadow: "inset -1px 0 0 0 black",
                   }}
                 >
                   {s.name}
                 </TableCell>
 
-                {(selectedCs.type === 'ls'
+                {(selectedCs.type === "ls"
                   ? selectedCs?.chainages
                   : selectedCs?.offsets
                 )?.map((o, i) => (
@@ -164,30 +133,30 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                     key={i}
                     align="center"
                     sx={{
-                      position: 'relative',
+                      position: "relative",
                       color:
                         colors[
-                          s.name?.includes('Initial')
-                            ? 'Initial'
-                            : s.name?.includes('Proposed')
-                            ? 'Proposed'
-                            : 'Final'
+                          s.name?.includes("Initial")
+                            ? "Initial"
+                            : s.name?.includes("Proposed")
+                            ? "Proposed"
+                            : "Final"
                         ],
                       fontWeight: 500,
-                      height: '85px',
-                      overflow: 'visible',
-                      border: '1px solid black',
+                      height: "85px",
+                      overflow: "visible",
+                      border: "1px solid black",
                       p: 0,
-                      width: '90px',
-                      minWidth: '90px',
-                      maxWidth: '90px',
+                      width: "90px",
+                      minWidth: "90px",
+                      maxWidth: "90px",
                     }}
                   >
                     <div
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
                       {s?.data
@@ -195,7 +164,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                         .map((val, idx) => (
                           <div
                             key={idx}
-                            style={{ transform: 'rotate(-90deg)' }}
+                            style={{ transform: "rotate(-90deg)" }}
                           >
                             {Number(val.y).toFixed(3)}
                           </div>
@@ -211,19 +180,19 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
           <TableRow>
             <TableCell
               sx={{
-                fontWeight: 'bold',
-                border: '1px solid black',
-                position: 'sticky',
+                fontWeight: "bold",
+                border: "1px solid black",
+                position: "sticky",
                 left: 0,
                 zIndex: 6,
-                backgroundColor: 'white',
-                boxShadow: 'inset -1px 0 0 0 black',
+                backgroundColor: "white",
+                boxShadow: "inset -1px 0 0 0 black",
               }}
             >
-              {selectedCs?.offsets ? 'Offset' : 'Chainage'}
+              {selectedCs?.offsets ? "Offset" : "Chainage"}
             </TableCell>
 
-            {(selectedCs.type === 'ls'
+            {(selectedCs.type === "ls"
               ? selectedCs?.chainages
               : selectedCs?.offsets
             )?.map((val, i) => (
@@ -231,19 +200,19 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                 key={i}
                 align="center"
                 sx={{
-                  position: 'relative',
-                  color: 'green',
+                  position: "relative",
+                  color: "green",
                   fontWeight: 500,
-                  height: '85px',
-                  overflow: 'visible',
-                  border: '1px solid black',
+                  height: "85px",
+                  overflow: "visible",
+                  border: "1px solid black",
                   p: 0,
-                  width: '90px',
-                  minWidth: '90px',
-                  maxWidth: '90px',
+                  width: "90px",
+                  minWidth: "90px",
+                  maxWidth: "90px",
                 }}
               >
-                <div style={{ rotate: '-90deg' }}>{Number(val).toFixed(3)}</div>
+                <div style={{ rotate: "-90deg" }}>{Number(val).toFixed(3)}</div>
                 <div className="cs-table-vertical-line" />
               </TableCell>
             ))}
@@ -257,24 +226,25 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
         component={Paper}
         sx={{
           mt: 0,
-          bgcolor: 'transparent',
-          overflowX: 'auto',
+          bgcolor: "transparent",
+          overflowX: "auto",
         }}
+        ref={pdfRef}
       >
-        <Table size="small" sx={{ tableLayout: 'fixed' }}>
+        <Table size="small" sx={{ tableLayout: "fixed" }}>
           <TableBody>
             {/* CHART ROW */}
             <TableRow>
-              <TableCell sx={{ border: 'none', p: 0 }}>
+              <TableCell sx={{ border: "none", p: 0 }}>
                 <Box maxWidth={`${calcWidth()}px`} height="300px">
                   <Plot
                     data={selectedCs?.series?.map((s) => ({
                       x: s?.data?.map((p) => p.x),
                       y: s?.data?.map((p) => p.y),
-                      type: 'scatter',
-                      mode: 'lines',
+                      type: "scatter",
+                      mode: "lines",
                       name: s.name,
-                      line: { shape: 'linear', width: 1, color: s.color },
+                      line: { shape: "linear", width: 1, color: s.color },
                     }))}
                     config={chartOptions.config}
                     layout={chartOptions.layout}
@@ -282,7 +252,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                   />
                 </Box>
 
-                <Box display="flex" justifyContent={'center'} gap={2} px={2}>
+                <Box display="flex" justifyContent={"center"} gap={2} px={2}>
                   <Typography fontSize="12px" mr={0.5}>
                     Datum: {selectedCs?.datum}
                   </Typography>
@@ -290,11 +260,11 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                   {selectedCs?.series?.map((s, idx) => {
                     const color =
                       colors[
-                        s.name?.includes('Initial')
-                          ? 'Initial'
-                          : s.name?.includes('Proposed')
-                          ? 'Proposed'
-                          : 'Final'
+                        s.name?.includes("Initial")
+                          ? "Initial"
+                          : s.name?.includes("Proposed")
+                          ? "Proposed"
+                          : "Final"
                       ];
 
                     return (
@@ -313,7 +283,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                           sx={{
                             width: 8,
                             height: 8,
-                            borderRadius: '50%',
+                            borderRadius: "50%",
                             backgroundColor: color,
                           }}
                         />
@@ -329,25 +299,25 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
               // detect color for series
               const color =
                 colors[
-                  s.name?.includes('Initial')
-                    ? 'Initial'
-                    : s.name?.includes('Proposed')
-                    ? 'Proposed'
-                    : 'Final'
+                  s.name?.includes("Initial")
+                    ? "Initial"
+                    : s.name?.includes("Proposed")
+                    ? "Proposed"
+                    : "Final"
                 ];
 
               return (
-                <TableRow key={idx} sx={{ display: 'none' }}>
-                  <TableCell sx={{ border: 'none', p: 0 }}>
+                <TableRow key={idx} sx={{ display: "none" }}>
+                  <TableCell sx={{ border: "none", p: 0 }}>
                     <Stack direction="row" width="fit-content">
                       {/* Name column */}
                       <Typography
                         color={color}
                         fontSize="12px"
                         sx={{
-                          minWidth: '90px',
-                          maxWidth: '90px',
-                          textAlign: 'right',
+                          minWidth: "90px",
+                          maxWidth: "90px",
+                          textAlign: "right",
                           pr: 1,
                           flexShrink: 0,
                         }}
@@ -358,8 +328,8 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                       {/* Data section */}
                       <Box
                         sx={{
-                          position: 'relative',
-                          height: '80px',
+                          position: "relative",
+                          height: "80px",
                           flexShrink: 0,
                           minWidth: `
                           ${calcWidth() - 74}px`,
@@ -367,31 +337,31 @@ const CrossSectionChart = ({ selectedCs, chartOptions, download }) => {
                       >
                         <Box
                           sx={{
-                            position: 'absolute',
-                            top: '10px',
+                            position: "absolute",
+                            top: "10px",
                             left: 0,
                             right: 0,
-                            height: '2px',
+                            height: "2px",
                             backgroundColor: color,
                           }}
                         />
 
                         <Box
                           sx={{
-                            position: 'absolute',
-                            top: '28px',
+                            position: "absolute",
+                            top: "28px",
                             left: 0,
                             right: 0,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            width: '100%',
+                            display: "flex",
+                            justifyContent: "space-between",
+                            width: "100%",
                           }}
                         >
                           {s.data.map((val, i) => (
                             <Typography
                               key={i}
                               fontSize="12px"
-                              sx={{ transform: 'rotate(-90deg)', color }}
+                              sx={{ transform: "rotate(-90deg)", color }}
                             >
                               {val[1]}
                             </Typography>

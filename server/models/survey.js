@@ -1,9 +1,9 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 const { Schema, model, Types } = mongoose;
 
 const SurveySchema = new Schema(
   {
-    type: { type: String, default: 'Road Survey', index: true, trim: true },
+    type: { type: String, default: "Road Survey", index: true, trim: true },
     project: { type: String, required: true, trim: true },
     agreementNo: { type: String, required: true, trim: true },
     contractor: { type: String, required: true, trim: true },
@@ -15,15 +15,15 @@ const SurveySchema = new Schema(
     client: { type: String, trim: true },
     status: {
       type: String,
-      enum: ['Active', 'Deleted'],
+      enum: ["Active", "Deleted"],
       required: true,
-      default: 'Active',
+      default: "Active",
     },
     instrumentNo: { type: String, required: true, trim: true },
     chainageMultiple: { type: Number, required: true },
     separator: { type: String, required: true },
     reducedLevel: { type: String, required: true, trim: true },
-    createdBy: { type: Types.ObjectId, ref: 'User', required: true },
+    createdBy: { type: Types.ObjectId, ref: "User", required: true },
     isSurveyFinish: { type: Boolean, default: false, index: true },
     DateOfSurvey: { type: Date, default: Date.now },
     surveyFinishDate: Date,
@@ -33,13 +33,13 @@ const SurveySchema = new Schema(
 );
 
 // --- Virtuals ---
-SurveySchema.virtual('purposes', {
-  ref: 'SurveyPurpose',
-  localField: '_id',
-  foreignField: 'surveyId',
+SurveySchema.virtual("purposes", {
+  ref: "SurveyPurpose",
+  localField: "_id",
+  foreignField: "surveyId",
 });
 
-SurveySchema.set('toObject', { virtuals: true });
-SurveySchema.set('toJSON', { virtuals: true });
+SurveySchema.set("toObject", { virtuals: true });
+SurveySchema.set("toJSON", { virtuals: true });
 
-export default model('Survey', SurveySchema);
+export default model("Survey", SurveySchema);

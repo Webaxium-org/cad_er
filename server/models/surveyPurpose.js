@@ -1,42 +1,42 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 const { Schema, model, Types } = mongoose;
 
 const typeEnum = [
-  'Initial Level',
-  'Final Level',
-  'Final Earth Work',
-  'Final Quarry Muck',
-  'Final GSB',
-  'Final WMM',
-  'Final BM',
-  'Final BC',
-  'Final Tile Top',
-  'Proposed Level',
-  'Proposed Earth Work',
-  'Proposed Muck',
-  'Proposed GSB',
-  'Proposed WMM',
-  'Proposed BM',
-  'Proposed BC',
-  'Proposed Tile Top',
+  "Initial Level",
+  "Final Level",
+  "Final Earth Work",
+  "Final Quarry Muck",
+  "Final GSB",
+  "Final WMM",
+  "Final BM",
+  "Final BC",
+  "Final Tile Top",
+  "Proposed Level",
+  "Proposed Earth Work",
+  "Proposed Muck",
+  "Proposed GSB",
+  "Proposed WMM",
+  "Proposed BM",
+  "Proposed BC",
+  "Proposed Tile Top",
 ];
 
 const SurveyPurposeSchema = new Schema(
   {
     surveyId: {
       type: Types.ObjectId,
-      ref: 'Survey',
+      ref: "Survey",
       required: true,
       index: true,
     },
     phase: {
       type: String,
-      enum: ['Actual', 'Proposal'],
+      enum: ["Actual", "Proposal"],
       required: true,
-      default: 'Actual',
+      default: "Actual",
     },
     pls: String,
-    createdBy: { type: Types.ObjectId, ref: 'User', required: true },
+    createdBy: { type: Types.ObjectId, ref: "User", required: true },
     type: {
       type: String,
       required: true,
@@ -44,13 +44,13 @@ const SurveyPurposeSchema = new Schema(
     },
     relation: {
       type: Types.ObjectId,
-      ref: 'SurveyPurpose',
+      ref: "SurveyPurpose",
     },
     status: {
       type: String,
-      enum: ['Active', 'Paused', 'Finished', 'Deleted'],
+      enum: ["Active", "Paused", "Finished", "Deleted"],
       required: true,
-      default: 'Active',
+      default: "Active",
     },
     finalForesight: Number,
     proposedLevel: Number,
@@ -68,21 +68,21 @@ const SurveyPurposeSchema = new Schema(
 );
 
 // Each purpose can have multiple rows
-SurveyPurposeSchema.virtual('rows', {
-  ref: 'SurveyRow',
-  localField: '_id',
-  foreignField: 'purposeId',
+SurveyPurposeSchema.virtual("rows", {
+  ref: "SurveyRow",
+  localField: "_id",
+  foreignField: "purposeId",
 });
 
 // History (linked via unified History model)
-SurveyPurposeSchema.virtual('history', {
-  ref: 'History',
-  localField: '_id',
-  foreignField: 'entityId',
-  match: { entityType: 'SurveyPurpose' },
+SurveyPurposeSchema.virtual("history", {
+  ref: "History",
+  localField: "_id",
+  foreignField: "entityId",
+  match: { entityType: "SurveyPurpose" },
 });
 
-SurveyPurposeSchema.set('toObject', { virtuals: true });
-SurveyPurposeSchema.set('toJSON', { virtuals: true });
+SurveyPurposeSchema.set("toObject", { virtuals: true });
+SurveyPurposeSchema.set("toJSON", { virtuals: true });
 
-export default model('SurveyPurpose', SurveyPurposeSchema);
+export default model("SurveyPurpose", SurveyPurposeSchema);

@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { handleFormError } from "../../utils/handleFormError";
@@ -21,10 +23,21 @@ import { v1ChartOptions, v2ChartOptions } from "../../constants";
 import { BsThreeDots } from "react-icons/bs";
 import BasicMenu from "../../components/BasicMenu";
 import BasicInput from "../../components/BasicInput";
+import BasicButton from "../../components/BasicButton";
+import { MdDownload } from "react-icons/md";
 
 const menuItems = [
-  { label: "V1", value: "v1" },
-  { label: "V2", value: "v2" },
+  { label: "v1", value: "v1" },
+  { label: "v2", value: "v2" },
+  {
+    label: (
+      <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+        PDF
+        <MdDownload />
+      </Stack>
+    ),
+    value: "download",
+  },
 ];
 
 const colors = {
@@ -44,6 +57,8 @@ const CrossSectionReport = () => {
 
   const { global } = useSelector((state) => state.loading);
 
+  const pdfRef = useRef();
+
   const [chartOptions, setChartOptions] = useState(null);
 
   const [survey, setSurvey] = useState([]);
@@ -54,7 +69,37 @@ const CrossSectionReport = () => {
 
   const [selectedCs, setSelectedCs] = useState(null);
 
+  const downloadPDF = async () => {
+    if (!pdfRef.current) return;
+
+    const modebars = pdfRef.current.querySelectorAll(".modebar-container");
+    modebars.forEach((el) => (el.style.display = "none"));
+
+    // Wait for Plotly to fully render
+    await new Promise((res) => setTimeout(res, 300));
+
+    const canvas = await html2canvas(pdfRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: -window.scrollY,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    // A4 Landscape (best for wide tables)
+    const pdf = new jsPDF("l", "mm", "a5");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save("cross-section.pdf");
+  };
+
   const handleMenuSelect = (item) => {
+    if (item.value === "download") return downloadPDF();
+
     if (!selectedCs) return;
 
     // Compute bounds
@@ -313,6 +358,7 @@ const CrossSectionReport = () => {
         <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
           CS AT CHAINAGE {selectedCs?.chainage}
         </Typography>
+
         <Box textAlign={"end"}>
           <BasicMenu
             label={<BsThreeDots />}
@@ -377,7 +423,7 @@ const CrossSectionReport = () => {
           <CrossSectionChart
             selectedCs={selectedCs}
             chartOptions={chartOptions}
-            download={true}
+            pdfRef={pdfRef}
           />
         )}
 

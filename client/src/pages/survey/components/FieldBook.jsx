@@ -39,6 +39,7 @@ export default function FieldBook() {
       try {
         if (!global) dispatch(startLoading());
         const { data } = await getSurveyPurpose(id);
+        console.log(data);
         if (data?.success) {
           setPurpose(data.purpose);
         } else {

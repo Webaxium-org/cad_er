@@ -1,29 +1,24 @@
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { handleFormError } from '../../utils/handleFormError';
-import { startLoading, stopLoading } from '../../redux/loadingSlice';
-import { getSurvey } from '../../services/surveyServices';
-import { Box, Stack, Typography } from '@mui/material';
-import CrossSectionChart from './components/CrossSectionChart';
-import {
-  advancedChartOptions,
-  initialChartOptions,
-  v1ChartOptions,
-  v2ChartOptions,
-} from '../../constants';
-import BasicMenu from '../../components/BasicMenu';
-import { BsThreeDots } from 'react-icons/bs';
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { handleFormError } from "../../utils/handleFormError";
+import { startLoading, stopLoading } from "../../redux/loadingSlice";
+import { getSurvey } from "../../services/surveyServices";
+import { Box, Stack, Typography } from "@mui/material";
+import CrossSectionChart from "./components/CrossSectionChart";
+import { v1ChartOptions, v2ChartOptions } from "../../constants";
+import BasicMenu from "../../components/BasicMenu";
+import { BsThreeDots } from "react-icons/bs";
 
 const menuItems = [
-  { label: 'V1', value: 'v1' },
-  { label: 'V2', value: 'v2' },
+  { label: "v1", value: "v1" },
+  { label: "v2", value: "v2" },
 ];
 
 const colors = {
-  Initial: 'green',
-  Proposed: 'blue',
-  Final: 'red',
+  Initial: "green",
+  Proposed: "blue",
+  Final: "red",
 };
 
 const LongitudinalSectionReport = () => {
@@ -61,14 +56,14 @@ const LongitudinalSectionReport = () => {
     const xaxis = {
       autorange: false,
       range: [minX, maxX], // No padding, start exactly at the first x
-      tickformat: '.3f', // 3 decimals always
+      tickformat: ".3f", // 3 decimals always
       dtick: (maxX - minX) / 4, // Generates: min → -2 → 0 → 2 → max
       zeroline: false,
       showline: false,
       mirror: true,
     };
 
-    if (item.value === 'v1') {
+    if (item.value === "v1") {
       setChartOptions((_) => ({
         ...v1ChartOptions,
         layout: {
@@ -83,7 +78,7 @@ const LongitudinalSectionReport = () => {
         },
       }));
     }
-    if (item.value === 'v2') {
+    if (item.value === "v2") {
       setChartOptions((_) => ({
         ...v2ChartOptions,
         layout: {
@@ -114,19 +109,19 @@ const LongitudinalSectionReport = () => {
         );
       });
     } else {
-      data.push(survey?.purposes?.find((p) => p.type === 'Initial Level'));
+      data.push(survey?.purposes?.find((p) => p.type === "Initial Level"));
     }
 
     setTableData(data);
   };
 
   const getSafeChainage = (chainage) => {
-    return Number(chainage?.split(survey.separator || '/')[1]);
+    return Number(chainage?.split(survey.separator || "/")[1]);
   };
 
   const getColor = (type) => {
-    if (type.includes('Initial')) return colors.Initial;
-    if (type.includes('Proposed')) return colors.Proposed;
+    if (type.includes("Initial")) return colors.Initial;
+    if (type.includes("Proposed")) return colors.Proposed;
     return colors.Final;
   };
 
@@ -134,7 +129,7 @@ const LongitudinalSectionReport = () => {
     const initialEntry = tableData[0];
     if (!initialEntry?.rows?.length) return;
 
-    const row = initialEntry.rows.filter((row) => row.type === 'Chainage');
+    const row = initialEntry.rows.filter((row) => row.type === "Chainage");
     if (!row.length) return;
 
     const pls = Number(initialEntry.pls || 0);
@@ -153,7 +148,7 @@ const LongitudinalSectionReport = () => {
 
     const data = {
       id,
-      type: 'ls',
+      type: "ls",
       datum: 9.4,
       chainages: safeChainages,
       series: [],
@@ -171,7 +166,7 @@ const LongitudinalSectionReport = () => {
       for (let i = 1; i < tableData.length; i++) {
         const table = tableData[i];
 
-        const newRow = table?.rows?.filter((r) => r.type === 'Chainage') || [];
+        const newRow = table?.rows?.filter((r) => r.type === "Chainage") || [];
         if (!newRow.length) continue;
 
         const safeProposal = newRow.map((r) => {
@@ -217,7 +212,7 @@ const LongitudinalSectionReport = () => {
     const xaxis = {
       autorange: false,
       range: [minX, maxX],
-      tickformat: '.3f',
+      tickformat: ".3f",
       dtick: (maxX - minX) / 4,
       zeroline: false,
       showline: false,
@@ -252,7 +247,7 @@ const LongitudinalSectionReport = () => {
 
         setSurvey(data.survey);
       } else {
-        throw Error('Failed to fetch survey');
+        throw Error("Failed to fetch survey");
       }
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
@@ -274,16 +269,16 @@ const LongitudinalSectionReport = () => {
   return (
     <Box p={2}>
       <Stack
-        direction={'row'}
-        justifyContent={'space-between'}
-        alignItems={'center'}
+        direction={"row"}
+        justifyContent={"space-between"}
+        alignItems={"center"}
         spacing={2}
         mb={2}
       >
         <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
           LONGITUDINAL SECTION
         </Typography>
-        <Box textAlign={'end'}>
+        <Box textAlign={"end"}>
           <BasicMenu
             label={<BsThreeDots />}
             items={menuItems}
@@ -293,10 +288,10 @@ const LongitudinalSectionReport = () => {
       </Stack>
       <Box
         sx={{
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
         {selectedCs && selectedCs?.series?.length && (
@@ -310,7 +305,7 @@ const LongitudinalSectionReport = () => {
         {/* Footer */}
         <Typography
           variant="caption"
-          sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}
+          sx={{ mt: 1, fontStyle: "italic", color: "text.secondary" }}
         >
           [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
         </Typography>
