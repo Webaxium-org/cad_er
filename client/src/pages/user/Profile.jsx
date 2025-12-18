@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { Avatar, Box, Typography, Paper, Stack, Divider } from '@mui/material';
-import { useDispatch, useSelector } from 'react-redux';
-import { stopLoading } from '../../redux/loadingSlice';
+import { useEffect } from "react";
+import { Avatar, Box, Typography, Paper, Stack, Divider } from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
+import { stopLoading } from "../../redux/loadingSlice";
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -18,8 +18,8 @@ const Profile = () => {
       sx={{
         p: 3,
         borderRadius: 3,
-        boxShadow: '0 3px 12px rgba(0,0,0,0.08)',
-        background: 'linear-gradient(180deg, #ffffff, #faf7ff)',
+        boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+        background: "linear-gradient(180deg, #ffffff, #faf7ff)",
       }}
     >
       <Stack spacing={2} alignItems="center">
@@ -27,21 +27,21 @@ const Profile = () => {
         <Avatar
           src={user?.avatar}
           alt={user?.name}
-          sx={{ width: 64, height: 64, bgcolor: '#6D42FA' }}
+          sx={{ width: 64, height: 64, bgcolor: "#006FFD" }}
         />
 
         {/* User Info */}
         <Box textAlign="center">
           <Typography fontSize="18px" fontWeight={700}>
-            {user?.name || 'N/A'}
+            {user?.name || "N/A"}
           </Typography>
 
           <Typography fontSize="13px" sx={{ opacity: 0.7 }}>
-            {user?.email || 'N/A'}
+            {user?.email || "N/A"}
           </Typography>
         </Box>
 
-        <Divider sx={{ width: '80%' }} />
+        <Divider sx={{ width: "80%" }} />
 
         {/* Survey Stats */}
         <Stack direction="row" justifyContent="space-between" width="100%">
@@ -55,14 +55,14 @@ const Profile = () => {
         {/* Personal Info Section */}
         <Section title="Personal Information">
           <Info label="Email" value={user?.email} />
-          <Info label="Phone" value={user?.phone || 'N/A'} />
-          <Info label="Role" value={user?.role || 'N/A'} />
-          <Info label="Location" value={user?.location || 'N/A'} />
+          <Info label="Phone" value={user?.phone || "N/A"} />
+          <Info label="Role" value={user?.role || "N/A"} />
+          <Info label="Location" value={user?.location || "N/A"} />
         </Section>
 
         {user?.organization && (
           <>
-            <Divider sx={{ width: '100%' }} />
+            <Divider sx={{ width: "100%" }} />
 
             {/* Organization Info Section */}
             <Section title="Organization Details">
@@ -94,7 +94,7 @@ const Info = ({ label, value }) => (
       {label}
     </Typography>
     <Typography fontSize="14px" fontWeight={600}>
-      {value || '—'}
+      {value || "—"}
     </Typography>
   </Box>
 );

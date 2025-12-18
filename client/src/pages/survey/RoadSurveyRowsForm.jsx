@@ -410,9 +410,18 @@ const RoadSurveyRowsForm = () => {
   };
 
   const updateInputData = () => {
-    const filteredInputData = inputDetails?.filter((d) =>
-      values[rowType]?.includes(d.name)
-    );
+    const filteredInputData = inputDetails
+      ?.map((d) => {
+        if (rowType === "CP" && d.name === "backSight") {
+          return {
+            ...d,
+            disabled: true,
+          };
+        }
+
+        return d;
+      })
+      ?.filter((d) => values[rowType]?.includes(d.name));
 
     if (rowType === "TBM") {
       filteredInputData.unshift({
@@ -485,6 +494,23 @@ const RoadSurveyRowsForm = () => {
   const handleInputChange = async (event, index, field) => {
     const { name, value } = event.target;
 
+    if (rowType === "CP") {
+      if (name === "foreSight") {
+        setInputData((prev) =>
+          prev.map((p) => {
+            if (p.name === "backSight") {
+              return {
+                ...p,
+                disabled: value === "",
+              };
+            }
+
+            return p;
+          })
+        );
+      }
+    }
+
     const target =
       name === "intermediateOffsets"
         ? `intermediateOffsets[${index}].${field}`
@@ -494,12 +520,13 @@ const RoadSurveyRowsForm = () => {
       if (value) {
         const numValue = Number(value);
         if (!isNaN(numValue)) {
-          const decimalPlaces = (value.toString().split(".")[1] || "").length;
+          const decimalPart = value.split(".")[1] || "";
+          const decimalPlaces = decimalPart.length;
 
-          if (decimalPlaces > 0 && !value.endsWith("005")) {
+          if (decimalPlaces > 2 && !/[05]$/.test(decimalPart)) {
             setFormWarnings({
               ...formWarnings,
-              [target]: "Floating values should end with .005",
+              [target]: "Floating values least count error",
             });
           } else {
             setFormWarnings({ ...formWarnings, [target]: null });
@@ -1080,7 +1107,7 @@ const RoadSurveyRowsForm = () => {
         page === 1 &&
         selectedCs &&
         selectedCs?.series && (
-          <Box>
+          <Box position={"sticky"} top={0} bgcolor={"white"} zIndex={2}>
             <Activity
               mode={purpose.type === "Initial Level" ? "hidden" : "visible"}
             >
@@ -1168,6 +1195,7 @@ const RoadSurveyRowsForm = () => {
                       warning={(formWarnings && formWarnings[input.name]) || ""}
                       sx={{ width: "100%" }}
                       onChange={(e) => handleInputChange(e)}
+                      disabled={input.disabled}
                     />
                   </Box>
                 </Grid>
@@ -1195,16 +1223,11 @@ const RoadSurveyRowsForm = () => {
                 </Typography>
                 <Stack spacing={2}>
                   {formValues.intermediateOffsets.map((row, idx) => (
-                    <Stack
-                      key={idx}
-                      direction={"row"}
-                      alignItems={"end"}
-                      spacing={1}
-                    >
+                    <Stack key={idx} spacing={1}>
                       <Stack
                         key={idx}
                         direction={"row"}
-                        alignItems={"center"}
+                        alignItems={"end"}
                         spacing={1}
                         width={"100%"}
                       >
@@ -1241,7 +1264,8 @@ const RoadSurveyRowsForm = () => {
                               formWarnings &&
                               formWarnings[
                                 `intermediateOffsets[${idx}].intermediateSight`
-                              ]
+                              ] &&
+                              "disable-label"
                             }
                             sx={{ width: "100%" }}
                             onChange={(e) =>
@@ -1272,42 +1296,60 @@ const RoadSurveyRowsForm = () => {
                             formErrors[`intermediateOffsets[${idx}].remark`]
                           }
                         />
-                      </Stack>
+                        <Box>
+                          {idx ===
+                          formValues.intermediateOffsets?.length - 1 ? (
+                            <Stack direction={"row"} spacing={1}>
+                              {formValues.intermediateOffsets?.length > 1 && (
+                                <Box
+                                  className="remove-new-sight"
+                                  onClick={() => handleRemoveRow(idx)}
+                                >
+                                  <IoIosRemove
+                                    fontSize={"24px"}
+                                    color="rgb(231 0 0)"
+                                  />
+                                </Box>
+                              )}
 
-                      <Box>
-                        {idx === formValues.intermediateOffsets?.length - 1 ? (
-                          <Stack direction={"row"} spacing={1}>
-                            {formValues.intermediateOffsets?.length > 1 && (
                               <Box
-                                className="remove-new-sight"
-                                onClick={() => handleRemoveRow(idx)}
+                                className="add-new-sight"
+                                onClick={handleAddRow}
                               >
-                                <IoIosRemove
-                                  fontSize={"24px"}
-                                  color="rgb(231 0 0)"
-                                />
+                                <IoAdd fontSize={"24px"} color="#0059E7" />
                               </Box>
-                            )}
-
+                            </Stack>
+                          ) : (
                             <Box
-                              className="add-new-sight"
-                              onClick={handleAddRow}
+                              className="remove-new-sight"
+                              onClick={() => handleRemoveRow(idx)}
                             >
-                              <IoAdd fontSize={"24px"} color="#0059E7" />
+                              <IoIosRemove
+                                fontSize={"24px"}
+                                color="rgb(231 0 0)"
+                              />
                             </Box>
-                          </Stack>
-                        ) : (
-                          <Box
-                            className="remove-new-sight"
-                            onClick={() => handleRemoveRow(idx)}
+                          )}
+                        </Box>
+                      </Stack>
+                      {formWarnings &&
+                        formWarnings[
+                          `intermediateOffsets[${idx}].intermediateSight`
+                        ] && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              mb: 0.5,
+                              color: "warning.main",
+                            }}
                           >
-                            <IoIosRemove
-                              fontSize={"24px"}
-                              color="rgb(231 0 0)"
-                            />
-                          </Box>
+                            {
+                              formWarnings[
+                                `intermediateOffsets[${idx}].intermediateSight`
+                              ]
+                            }
+                          </Typography>
                         )}
-                      </Box>
                     </Stack>
                   ))}
                 </Stack>

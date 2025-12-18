@@ -9,10 +9,20 @@ import CrossSectionChart from "./components/CrossSectionChart";
 import { v1ChartOptions, v2ChartOptions } from "../../constants";
 import BasicMenu from "../../components/BasicMenu";
 import { BsThreeDots } from "react-icons/bs";
+import { MdDownload } from "react-icons/md";
 
 const menuItems = [
-  { label: "v1", value: "v1" },
-  { label: "v2", value: "v2" },
+  // { label: "v1", value: "v1" },
+  // { label: "v2", value: "v2" },
+  {
+    label: (
+      <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+        PDF
+        <MdDownload />
+      </Stack>
+    ),
+    value: "download",
+  },
 ];
 
 const colors = {
@@ -283,6 +293,7 @@ const LongitudinalSectionReport = () => {
             label={<BsThreeDots />}
             items={menuItems}
             onSelect={handleMenuSelect}
+            sx={{ minWidth: "fit-content", p: 1 }}
           />
         </Box>
       </Stack>

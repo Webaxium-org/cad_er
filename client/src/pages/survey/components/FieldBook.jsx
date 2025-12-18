@@ -12,7 +12,6 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 import BasicButtons from "../../../components/BasicButton";
-import BasicInput from "../../../components/BasicInput";
 
 import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
 import { IoIosAddCircleOutline } from "react-icons/io";
@@ -21,6 +20,39 @@ import { Box, Stack, Paper, TableContainer } from "@mui/material";
 import FieldBookTable, { calculateTableData } from "./FieldBookTable";
 import { purposeCode } from "../../../constants";
 import { showAlert } from "../../../redux/alertSlice";
+import BasicMenu from "../../../components/BasicMenu";
+import { BsThreeDots } from "react-icons/bs";
+import { TbReportSearch } from "react-icons/tb";
+
+const menuItems = [
+  {
+    label: (
+      <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+        Reports
+        <TbReportSearch />
+      </Stack>
+    ),
+    value: "reports",
+  },
+  {
+    label: (
+      <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+        Excel
+        <MdDownload />
+      </Stack>
+    ),
+    value: "excel download",
+  },
+  {
+    label: (
+      <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+        PDF
+        <MdDownload />
+      </Stack>
+    ),
+    value: "pdf download",
+  },
+];
 
 export default function FieldBook() {
   const { id } = useParams();
@@ -32,6 +64,18 @@ export default function FieldBook() {
   const [updatedRows, setUpdatedRows] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const handleMenuSelect = (item) => {
+    if (item.value === "reports") {
+      navigate(`/survey/${purpose?.surveyId?._id}/report`);
+    }
+    if (item.value === "download") {
+      console.log("downloading ....");
+    }
+    if (item.value === "download") {
+      console.log("downloading ....");
+    }
+  };
 
   // --- Fetch purpose data ---
   useEffect(() => {
@@ -225,25 +269,15 @@ export default function FieldBook() {
         <Stack direction="row" alignItems="center" spacing={1}>
           <BasicButtons
             variant="contained"
-            sx={{ py: 1, px: 2, fontSize: 12, minWidth: 82 }}
-            onClick={exportToExcel}
-            value={
-              <Stack direction="row" alignItems="center">
-                Excel <MdDownload fontSize={16} />
-              </Stack>
-            }
+            sx={{ py: 1, px: 2, fontSize: 12 }}
+            onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
+            value={isEditing ? (saving ? "Saving..." : "Save") : "Edit"}
+            loading={saving}
           />
 
           <BasicButtons
             variant="contained"
-            sx={{ py: 1, px: 2, fontSize: 12, minWidth: 82 }}
-            onClick={() => navigate(`/survey/${purpose?.surveyId?._id}/report`)}
-            value="Reports"
-          />
-
-          <BasicButtons
-            variant="contained"
-            sx={{ py: 1, px: 2, fontSize: 12, minWidth: 82 }}
+            sx={{ py: 1, px: 2, fontSize: 12 }}
             onClick={() =>
               navigate(`/survey/road-survey/${purpose?.surveyId?._id}`)
             }
@@ -254,16 +288,17 @@ export default function FieldBook() {
               </Stack>
             }
           />
+
+          <Box textAlign={"end"}>
+            <BasicMenu
+              label={<BsThreeDots />}
+              items={menuItems}
+              onSelect={handleMenuSelect}
+              sx={{ minWidth: "fit-content", p: 1 }}
+            />
+          </Box>
         </Stack>
       </Stack>
-
-      <BasicButtons
-        variant="contained"
-        sx={{ py: 1, px: 2, fontSize: 12 }}
-        onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-        value={isEditing ? (saving ? "Saving..." : "Save") : "Edit"}
-        loading={saving}
-      />
 
       <TableContainer component={Paper} sx={{ mt: 2 }}>
         <FieldBookTable

@@ -361,7 +361,12 @@ const createSurveyRow = async (req, res, next) => {
     if (type === "Chainage") {
       remarks.push(...remark);
     } else {
-      remarks.push(`${type} - ${remark}`);
+      if (type === "CP") {
+        const cpLength = purpose.rows?.filter((r) => r.type === "CP");
+        remarks.push(`${type - cpLength + 1} - ${remark}`);
+      } else {
+        remarks.push(`${type} - ${remark}`);
+      }
     }
 
     const initialSurvey = survey.purposes?.find(

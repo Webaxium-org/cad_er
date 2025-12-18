@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import {
   Stack,
   Box,
@@ -8,50 +8,62 @@ import {
   Paper,
   Tooltip,
   Fab,
-} from '@mui/material';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useDispatch, useSelector } from 'react-redux';
-import { stopLoading } from '../../redux/loadingSlice';
-import { useNavigate } from 'react-router-dom';
-import BasicInput from '../../components/BasicInput';
-import BasicCard from '../../components/BasicCard';
+} from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useDispatch, useSelector } from "react-redux";
+import { stopLoading } from "../../redux/loadingSlice";
+import { useNavigate } from "react-router-dom";
+import BasicInput from "../../components/BasicInput";
+import BasicCard from "../../components/BasicCard";
 
-import { IoNotificationsOutline } from 'react-icons/io5';
-import { MdOutlineSearch } from 'react-icons/md';
-import { TbReport } from 'react-icons/tb';
-import { TbReportSearch } from 'react-icons/tb';
+import { IoNotificationsOutline } from "react-icons/io5";
+import { MdOutlineSearch } from "react-icons/md";
+import { TbReport } from "react-icons/tb";
+import { TbReportSearch } from "react-icons/tb";
 
-import { TbRefresh } from 'react-icons/tb';
-import { MdGpsFixed } from 'react-icons/md';
-import { GoChecklist } from 'react-icons/go';
-import { BiSupport } from 'react-icons/bi';
-import { IoTime } from 'react-icons/io5';
+import { TbRefresh } from "react-icons/tb";
+import { MdGpsFixed } from "react-icons/md";
+import { GoChecklist } from "react-icons/go";
+import { BiSupport } from "react-icons/bi";
+import { IoTime } from "react-icons/io5";
 
-import BackgroundImage from '../../assets/background-img.png';
-import logo from '../../assets/logo/CADer logo-main.png';
-import ImageAvatars from '../../components/ImageAvatar';
-import BasicButton from '../../components/BasicButton';
-import { IoIosAddCircleOutline } from 'react-icons/io';
-import BasicDivider from '../../components/BasicDevider';
-import AlertDialogSlide from '../../components/AlertDialogSlide';
-import UniversalConverter from '../../components/UniversalConverter';
-import StatusChip from '../../components/StatusChip';
+import BackgroundImage from "../../assets/background-img.png";
+import logo from "../../assets/logo/CADer logo-main.png";
+import ImageAvatars from "../../components/ImageAvatar";
+import BasicButton from "../../components/BasicButton";
+import { IoIosAddCircleOutline } from "react-icons/io";
+import BasicDivider from "../../components/BasicDevider";
+import AlertDialogSlide from "../../components/AlertDialogSlide";
+import UniversalConverter from "../../components/UniversalConverter";
+import StatusChip from "../../components/StatusChip";
+import BasicSelect from "../../components/BasicSelect";
 
 const alertData = {
-  title: 'Help & Support',
+  title: "Help & Support",
   description: `If you have any questions or need assistance, we're here to help.
             Please describe your issue below, and our support team will get back
             to you as soon as possible.`,
-  content: <BasicInput placeholder="Message" sx={{ mt: 2 }} />,
-  cancelButtonText: 'Cancel',
-  submitButtonText: 'Continue',
+  content: (
+    <Stack spacing={2} mt={2}>
+      <BasicSelect
+        label={"Feedback Type"}
+        options={[
+          { label: "Complaints", value: "Complaints" },
+          { label: "Suggestions", value: "Suggestions" },
+        ]}
+      />
+      <BasicInput label="Message" placeholder="Enter your message" />
+    </Stack>
+  ),
+  cancelButtonText: "Cancel",
+  submitButtonText: "Continue",
 };
 
 const unitConverterAlertData = {
-  title: 'Unit Converter',
-  description: '',
-  content: '',
-  submitButtonText: 'Cancel',
+  title: "Unit Converter",
+  description: "",
+  content: "",
+  submitButtonText: "Cancel",
 };
 
 const animations = [
@@ -61,52 +73,52 @@ const animations = [
 
 const taskData = [
   {
-    title: 'Auto Level',
-    description: 'create level and accurate road profiles',
-    status: 'Pending',
-    createdAt: '12:00 PM',
+    title: "Auto Level",
+    description: "create level and accurate road profiles",
+    status: "Pending",
+    createdAt: "12:00 PM",
   },
   {
-    title: 'Soil Testing',
-    description: 'analyze soil composition and moisture content',
-    status: 'Pending',
-    createdAt: '09:30 AM',
+    title: "Soil Testing",
+    description: "analyze soil composition and moisture content",
+    status: "Pending",
+    createdAt: "09:30 AM",
   },
   {
-    title: 'Site Inspection',
-    description: 'inspect construction site for quality assurance',
-    status: 'In Progress',
-    createdAt: '03:45 PM',
+    title: "Site Inspection",
+    description: "inspect construction site for quality assurance",
+    status: "In Progress",
+    createdAt: "03:45 PM",
   },
   {
-    title: 'Material Check',
-    description: 'verify material delivery and measurements',
-    status: 'Pending',
-    createdAt: '08:15 AM',
+    title: "Material Check",
+    description: "verify material delivery and measurements",
+    status: "Pending",
+    createdAt: "08:15 AM",
   },
   {
-    title: 'Excavation Leveling',
-    description: 'ensure excavation is done at correct levels',
-    status: 'In Progress',
-    createdAt: '11:20 AM',
+    title: "Excavation Leveling",
+    description: "ensure excavation is done at correct levels",
+    status: "In Progress",
+    createdAt: "11:20 AM",
   },
   {
-    title: 'Boundary Marking',
-    description: 'mark boundaries as per the approved layout plan',
-    status: 'In Progress',
-    createdAt: '10:05 AM',
+    title: "Boundary Marking",
+    description: "mark boundaries as per the approved layout plan",
+    status: "In Progress",
+    createdAt: "10:05 AM",
   },
   {
-    title: 'Concrete Mix Test',
-    description: 'test the workability and strength of concrete mix',
-    status: 'Pending',
-    createdAt: '04:10 PM',
+    title: "Concrete Mix Test",
+    description: "test the workability and strength of concrete mix",
+    status: "Pending",
+    createdAt: "04:10 PM",
   },
   {
-    title: 'Equipment Calibration',
-    description: 'calibrate surveying instruments and tools',
-    status: 'Pending',
-    createdAt: '01:40 PM',
+    title: "Equipment Calibration",
+    description: "calibrate surveying instruments and tools",
+    status: "Pending",
+    createdAt: "01:40 PM",
   },
 ];
 
@@ -123,35 +135,35 @@ const Home = () => {
 
   const [openUnitConverter, setOpenUnitConverter] = useState();
 
-  const above385 = useMediaQuery('(min-width:386px)');
-  const above400 = useMediaQuery('(min-width:400px)');
+  const above385 = useMediaQuery("(min-width:386px)");
+  const above400 = useMediaQuery("(min-width:400px)");
 
   const actions = [
     {
-      label: 'Projects',
+      label: "Projects",
       icon: <TbReport fontSize={above400 ? 32 : 28} />,
-      link: '/survey',
+      link: "/survey",
     },
     {
-      label: 'Reports',
+      label: "Reports",
       icon: <TbReportSearch fontSize={above400 ? 32 : 28} />,
-      link: '/survey/report',
+      link: "/survey/report",
     },
     {
-      label: 'Unit Con.',
+      label: "Unit Con.",
       icon: <TbRefresh fontSize={above400 ? 32 : 28} />,
-      type: 'unit',
+      type: "unit",
     },
     {
-      label: 'Camera',
+      label: "Camera",
       icon: <MdGpsFixed fontSize={above400 ? 32 : 28} />,
-      link: '/camera',
+      link: "/camera",
     },
   ];
 
   const handleOpen = (action) => {
-    setOpen(action === 'help & support');
-    setOpenUnitConverter(action === 'unit converter');
+    setOpen(action === "help & support");
+    setOpenUnitConverter(action === "unit converter");
   };
 
   const handleClose = () => {
@@ -163,9 +175,9 @@ const Home = () => {
     e.preventDefault();
 
     const formData = new FormData(e.target);
-    const value = formData.get('search');
+    const value = formData.get("search");
 
-    navigate('/survey', { state: { search: value } });
+    navigate("/survey", { state: { search: value } });
   };
 
   useEffect(() => {
@@ -191,20 +203,20 @@ const Home = () => {
       {!open && !openUnitConverter && (
         <Tooltip title="Help" placement="left">
           <Fab
-            onClick={() => handleOpen('help & support')}
+            onClick={() => handleOpen("help & support")}
             aria-label="help"
             sx={{
-              position: 'fixed',
+              position: "fixed",
               bottom: 90,
               right: 24,
               borderRadius: 8,
-              textTransform: 'none',
+              textTransform: "none",
               zIndex: 2000,
               width: 56,
               height: 56,
-              backgroundColor: '#006FFD',
-              color: 'white',
-              ':hover': { backgroundColor: '#006FFD' },
+              backgroundColor: "#006FFD",
+              color: "white",
+              ":hover": { backgroundColor: "#006FFD" },
             }}
           >
             <BiSupport size={24} />
@@ -212,57 +224,57 @@ const Home = () => {
         </Tooltip>
       )}
 
-      <Stack spacing={2} pb={2} sx={{ userSelect: 'none' }} overflow={'hidden'}>
+      <Stack spacing={2} pb={2} sx={{ userSelect: "none" }} overflow={"hidden"}>
         {/* 🌈 HEADER */}
         <Stack
           p={2}
-          height={'228px'}
+          height={"228px"}
           sx={{
-            position: 'relative',
+            position: "relative",
             // backgroundColor: 'rgba(40, 151, 255, 1)',
             background:
-              'linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)',
+              "linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)",
           }}
         >
           <div
             style={{
-              position: 'absolute',
+              position: "absolute",
               inset: 0,
               backgroundImage: `url(${BackgroundImage})`,
-              backgroundSize: '200%',
-              backgroundPosition: 'center',
+              backgroundSize: "200%",
+              backgroundPosition: "center",
               opacity: 0.25,
               zIndex: 0,
-              height: '60dvh',
-              width: '100%',
+              height: "60dvh",
+              width: "100%",
             }}
           ></div>
           <Box
-            display={'flex'}
-            justifyContent={'space-between'}
-            alignItems={'center'}
+            display={"flex"}
+            justifyContent={"space-between"}
+            alignItems={"center"}
             color="white"
           >
-            <img src={logo} alt="CADer" style={{ width: '65px' }} />
-            <IoNotificationsOutline fontSize={'28px'} />
+            <img src={logo} alt="CADer" style={{ width: "65px" }} />
+            <IoNotificationsOutline fontSize={"28px"} />
           </Box>
 
           <Stack
-            direction={'row'}
-            alignItems={'center'}
-            justifyContent={'space-between'}
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"space-between"}
             mt={2}
           >
-            <Stack direction={'row'} alignItems={'center'} spacing={1}>
+            <Stack direction={"row"} alignItems={"center"} spacing={1}>
               <ImageAvatars
                 sx={{
-                  width: '48px',
-                  height: '48px',
-                  backgroundColor: '#fff',
-                  color: 'rgba(40, 151, 255, 1)',
-                  '& .css-1mo2pzk-MuiSvgIcon-root-MuiAvatar-fallback': {
-                    width: '60%',
-                    height: '60%',
+                  width: "48px",
+                  height: "48px",
+                  backgroundColor: "#fff",
+                  color: "rgba(40, 151, 255, 1)",
+                  "& .css-1mo2pzk-MuiSvgIcon-root-MuiAvatar-fallback": {
+                    width: "60%",
+                    height: "60%",
                   },
                 }}
               />
@@ -277,31 +289,31 @@ const Home = () => {
               </Box>
             </Stack>
 
-            <Box minWidth={'123px'}>
+            <Box minWidth={"123px"}>
               <BasicButton
                 value={
                   <Box
-                    display={'flex'}
+                    display={"flex"}
                     gap={1}
-                    alignItems={'center'}
-                    color={'rgba(0, 111, 253, 1)'}
+                    alignItems={"center"}
+                    color={"rgba(0, 111, 253, 1)"}
                   >
                     <IoIosAddCircleOutline
-                      fontSize={'20px'}
-                      fontWeight={'900'}
-                      strokeWidth={'10px'}
+                      fontSize={"20px"}
+                      fontWeight={"900"}
+                      strokeWidth={"10px"}
                     />
-                    <Typography fontSize={'13px'} fontWeight={700}>
+                    <Typography fontSize={"13px"} fontWeight={700}>
                       Add Project
                     </Typography>
                   </Box>
                 }
-                onClick={() => navigate('/survey/select-equipment')}
+                onClick={() => navigate("/survey/select-equipment")}
                 sx={{
-                  backgroundColor: '#ffffff',
-                  height: '45px',
-                  '&:hover': {
-                    backgroundColor: '#ffffff',
+                  backgroundColor: "#ffffff",
+                  height: "45px",
+                  "&:hover": {
+                    backgroundColor: "#ffffff",
                   },
                 }}
               />
@@ -313,22 +325,22 @@ const Home = () => {
             color="rgba(222, 222, 222, 1)"
           />
 
-          <Box position={'relative'}>
+          <Box position={"relative"}>
             <Box
-              position={'absolute'}
+              position={"absolute"}
               zIndex={1}
-              sx={{ top: '10px', left: '10px' }}
-              color={'rgba(145, 145, 145, 1)'}
+              sx={{ top: "10px", left: "10px" }}
+              color={"rgba(145, 145, 145, 1)"}
             >
-              <MdOutlineSearch fontSize={'24px'} />
+              <MdOutlineSearch fontSize={"24px"} />
             </Box>
             <form onSubmit={(e) => handleSubmitSearch(e)}>
               <BasicInput
                 name="search"
                 placeholder="Search"
                 sx={{
-                  paddingLeft: '40px',
-                  borderRadius: '14px',
+                  paddingLeft: "40px",
+                  borderRadius: "14px",
                 }}
               />
             </form>
@@ -341,41 +353,41 @@ const Home = () => {
             <Typography fontWeight={700} fontSize="16px">
               Quick Actions
             </Typography>
-            <Box display={'flex'} justifyContent={'space-between'}>
+            <Box display={"flex"} justifyContent={"space-between"}>
               {actions.map((item, idx) => (
                 <Box key={idx}>
-                  <Stack alignItems={'center'} height={'100%'} spacing={0.5}>
+                  <Stack alignItems={"center"} height={"100%"} spacing={0.5}>
                     <Paper
                       elevation={3}
                       sx={{
                         px: 2,
                         py: 1.5,
-                        borderRadius: '14px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        width: `${above400 ? '55px' : '46px'}`,
-                        height: '100%',
-                        backgroundColor: 'white',
-                        '&:hover': {
-                          transform: 'scale(1.05)',
+                        borderRadius: "14px",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease",
+                        width: `${above400 ? "55px" : "46px"}`,
+                        height: "100%",
+                        backgroundColor: "white",
+                        "&:hover": {
+                          transform: "scale(1.05)",
                         },
                       }}
                       onClick={() => {
-                        item.type === 'unit'
-                          ? handleOpen('unit converter')
+                        item.type === "unit"
+                          ? handleOpen("unit converter")
                           : navigate(item.link);
                       }}
                     >
                       <Stack
-                        justifyContent={'center'}
-                        alignItems={'center'}
+                        justifyContent={"center"}
+                        alignItems={"center"}
                         spacing={0.5}
-                        sx={{ color: 'rgba(0, 111, 253, 1)' }}
+                        sx={{ color: "rgba(0, 111, 253, 1)" }}
                       >
                         {item.icon}
                         <Typography
-                          fontSize={above400 ? '12px' : '10px'}
+                          fontSize={above400 ? "12px" : "10px"}
                           fontWeight={700}
                           color="black"
                           align="center"
@@ -403,20 +415,20 @@ const Home = () => {
                   animate={{ opacity: 1, y: 0 }}
                   whileHover={{
                     y: -5,
-                    boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+                    boxShadow: "0px 8px 20px rgba(0,0,0,0.1)",
                   }}
                   transition={{ duration: 0.4, delay: 0.6 }}
                   sx={{
-                    borderBottom: '2px solid #006FFD',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
+                    borderBottom: "2px solid #006FFD",
+                    borderRadius: "16px",
+                    cursor: "pointer",
                   }}
                   content={
                     <Stack spacing={1}>
                       <Box
-                        display={'flex'}
-                        justifyContent={'space-between'}
-                        alignItems={'center'}
+                        display={"flex"}
+                        justifyContent={"space-between"}
+                        alignItems={"center"}
                         gap={1.5}
                       >
                         <Typography fontWeight={600} fontSize="14px">
@@ -424,14 +436,14 @@ const Home = () => {
                         </Typography>
 
                         <Box
-                          bgcolor={'rgba(234, 242, 255, 1)'}
-                          borderRadius={'6px'}
-                          padding={'8px 8px 6px'}
+                          bgcolor={"rgba(234, 242, 255, 1)"}
+                          borderRadius={"6px"}
+                          padding={"8px 8px 6px"}
                         >
                           <TbReport
                             size={20}
                             style={{
-                              color: 'rgba(0, 111, 253, 1)',
+                              color: "rgba(0, 111, 253, 1)",
                             }}
                           />
                         </Box>
@@ -459,21 +471,21 @@ const Home = () => {
                   animate={{ opacity: 1, y: 0 }}
                   whileHover={{
                     y: -5,
-                    boxShadow: '0px 8px 20px rgba(0,0,0,0.1)',
+                    boxShadow: "0px 8px 20px rgba(0,0,0,0.1)",
                   }}
                   transition={{ duration: 0.4, delay: 0.8 }}
                   sx={{
-                    borderBottom: '2px solid rgba(57, 104, 58, 1)',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    height: '100%',
+                    borderBottom: "2px solid rgba(57, 104, 58, 1)",
+                    borderRadius: "16px",
+                    cursor: "pointer",
+                    height: "100%",
                   }}
                   content={
                     <Stack spacing={1}>
                       <Box
-                        display={'flex'}
-                        justifyContent={'space-between'}
-                        alignItems={'center'}
+                        display={"flex"}
+                        justifyContent={"space-between"}
+                        alignItems={"center"}
                         gap={1.5}
                       >
                         <Typography fontWeight={600} fontSize="14px">
@@ -481,14 +493,14 @@ const Home = () => {
                         </Typography>
 
                         <Box
-                          bgcolor={'rgba(57, 104, 58, 0.22)'}
-                          borderRadius={'6px'}
-                          padding={'8px 8px 6px'}
+                          bgcolor={"rgba(57, 104, 58, 0.22)"}
+                          borderRadius={"6px"}
+                          padding={"8px 8px 6px"}
                         >
                           <GoChecklist
                             size={20}
                             style={{
-                              color: 'rgba(57, 104, 58, 1)',
+                              color: "rgba(57, 104, 58, 1)",
                             }}
                           />
                         </Box>
@@ -523,9 +535,9 @@ const Home = () => {
                 component={motion.div}
                 {...animations[idx % 2]}
                 transition={{ duration: 0.4, delay: 0.6 + idx * 0.1 }}
-                contentSx={{ p: '16px !important' }}
+                contentSx={{ p: "16px !important" }}
                 content={
-                  <Box position={'relative'}>
+                  <Box position={"relative"}>
                     <Stack
                       direction="row"
                       justifyContent="space-between"

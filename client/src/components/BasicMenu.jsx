@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import Button from '@mui/material/Button';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
+import { useState } from "react";
+import Button from "@mui/material/Button";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 
-const BasicMenu = ({ label = 'Menu', items = [], onSelect }) => {
+const BasicMenu = ({ label = "Menu", items = [], onSelect, sx = {} }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -19,13 +19,13 @@ const BasicMenu = ({ label = 'Menu', items = [], onSelect }) => {
   return (
     <div>
       <Button
-        variant={'outlined'}
+        variant={"outlined"}
         id="menu-button"
-        aria-controls={open ? 'menu' : undefined}
+        aria-controls={open ? "menu" : undefined}
         aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
+        aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
-        sx={{ p: 1 }}
+        sx={sx}
       >
         {label}
       </Button>
@@ -39,35 +39,39 @@ const BasicMenu = ({ label = 'Menu', items = [], onSelect }) => {
           paper: {
             elevation: 0,
             sx: {
-              overflow: 'visible',
-              filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+              overflow: "visible",
+              filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
               mt: 1.5,
-              '& .MuiAvatar-root': {
+              "& .MuiAvatar-root": {
                 width: 32,
                 height: 32,
                 ml: -0.5,
                 mr: 1,
               },
-              '&::before': {
+              "&::before": {
                 content: '""',
-                display: 'block',
-                position: 'absolute',
+                display: "block",
+                position: "absolute",
                 top: 0,
                 right: 14,
                 width: 10,
                 height: 10,
-                bgcolor: 'background.paper',
-                transform: 'translateY(-50%) rotate(45deg)',
+                bgcolor: "background.paper",
+                transform: "translateY(-50%) rotate(45deg)",
                 zIndex: 0,
               },
             },
           },
         }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
         {items.map((item, index) => (
-          <MenuItem key={index} onClick={() => handleClose(item)}>
+          <MenuItem
+            key={index}
+            onClick={() => handleClose(item)}
+            sx={{ fontSize: 12, minHeight: "auto", p: 1 }}
+          >
             {item.label || item}
           </MenuItem>
         ))}

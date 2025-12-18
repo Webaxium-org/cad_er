@@ -1,35 +1,29 @@
-import * as React from 'react';
-import BottomNavigation from '@mui/material/BottomNavigation';
-import BottomNavigationAction from '@mui/material/BottomNavigationAction';
-import { Box } from '@mui/material';
+import * as React from "react";
+import BottomNavigation from "@mui/material/BottomNavigation";
+import BottomNavigationAction from "@mui/material/BottomNavigationAction";
+import { Box } from "@mui/material";
 
-import { GoProject } from 'react-icons/go';
-import { IoHomeOutline, IoPerson, IoMenu } from 'react-icons/io5';
-import { useLocation, useNavigate } from 'react-router-dom';
-import TemporaryDrawer from './TemporaryDrawer';
+import { GoProject } from "react-icons/go";
+import { IoHomeOutline, IoMenu } from "react-icons/io5";
+import { useLocation, useNavigate } from "react-router-dom";
+import TemporaryDrawer from "./TemporaryDrawer";
 
-import DrawerList from './DrawerList';
+import DrawerList from "./DrawerList";
 
 const navItems = [
   {
-    label: 'Home',
-    value: 'Home',
+    label: "Home",
+    value: "Home",
     icon: <IoHomeOutline size={22} />,
-    path: '/',
+    path: "/",
   },
   {
-    label: 'Projects',
-    value: 'Projects',
+    label: "Projects",
+    value: "Projects",
     icon: <GoProject size={22} />,
-    path: '/survey',
+    path: "/survey",
   },
-  {
-    label: 'You',
-    value: 'You',
-    icon: <IoPerson size={22} />,
-    path: '/profile',
-  },
-  { label: 'Menu', value: 'Menu', icon: <IoMenu size={22} />, path: '#' },
+  { label: "Menu", value: "Menu", icon: <IoMenu size={22} />, path: "#" },
 ];
 
 export default function BasicBottomNavigation() {
@@ -43,7 +37,7 @@ export default function BasicBottomNavigation() {
 
   const toggleDrawer = (newOpen) => () => {
     if (!newOpen) {
-      setValue('Home');
+      setValue("Home");
     }
 
     setOpen(newOpen);
@@ -54,7 +48,7 @@ export default function BasicBottomNavigation() {
 
     setValue(newValue);
 
-    if (newValue === 'Menu') {
+    if (newValue === "Menu") {
       toggleDrawer(!open)();
     } else {
       navigate(item.path);
@@ -64,7 +58,7 @@ export default function BasicBottomNavigation() {
   React.useEffect(() => {
     const activeNav = navItems?.find((item) => item.path === pathname);
 
-    setValue(activeNav ? activeNav.label : '');
+    setValue(activeNav ? activeNav.label : "");
   }, [pathname]);
 
   return (
@@ -82,74 +76,74 @@ export default function BasicBottomNavigation() {
         right={0}
         zIndex={1000}
         sx={{
-          backgroundColor: '#fff',
-          borderTop: '1px solid #eee',
-          display: 'flex',
-          justifyContent: 'space-around',
+          backgroundColor: "#fff",
+          borderTop: "1px solid #eee",
+          display: "flex",
+          justifyContent: "space-around",
           py: 1.2,
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.05)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          boxShadow: "0 -2px 8px rgba(0,0,0,0.05)",
+          paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
         <BottomNavigation
           sx={{
-            width: '100%',
+            width: "100%",
             bottom: 0,
             left: 0,
-            bgcolor: '#fff',
+            bgcolor: "#fff",
             // boxShadow: '0 -4px 10px rgba(0,0,0,0.08)',
-            borderTopLeftRadius: '20px',
-            borderTopRightRadius: '20px',
+            borderTopLeftRadius: "20px",
+            borderTopRightRadius: "20px",
 
-            '& .MuiBottomNavigationAction-root': {
-              color: '#9e9e9e',
-              position: 'relative',
-              transition: 'all 0.3s ease',
-              '& .MuiSvgIcon-root': {
+            "& .MuiBottomNavigationAction-root": {
+              color: "#9e9e9e",
+              position: "relative",
+              transition: "all 0.3s ease",
+              "& .MuiSvgIcon-root": {
                 fontSize: 26,
               },
-              '&::before': {
+              "&::before": {
                 content: '""',
-                position: 'absolute',
-                top: '-6px',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
+                position: "absolute",
+                top: "-6px",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
                 width: 0,
                 height: 0,
-                borderRadius: '50%',
-                backgroundColor: '#fff',
-                transition: 'all 0.3s ease',
+                borderRadius: "50%",
+                backgroundColor: "#fff",
+                transition: "all 0.3s ease",
                 zIndex: -5,
-                boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.05)'
+                boxShadow: "0 -2px 8px rgba(0, 0, 0, 0.05)",
               },
-              '&::after': {
+              "&::after": {
                 content: '""',
-                position: 'absolute',
-                top: '-9px',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
+                position: "absolute",
+                top: "-9px",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
                 width: 0,
                 height: 0,
-                borderRadius: '50%',
-                backgroundColor: 'rgba(0, 111, 253, 1)',
-                transition: 'all 0.3s ease',
+                borderRadius: "50%",
+                backgroundColor: "#006FFD",
+                transition: "all 0.3s ease",
                 zIndex: -5,
               },
             },
 
-            '& .Mui-selected': {
-              color: 'rgba(0, 111, 253, 1)',
+            "& .Mui-selected": {
+              color: "#006FFD",
               fontWeight: 600,
-              '&::before': {
+              "&::before": {
                 width: 50,
                 height: 50,
               },
-              '&::after': {
+              "&::after": {
                 width: 10,
                 height: 10,
               },
             },
-            '& .Mui-selected svg': { color: 'rgba(0, 111, 253, 1)' },
+            "& .Mui-selected svg": { color: "#006FFD" },
           }}
           value={value}
           onChange={handleChange}

@@ -29,8 +29,8 @@ import { MdDownload } from "react-icons/md";
 import { showAlert } from "../../redux/alertSlice";
 
 const menuItems = [
-  { label: "v1", value: "v1" },
-  { label: "v2", value: "v2" },
+  // { label: "v1", value: "v1" },
+  // { label: "v2", value: "v2" },
   {
     label: (
       <Stack direction={"row"} alignItems={"center"} gap={0.5}>
@@ -503,7 +503,7 @@ const CrossSectionReport = () => {
         mb={2}
       >
         <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
-          CS AT CHAINAGE {selectedCs?.chainage}
+          CROSS SECTION AT CH {selectedCs?.chainage}
         </Typography>
 
         <Box textAlign={"end"}>
@@ -511,6 +511,7 @@ const CrossSectionReport = () => {
             label={<BsThreeDots />}
             items={menuItems}
             onSelect={handleMenuSelect}
+            sx={{ minWidth: "fit-content", p: 1 }}
           />
         </Box>
       </Stack>
@@ -525,7 +526,7 @@ const CrossSectionReport = () => {
               color: "black",
             }}
           >
-            Horizontal Scale
+            Horizontal Scale X
           </Typography>
           <Stack direction={"row"} spacing={1}>
             <BasicInput label={""} placeholder={"1"} />
@@ -541,7 +542,7 @@ const CrossSectionReport = () => {
               color: "black",
             }}
           >
-            Vertical Scale
+            Vertical Scale Y
           </Typography>
           <Stack direction={"row"} spacing={1}>
             <BasicInput label={""} placeholder={"1"} />

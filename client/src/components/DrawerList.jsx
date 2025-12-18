@@ -1,11 +1,12 @@
-import { FaSignOutAlt } from 'react-icons/fa';
-import { IoHomeOutline } from 'react-icons/io5';
-import { GoOrganization, GoProject } from 'react-icons/go';
-import { FaUsers } from 'react-icons/fa';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { logOut } from '../redux/userSlice';
-import { persistor } from '../redux/store';
+import { FaSignOutAlt } from "react-icons/fa";
+import { IoHomeOutline } from "react-icons/io5";
+import { GoPerson } from "react-icons/go";
+import { GoOrganization } from "react-icons/go";
+import { PiUsersThree } from "react-icons/pi";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { logOut } from "../redux/userSlice";
+import { persistor } from "../redux/store";
 import {
   Box,
   List,
@@ -17,35 +18,41 @@ import {
   Avatar,
   Typography,
   Stack,
-} from '@mui/material';
-import { useEffect, useState } from 'react';
-import { logoutUser } from '../services/indexServices';
+} from "@mui/material";
+import { useEffect, useState } from "react";
+import { logoutUser } from "../services/indexServices";
+import BasicDivider from "./BasicDevider";
 
 const menuListDetails = [
   {
-    id: '1',
-    label: 'Home',
+    id: "1",
+    label: "Home",
     icon: <IoHomeOutline />,
-    path: '/',
+    path: "/",
   },
   {
-    label: 'Organizations',
+    id: "2",
+    label: "Profile",
+    icon: <GoPerson />,
+    path: "/profile",
+  },
+  {
+    label: "Organizations",
     icon: <GoOrganization />,
-    path: '/organizations',
-    required: ['Super Admin'],
+    path: "/organizations",
+    required: ["Super Admin"],
   },
   {
-    label: 'Users',
-    icon: <FaUsers />,
-    path: '/users',
+    label: "Users",
+    icon: <PiUsersThree />,
+    path: "/users",
     required: [
-      'Super Admin',
-      'Survey Manager',
-      'Chief Surveyor',
-      'Senior Surveyor',
+      "Super Admin",
+      "Survey Manager",
+      "Chief Surveyor",
+      "Senior Surveyor",
     ],
   },
-  { label: 'Projects', icon: <GoProject />, path: '/survey' },
 ];
 
 const DrawerList = ({ toggleDrawer }) => {
@@ -67,14 +74,14 @@ const DrawerList = ({ toggleDrawer }) => {
       dispatch(logOut());
       persistor.purge();
 
-      navigate('/login');
+      navigate("/login");
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
       // Even if backend fails, still clear client state
       dispatch(logOut());
       persistor.purge();
 
-      navigate('/login');
+      navigate("/login");
     }
   };
 
@@ -92,10 +99,10 @@ const DrawerList = ({ toggleDrawer }) => {
     <Box
       sx={{
         width: 260,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        bgcolor: '#f9f9fb',
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        bgcolor: "#f9f9fb",
       }}
       role="presentation"
       onClick={toggleDrawer(false)}
@@ -106,14 +113,14 @@ const DrawerList = ({ toggleDrawer }) => {
         spacing={2}
         sx={{
           p: 2,
-          backgroundColor: '#6334FA',
-          color: 'white',
+          backgroundColor: "#006FFD",
+          color: "white",
         }}
       >
         <Avatar
           src=""
           alt="User Avatar"
-          sx={{ width: 48, height: 48, border: '2px solid white' }}
+          sx={{ width: 48, height: 48, border: "2px solid white" }}
         />
         <Box>
           <Typography fontWeight={600}>{user?.name}</Typography>
@@ -121,6 +128,17 @@ const DrawerList = ({ toggleDrawer }) => {
             {user?.email}
           </Typography>
         </Box>
+
+        <BasicDivider
+          borderBottomWidth={0.5}
+          color="#6ca1d7"
+          style={{ width: "100%" }}
+        />
+        <Stack direction="row" justifyContent="space-between" width="100%">
+          <StatItem label="Surveys" value={user?.surveys ?? 0} />
+          <StatItem label="Completed" value={user?.completed ?? 0} />
+          <StatItem label="Pending" value={user?.pending ?? 0} />
+        </Stack>
       </Stack>
 
       {/* 🔹 Menu Items */}
@@ -133,15 +151,15 @@ const DrawerList = ({ toggleDrawer }) => {
           >
             <ListItemButton
               sx={{
-                borderRadius: '8px',
+                borderRadius: "8px",
                 mx: 1,
                 my: 0.5,
-                '&:hover': {
-                  backgroundColor: 'rgba(99, 52, 250, 0.08)',
+                "&:hover": {
+                  backgroundColor: "rgba(99, 52, 250, 0.08)",
                 },
               }}
             >
-              <ListItemIcon sx={{ color: '#6334FA', minWidth: 40 }}>
+              <ListItemIcon sx={{ color: "#006FFD", minWidth: 40 }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText
@@ -161,19 +179,19 @@ const DrawerList = ({ toggleDrawer }) => {
           <ListItemButton
             onClick={handleLogout}
             sx={{
-              borderRadius: '8px',
+              borderRadius: "8px",
               mx: 1,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 0, 0, 0.08)',
+              "&:hover": {
+                backgroundColor: "rgba(255, 0, 0, 0.08)",
               },
             }}
           >
-            <ListItemIcon sx={{ color: 'red', minWidth: 40 }}>
+            <ListItemIcon sx={{ color: "red", minWidth: 40 }}>
               <FaSignOutAlt />
             </ListItemIcon>
             <ListItemText
               primary="Logout"
-              primaryTypographyProps={{ fontWeight: 500, color: 'red' }}
+              primaryTypographyProps={{ fontWeight: 500, color: "red" }}
             />
           </ListItemButton>
         </ListItem>
@@ -183,3 +201,14 @@ const DrawerList = ({ toggleDrawer }) => {
 };
 
 export default DrawerList;
+
+const StatItem = ({ label, value }) => (
+  <Box textAlign="center" width="33%">
+    <Typography fontSize="16px" fontWeight={700}>
+      {value}
+    </Typography>
+    <Typography fontSize="12px" sx={{ opacity: 0.6 }}>
+      {label}
+    </Typography>
+  </Box>
+);

@@ -22,6 +22,7 @@ import {
   ToggleButtonGroup,
   Divider,
   Chip,
+  Stack,
 } from "@mui/material";
 
 import { MdDelete } from "react-icons/md";
@@ -155,14 +156,8 @@ const Report = () => {
   };
 
   return (
-    <Box p={2} sx={{ maxWidth: 900, mx: "auto" }}>
-      <Typography
-        variant="h6"
-        fontSize={18}
-        fontWeight={700}
-        align="center"
-        mb={2}
-      >
+    <Stack p={2} spacing={2} sx={{ maxWidth: 900, mx: "auto" }}>
+      <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
         Generate Survey Report
       </Typography>
 
@@ -228,23 +223,23 @@ const Report = () => {
             Volume
           </ToggleButton>
         </ToggleButtonGroup>
-
-        <Activity mode={reportType === "volume" ? "visible" : "hidden"}>
-          <Box display={"flex"} justifyContent={"center"} mt={2}>
-            <BasicButton
-              value={"DEDUCTION"}
-              variant="outlined"
-              sx={{
-                fontSize: "12px",
-                padding: "5.6px 11px",
-                minWidth: "200px",
-              }}
-            />
-          </Box>
-        </Activity>
       </Paper>
 
-      <Activity mode={reportType ? "visible" : "hidden"}>
+      <Activity mode={survey && reportType === "volume" ? "visible" : "hidden"}>
+        <Box display={"flex"} justifyContent={"center"}>
+          <BasicButton
+            value={"DEDUCTION"}
+            variant="outlined"
+            sx={{
+              fontSize: "12px",
+              padding: "5.6px 11px",
+              minWidth: "200px",
+            }}
+          />
+        </Box>
+      </Activity>
+
+      <Activity mode={survey && reportType ? "visible" : "hidden"}>
         {/* Purpose Table */}
         <TableContainer
           component={Paper}
@@ -366,7 +361,7 @@ const Report = () => {
           </Paper>
         </Activity>
       </Activity>
-    </Box>
+    </Stack>
   );
 };
 

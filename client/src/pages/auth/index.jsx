@@ -1,5 +1,5 @@
-import * as React from 'react';
-import * as Yup from 'yup';
+import * as React from "react";
+import * as Yup from "yup";
 import {
   Box,
   Divider,
@@ -9,65 +9,52 @@ import {
   Card as MuiCard,
   Button,
   CssBaseline,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { GoogleLogin } from '@react-oauth/google';
-import { useDispatch } from 'react-redux';
-import { stopLoading } from '../../redux/loadingSlice';
-import { jwtDecode } from 'jwt-decode';
-import { googleLogin, loginUser } from '../../services/indexServices';
-import { showAlert } from '../../redux/alertSlice';
-import { handleFormError } from '../../utils/handleFormError';
-import { useNavigate } from 'react-router-dom';
-import { setUser } from '../../redux/userSlice';
-import BasicButtons from '../../components/BasicButton';
-import {
-  GoogleIcon,
-  FacebookIcon,
-  SitemarkIcon,
-} from './components/CustomIcons';
-import BasicInput from '../../components/BasicInput';
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import { GoogleLogin } from "@react-oauth/google";
+import { useDispatch } from "react-redux";
+import { stopLoading } from "../../redux/loadingSlice";
+import { jwtDecode } from "jwt-decode";
+import { googleLogin, loginUser } from "../../services/indexServices";
+import { showAlert } from "../../redux/alertSlice";
+import { handleFormError } from "../../utils/handleFormError";
+import { useNavigate } from "react-router-dom";
+import { setUser } from "../../redux/userSlice";
+import BasicButtons from "../../components/BasicButton";
+import { GoogleIcon, FacebookIcon } from "./components/CustomIcons";
+import BasicInput from "../../components/BasicInput";
+import Logo from "../../assets/logo/CADer logo-loader.png";
+import BackgroundImage from "../../assets/back-ground-img.png";
 
 const Card = styled(MuiCard)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignSelf: 'center',
-  width: '100%',
+  display: "flex",
+  flexDirection: "column",
+  alignSelf: "center",
+  width: "100%",
   padding: theme.spacing(4),
   gap: theme.spacing(2),
-  margin: 'auto',
-  [theme.breakpoints.up('sm')]: {
-    maxWidth: '450px',
+  margin: "auto",
+  [theme.breakpoints.up("sm")]: {
+    maxWidth: "450px",
   },
   boxShadow:
-    'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
-  ...theme.applyStyles('dark', {
+    "hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px",
+  ...theme.applyStyles("dark", {
     boxShadow:
-      'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
+      "hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px",
   }),
 }));
 
 const SignInContainer = styled(Stack)(({ theme }) => ({
-  height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
-  minHeight: '100%',
+  position: "relative", // 🔥 REQUIRED
+  height: "calc((1 - var(--template-frame-height, 0)) * 100dvh)",
+  minHeight: "100%",
   padding: theme.spacing(2),
-  [theme.breakpoints.up('sm')]: {
+  overflow: "hidden", // 🔥 prevents bleed
+  [theme.breakpoints.up("sm")]: {
     padding: theme.spacing(4),
   },
-  '&::before': {
-    content: '""',
-    display: 'block',
-    position: 'absolute',
-    zIndex: -1,
-    inset: 0,
-    backgroundImage:
-      'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
-    backgroundRepeat: 'no-repeat',
-    ...theme.applyStyles('dark', {
-      backgroundImage:
-        'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))',
-    }),
-  },
+  background: "#131344",
 }));
 
 const schema = Yup.object().shape({
@@ -75,32 +62,32 @@ const schema = Yup.object().shape({
     .trim()
     .matches(
       /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
-      'Please enter a valid email address'
+      "Please enter a valid email address"
     )
-    .email('Please enter a valid email address')
-    .required('Email is required'),
+    .email("Please enter a valid email address")
+    .required("Email is required"),
 
   password: Yup.string()
-    .min(6, 'Password must be at least 6 characters long')
-    .required('Password is required'),
+    .min(6, "Password must be at least 6 characters long")
+    .required("Password is required"),
 });
 
 const inputDetails = [
   {
-    label: 'Email',
-    name: 'email',
-    type: 'text',
+    label: "Email",
+    name: "email",
+    type: "text",
   },
   {
-    label: 'Password',
-    name: 'password',
-    type: 'password',
+    label: "Password",
+    name: "password",
+    type: "password",
   },
 ];
 
 const initialFormValues = {
-  email: '',
-  password: '',
+  email: "",
+  password: "",
 };
 
 export default function SignIn() {
@@ -121,12 +108,12 @@ export default function SignIn() {
 
     dispatch(
       showAlert({
-        type: 'success',
+        type: "success",
         message: `Hi ${user?.name}, everything's ready for you. Let's get started!`,
       })
     );
 
-    navigate('/');
+    navigate("/");
   };
 
   const handleInputChange = async (event) => {
@@ -156,10 +143,10 @@ export default function SignIn() {
 
       handleSuccessLogin(data.user);
     } catch (error) {
-      if (error?.response?.data?.message === 'Invalid credentials') {
+      if (error?.response?.data?.message === "Invalid credentials") {
         const innerError = [
-          { path: 'email', message: error?.response?.data?.message },
-          { path: 'password', message: error?.response?.data?.message },
+          { path: "email", message: error?.response?.data?.message },
+          { path: "password", message: error?.response?.data?.message },
         ];
 
         error.inner = innerError;
@@ -188,7 +175,7 @@ export default function SignIn() {
   };
 
   const handleGoogleError = () => {
-    const error = new Error('Google Login Failed. Please try again.');
+    const error = new Error("Google Login Failed. Please try again.");
     handleFormError(error, null, dispatch, navigate);
   };
 
@@ -203,14 +190,27 @@ export default function SignIn() {
         direction="column"
         justifyContent="center"
         alignItems="center"
-        minHeight={'660px !important'}
+        minHeight={"660px !important"}
       >
-        <Card variant="outlined">
-          <SitemarkIcon />
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0, // 🔥 replaces top/left/width/height
+            backgroundImage: `url(${BackgroundImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: 0.25,
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+
+        <Card variant="outlined" sx={{ zIndex: 1 }}>
+          <img src={Logo} alt="logo" width={100} />
           <Typography
             component="h1"
             variant="h4"
-            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
+            sx={{ width: "100%", fontSize: "clamp(1.5rem, 10vw, 1.6rem)" }}
           >
             Sign in
           </Typography>
@@ -218,49 +218,49 @@ export default function SignIn() {
           {/* Email & Password */}
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              width: '100%',
+              display: "flex",
+              flexDirection: "column",
+              width: "100%",
               gap: 2,
             }}
           >
             {inputData.map((input, index) => (
               <Box
                 sx={{
-                  '& .MuiOutlinedInput-root, & .MuiFilledInput-root': {
-                    borderRadius: '15px',
+                  "& .MuiOutlinedInput-root, & .MuiFilledInput-root": {
+                    borderRadius: "15px",
                   },
-                  width: '100%',
+                  width: "100%",
                 }}
                 key={index}
               >
                 <BasicInput
                   {...input}
-                  value={formValues[input.name] || ''}
-                  error={(formErrors && formErrors[input.name]) || ''}
+                  value={formValues[input.name] || ""}
+                  error={(formErrors && formErrors[input.name]) || ""}
                   variant="filled"
-                  sx={{ width: '100%' }}
+                  sx={{ width: "100%" }}
                   onChange={(e) => handleInputChange(e)}
                 />
               </Box>
             ))}
 
             <BasicButtons
-              value={'Sign in'}
+              value={"Sign in"}
               sx={{
-                textTransform: 'none',
-                height: '2.5rem',
-                color: 'white',
-                backgroundColor: 'hsl(220, 35%, 3%)',
+                textTransform: "none",
+                height: "2.5rem",
+                color: "white",
+                backgroundColor: "hsl(220, 35%, 3%)",
                 backgroundImage:
-                  'linear-gradient(to bottom, hsl(220, 20%, 25%), hsl(220, 30%, 6%))',
+                  "linear-gradient(to bottom, hsl(220, 20%, 25%), hsl(220, 30%, 6%))",
                 boxShadow:
-                  'inset 0 1px 0 hsl(220, 20%, 35%), inset 0 -1px 0 1px hsl(220, 0%, 0%)',
-                border: '1px solid hsl(220, 20%, 25%)',
-                '&:hover': {
-                  backgroundImage: 'none',
-                  backgroundColor: 'rgb(51, 60, 77)',
-                  boxShadow: 'none',
+                  "inset 0 1px 0 hsl(220, 20%, 35%), inset 0 -1px 0 1px hsl(220, 0%, 0%)",
+                border: "1px solid hsl(220, 20%, 25%)",
+                "&:hover": {
+                  backgroundImage: "none",
+                  backgroundColor: "rgb(51, 60, 77)",
+                  boxShadow: "none",
                 },
               }}
               fullWidth={true}
@@ -272,8 +272,8 @@ export default function SignIn() {
               component="button"
               type="button"
               variant="body2"
-              sx={{ alignSelf: 'center' }}
-              onClick={() => alert('This feature in progress !!')}
+              sx={{ alignSelf: "center" }}
+              onClick={() => alert("This feature in progress !!")}
             >
               Forgot your password?
             </Link>
@@ -281,7 +281,7 @@ export default function SignIn() {
 
           <Divider>or</Divider>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {/* ✅ Google Login Button */}
             <Box className="google-sign-in-wrapper">
               <GoogleLogin
@@ -292,17 +292,17 @@ export default function SignIn() {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign in with Facebook')}
+              onClick={() => alert("Sign in with Facebook")}
               startIcon={<FacebookIcon />}
             >
               Sign in with Facebook
             </Button>
-            <Typography sx={{ textAlign: 'center' }}>
-              Don&apos;t have an account?{' '}
+            <Typography sx={{ textAlign: "center" }}>
+              Don&apos;t have an account?{" "}
               <Link
                 href="/material-ui/getting-started/templates/sign-in/"
                 variant="body2"
-                sx={{ alignSelf: 'center' }}
+                sx={{ alignSelf: "center" }}
               >
                 Sign up
               </Link>

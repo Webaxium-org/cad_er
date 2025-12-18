@@ -1,66 +1,66 @@
-import { Input, Box, Typography } from '@mui/material';
-import { styled, alpha } from '@mui/material/styles';
+import { Input, Box, Typography } from "@mui/material";
+import { styled, alpha } from "@mui/material/styles";
 
 const StyledInput = styled(Input)(({ theme }) => ({
-  width: '100%',
-  borderRadius: '10px',
-  padding: '10px 14px',
+  width: "100%",
+  borderRadius: "10px",
+  padding: "10px 14px",
   border: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#F8F9FE',
+  backgroundColor: theme.palette.mode === "dark" ? "#1e1e1e" : "#F8F9FE",
   color: theme.palette.text.primary,
-  fontSize: '0.95rem',
+  fontSize: "0.95rem",
   transition: theme.transitions.create(
-    ['border-color', 'box-shadow', 'background-color'],
+    ["border-color", "box-shadow", "background-color"],
     { duration: theme.transitions.duration.shorter }
   ),
 
-  '&:hover': {
+  "&:hover": {
     borderColor: theme.palette.text.secondary,
-    backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#F8F9FE',
+    backgroundColor: theme.palette.mode === "dark" ? "#2a2a2a" : "#F8F9FE",
   },
 
-  '&.Mui-focused': {
+  "&.Mui-focused": {
     borderColor: theme.palette.primary.main,
     boxShadow: `${alpha(theme.palette.primary.main, 0.25)} 0 0 0 3px`,
-    backgroundColor: '#F8F9FE',
+    backgroundColor: "#F8F9FE",
   },
 
-  '&.Mui-error': {
+  "&.Mui-error": {
     borderColor: theme.palette.error.main,
     backgroundColor: alpha(theme.palette.error.main, 0.05),
     boxShadow: `${alpha(theme.palette.error.main, 0.25)} 0 0 0 2px`,
 
-    '&:hover': {
+    "&:hover": {
       backgroundColor: alpha(theme.palette.error.main, 0.08),
     },
 
-    '&.Mui-focused': {
+    "&.Mui-focused": {
       boxShadow: `${alpha(theme.palette.error.main, 0.35)} 0 0 0 3px`,
     },
   },
 
-  '& input': {
+  "& input": {
     padding: 0,
   },
 }));
 
 const BasicInput = ({
   label,
-  error = '',
-  warning = '',
-  helperText = '',
+  error = "",
+  warning = "",
+  helperText = "",
   sx = {},
   ...props
 }) => {
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: "100%" }}>
       {label && (
         <Typography
           variant="body2"
           sx={{
             mb: 0.5,
             fontWeight: 600,
-            color: error ? 'error.main' : warning ? 'warning.main' : 'black',
+            color: error ? "error.main" : warning ? "warning.main" : "black",
           }}
         >
           {label}
@@ -71,29 +71,29 @@ const BasicInput = ({
         error={Boolean(error)}
         {...props}
         onKeyDown={(e) => {
-          if (props.type === 'number') {
-            if (['e', 'E', '+'].includes(e.key)) {
+          if (props.type === "number") {
+            if (["e", "E", "+"].includes(e.key)) {
               e.preventDefault();
             }
           }
         }}
         sx={{
           ...sx,
-          '& input[type=number]': {
-            MozAppearance: 'textfield',
+          "& input[type=number]": {
+            MozAppearance: "textfield",
           },
-          '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button':
+          "& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button":
             {
-              WebkitAppearance: 'none',
+              WebkitAppearance: "none",
               margin: 0,
             },
         }}
       />
-      {helperText || error || warning ? (
+      {helperText || error || (warning && warning !== "disable-label") ? (
         <Typography
           variant="caption"
-          color={error ? 'error' : warning ? 'warning' : 'text.secondary'}
-          sx={{ mt: 0.5, ml: 1, display: 'block' }}
+          color={error ? "error" : warning ? "warning" : "text.secondary"}
+          sx={{ mt: 0.5, ml: 1, display: "block" }}
         >
           {error || warning || helperText}
         </Typography>
