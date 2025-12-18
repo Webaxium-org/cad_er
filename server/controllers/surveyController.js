@@ -1396,11 +1396,11 @@ const updateReducedLevels = async (req, res, next) => {
       throw createHttpError(400, "Missing required fields");
     }
 
-    // 3️⃣ Collect ids
+    // 3️⃣ Collect row & purpose IDs
     const rowIds = payload.series.map((s) => s._id);
     const purposeIds = payload.series.map((s) => s.purpose);
 
-    // 4️⃣ Validate purposes & rows existence in ONE query each
+    // 4️⃣ Validate purposes & rows existence
     const [purposesCount, rows] = await Promise.all([
       SurveyPurpose.countDocuments({
         _id: { $in: purposeIds },
@@ -1409,7 +1409,7 @@ const updateReducedLevels = async (req, res, next) => {
       SurveyRow.find({
         _id: { $in: rowIds },
         deleted: false,
-      }).select("_id"),
+      }).select("_id reducedLevels intermediateSight"),
     ]);
 
     if (purposesCount !== new Set(purposeIds).size) {
@@ -1420,7 +1420,10 @@ const updateReducedLevels = async (req, res, next) => {
       throw createHttpError(404, "One or more survey readings not found");
     }
 
-    // 5️⃣ Validate reducedLevels BEFORE touching DB
+    // Create lookup map
+    const rowMap = new Map(rows.map((r) => [String(r._id), r]));
+
+    // 5️⃣ Prepare bulk updates with delta logic
     const bulkOps = [];
 
     for (const s of payload.series) {
@@ -1428,33 +1431,68 @@ const updateReducedLevels = async (req, res, next) => {
         throw createHttpError(400, "Invalid reduced level data");
       }
 
-      const reducedLevels = s.data.map((d) => {
-        if (d.y === "" || d.y === null || d.y === undefined) {
+      const existingRow = rowMap.get(String(s._id));
+      if (!existingRow) {
+        throw createHttpError(404, "Survey row not found");
+      }
+
+      const oldRL = existingRow.reducedLevels || [];
+      const oldIS = existingRow.intermediateSight || [];
+
+      if (oldRL.length !== s.data.length || oldIS.length !== s.data.length) {
+        throw createHttpError(
+          400,
+          "Reduced levels and intermediate sight length mismatch"
+        );
+      }
+
+      const newReducedLevels = [];
+      const newIntermediateSight = [];
+
+      for (let i = 0; i < s.data.length; i++) {
+        const newValue = s.data[i]?.y;
+
+        if (newValue === "" || newValue === null || newValue === undefined) {
           throw createHttpError(400, "Reduced level cannot be empty");
         }
 
-        const num = Number(d.y);
-        if (Number.isNaN(num)) {
+        const newRLNum = Number(newValue);
+        const oldRLNum = Number(oldRL[i]);
+        const oldISNum = Number(oldIS[i]);
+
+        if (
+          Number.isNaN(newRLNum) ||
+          Number.isNaN(oldRLNum) ||
+          Number.isNaN(oldISNum)
+        ) {
           throw createHttpError(400, "Reduced level must be a valid number");
         }
 
-        return num.toFixed(3);
-      });
+        const delta = newRLNum - oldRLNum;
+
+        newReducedLevels.push(newRLNum.toFixed(3));
+        newIntermediateSight.push((oldISNum + delta).toFixed(3));
+      }
 
       bulkOps.push({
         updateOne: {
           filter: { _id: s._id, deleted: false },
-          update: { $set: { reducedLevels } },
+          update: {
+            $set: {
+              reducedLevels: newReducedLevels,
+              intermediateSight: newIntermediateSight,
+            },
+          },
         },
       });
     }
 
-    // 6️⃣ Execute bulk update (single operation)
+    // 6️⃣ Execute bulk update
     await SurveyRow.bulkWrite(bulkOps, { ordered: true });
 
     res.status(200).json({
       success: true,
-      message: "Reduced levels updated successfully",
+      message: "Reduced levels and intermediate sights updated successfully",
     });
   } catch (err) {
     next(err);

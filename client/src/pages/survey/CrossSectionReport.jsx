@@ -195,6 +195,7 @@ const CrossSectionReport = () => {
   const handleClickCs = (id) => {
     if (selectedCs?.id === id) return;
     if (!tableData?.length) return;
+    setOpenRowId(null);
 
     const initialEntry = tableData[0];
     if (!initialEntry?.rows?.length) return;
@@ -207,7 +208,7 @@ const CrossSectionReport = () => {
     const safeInitial = row.reducedLevels || [];
 
     // UNIQUE OFFSETS ONLY FOR XAXIS
-    const uniqueOffsets = [...new Set(rawOffsets.map(Number))].sort(
+    const uniqueOffsets = [...new Set(rawOffsets.map((n) => n))].sort(
       (a, b) => a - b
     );
 
@@ -223,11 +224,11 @@ const CrossSectionReport = () => {
     // Keep duplicates in the plotted series
     const makeSeries = (offsets, levels) =>
       offsets.map((o, i) => {
-        const y = Number(Number(levels?.[i] ?? 0).toFixed(3));
+        const y = Number(levels?.[i] ?? 0).toFixed(3);
         data.allRl.push(y);
 
         return {
-          x: Number(Number(o).toFixed(3)),
+          x: Number(o).toFixed(3),
           y,
         };
       });
@@ -245,7 +246,7 @@ const CrossSectionReport = () => {
 
         // Merge unique offsets for category labels
         rawProposalOffsets.forEach((o) => {
-          const num = Number(o);
+          const num = Number(o).toFixed(3);
           if (!data.offsets.includes(num)) data.offsets.push(num);
         });
 
@@ -584,7 +585,7 @@ const CrossSectionReport = () => {
             <TableHead sx={{ backgroundColor: "#f4f6f8" }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Chainage</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>CS</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Levels</TableCell>
               </TableRow>
             </TableHead>
 
@@ -604,7 +605,7 @@ const CrossSectionReport = () => {
                           sx={{ cursor: "pointer", border: "none" }}
                           onClick={() => handleToggle(row._id)}
                         >
-                          {openRowId === row._id ? "Hide" : "View"}
+                          {openRowId === row._id ? "Hide" : "Show"}
                         </TableCell>
                       </TableRow>
                       <TableRow>
@@ -617,73 +618,97 @@ const CrossSectionReport = () => {
                             timeout="auto"
                             unmountOnExit
                           >
-                            <Box sx={{ margin: 1 }}>
-                              <Stack spacing={2}>
-                                {tableData
-                                  ?.flatMap((t) =>
-                                    (t.rows || [])
-                                      .filter(
-                                        (r) => r.chainage === row.chainage
-                                      )
-                                      .map((r) => ({
-                                        ...r,
-                                        type: t.type,
-                                      }))
-                                  )
-                                  ?.map((r) => (
-                                    <Box key={r._id}>
-                                      <Typography
-                                        variant="body2"
-                                        sx={{
-                                          mb: 0.5,
-                                          fontWeight: 600,
-                                          color: "black",
-                                        }}
-                                      >
-                                        {r.type}
-                                      </Typography>
+                            <Table size="small" aria-label="purchases">
+                              <TableBody>
+                                {selectedCs?.series?.map((s) => (
+                                  <TableRow key={s?.name}>
+                                    <TableCell
+                                      component="th"
+                                      scope="row"
+                                      sx={{ color: s.color }}
+                                    >
+                                      {s?.name}
+                                    </TableCell>
+                                    {selectedCs?.offsets?.map((offset) => {
+                                      const idx = s.data?.findIndex(
+                                        (d) => d?.x === offset
+                                      );
+                                      const cellData =
+                                        idx > -1 ? s.data[idx] : null;
 
-                                      <Stack spacing={2}>
-                                        {r?.reducedLevels?.map((rl, idx) => (
-                                          <Stack
-                                            direction="row"
-                                            spacing={2}
-                                            key={`${r._id}-${idx}`}
-                                          >
+                                      return (
+                                        <TableCell
+                                          component="th"
+                                          scope="row"
+                                          key={offset}
+                                          sx={{ p: 1 }}
+                                        >
+                                          {cellData ? (
                                             <BasicInput
-                                              value={rl}
-                                              label={idx === 0 ? "RL" : ""}
+                                              type="number"
+                                              value={cellData.y}
+                                              sx={{ minWidth: "100px" }}
                                               error={
-                                                rl === "" ? "Required" : ""
+                                                cellData.y === ""
+                                                  ? "Required"
+                                                  : ""
                                               }
                                               onChange={(e) =>
                                                 handleRlChange(
-                                                  r.type,
-                                                  r._id,
+                                                  s.name,
+                                                  s._id,
                                                   idx,
                                                   e.target.value
                                                 )
                                               }
                                             />
-
+                                          ) : (
                                             <BasicInput
-                                              value={r.offsets[idx]}
-                                              label={idx === 0 ? "Offset" : ""}
+                                              type="text"
+                                              value="N/A"
+                                              sx={{ minWidth: "100px" }}
+                                              disabled
                                             />
-                                          </Stack>
-                                        ))}
-                                      </Stack>
-                                    </Box>
+                                          )}
+                                        </TableCell>
+                                      );
+                                    })}
+                                  </TableRow>
+                                ))}
+                                <TableRow>
+                                  <TableCell
+                                    component="th"
+                                    scope="row"
+                                  ></TableCell>
+                                  {selectedCs?.offsets?.map((offset) => (
+                                    <TableCell
+                                      component="th"
+                                      scope="row"
+                                      key={offset}
+                                    >
+                                      {Number(offset).toFixed(3)}
+                                    </TableCell>
                                   ))}
-                              </Stack>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
 
+                            <Box
+                              sx={{
+                                overflowX: "auto",
+                                whiteSpace: "nowrap",
+                                position: "relative",
+                              }}
+                              my={2}
+                            >
                               <Box
-                                display={"flex"}
-                                justifyContent={"end"}
-                                mt={2}
+                                sx={{
+                                  position: "sticky",
+                                  left: 0,
+                                }}
                               >
                                 <BasicButton
-                                  value={"update"}
+                                  value="update"
                                   variant="outlined"
                                   sx={{ py: 1, px: 2 }}
                                   onClick={handleUpdateReducedLevels}

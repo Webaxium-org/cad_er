@@ -232,9 +232,13 @@ const Report = () => {
         <Activity mode={reportType === "volume" ? "visible" : "hidden"}>
           <Box display={"flex"} justifyContent={"center"} mt={2}>
             <BasicButton
-              value={"Deduction"}
+              value={"DEDUCTION"}
               variant="outlined"
-              sx={{ minWidth: "250px" }}
+              sx={{
+                fontSize: "12px",
+                padding: "5.6px 11px",
+                minWidth: "200px",
+              }}
             />
           </Box>
         </Activity>
