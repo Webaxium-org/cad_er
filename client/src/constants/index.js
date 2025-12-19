@@ -1,3 +1,73 @@
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+export function createPdf({
+  fileName = "download.pdf",
+  orientation = "p",
+  unit = "mm",
+  format = "a4",
+  title = "",
+  header,
+  sections = [],
+}) {
+  const doc = new jsPDF(orientation, unit, format);
+
+  let startY = 15;
+
+  // ===== MAIN TITLE =====
+  if (title) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(title, 105, startY, { align: "center" });
+    startY += 10;
+  }
+
+  sections.forEach((section, index) => {
+    // ===== SECTION TITLE =====
+    if (section.title) {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(section.title, 14, startY);
+      startY += 5;
+    }
+
+    // ===== TABLE =====
+    autoTable(doc, {
+      startY,
+      theme: section.theme || "grid",
+      head: section.head,
+      body: section.body,
+      styles: section.styles || {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: section.headStyles || {
+        fontStyle: "bold",
+      },
+      didDrawPage: () => {
+        if (header) header(doc);
+      },
+    });
+
+    // ===== FOOT / TOTAL =====
+    if (section.footer) {
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 2,
+        theme: "plain",
+        body: section.footer,
+        styles: {
+          fontSize: 9,
+          fontStyle: "bold",
+        },
+      });
+    }
+
+    startY = doc.lastAutoTable.finalY + 10;
+  });
+
+  doc.save(fileName);
+}
+
 export const purposeLevels = [
   "Initial Level",
   "Final Level",

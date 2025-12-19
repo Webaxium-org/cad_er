@@ -1067,11 +1067,12 @@ const RoadSurveyRowsForm = () => {
   }, [id]);
 
   useEffect(() => {
-    // Push the current page again so back button won't leave it
-    window.history.pushState(null, "", window.location.href);
+    // Replace instead of push
+    window.history.replaceState(null, "", window.location.href);
 
-    const handlePopState = () => {
-      window.history.pushState(null, "", window.location.href);
+    const handlePopState = (event) => {
+      // Immediately restore the same page without adding history
+      window.history.replaceState(null, "", window.location.href);
     };
 
     window.addEventListener("popstate", handlePopState);

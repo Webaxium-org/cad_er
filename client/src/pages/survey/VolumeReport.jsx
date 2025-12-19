@@ -1,9 +1,9 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { startLoading, stopLoading } from '../../redux/loadingSlice';
-import { getSurvey } from '../../services/surveyServices';
-import { handleFormError } from '../../utils/handleFormError';
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { startLoading, stopLoading } from "../../redux/loadingSlice";
+import { getSurvey } from "../../services/surveyServices";
+import { handleFormError } from "../../utils/handleFormError";
 import {
   Box,
   Paper,
@@ -15,16 +15,145 @@ import {
   TableHead,
   TableRow,
   Typography,
-} from '@mui/material';
-import { MdArrowBackIosNew } from 'react-icons/md';
-import BasicButtons from '../../components/BasicButton';
+} from "@mui/material";
+import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import BasicButtons from "../../components/BasicButton";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import BasicMenu from "../../components/BasicMenu";
+import { BsThreeDots } from "react-icons/bs";
 
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+const menuItems = [
+  {
+    label: (
+      <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+        PDF
+        <MdDownload />
+      </Stack>
+    ),
+    value: "pdf download",
+  },
+  {
+    label: (
+      <Stack direction={"row"} alignItems={"center"} gap={0.5}>
+        Excel
+        <MdDownload />
+      </Stack>
+    ),
+    value: "excel download",
+  },
+];
 
 const initialDetails = {
-  initialEntry: '',
-  secondaryEntry: '',
+  initialEntry: "",
+  secondaryEntry: "",
+};
+
+const exportVolumeReportPdf = ({ tableData, reportDetails }) => {
+  const doc = new jsPDF("p", "mm", "a4");
+
+  // ===== BUILD TABLE BODY =====
+  const body = [];
+
+  tableData?.rows?.forEach((row, index) => {
+    body.push([
+      index + 1,
+      row.section,
+      row.prevSection,
+      row.difference,
+      row.width,
+
+      row.cuttingAreaSqMtr,
+      row.cuttingPrevArea,
+      row.cuttingAvgSqrMtr,
+      row.cuttingVolumeCubicMtr,
+
+      row.fillingAreaSqMtr,
+      row.fillingPrevArea,
+      row.fillingAvgSqrMtr,
+      row.fillingVolumeCubicMtr,
+    ]);
+  });
+
+  // ===== TOTAL ROW (EXACT UI ALIGNMENT) =====
+  body.push([
+    "",
+    "",
+    "",
+    "",
+    "",
+    { content: "Total", colSpan: 3, styles: { fontStyle: "bold" } },
+    {
+      content: Number(tableData?.totalCuttingVolume)?.toFixed(3),
+      styles: { fontStyle: "bold" },
+    },
+    "",
+    "",
+    "",
+    {
+      content: Number(tableData?.totalFillingVolume)?.toFixed(3),
+      styles: { fontStyle: "bold" },
+    },
+  ]);
+
+  autoTable(doc, {
+    margin: { top: 20 },
+    theme: "grid",
+    head: [
+      [
+        { content: "Sl.No.", rowSpan: 2 },
+        { content: "Section From", rowSpan: 2 },
+        { content: "Previous Section", rowSpan: 2 },
+        { content: "Difference", rowSpan: 2 },
+        { content: "Width", rowSpan: 2 },
+        { content: "Cutting Volume", colSpan: 4 },
+        { content: "Filling Volume", colSpan: 4 },
+      ],
+      [
+        "Area Sq. Mtrs",
+        "Previous Area",
+        "Average Sq. Mtrs",
+        "Volume Cubic Meters",
+
+        "Area Sq. Mtrs",
+        "Previous Area",
+        "Average Sq. Mtrs",
+        "Volume Cubic Meters",
+      ],
+    ],
+    body,
+    styles: {
+      fontSize: 7,
+      cellPadding: 1.5,
+      textColor: 0,
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    headStyles: {
+      fontSize: 7.5,
+      fontStyle: "bold",
+      halign: "center",
+      valign: "middle",
+      fillColor: false,
+      textColor: 0,
+      lineWidth: 0.1,
+    },
+    didDrawPage: () => {
+      // ===== REPEATING TITLE =====
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(
+        `Volume Report ${reportDetails.initialEntry} and ${reportDetails.secondaryEntry}`,
+        105,
+        15,
+        { align: "center" }
+      );
+    },
+  });
+
+  doc.save("volume-report.pdf");
 };
 
 const VolumeReport = () => {
@@ -42,6 +171,18 @@ const VolumeReport = () => {
 
   const [survey, setSurvey] = useState([]);
 
+  const handleMenuSelect = (item) => {
+    if (item.value === "excel download") {
+      exportToExcel();
+    }
+    if (item.value === "pdf download") {
+      exportVolumeReportPdf({
+        tableData,
+        reportDetails: reportDetails.current,
+      });
+    }
+  };
+
   const fetchSurvey = async () => {
     try {
       if (!global) {
@@ -53,7 +194,7 @@ const VolumeReport = () => {
       if (data.success) {
         setSurvey(data.survey || []);
       } else {
-        throw Error('Failed to fetch survey');
+        throw Error("Failed to fetch survey");
       }
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
@@ -64,7 +205,7 @@ const VolumeReport = () => {
 
   const shortType = (type) => {
     if (!type) return type;
-    return type.replace(/^Proposed\s+/i, 'Prop. ');
+    return type.replace(/^Proposed\s+/i, "Prop. ");
   };
 
   const tableData = useMemo(() => {
@@ -79,9 +220,9 @@ const VolumeReport = () => {
         (p) => String(p._id) === String(state.selectedPurposeIds[1])
       );
     } else {
-      initialEntry = survey?.purposes?.find((p) => p.type === 'Initial Level');
+      initialEntry = survey?.purposes?.find((p) => p.type === "Initial Level");
       secondaryEntry = survey?.purposes?.find(
-        (p) => p.type === 'Proposed Level'
+        (p) => p.type === "Proposed Level"
       );
     }
 
@@ -97,8 +238,8 @@ const VolumeReport = () => {
     const rows = [];
 
     let prevSection = null;
-    let cuttingPrevArea = '0.000';
-    let fillingPrevArea = '0.000';
+    let cuttingPrevArea = "0.000";
+    let fillingPrevArea = "0.000";
 
     const totals = {
       totalCuttingVolume: 0,
@@ -107,13 +248,13 @@ const VolumeReport = () => {
 
     // Process only "Chainage" rows
     initialRows
-      .filter((row) => row.type === 'Chainage')
+      .filter((row) => row.type === "Chainage")
       .forEach((row) => {
         const secondaryRow = secondaryRows?.find(
           (p) => p.chainage === row.chainage
         );
         const chainage =
-          row.chainage?.split(survey?.separator || '/')?.[1] ?? '';
+          row.chainage?.split(survey?.separator || "/")?.[1] ?? "";
 
         // --- Compute area for each offset ---
         const data = (row?.offsets ?? []).map((entry, idx) => {
@@ -128,10 +269,10 @@ const VolumeReport = () => {
 
           const cuttingAvgMtr = isCutting
             ? ((initRL + propRL) / 2).toFixed(3)
-            : '0.000';
+            : "0.000";
 
           const fillingAvgMtr = isCutting
-            ? '0.000'
+            ? "0.000"
             : ((propRL + initRL) / 2).toFixed(3);
 
           return {
@@ -159,7 +300,7 @@ const VolumeReport = () => {
         const prevChainage = Number(prevSection) || 0;
         const difference = prevSection
           ? (currentChainage - prevChainage).toFixed(3)
-          : '0.000';
+          : "0.000";
 
         // --- Average areas ---
         const cuttingAvgSqrMtr = (
@@ -182,9 +323,9 @@ const VolumeReport = () => {
         // --- Push row ---
         rows.push({
           section: currentChainage.toFixed(3),
-          prevSection: prevSection ? prevChainage.toFixed(3) : '-',
+          prevSection: prevSection ? prevChainage.toFixed(3) : "-",
           difference,
-          width: row?.roadWidth ?? '-',
+          width: row?.roadWidth ?? "-",
           cuttingAreaSqMtr: cuttingAreaSqMtr.toFixed(3),
           cuttingPrevArea,
           cuttingAvgSqrMtr,
@@ -208,71 +349,71 @@ const VolumeReport = () => {
 
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Volume Report');
+    const sheet = workbook.addWorksheet("Volume Report");
 
     // ===== Title =====
-    sheet.mergeCells('A1:M1');
-    const titleCell = sheet.getCell('A1');
-    titleCell.value = 'Volume Report';
+    sheet.mergeCells("A1:M1");
+    const titleCell = sheet.getCell("A1");
+    titleCell.value = "Volume Report";
     titleCell.font = { size: 16, bold: true };
-    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    titleCell.alignment = { vertical: "middle", horizontal: "center" };
 
     // ===== Set column widths =====
-    sheet.getColumn('A').width = 100 / 7; // or 14.3
+    sheet.getColumn("A").width = 100 / 7; // or 14.3
 
     // ===== Header Rows =====
     sheet.addRow([
-      'Sl.No.',
-      'Section From',
-      'Previous Section',
-      'Difference',
-      'Width',
-      'Cutting Volume',
-      '',
-      '',
-      '',
-      'Filling Volume',
-      '',
-      '',
-      '',
+      "Sl.No.",
+      "Section From",
+      "Previous Section",
+      "Difference",
+      "Width",
+      "Cutting Volume",
+      "",
+      "",
+      "",
+      "Filling Volume",
+      "",
+      "",
+      "",
     ]);
 
     sheet.addRow([
-      '',
-      '',
-      '',
-      '',
-      '',
-      'Area Sq. Mtrs',
-      'Previous Area',
-      'Average Sq. Mtrs',
-      'Volume Cubic Meters',
-      'Area Sq. Mtrs',
-      'Previous Area',
-      'Average Sq. Mtrs',
-      'Volume Cubic Meters',
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Area Sq. Mtrs",
+      "Previous Area",
+      "Average Sq. Mtrs",
+      "Volume Cubic Meters",
+      "Area Sq. Mtrs",
+      "Previous Area",
+      "Average Sq. Mtrs",
+      "Volume Cubic Meters",
     ]);
 
     // ===== Merge Header Cells =====
-    sheet.mergeCells('F2:I2'); // Cutting Area
-    sheet.mergeCells('J2:M2'); // Filling Area
+    sheet.mergeCells("F2:I2"); // Cutting Area
+    sheet.mergeCells("J2:M2"); // Filling Area
 
     // ===== Style Headers =====
     const headerRows = [2, 3];
     headerRows.forEach((r) => {
       const row = sheet.getRow(r);
       row.eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: '000000' } };
+        cell.font = { bold: true, color: { argb: "000000" } };
 
         cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
         };
         cell.alignment = {
-          horizontal: 'center',
-          vertical: 'middle',
+          horizontal: "center",
+          vertical: "middle",
           wrapText: true,
         };
       });
@@ -302,12 +443,12 @@ const VolumeReport = () => {
       dataRow.eachCell((cell, colNumber) => {
         // Common border + alignment for all cells
         cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
         };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
       });
 
       currentRow++;
@@ -315,30 +456,30 @@ const VolumeReport = () => {
 
     // Totals Row
     const totalRow = sheet.addRow([
-      '',
-      '',
-      '',
-      '',
-      '',
-      'Total',
-      '',
-      '',
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Total",
+      "",
+      "",
       Number(tableData?.totalCuttingVolume)?.toFixed(3),
-      '',
-      '',
-      '',
+      "",
+      "",
+      "",
       Number(tableData?.totalFillingVolume)?.toFixed(3),
     ]);
     totalRow.eachCell((cell) => {
       cell.font = { bold: true };
 
       cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
       };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
     });
     currentRow++;
 
@@ -352,7 +493,7 @@ const VolumeReport = () => {
 
     // ===== Save File =====
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), 'Volume_Report.xlsx');
+    saveAs(new Blob([buffer]), "Volume_Report.xlsx");
   };
 
   useEffect(() => {
@@ -361,30 +502,37 @@ const VolumeReport = () => {
 
   return (
     <Box p={2}>
-      <Stack direction={'row'} spacing={2} mb={2}>
+      <Stack
+        direction={"row"}
+        justifyContent={"space-between"}
+        spacing={2}
+        mb={2}
+      >
         <Box
           sx={{
-            border: '1px solid #EFEFEF',
-            borderRadius: '9px',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            cursor: 'pointer',
-            mb: '24px',
+            border: "1px solid #EFEFEF",
+            borderRadius: "9px",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            cursor: "pointer",
+            mb: "24px",
           }}
           onClick={() => navigate(-1)}
         >
           <MdArrowBackIosNew />
         </Box>
 
-        <BasicButtons
-          variant="contained"
-          sx={{ mb: 2 }}
-          onClick={exportToExcel}
-          value="Download Excel 📥"
-        />
+        <Box textAlign={"end"}>
+          <BasicMenu
+            label={<BsThreeDots />}
+            items={menuItems}
+            onSelect={handleMenuSelect}
+            sx={{ minWidth: "fit-content", p: 1 }}
+          />
+        </Box>
       </Stack>
 
       <Typography
@@ -394,21 +542,20 @@ const VolumeReport = () => {
         align="center"
         mb={2}
       >
-        Volume Report
-        {reportDetails.current.initialEntry} and{' '}
+        Volume Report {reportDetails.current.initialEntry} and{" "}
         {reportDetails.current.secondaryEntry}
       </Typography>
 
-      <TableContainer component={Paper} sx={{ maxHeight: '90vh' }}>
+      <TableContainer component={Paper} sx={{ maxHeight: "90vh" }}>
         <Table sx={{ minWidth: 650 }} size="small">
           <TableHead
             sx={{
-              backgroundColor: '#f4f6f8',
-              '& .MuiTableCell-root': {
-                border: '1px solid rgba(224, 224, 224, 1)',
+              backgroundColor: "#f4f6f8",
+              "& .MuiTableCell-root": {
+                border: "1px solid rgba(224, 224, 224, 1)",
                 fontWeight: 700,
               },
-              position: 'sticky',
+              position: "sticky",
               top: 0,
             }}
           >
@@ -474,16 +621,16 @@ const VolumeReport = () => {
             <TableRow>
               <TableCell colSpan={5}></TableCell>
 
-              <TableCell colSpan={3} sx={{ fontWeight: 'bold' }}>
+              <TableCell colSpan={3} sx={{ fontWeight: "bold" }}>
                 Total
               </TableCell>
 
-              <TableCell sx={{ fontWeight: 'bold' }}>
+              <TableCell sx={{ fontWeight: "bold" }}>
                 {Number(tableData?.totalCuttingVolume)?.toFixed(3)}
               </TableCell>
               <TableCell colSpan={3}></TableCell>
 
-              <TableCell sx={{ fontWeight: 'bold' }}>
+              <TableCell sx={{ fontWeight: "bold" }}>
                 {Number(tableData?.totalFillingVolume)?.toFixed(3)}
               </TableCell>
             </TableRow>

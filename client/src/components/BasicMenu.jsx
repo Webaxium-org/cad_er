@@ -19,13 +19,21 @@ const BasicMenu = ({ label = "Menu", items = [], onSelect, sx = {} }) => {
   return (
     <div>
       <Button
-        variant={"outlined"}
+        variant="outlined"
         id="menu-button"
         aria-controls={open ? "menu" : undefined}
         aria-haspopup="true"
         aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
-        sx={sx}
+        sx={{
+          height: 40,
+          width: 40,
+          minWidth: 40,
+          border: "1px solid #1976d2",
+          borderRadius: "10px",
+          color: "#1976d2",
+          ...sx,
+        }}
       >
         {label}
       </Button>
@@ -70,7 +78,7 @@ const BasicMenu = ({ label = "Menu", items = [], onSelect, sx = {} }) => {
           <MenuItem
             key={index}
             onClick={() => handleClose(item)}
-            sx={{ fontSize: 12, minHeight: "auto", p: 1 }}
+            sx={{ fontSize: 12, minHeight: "auto", py: 1, px: 2 }}
           >
             {item.label || item}
           </MenuItem>

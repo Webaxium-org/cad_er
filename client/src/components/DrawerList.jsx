@@ -207,8 +207,6 @@ const StatItem = ({ label, value }) => (
     <Typography fontSize="16px" fontWeight={700}>
       {value}
     </Typography>
-    <Typography fontSize="12px" sx={{ opacity: 0.6 }}>
-      {label}
-    </Typography>
+    <Typography fontSize="12px">{label}</Typography>
   </Box>
 );

@@ -48,6 +48,12 @@ const colors = {
   Final: "red",
 };
 
+const inputColors = {
+  green: { borderColor: "#00800081", color: "#008000" },
+  blue: { borderColor: "#0000ff8a", color: "#0000FF" },
+  red: { borderColor: "#ff000085", color: "#FF0000" },
+};
+
 const CrossSectionReport = () => {
   const navigate = useNavigate();
 
@@ -195,7 +201,6 @@ const CrossSectionReport = () => {
   const handleClickCs = (id) => {
     if (selectedCs?.id === id) return;
     if (!tableData?.length) return;
-    setOpenRowId(null);
 
     const initialEntry = tableData[0];
     if (!initialEntry?.rows?.length) return;
@@ -308,6 +313,12 @@ const CrossSectionReport = () => {
     data.datum = Math.round(minY - 2);
 
     setSelectedCs(data);
+  };
+
+  const handleTableToggle = (id) => {
+    handleToggle(id);
+
+    handleClickCs(id);
   };
 
   const fetchSurvey = async () => {
@@ -489,7 +500,7 @@ const CrossSectionReport = () => {
     if (tableData.length) {
       const row = tableData[0].rows?.find((row) => row.type === "Chainage");
 
-      if (row) handleClickCs(row._id);
+      if (row) handleClickCs(row._id, "initial");
     }
   }, [tableData]);
 
@@ -583,10 +594,19 @@ const CrossSectionReport = () => {
           }}
         >
           <Table stickyHeader>
-            <TableHead sx={{ backgroundColor: "#f4f6f8" }}>
+            <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Chainage</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Levels</TableCell>
+                <TableCell
+                  sx={{
+                    position: "sticky",
+                    left: 0,
+                    zIndex: 4,
+                    backgroundColor: "#f4f6f8",
+                    fontWeight: 700,
+                  }}
+                >
+                  Chainage
+                </TableCell>
               </TableRow>
             </TableHead>
 
@@ -597,16 +617,20 @@ const CrossSectionReport = () => {
                     <Fragment key={index}>
                       <TableRow>
                         <TableCell
-                          sx={{ cursor: "pointer", border: "none" }}
-                          onClick={() => handleClickCs(row._id)}
+                          sx={{
+                            position: "sticky",
+                            left: 0,
+                            zIndex: 3, // higher than table body cells
+                            backgroundColor: "#fff", // IMPORTANT to avoid overlap transparency
+                            borderBottom: 0,
+                          }}
                         >
-                          {row.chainage}
-                        </TableCell>
-                        <TableCell
-                          sx={{ cursor: "pointer", border: "none" }}
-                          onClick={() => handleToggle(row._id)}
-                        >
-                          {openRowId === row._id ? "Hide" : "Show"}
+                          <BasicButton
+                            value={row.chainage}
+                            variant="outlined"
+                            sx={{ py: 1, px: 2, cursor: "pointer" }}
+                            onClick={() => handleTableToggle(row._id)}
+                          />
                         </TableCell>
                       </TableRow>
                       <TableRow>
@@ -621,16 +645,27 @@ const CrossSectionReport = () => {
                           >
                             <Table size="small" aria-label="purchases">
                               <TableBody>
-                                {selectedCs?.series?.map((s) => (
-                                  <TableRow key={s?.name}>
+                                <TableRow>
+                                  <TableCell>Offset</TableCell>
+                                  {selectedCs?.series?.map((s) => (
                                     <TableCell
-                                      component="th"
-                                      scope="row"
-                                      sx={{ color: s.color }}
+                                      key={s._id}
+                                      align="center"
+                                      sx={{ color: s.color, fontWeight: 600 }}
                                     >
-                                      {s?.name}
+                                      {s.name}
                                     </TableCell>
-                                    {selectedCs?.offsets?.map((offset) => {
+                                  ))}
+                                </TableRow>
+                                {selectedCs?.offsets?.map((offset) => (
+                                  <TableRow key={offset}>
+                                    {/* Offset Column */}
+                                    <TableCell>
+                                      {Number(offset).toFixed(3)}
+                                    </TableCell>
+
+                                    {/* Series Columns */}
+                                    {selectedCs?.series?.map((s) => {
                                       const idx = s.data?.findIndex(
                                         (d) => d?.x === offset
                                       );
@@ -638,17 +673,19 @@ const CrossSectionReport = () => {
                                         idx > -1 ? s.data[idx] : null;
 
                                       return (
-                                        <TableCell
-                                          component="th"
-                                          scope="row"
-                                          key={offset}
-                                          sx={{ p: 1 }}
-                                        >
+                                        <TableCell key={s._id} sx={{ p: 1 }}>
                                           {cellData ? (
                                             <BasicInput
                                               type="number"
                                               value={cellData.y}
-                                              sx={{ minWidth: "100px" }}
+                                              sx={{
+                                                minWidth: "100px",
+                                                borderColor:
+                                                  inputColors[s.color]
+                                                    ?.borderColor,
+                                                color:
+                                                  inputColors[s.color]?.color,
+                                              }}
                                               error={
                                                 cellData.y === ""
                                                   ? "Required"
@@ -667,8 +704,15 @@ const CrossSectionReport = () => {
                                             <BasicInput
                                               type="text"
                                               value="N/A"
-                                              sx={{ minWidth: "100px" }}
                                               disabled
+                                              sx={{
+                                                minWidth: "100px",
+                                                borderColor:
+                                                  inputColors[s.color]
+                                                    ?.borderColor,
+                                                color:
+                                                  inputColors[s.color]?.color,
+                                              }}
                                             />
                                           )}
                                         </TableCell>
@@ -676,21 +720,6 @@ const CrossSectionReport = () => {
                                     })}
                                   </TableRow>
                                 ))}
-                                <TableRow>
-                                  <TableCell
-                                    component="th"
-                                    scope="row"
-                                  ></TableCell>
-                                  {selectedCs?.offsets?.map((offset) => (
-                                    <TableCell
-                                      component="th"
-                                      scope="row"
-                                      key={offset}
-                                    >
-                                      {Number(offset).toFixed(3)}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
                               </TableBody>
                             </Table>
 

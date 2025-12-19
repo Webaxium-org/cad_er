@@ -46,11 +46,11 @@ const Card = styled(MuiCard)(({ theme }) => ({
 }));
 
 const SignInContainer = styled(Stack)(({ theme }) => ({
-  position: "relative", // 🔥 REQUIRED
-  height: "calc((1 - var(--template-frame-height, 0)) * 100dvh)",
+  position: "relative",
+  height: "calc((1 - var(--template-frame-height, 0)) * 100vh)",
   minHeight: "100%",
   padding: theme.spacing(2),
-  overflow: "hidden", // 🔥 prevents bleed
+  overflow: "hidden",
   [theme.breakpoints.up("sm")]: {
     padding: theme.spacing(4),
   },

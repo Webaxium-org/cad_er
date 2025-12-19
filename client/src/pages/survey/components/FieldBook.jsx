@@ -1,4 +1,3 @@
-// FieldBook.js
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -10,9 +9,9 @@ import {
 import { handleFormError } from "../../../utils/handleFormError";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import BasicButtons from "../../../components/BasicButton";
-
 import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import { Box, Stack, Paper, TableContainer } from "@mui/material";
@@ -23,6 +22,8 @@ import { showAlert } from "../../../redux/alertSlice";
 import BasicMenu from "../../../components/BasicMenu";
 import { BsThreeDots } from "react-icons/bs";
 import { TbReportSearch } from "react-icons/tb";
+import { MdOutlineModeEdit } from "react-icons/md";
+import { BiSave } from "react-icons/bi";
 
 const menuItems = [
   {
@@ -54,6 +55,61 @@ const menuItems = [
   },
 ];
 
+const exportFieldBookPdf = ({ head, tableData }) => {
+  const doc = new jsPDF("p", "mm", "a4");
+
+  autoTable(doc, {
+    margin: { top: 25 },
+    theme: "grid",
+    head: [head],
+    body: tableData.map((row) => [
+      row.CH,
+      row.BS,
+      row.IS,
+      row.FS,
+      row.HI,
+      row.RL,
+      row.Offset,
+      row.remarks,
+    ]),
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      textColor: 0,
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    headStyles: {
+      fontStyle: "bold",
+      halign: "right",
+      valign: "middle",
+      fillColor: false,
+      textColor: 0,
+      lineWidth: 0.1,
+    },
+    columnStyles: {
+      0: { halign: "left" }, // CH
+      1: { halign: "right" }, // BS
+      2: { halign: "right" }, // IS
+      3: { halign: "right" }, // FS
+      4: { halign: "right" }, // HI
+      5: { halign: "right" }, // RL
+      6: { halign: "right" }, // Offset
+      7: { halign: "right" }, // Remarks
+    },
+    didDrawPage: () => {
+      // ===== TITLE =====
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Fieldbook", 105, 15, { align: "center" });
+    },
+  });
+
+  doc.save("fieldbook.pdf");
+};
+
+const head = ["CH", "BS", "IS", "FS", "HI", "RL", "Offset", "Remarks"];
+
 export default function FieldBook() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -69,11 +125,11 @@ export default function FieldBook() {
     if (item.value === "reports") {
       navigate(`/survey/${purpose?.surveyId?._id}/report`);
     }
-    if (item.value === "download") {
-      console.log("downloading ....");
+    if (item.value === "excel download") {
+      exportToExcel();
     }
-    if (item.value === "download") {
-      console.log("downloading ....");
+    if (item.value === "pdf download") {
+      exportFieldBookPdf({ head, tableData });
     }
   };
 
@@ -83,7 +139,7 @@ export default function FieldBook() {
       try {
         if (!global) dispatch(startLoading());
         const { data } = await getSurveyPurpose(id);
-        console.log(data);
+
         if (data?.success) {
           setPurpose(data.purpose);
         } else {
@@ -268,16 +324,28 @@ export default function FieldBook() {
 
         <Stack direction="row" alignItems="center" spacing={1}>
           <BasicButtons
-            variant="contained"
+            variant="outlined"
             sx={{ py: 1, px: 2, fontSize: 12 }}
             onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-            value={isEditing ? (saving ? "Saving..." : "Save") : "Edit"}
+            value={
+              isEditing ? (
+                <Stack direction="row" gap={0.5} alignItems="center">
+                  <BiSave fontSize={16} />
+                  {saving ? "Saving..." : "Save"}
+                </Stack>
+              ) : (
+                <Stack direction="row" gap={0.5} alignItems="center">
+                  <MdOutlineModeEdit fontSize={16} />
+                  Edit
+                </Stack>
+              )
+            }
             loading={saving}
           />
 
           <BasicButtons
-            variant="contained"
-            sx={{ py: 1, px: 2, fontSize: 12 }}
+            variant="outlined"
+            sx={{ py: 1, px: 2, fontSize: 12, minWidth: "78px" }}
             onClick={() =>
               navigate(`/survey/road-survey/${purpose?.surveyId?._id}`)
             }
