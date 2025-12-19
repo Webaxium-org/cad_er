@@ -589,11 +589,11 @@ const RoadSurveyRowsForm = () => {
       const isProposal = purpose.phase === "Proposal";
 
       if (isProposal) {
+        let currentReading = null;
+        const initialSurvey = purpose?.surveyId?.purposes?.find(
+          (p) => p.type === "Initial Level"
+        );
         if (purpose?.rows?.length) {
-          const initialSurvey = purpose?.surveyId?.purposes?.find(
-            (p) => p.type === "Initial Level"
-          );
-
           const prevChainage = purpose?.rows?.at(-1)?.chainage;
 
           const filteredInitialSurvey =
@@ -622,6 +622,19 @@ const RoadSurveyRowsForm = () => {
           currentReading = initialSurvey?.rows?.find(
             (r) => r.type === "Chainage"
           );
+        }
+
+        if (currentReading) {
+          const updatedValues = {
+            chainage: currentReading?.chainage || "",
+            roadWidth: currentReading?.roadWidth || "",
+            spacing: currentReading?.spacing || "",
+          };
+
+          setFormValues((prev) => ({
+            ...prev,
+            ...updatedValues,
+          }));
         }
       } else {
         const isFirstChainage = purpose?.rows?.find(
@@ -930,8 +943,30 @@ const RoadSurveyRowsForm = () => {
       return s;
     });
 
-    const minY = Math.min(...reducedLevels);
-    const maxY = Math.max(...reducedLevels);
+    const filteredReducedLevels = reducedLevels.filter(
+      (lv) => lv !== null && lv !== undefined
+    );
+
+    let minY = Math.min(...filteredReducedLevels);
+    let maxY = Math.max(...filteredReducedLevels);
+
+    setSelectedCs((prev) => {
+      const prevMinY = prev.minY;
+      const prevMaxY = prev.maxY;
+
+      minY = Number.isNaN(prevMinY) ? minY : Math.min(minY, prevMinY);
+      maxY = Number.isNaN(prevMaxY) ? maxY : Math.max(maxY, prevMaxY);
+
+      return {
+        ...prev,
+        minY,
+        maxY,
+        offsets: values.map((v) => Number(v.offset)).sort((a, b) => a - b),
+        series: newSeries,
+        // change id to force Chart remount
+        id: `${selectedCs.id}-r${Date.now()}`,
+      };
+    });
 
     const pad = (maxY - minY) * 0.1;
 
@@ -947,18 +982,6 @@ const RoadSurveyRowsForm = () => {
         },
       },
     }));
-
-    const updated = {
-      ...selectedCs,
-      minY,
-      maxY,
-      offsets: values.map((v) => Number(v.offset)).sort((a, b) => a - b),
-      series: newSeries,
-      // change id to force Chart remount
-      id: `${selectedCs.id}-r${Date.now()}`,
-    };
-
-    setSelectedCs(updated);
   };
 
   const makeSeries = (offsets, levels) =>
@@ -984,15 +1007,39 @@ const RoadSurveyRowsForm = () => {
       data: makeSeries(newRow?.offsets, safeProposal),
     };
 
-    const minY = Math.min(...safeProposal);
-    const maxY = Math.max(...safeProposal);
+    let minY = Math.min(...safeProposal);
+    let maxY = Math.max(...safeProposal);
 
-    setSelectedCs({
-      ...selectedCs,
-      minY: minY < selectedCs.minY ? minY : selectedCs.minY,
-      maxY: maxY > selectedCs.maxY ? maxY : selectedCs.maxY,
-      series: [selectedCs.series[0], newData],
+    setSelectedCs((prev) => {
+      const prevMinY = prev.minY;
+      const prevMaxY = prev.maxY;
+
+      minY = Number.isNaN(prevMinY) ? minY : Math.min(minY, prevMinY);
+      maxY = Number.isNaN(prevMaxY) ? maxY : Math.max(maxY, prevMaxY);
+
+      return {
+        ...prev,
+        minY,
+        maxY,
+        series: [prev.series[0], newData],
+      };
     });
+
+    const pad = (maxY - minY) * 0.1;
+
+    setChartOptions((_) => ({
+      ...v2ChartOptions,
+      layout: {
+        ...v2ChartOptions.layout,
+        yaxis: {
+          ...v2ChartOptions.layout.yaxis,
+          zeroline: false,
+          autorange: false,
+          range: [minY - 2, maxY + pad],
+        },
+      },
+    }));
+
     setCompareData(findPurpose);
   };
 
