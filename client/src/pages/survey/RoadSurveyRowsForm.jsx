@@ -1114,12 +1114,12 @@ const RoadSurveyRowsForm = () => {
   }, [id]);
 
   useEffect(() => {
-    // Replace instead of push
-    window.history.replaceState(null, "", window.location.href);
+    // Push a new history entry
+    window.history.pushState(null, "", window.location.href);
 
-    const handlePopState = (event) => {
-      // Immediately restore the same page without adding history
-      window.history.replaceState(null, "", window.location.href);
+    const handlePopState = () => {
+      // Push again to stay on same page
+      window.history.pushState(null, "", window.location.href);
     };
 
     window.addEventListener("popstate", handlePopState);
