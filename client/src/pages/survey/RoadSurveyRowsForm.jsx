@@ -1114,18 +1114,15 @@ const RoadSurveyRowsForm = () => {
   }, [id]);
 
   useEffect(() => {
-    // Push a new history entry
-    window.history.pushState(null, "", window.location.href);
-
-    const handlePopState = () => {
-      // Push again to stay on same page
-      window.history.pushState(null, "", window.location.href);
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = ""; // required for mobile
     };
 
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
 
