@@ -34,6 +34,7 @@ import BasicSelect from "../../components/BasicSelect";
 import BasicCard from "../../components/BasicCard";
 import BasicDivider from "../../components/BasicDevider";
 import EditPreviousReading from "./components/EditPreviousReading";
+import SmallHeader from "../../components/SmallHeader";
 
 const colors = {
   Initial: "green",
@@ -1114,142 +1115,153 @@ const RoadSurveyRowsForm = () => {
   }, [id]);
 
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue = ""; // required for mobile
+    window.history.pushState(null, "", window.location.href);
+
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
     };
   }, []);
 
   return (
-    <Box p={3}>
-      <AlertDialogSlide {...alertData} open={open} onCancel={handleClose} />
+    <>
+      <SmallHeader />
 
-      {page === 1 && (
-        <Box
-          sx={{
-            border: "1px solid #EFEFEF",
-            borderRadius: "9px",
-            width: "40px",
-            height: "40px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
-          }}
-          onClick={() => setPage(0)}
-        >
-          <MdArrowBackIosNew />
-        </Box>
-      )}
+      <Box p={2} className="overlapping-header">
+        <AlertDialogSlide {...alertData} open={open} onCancel={handleClose} />
 
-      {rowType === "Chainage" &&
-        page === 1 &&
-        selectedCs &&
-        selectedCs?.series && (
-          <Box position={"sticky"} top={0} bgcolor={"white"} zIndex={2}>
-            <Activity
-              mode={purpose.type === "Initial Level" ? "hidden" : "visible"}
-            >
-              <Box display={"flex"} justifyContent={"end"}>
-                <BasicSelect
-                  label="Compare"
-                  options={purpose.surveyId?.purposes
-                    ?.filter((p) => p.type !== purpose.type)
-                    .map((p) => ({ label: p.type, value: p.type }))}
-                  value={compareData?.type || ""}
-                  onChange={(e) => handleChangeCompare(e.target.value)}
-                  sx={{
-                    width: "62px",
-                    "& .MuiOutlinedInput-root": { padding: "4px 14px" },
-                  }}
-                />
-              </Box>
-            </Activity>
-
-            <Plot
-              data={selectedCs?.series?.map((s) => ({
-                x: s?.data?.map((p) => p.x),
-                y: s?.data?.map((p) => p.y),
-                type: "scatter",
-                mode: "lines",
-                name: s.name,
-                line: { shape: "linear", width: 1, color: s.color },
-              }))}
-              config={chartOptions.config}
-              layout={chartOptions.layout}
-              style={{ width: "100%", height: 100 }}
-            />
+        {page === 1 && (
+          <Box
+            sx={{
+              border: "1px solid #EFEFEF",
+              borderRadius: "9px",
+              width: "40px",
+              height: "40px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              cursor: "pointer",
+            }}
+            onClick={() => setPage(0)}
+          >
+            <MdArrowBackIosNew />
           </Box>
         )}
 
-      <Stack alignItems={"center"} spacing={2}>
-        <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
-          {page === 1
-            ? `Please Enter Intermediate Sight`
-            : `Please Enter ${rowType} and Values`}
-          :
-        </Typography>
+        {rowType === "Chainage" &&
+          page === 1 &&
+          selectedCs &&
+          selectedCs?.series && (
+            <Box position={"sticky"} top={0} bgcolor={"white"} zIndex={2}>
+              <Activity
+                mode={purpose.type === "Initial Level" ? "hidden" : "visible"}
+              >
+                <Box display={"flex"} justifyContent={"end"}>
+                  <BasicSelect
+                    label="Compare"
+                    options={purpose.surveyId?.purposes
+                      ?.filter((p) => p.type !== purpose.type)
+                      .map((p) => ({ label: p.type, value: p.type }))}
+                    value={compareData?.type || ""}
+                    onChange={(e) => handleChangeCompare(e.target.value)}
+                    sx={{
+                      width: "62px",
+                      "& .MuiOutlinedInput-root": { padding: "4px 14px" },
+                    }}
+                  />
+                </Box>
+              </Activity>
 
-        {page === 0 && (
-          <Stack direction={"row"} justifyContent={"end"} width={"100%"}>
-            <Box width={"40px"} zIndex={2}>
-              <BasicSpeedDial
-                actions={speedDialActions?.filter((a) => a.show)}
-                direction={"down"}
-                sx={{
-                  top: "-8px",
-                  right: 0,
-                  "& button": {
-                    width: "40px",
-                    height: "40px",
-                  },
-                }}
+              <Plot
+                data={selectedCs?.series?.map((s) => ({
+                  x: s?.data?.map((p) => p.x),
+                  y: s?.data?.map((p) => p.y),
+                  type: "scatter",
+                  mode: "lines",
+                  name: s.name,
+                  line: { shape: "linear", width: 1, color: s.color },
+                }))}
+                config={chartOptions.config}
+                layout={chartOptions.layout}
+                style={{ width: "100%", height: 100 }}
               />
             </Box>
-          </Stack>
-        )}
+          )}
 
-        <Box width={"100%"} maxWidth={"md"}>
-          <Grid container spacing={2} columns={12}>
-            {page === 0 &&
-              inputData.map(({ size, ...input }, index) => (
-                <Grid
-                  size={{
-                    xs: size ? size : 12,
+        <Stack alignItems={"center"} spacing={2}>
+          <Typography
+            variant="h6"
+            fontSize={18}
+            fontWeight={700}
+            align="center"
+          >
+            {page === 1
+              ? `Please Enter Intermediate Sight`
+              : `Please Enter ${rowType} and Values`}
+            :
+          </Typography>
+
+          {page === 0 && (
+            <Stack direction={"row"} justifyContent={"end"} width={"100%"}>
+              <Box width={"40px"} zIndex={2}>
+                <BasicSpeedDial
+                  actions={speedDialActions?.filter((a) => a.show)}
+                  direction={"down"}
+                  sx={{
+                    top: "-8px",
+                    right: 0,
+                    "& button": {
+                      width: "40px",
+                      height: "40px",
+                    },
                   }}
-                  key={index}
-                >
-                  <Box
-                    sx={{
-                      "& .MuiOutlinedInput-root, & .MuiFilledInput-root": {
-                        borderRadius: "15px",
-                      },
-                      width: "100%",
-                    }}
-                  >
-                    <BasicInput
-                      {...input}
-                      value={formValues[input.name] || ""}
-                      error={(formErrors && formErrors[input.name]) || ""}
-                      warning={(formWarnings && formWarnings[input.name]) || ""}
-                      sx={{ width: "100%" }}
-                      onChange={(e) => handleInputChange(e)}
-                      disabled={input.disabled}
-                    />
-                  </Box>
-                </Grid>
-              ))}
+                />
+              </Box>
+            </Stack>
+          )}
 
-            {/* ✅ Dynamic Intermediate + Offset Rows */}
-            {page === 1 && rowType === "Chainage" && (
-              <Grid size={{ xs: 12 }}>
-                {/* <Stack direction={'row'} alignItems={'center'}>
+          <Box width={"100%"} maxWidth={"md"}>
+            <Grid container spacing={2} columns={12}>
+              {page === 0 &&
+                inputData.map(({ size, ...input }, index) => (
+                  <Grid
+                    size={{
+                      xs: size ? size : 12,
+                    }}
+                    key={index}
+                  >
+                    <Box
+                      sx={{
+                        "& .MuiOutlinedInput-root, & .MuiFilledInput-root": {
+                          borderRadius: "15px",
+                        },
+                        width: "100%",
+                      }}
+                    >
+                      <BasicInput
+                        {...input}
+                        value={formValues[input.name] || ""}
+                        error={(formErrors && formErrors[input.name]) || ""}
+                        warning={
+                          (formWarnings && formWarnings[input.name]) || ""
+                        }
+                        sx={{ width: "100%" }}
+                        onChange={(e) => handleInputChange(e)}
+                        disabled={input.disabled}
+                      />
+                    </Box>
+                  </Grid>
+                ))}
+
+              {/* ✅ Dynamic Intermediate + Offset Rows */}
+              {page === 1 && rowType === "Chainage" && (
+                <Grid size={{ xs: 12 }}>
+                  {/* <Stack direction={'row'} alignItems={'center'}>
                   <BasicCheckbox
                     checked={autoOffset}
                     onChange={(e) => handleChangeAutoOffset(e)}
@@ -1258,313 +1270,323 @@ const RoadSurveyRowsForm = () => {
                     Default offset
                   </Typography>
                 </Stack> */}
-                <Typography
-                  fontSize={"16px"}
-                  fontWeight={600}
-                  color="black"
-                  mb={1}
-                >
-                  Chainage: {formValues.chainage}
-                </Typography>
-                <Stack spacing={2}>
-                  {formValues.intermediateOffsets.map((row, idx) => (
-                    <Stack key={idx} spacing={1}>
-                      <Stack
-                        key={idx}
-                        direction={"row"}
-                        alignItems={"end"}
-                        spacing={1}
-                        width={"100%"}
-                      >
-                        {purpose.phase === "Proposal" ? (
-                          <BasicInput
-                            label={idx === 0 ? "RL*" : ""}
-                            type="number"
-                            name="intermediateOffsets"
-                            value={row.reducedLevel || ""}
-                            error={
-                              formErrors &&
-                              formErrors[
-                                `intermediateOffsets[${idx}].reducedLevel`
-                              ]
-                            }
-                            sx={{ width: "100%" }}
-                            onChange={(e) =>
-                              handleInputChange(e, idx, "reducedLevel")
-                            }
-                          />
-                        ) : (
-                          <BasicInput
-                            label={idx === 0 ? "IS*" : ""}
-                            type="number"
-                            name="intermediateOffsets"
-                            value={row.intermediateSight || ""}
-                            error={
-                              formErrors &&
-                              formErrors[
-                                `intermediateOffsets[${idx}].intermediateSight`
-                              ]
-                            }
-                            warning={
-                              formWarnings &&
-                              formWarnings[
-                                `intermediateOffsets[${idx}].intermediateSight`
-                              ] &&
-                              "disable-label"
-                            }
-                            sx={{ width: "100%" }}
-                            onChange={(e) =>
-                              handleInputChange(e, idx, "intermediateSight")
-                            }
-                          />
-                        )}
-
-                        <BasicInput
-                          label={idx === 0 ? "Offset*" : ""}
-                          type="number"
-                          name="intermediateOffsets"
-                          value={row.offset}
-                          onChange={(e) => handleInputChange(e, idx, "offset")}
-                          error={
-                            formErrors &&
-                            formErrors[`intermediateOffsets[${idx}].offset`]
-                          }
-                        />
-                        <BasicInput
-                          label={idx === 0 ? "Remark*" : ""}
-                          type="text"
-                          name="intermediateOffsets"
-                          value={row.remark}
-                          onChange={(e) => handleInputChange(e, idx, "remark")}
-                          error={
-                            formErrors &&
-                            formErrors[`intermediateOffsets[${idx}].remark`]
-                          }
-                        />
-                        <Box>
-                          {idx ===
-                          formValues.intermediateOffsets?.length - 1 ? (
-                            <Stack direction={"row"} spacing={1}>
-                              {formValues.intermediateOffsets?.length > 1 && (
-                                <Box
-                                  className="remove-new-sight"
-                                  onClick={() => handleRemoveRow(idx)}
-                                >
-                                  <IoIosRemove
-                                    fontSize={"24px"}
-                                    color="rgb(231 0 0)"
-                                  />
-                                </Box>
-                              )}
-
-                              <Box
-                                className="add-new-sight"
-                                onClick={handleAddRow}
-                              >
-                                <IoAdd fontSize={"24px"} color="#0059E7" />
-                              </Box>
-                            </Stack>
+                  <Typography
+                    fontSize={"16px"}
+                    fontWeight={600}
+                    color="black"
+                    mb={1}
+                  >
+                    Chainage: {formValues.chainage}
+                  </Typography>
+                  <Stack spacing={2}>
+                    {formValues.intermediateOffsets.map((row, idx) => (
+                      <Stack key={idx} spacing={1}>
+                        <Stack
+                          key={idx}
+                          direction={"row"}
+                          alignItems={"end"}
+                          spacing={1}
+                          width={"100%"}
+                        >
+                          {purpose.phase === "Proposal" ? (
+                            <BasicInput
+                              label={idx === 0 ? "RL*" : ""}
+                              type="number"
+                              name="intermediateOffsets"
+                              value={row.reducedLevel || ""}
+                              error={
+                                formErrors &&
+                                formErrors[
+                                  `intermediateOffsets[${idx}].reducedLevel`
+                                ]
+                              }
+                              sx={{ width: "100%" }}
+                              onChange={(e) =>
+                                handleInputChange(e, idx, "reducedLevel")
+                              }
+                            />
                           ) : (
-                            <Box
-                              className="remove-new-sight"
-                              onClick={() => handleRemoveRow(idx)}
-                            >
-                              <IoIosRemove
-                                fontSize={"24px"}
-                                color="rgb(231 0 0)"
-                              />
-                            </Box>
+                            <BasicInput
+                              label={idx === 0 ? "IS*" : ""}
+                              type="number"
+                              name="intermediateOffsets"
+                              value={row.intermediateSight || ""}
+                              error={
+                                formErrors &&
+                                formErrors[
+                                  `intermediateOffsets[${idx}].intermediateSight`
+                                ]
+                              }
+                              warning={
+                                formWarnings &&
+                                formWarnings[
+                                  `intermediateOffsets[${idx}].intermediateSight`
+                                ] &&
+                                "disable-label"
+                              }
+                              sx={{ width: "100%" }}
+                              onChange={(e) =>
+                                handleInputChange(e, idx, "intermediateSight")
+                              }
+                            />
                           )}
-                        </Box>
-                      </Stack>
-                      {formWarnings &&
-                        formWarnings[
-                          `intermediateOffsets[${idx}].intermediateSight`
-                        ] && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              mb: 0.5,
-                              color: "warning.main",
-                            }}
-                          >
-                            {
-                              formWarnings[
-                                `intermediateOffsets[${idx}].intermediateSight`
-                              ]
+
+                          <BasicInput
+                            label={idx === 0 ? "Offset*" : ""}
+                            type="number"
+                            name="intermediateOffsets"
+                            value={row.offset}
+                            onChange={(e) =>
+                              handleInputChange(e, idx, "offset")
                             }
+                            error={
+                              formErrors &&
+                              formErrors[`intermediateOffsets[${idx}].offset`]
+                            }
+                          />
+                          <BasicInput
+                            label={idx === 0 ? "Remark*" : ""}
+                            type="text"
+                            name="intermediateOffsets"
+                            value={row.remark}
+                            onChange={(e) =>
+                              handleInputChange(e, idx, "remark")
+                            }
+                            error={
+                              formErrors &&
+                              formErrors[`intermediateOffsets[${idx}].remark`]
+                            }
+                          />
+                          <Box>
+                            {idx ===
+                            formValues.intermediateOffsets?.length - 1 ? (
+                              <Stack direction={"row"} spacing={1}>
+                                {formValues.intermediateOffsets?.length > 1 && (
+                                  <Box
+                                    className="remove-new-sight"
+                                    onClick={() => handleRemoveRow(idx)}
+                                  >
+                                    <IoIosRemove
+                                      fontSize={"24px"}
+                                      color="rgb(231 0 0)"
+                                    />
+                                  </Box>
+                                )}
+
+                                <Box
+                                  className="add-new-sight"
+                                  onClick={handleAddRow}
+                                >
+                                  <IoAdd fontSize={"24px"} color="#0059E7" />
+                                </Box>
+                              </Stack>
+                            ) : (
+                              <Box
+                                className="remove-new-sight"
+                                onClick={() => handleRemoveRow(idx)}
+                              >
+                                <IoIosRemove
+                                  fontSize={"24px"}
+                                  color="rgb(231 0 0)"
+                                />
+                              </Box>
+                            )}
+                          </Box>
+                        </Stack>
+                        {formWarnings &&
+                          formWarnings[
+                            `intermediateOffsets[${idx}].intermediateSight`
+                          ] && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                mb: 0.5,
+                                color: "warning.main",
+                              }}
+                            >
+                              {
+                                formWarnings[
+                                  `intermediateOffsets[${idx}].intermediateSight`
+                                ]
+                              }
+                            </Typography>
+                          )}
+                      </Stack>
+                    ))}
+                  </Stack>
+                </Grid>
+              )}
+            </Grid>
+          </Box>
+
+          <Stack
+            direction={"row"}
+            justifyContent={"end"}
+            width={"100%"}
+            gap={1}
+          >
+            {purpose &&
+              purpose?.status === "Active" &&
+              purpose?.phase === "Actual" &&
+              page === 0 && (
+                <>
+                  {rowType !== "Chainage" && (
+                    <BasicButtons
+                      value={
+                        <Box display={"flex"} gap={1} alignItems={"center"}>
+                          <IoIosAddCircleOutline fontSize={"20px"} />
+                          <Typography fontSize={"16px"} fontWeight={600}>
+                            Chainage
                           </Typography>
-                        )}
-                    </Stack>
-                  ))}
-                </Stack>
-              </Grid>
-            )}
-          </Grid>
-        </Box>
+                        </Box>
+                      }
+                      onClick={() => handleChangeRowType("Chainage")}
+                      sx={{ backgroundColor: "#0059E7", flex: 1 }}
+                    />
+                  )}
+                  {rowType !== "CP" && (
+                    <BasicButtons
+                      value={
+                        <Box display={"flex"} gap={1} alignItems={"center"}>
+                          <IoIosAddCircleOutline fontSize={"20px"} />
+                          <Typography fontSize={"16px"} fontWeight={600}>
+                            CP
+                          </Typography>
+                        </Box>
+                      }
+                      onClick={() => handleChangeRowType("CP")}
+                      sx={{ backgroundColor: "#0059E7", flex: 1 }}
+                    />
+                  )}
+                  {rowType !== "TBM" && (
+                    <BasicButtons
+                      value={
+                        <Box display={"flex"} gap={1} alignItems={"center"}>
+                          <IoIosAddCircleOutline fontSize={"20px"} />
+                          <Typography fontSize={"16px"} fontWeight={600}>
+                            TBM
+                          </Typography>
+                        </Box>
+                      }
+                      onClick={() => handleChangeRowType("TBM")}
+                      sx={{ backgroundColor: "#0059E7", flex: 1 }}
+                    />
+                  )}
+                </>
+              )}
 
-        <Stack direction={"row"} justifyContent={"end"} width={"100%"} gap={1}>
-          {purpose &&
-            purpose?.status === "Active" &&
-            purpose?.phase === "Actual" &&
-            page === 0 && (
-              <>
-                {rowType !== "Chainage" && (
-                  <BasicButtons
-                    value={
-                      <Box display={"flex"} gap={1} alignItems={"center"}>
-                        <IoIosAddCircleOutline fontSize={"20px"} />
-                        <Typography fontSize={"16px"} fontWeight={600}>
-                          Chainage
-                        </Typography>
-                      </Box>
-                    }
-                    onClick={() => handleChangeRowType("Chainage")}
-                    sx={{ backgroundColor: "#0059E7", flex: 1 }}
-                  />
-                )}
-                {rowType !== "CP" && (
-                  <BasicButtons
-                    value={
-                      <Box display={"flex"} gap={1} alignItems={"center"}>
-                        <IoIosAddCircleOutline fontSize={"20px"} />
-                        <Typography fontSize={"16px"} fontWeight={600}>
-                          CP
-                        </Typography>
-                      </Box>
-                    }
-                    onClick={() => handleChangeRowType("CP")}
-                    sx={{ backgroundColor: "#0059E7", flex: 1 }}
-                  />
-                )}
-                {rowType !== "TBM" && (
-                  <BasicButtons
-                    value={
-                      <Box display={"flex"} gap={1} alignItems={"center"}>
-                        <IoIosAddCircleOutline fontSize={"20px"} />
-                        <Typography fontSize={"16px"} fontWeight={600}>
-                          TBM
-                        </Typography>
-                      </Box>
-                    }
-                    onClick={() => handleChangeRowType("TBM")}
-                    sx={{ backgroundColor: "#0059E7", flex: 1 }}
-                  />
-                )}
-              </>
-            )}
+            <BasicButtons
+              value={
+                <Box display={"flex"} gap={1} alignItems={"center"}>
+                  {(purpose?.phase === "Proposal" &&
+                    isLastProposalReading &&
+                    page === 1) ||
+                  (rowType !== "Chainage" && isLastProposalReading) ? (
+                    <>
+                      <Typography fontSize={"16px"} fontWeight={600}>
+                        Finish ${purpose?.type}
+                      </Typography>
+                      <MdDone fontSize={"20px"} />
+                    </>
+                  ) : (
+                    <>
+                      <Typography fontSize={"16px"} fontWeight={600}>
+                        Continue
+                      </Typography>
+                      <IoIosArrowForward fontSize={"20px"} />
+                    </>
+                  )}
+                </Box>
+              }
+              sx={{
+                backgroundColor: "rgba(24, 195, 127, 1)",
+                height: "45px",
+                flex: 1,
+              }}
+              fullWidth={true}
+              onClick={handleSubmit}
+              loading={btnLoading}
+            />
+          </Stack>
 
-          <BasicButtons
-            value={
-              <Box display={"flex"} gap={1} alignItems={"center"}>
-                {(purpose?.phase === "Proposal" &&
-                  isLastProposalReading &&
-                  page === 1) ||
-                (rowType !== "Chainage" && isLastProposalReading) ? (
-                  <>
-                    <Typography fontSize={"16px"} fontWeight={600}>
-                      Finish ${purpose?.type}
-                    </Typography>
-                    <MdDone fontSize={"20px"} />
-                  </>
-                ) : (
-                  <>
-                    <Typography fontSize={"16px"} fontWeight={600}>
-                      Continue
-                    </Typography>
-                    <IoIosArrowForward fontSize={"20px"} />
-                  </>
-                )}
-              </Box>
-            }
-            sx={{
-              backgroundColor: "rgba(24, 195, 127, 1)",
-              height: "45px",
-              flex: 1,
-            }}
-            fullWidth={true}
-            onClick={handleSubmit}
-            loading={btnLoading}
-          />
+          {rowType === "CP" && purpose.phase === "Actual" && (
+            <BasicButtons
+              value={
+                <Box display={"flex"} gap={1} alignItems={"center"}>
+                  <Typography fontSize={"16px"} fontWeight={600}>
+                    Finish Survey
+                  </Typography>
+                  <MdDone fontSize={"20px"} />
+                </Box>
+              }
+              sx={{ backgroundColor: "#4caf50", height: "45px", flex: 1 }}
+              fullWidth={true}
+              onClick={() => handleClickOpen("Finish Survey")}
+              loading={btnLoading}
+            />
+          )}
         </Stack>
 
-        {rowType === "CP" && purpose.phase === "Actual" && (
-          <BasicButtons
-            value={
-              <Box display={"flex"} gap={1} alignItems={"center"}>
-                <Typography fontSize={"16px"} fontWeight={600}>
-                  Finish Survey
-                </Typography>
-                <MdDone fontSize={"20px"} />
-              </Box>
-            }
-            sx={{ backgroundColor: "#4caf50", height: "45px", flex: 1 }}
-            fullWidth={true}
-            onClick={() => handleClickOpen("Finish Survey")}
-            loading={btnLoading}
-          />
-        )}
-      </Stack>
+        <Activity mode={page === 0 && purpose ? "visible" : "hidden"}>
+          <BasicDivider borderBottomWidth={0.5} color="#d9d9d9" />
 
-      <Activity mode={page === 0 && purpose ? "visible" : "hidden"}>
-        <BasicDivider borderBottomWidth={0.5} color="#d9d9d9" />
+          <Stack spacing={2} mt={2}>
+            <Typography fontWeight={700} fontSize="16px">
+              Previously added reading
+            </Typography>
 
-        <Stack spacing={2} mt={2}>
-          <Typography fontWeight={700} fontSize="16px">
-            Previously added reading
-          </Typography>
+            <BasicCard
+              sx={{
+                boxShadow: 1,
+              }}
+              contentSx={{ p: "16px !important" }}
+              content={
+                <Stack
+                  direction={"row"}
+                  alignItems={"center"}
+                  justifyContent={"space-between"}
+                >
+                  <Stack direction={"row"} spacing={1}>
+                    <Typography fontSize={14} color="text.secondary">
+                      Type of reading:
+                    </Typography>
+                    <Typography fontWeight={700} fontSize="14px">
+                      {purpose?.rows?.at(-1)?.type === "Instrument setup"
+                        ? "TBM"
+                        : purpose?.rows?.at(-1)?.type}
+                    </Typography>
+                  </Stack>
 
-          <BasicCard
-            sx={{
-              boxShadow: 1,
-            }}
-            contentSx={{ p: "16px !important" }}
-            content={
-              <Stack
-                direction={"row"}
-                alignItems={"center"}
-                justifyContent={"space-between"}
-              >
-                <Stack direction={"row"} spacing={1}>
-                  <Typography fontSize={14} color="text.secondary">
-                    Type of reading:
-                  </Typography>
-                  <Typography fontWeight={700} fontSize="14px">
-                    {purpose?.rows?.at(-1)?.type === "Instrument setup"
-                      ? "TBM"
-                      : purpose?.rows?.at(-1)?.type}
-                  </Typography>
-                </Stack>
+                  <Stack direction={"row"} alignItems={"center"} spacing={1}>
+                    <FaRegEdit color="#2897FF" onClick={handleClickOpenEdit} />
 
-                <Stack direction={"row"} alignItems={"center"} spacing={1}>
-                  <FaRegEdit color="#2897FF" onClick={handleClickOpenEdit} />
+                    <Activity
+                      mode={purpose?.rows?.length > 1 ? "visible" : "hidden"}
+                    >
+                      <AiFillDelete
+                        color="#fd3636ff"
+                        fontSize={17}
+                        onClick={handleDeletePrevReading}
+                      />
+                    </Activity>
+                  </Stack>
 
-                  <Activity
-                    mode={purpose?.rows?.length > 1 ? "visible" : "hidden"}
-                  >
-                    <AiFillDelete
-                      color="#fd3636ff"
-                      fontSize={17}
-                      onClick={handleDeletePrevReading}
+                  <Activity mode={isEdit ? "visible" : "hidden"}>
+                    <EditPreviousReading
+                      open={isEdit}
+                      doc={purpose?.rows?.at(-1) || {}}
+                      updateDoc={setPurpose}
+                      onCancel={handleClickCloseEdit}
+                      onSubmit={handleClickCloseEdit}
                     />
                   </Activity>
                 </Stack>
-
-                <Activity mode={isEdit ? "visible" : "hidden"}>
-                  <EditPreviousReading
-                    open={isEdit}
-                    doc={purpose?.rows?.at(-1) || {}}
-                    updateDoc={setPurpose}
-                    onCancel={handleClickCloseEdit}
-                    onSubmit={handleClickCloseEdit}
-                  />
-                </Activity>
-              </Stack>
-            }
-          />
-        </Stack>
-      </Activity>
-    </Box>
+              }
+            />
+          </Stack>
+        </Activity>
+      </Box>
+    </>
   );
 };
 

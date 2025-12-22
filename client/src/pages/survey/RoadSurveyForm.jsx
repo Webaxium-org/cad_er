@@ -21,6 +21,7 @@ import {
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import { IoIosArrowForward } from "react-icons/io";
 import AdvancedAutoComplete from "../../components/AdvancedAutoComplete";
+import SmallHeader from "../../components/SmallHeader";
 
 const alertData = {
   title: "Generate Proposal",
@@ -669,173 +670,185 @@ const RoadSurveyForm = () => {
   }, [id]);
 
   return (
-    <Box padding={"24px"}>
-      <AlertDialogSlide
-        {...alertData}
-        description={`Are you sure you want to auto-generate the ${formValues?.proposal} for ${formValues.purpose} `}
-        open={open}
-        onCancel={handleClose}
-        onSubmit={handleSubmit}
-      />
+    <>
+      <SmallHeader />
 
-      <Box
-        sx={{
-          border: "1px solid #EFEFEF",
-          borderRadius: "9px",
-          width: "40px",
-          height: "40px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          cursor: "pointer",
-        }}
-        onClick={handleGoBack}
-      >
-        <MdArrowBackIosNew />
-      </Box>
+      <Box p={2} className="overlapping-header">
+        <AlertDialogSlide
+          {...alertData}
+          description={`Are you sure you want to auto-generate the ${formValues?.proposal} for ${formValues.purpose} `}
+          open={open}
+          onCancel={handleClose}
+          onSubmit={handleSubmit}
+        />
 
-      <Stack alignItems={"center"} spacing={2}>
-        <Stack alignItems={"center"}>
-          <Typography
-            variant="h6"
-            fontSize={18}
-            fontWeight={700}
-            align="center"
-          >
-            Create New {id ? "Survey" : "Project"}
-          </Typography>
-
-          <Typography fontSize={13} fontWeight={400} color="#434343">
-            Please Enter The Following Values
-          </Typography>
-        </Stack>
-
-        <Stack width={"100%"} spacing={2} className="input-wrapper">
-          {id && (
-            <Box display={"flex"} alignItems={"center"} justifyContent={"end"}>
-              <Typography
-                variant="body2"
-                fontSize={"16px"}
-                fontWeight={600}
-                color="black"
-              >
-                Proposal
-              </Typography>
-              <BasicCheckbox
-                checked={type || ""}
-                onChange={() => setType(!type)}
-              />
-            </Box>
-          )}
-
-          <Grid container spacing={3} columns={12} alignItems={"end"}>
-            {inputData.map(
-              ({ hidden, for: inputFor, mode, size, ...input }, index) =>
-                !hidden && (
-                  <Grid
-                    size={{
-                      xs: size || 12,
-                    }}
-                    key={index}
-                  >
-                    {((type && input.name === "purpose") ||
-                      input.name === "lSection" ||
-                      input.name === "cSection") && (
-                      <Typography
-                        variant="body2"
-                        fontSize={"16px"}
-                        fontWeight={600}
-                        color="black"
-                      >
-                        {input.name === "purpose"
-                          ? "Proposal Between"
-                          : input.name === "lSection"
-                          ? "Longitudinal section slop"
-                          : "Cross section slop"}
-                        :
-                      </Typography>
-                    )}
-
-                    {mode === "select" ? (
-                      <BasicSelect
-                        {...input}
-                        value={formValues[input.name] || ""}
-                        error={(formErrors && formErrors[input.name]) || ""}
-                        sx={{ width: "100%" }}
-                        onChange={(e) => handleInputChange(e)}
-                      />
-                    ) : mode === "solo-create" ? (
-                      <AdvancedAutoComplete
-                        {...input}
-                        value={formValues[input.name] || ""}
-                        error={(formErrors && formErrors[input.name]) || ""}
-                        sx={{ width: "100%" }}
-                        onChange={(e) => handleInputChange(e)}
-                      />
-                    ) : mode === "checkbox" ? (
-                      <Stack direction={"row"}>
-                        {input.options?.map((option, idx) => (
-                          <Box display={"flex"} alignItems={"center"} key={idx}>
-                            <Typography
-                              variant="body2"
-                              fontSize={"16px"}
-                              fontWeight={600}
-                              color="black"
-                            >
-                              {option.label}
-                            </Typography>
-                            <BasicCheckbox
-                              checked={
-                                (input.name === "crossSectionType"
-                                  ? crossSection
-                                  : input.name === "category"
-                                  ? category
-                                  : entryType) === option.name
-                              }
-                              onChange={() =>
-                                input.name === "crossSectionType"
-                                  ? setCrossSection(option.name)
-                                  : input.name === "category"
-                                  ? setCategory(option.name)
-                                  : setEntryType(option.name)
-                              }
-                            />
-                          </Box>
-                        ))}
-                      </Stack>
-                    ) : (
-                      <BasicInput
-                        {...input}
-                        value={formValues[input.name] || ""}
-                        error={(formErrors && formErrors[input.name]) || ""}
-                        sx={{ width: "100%" }}
-                        onChange={(e) => handleInputChange(e)}
-                      />
-                    )}
-                  </Grid>
-                )
-            )}
-          </Grid>
-        </Stack>
-
-        <Box width={"100%"}>
-          <BasicButtons
-            value={
-              <Box display={"flex"} gap={1} alignItems={"center"}>
-                <Typography fontSize={"16px"} fontWeight={600}>
-                  Continue
-                </Typography>
-                <IoIosArrowForward fontSize={"20px"} />
-              </Box>
-            }
-            sx={{ backgroundColor: "rgba(24, 195, 127, 1)", height: "45px" }}
-            fullWidth={true}
-            onClick={preSubmitCheck}
-            loading={btnLoading}
-          />
+        <Box
+          sx={{
+            border: "1px solid #EFEFEF",
+            borderRadius: "9px",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            cursor: "pointer",
+          }}
+          onClick={handleGoBack}
+        >
+          <MdArrowBackIosNew />
         </Box>
-      </Stack>
-    </Box>
+
+        <Stack alignItems={"center"} spacing={2}>
+          <Stack alignItems={"center"}>
+            <Typography
+              variant="h6"
+              fontSize={18}
+              fontWeight={700}
+              align="center"
+            >
+              Create New {id ? "Survey" : "Project"}
+            </Typography>
+
+            <Typography fontSize={13} fontWeight={400} color="#434343">
+              Please Enter The Following Values
+            </Typography>
+          </Stack>
+
+          <Stack width={"100%"} spacing={2} className="input-wrapper">
+            {id && (
+              <Box
+                display={"flex"}
+                alignItems={"center"}
+                justifyContent={"end"}
+              >
+                <Typography
+                  variant="body2"
+                  fontSize={"16px"}
+                  fontWeight={600}
+                  color="black"
+                >
+                  Proposal
+                </Typography>
+                <BasicCheckbox
+                  checked={type || ""}
+                  onChange={() => setType(!type)}
+                />
+              </Box>
+            )}
+
+            <Grid container spacing={3} columns={12} alignItems={"end"}>
+              {inputData.map(
+                ({ hidden, for: inputFor, mode, size, ...input }, index) =>
+                  !hidden && (
+                    <Grid
+                      size={{
+                        xs: size || 12,
+                      }}
+                      key={index}
+                    >
+                      {((type && input.name === "purpose") ||
+                        input.name === "lSection" ||
+                        input.name === "cSection") && (
+                        <Typography
+                          variant="body2"
+                          fontSize={"16px"}
+                          fontWeight={600}
+                          color="black"
+                        >
+                          {input.name === "purpose"
+                            ? "Proposal Between"
+                            : input.name === "lSection"
+                            ? "Longitudinal section slop"
+                            : "Cross section slop"}
+                          :
+                        </Typography>
+                      )}
+
+                      {mode === "select" ? (
+                        <BasicSelect
+                          {...input}
+                          value={formValues[input.name] || ""}
+                          error={(formErrors && formErrors[input.name]) || ""}
+                          sx={{ width: "100%" }}
+                          onChange={(e) => handleInputChange(e)}
+                        />
+                      ) : mode === "solo-create" ? (
+                        <AdvancedAutoComplete
+                          {...input}
+                          value={formValues[input.name] || ""}
+                          error={(formErrors && formErrors[input.name]) || ""}
+                          sx={{ width: "100%" }}
+                          onChange={(e) => handleInputChange(e)}
+                        />
+                      ) : mode === "checkbox" ? (
+                        <Stack direction={"row"}>
+                          {input.options?.map((option, idx) => (
+                            <Box
+                              display={"flex"}
+                              alignItems={"center"}
+                              key={idx}
+                            >
+                              <Typography
+                                variant="body2"
+                                fontSize={"16px"}
+                                fontWeight={600}
+                                color="black"
+                              >
+                                {option.label}
+                              </Typography>
+                              <BasicCheckbox
+                                checked={
+                                  (input.name === "crossSectionType"
+                                    ? crossSection
+                                    : input.name === "category"
+                                    ? category
+                                    : entryType) === option.name
+                                }
+                                onChange={() =>
+                                  input.name === "crossSectionType"
+                                    ? setCrossSection(option.name)
+                                    : input.name === "category"
+                                    ? setCategory(option.name)
+                                    : setEntryType(option.name)
+                                }
+                              />
+                            </Box>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <BasicInput
+                          {...input}
+                          value={formValues[input.name] || ""}
+                          error={(formErrors && formErrors[input.name]) || ""}
+                          sx={{ width: "100%" }}
+                          onChange={(e) => handleInputChange(e)}
+                        />
+                      )}
+                    </Grid>
+                  )
+              )}
+            </Grid>
+          </Stack>
+
+          <Box width={"100%"}>
+            <BasicButtons
+              value={
+                <Box display={"flex"} gap={1} alignItems={"center"}>
+                  <Typography fontSize={"16px"} fontWeight={600}>
+                    Continue
+                  </Typography>
+                  <IoIosArrowForward fontSize={"20px"} />
+                </Box>
+              }
+              sx={{ backgroundColor: "rgba(24, 195, 127, 1)", height: "45px" }}
+              fullWidth={true}
+              onClick={preSubmitCheck}
+              loading={btnLoading}
+            />
+          </Box>
+        </Stack>
+      </Box>
+    </>
   );
 };
 

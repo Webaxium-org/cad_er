@@ -21,10 +21,10 @@ body {
 }
 
 .main-bg::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background-image: url('assets/back-ground-img.png');
+  background-image: url("assets/back-ground-img.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -192,7 +192,7 @@ body {
 }
 
 .vertical-scale .tick-left::after {
-  content: '';
+  content: "";
   position: absolute;
   right: -6px;
   top: 50%;
@@ -203,7 +203,7 @@ body {
 }
 
 .vertical-scale .tick-right::before {
-  content: '';
+  content: "";
   position: absolute;
   left: -6px;
   top: 50%;
@@ -215,7 +215,7 @@ body {
 
 /* Nav overlapping headers */
 .overlapping-header {
-  margin-top: -50px !important;
+  margin-top: -60px !important;
   border-radius: 20px 20px 0 0;
   background-color: white;
   position: relative;
@@ -224,7 +224,7 @@ body {
 }
 
 .task-card-inner::before {
-  content: '';
+  content: "";
   position: absolute;
   left: -16px;
   top: 50%;
@@ -233,7 +233,7 @@ body {
   height: 100%;
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
-  background-color: #2897FF;
+  background-color: #2897ff;
 }
 
 /* ---------------------------
@@ -256,7 +256,7 @@ body {
 .logo {
   height: 60px; /* default for small screens */
   transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   font-weight: 900;
   font-size: 3rem;
   letter-spacing: 3px;

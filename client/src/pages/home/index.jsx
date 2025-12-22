@@ -16,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 import BasicInput from "../../components/BasicInput";
 import BasicCard from "../../components/BasicCard";
 
-import { IoNotificationsOutline } from "react-icons/io5";
 import { MdOutlineSearch } from "react-icons/md";
 import { TbReport } from "react-icons/tb";
 import { TbReportSearch } from "react-icons/tb";
@@ -37,6 +36,7 @@ import AlertDialogSlide from "../../components/AlertDialogSlide";
 import UniversalConverter from "../../components/UniversalConverter";
 import StatusChip from "../../components/StatusChip";
 import BasicSelect from "../../components/BasicSelect";
+import Sidebar from "../../components/Sidebar";
 
 const alertData = {
   title: "Help & Support",
@@ -207,7 +207,7 @@ const Home = () => {
             aria-label="help"
             sx={{
               position: "fixed",
-              bottom: 90,
+              bottom: 24,
               right: 24,
               borderRadius: 8,
               textTransform: "none",
@@ -224,7 +224,7 @@ const Home = () => {
         </Tooltip>
       )}
 
-      <Stack spacing={2} pb={2} sx={{ userSelect: "none" }} overflow={"hidden"}>
+      <Stack spacing={2} sx={{ userSelect: "none" }} overflow={"hidden"}>
         {/* 🌈 HEADER */}
         <Stack
           p={2}
@@ -246,6 +246,7 @@ const Home = () => {
               opacity: 0.25,
               zIndex: 0,
               height: "60dvh",
+              minHeight: "260px",
               width: "100%",
             }}
           ></div>
@@ -254,9 +255,11 @@ const Home = () => {
             justifyContent={"space-between"}
             alignItems={"center"}
             color="white"
+            zIndex={2}
           >
             <img src={logo} alt="CADer" style={{ width: "65px" }} />
-            <IoNotificationsOutline fontSize={"28px"} />
+
+            <Sidebar />
           </Box>
 
           <Stack

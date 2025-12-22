@@ -1,17 +1,16 @@
-import Box from '@mui/material/Box';
+import Box from "@mui/material/Box";
 
-import Preloader from './Preloader';
-import CustomSnackbar from '../components/CustomSnackbar';
-import { Outlet } from 'react-router-dom';
-import BasicBottomNavigation from '../components/BasicBottomNavigation';
-// import CookieBlockedDialog from './CookieBlockedDialog';
+import Preloader from "./Preloader";
+import CustomSnackbar from "../components/CustomSnackbar";
+import { Outlet } from "react-router-dom";
+import BasicBottomNavigation from "../components/BasicBottomNavigation";
 
 const RootLayout = () => {
   return (
     <>
       <Preloader />
 
-      <Box width={'100%'} mb={'67px'}>
+      <Box width={"100%"}>
         {/* Global Alert Start*/}
 
         <CustomSnackbar />
@@ -20,10 +19,7 @@ const RootLayout = () => {
 
         <Outlet />
 
-        <BasicBottomNavigation />
-
-        {/* Add this here */}
-        {/* <CookieBlockedDialog /> */}
+        {/* <BasicBottomNavigation /> */}
       </Box>
     </>
   );

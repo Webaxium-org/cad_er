@@ -1,50 +1,55 @@
-import { Box, Stack, Typography } from '@mui/material';
-import BackgroundImage from '../assets/background-img.png';
-import logo from '../assets/logo/CADer logo-main.png';
-import { IoNotificationsOutline } from 'react-icons/io5';
+import { Box, Stack } from "@mui/material";
+import BackgroundImage from "../assets/background-img.png";
+import logo from "../assets/logo/CADer logo-main.png";
+import Sidebar from "./Sidebar";
 
 const BigHeader = () => {
   return (
     <Stack
       p={2}
       sx={{
-        position: 'relative',
+        position: "relative",
         background:
-          'linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)',
-        color: 'white',
+          "linear-gradient(217.64deg, #0A3BAF -5.84%, #0025A0 106.73%)",
+        color: "white",
       }}
-      height={'45dvh'}
+      height={"45dvh"}
     >
       <div
         style={{
-          position: 'absolute',
+          position: "absolute",
           inset: 0,
           backgroundImage: `url(${BackgroundImage})`,
-          backgroundSize: '200%',
-          backgroundPosition: 'center',
+          backgroundSize: "200%",
+          backgroundPosition: "center",
           opacity: 0.25,
           zIndex: 0,
-          height: '60dvh',
-          width: '100%',
+          height: "60dvh",
+          width: "100%",
         }}
       ></div>
 
-      <Box display={'flex'} justifyContent={'end'} alignItems={'center'}>
+      <Box
+        display={"flex"}
+        justifyContent={"end"}
+        alignItems={"center"}
+        zIndex={2}
+      >
         <Box>
-          <IoNotificationsOutline fontSize={'28px'} />
+          <Sidebar />
         </Box>
       </Box>
 
       <Box
-        display={'flex'}
-        justifyContent={'center'}
-        alignItems={'center'}
-        height={'100%'}
+        display={"flex"}
+        justifyContent={"center"}
+        alignItems={"center"}
+        height={"100%"}
       >
         <img
           src={logo}
           alt="CADer"
-          style={{ width: '150px', paddingBottom: '65px' }}
+          style={{ width: "150px", paddingBottom: "65px" }}
         />
       </Box>
     </Stack>

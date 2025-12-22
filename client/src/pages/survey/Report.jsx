@@ -28,6 +28,7 @@ import {
 import { MdDelete } from "react-icons/md";
 import BasicAutocomplete from "../../components/BasicAutocomplete";
 import BasicButton from "../../components/BasicButton";
+import SmallHeader from "../../components/SmallHeader";
 
 const toggleButtonSx = {
   flex: 1,
@@ -156,99 +157,109 @@ const Report = () => {
   };
 
   return (
-    <Stack p={2} spacing={2} sx={{ maxWidth: 900, mx: "auto" }}>
-      <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
-        Generate Survey Report
-      </Typography>
+    <>
+      <SmallHeader />
 
-      {/* Report Type Selector */}
-      <Paper
-        elevation={2}
-        sx={{
-          p: 2,
-          mb: 3,
-          borderRadius: 3,
-        }}
+      <Stack
+        p={2}
+        spacing={2}
+        className="overlapping-header"
+        sx={{ maxWidth: 900, mx: "auto" }}
       >
-        {!id ? (
-          <Box mb={2}>
-            <BasicAutocomplete
-              label={"Select Survey"}
-              options={
-                surveys?.length
-                  ? surveys?.map((s) => ({ label: s.project, value: s._id }))
-                  : []
-              }
-              value={inputValue}
-              onChange={(e, newValue) => handleInputChange(e, newValue)}
-              placeholder={"Select..."}
-            />
-          </Box>
-        ) : (
+        <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
+          Generate Survey Report
+        </Typography>
+
+        {/* Report Type Selector */}
+        <Paper
+          elevation={2}
+          sx={{
+            p: 2,
+            mb: 3,
+            borderRadius: 3,
+          }}
+        >
+          {!id ? (
+            <Box mb={2}>
+              <BasicAutocomplete
+                label={"Select Survey"}
+                options={
+                  surveys?.length
+                    ? surveys?.map((s) => ({ label: s.project, value: s._id }))
+                    : []
+                }
+                value={inputValue}
+                onChange={(e, newValue) => handleInputChange(e, newValue)}
+                placeholder={"Select..."}
+              />
+            </Box>
+          ) : (
+            <Typography
+              variant="subtitle1"
+              fontWeight="bold"
+              sx={{ mb: 1, fontSize: { xs: "0.85rem", sm: "1rem" } }}
+            >
+              Project Name:{" "}
+              <span style={{ fontWeight: "500" }}>{survey?.project}</span>
+            </Typography>
+          )}
+
           <Typography
             variant="subtitle1"
             fontWeight="bold"
             sx={{ mb: 1, fontSize: { xs: "0.85rem", sm: "1rem" } }}
           >
-            Project Name:{" "}
-            <span style={{ fontWeight: "500" }}>{survey?.project}</span>
+            Select Report Type
           </Typography>
-        )}
 
-        <Typography
-          variant="subtitle1"
-          fontWeight="bold"
-          sx={{ mb: 1, fontSize: { xs: "0.85rem", sm: "1rem" } }}
+          <ToggleButtonGroup
+            value={reportType}
+            exclusive
+            fullWidth
+            onChange={(e, value) => setReportType(value)}
+            sx={{ display: "flex", gap: 2 }}
+          >
+            <ToggleButton value="cross" sx={toggleButtonSx}>
+              CS
+            </ToggleButton>
+            <ToggleButton value="longitudinal" sx={toggleButtonSx}>
+              LS
+            </ToggleButton>
+            <ToggleButton value="area" sx={toggleButtonSx}>
+              Area
+            </ToggleButton>
+            <ToggleButton value="volume" sx={toggleButtonSx}>
+              Volume
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Paper>
+
+        <Activity
+          mode={survey && reportType === "volume" ? "visible" : "hidden"}
         >
-          Select Report Type
-        </Typography>
+          <Box display={"flex"} justifyContent={"center"}>
+            <BasicButton
+              value={"DEDUCTION"}
+              variant="outlined"
+              sx={{
+                fontSize: "12px",
+                padding: "5.6px 11px",
+                minWidth: "200px",
+              }}
+            />
+          </Box>
+        </Activity>
 
-        <ToggleButtonGroup
-          value={reportType}
-          exclusive
-          fullWidth
-          onChange={(e, value) => setReportType(value)}
-          sx={{ display: "flex", gap: 2 }}
-        >
-          <ToggleButton value="cross" sx={toggleButtonSx}>
-            CS
-          </ToggleButton>
-          <ToggleButton value="longitudinal" sx={toggleButtonSx}>
-            LS
-          </ToggleButton>
-          <ToggleButton value="area" sx={toggleButtonSx}>
-            Area
-          </ToggleButton>
-          <ToggleButton value="volume" sx={toggleButtonSx}>
-            Volume
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Paper>
-
-      <Activity mode={survey && reportType === "volume" ? "visible" : "hidden"}>
-        <Box display={"flex"} justifyContent={"center"}>
-          <BasicButton
-            value={"DEDUCTION"}
-            variant="outlined"
-            sx={{
-              fontSize: "12px",
-              padding: "5.6px 11px",
-              minWidth: "200px",
-            }}
-          />
-        </Box>
-      </Activity>
-
-      <Activity mode={survey && reportType ? "visible" : "hidden"}>
-        {/* Purpose Table */}
-        <TableContainer
-          component={Paper}
-          sx={{ borderRadius: 3, overflow: "hidden" }}
-        >
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                {/* <TableCell padding="checkbox">
+        <Activity mode={survey && reportType ? "visible" : "hidden"}>
+          {/* Purpose Table */}
+          <TableContainer
+            component={Paper}
+            sx={{ borderRadius: 3, overflow: "hidden" }}
+          >
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  {/* <TableCell padding="checkbox">
                 <Checkbox
                   color="primary"
                   checked={allSelected}
@@ -256,112 +267,113 @@ const Report = () => {
                   onChange={toggleSelectAll}
                 />
               </TableCell> */}
-                <TableCell></TableCell>
+                  <TableCell></TableCell>
 
-                <TableCell
-                  sx={{ fontWeight: "bold", fontSize: { xs: 12, sm: 14 } }}
-                >
-                  Purpose
-                </TableCell>
-                <TableCell
-                  sx={{ fontWeight: "bold", fontSize: { xs: 12, sm: 14 } }}
-                >
-                  Description
-                </TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {survey?.purposes?.map((purpose) => (
-                <TableRow
-                  key={purpose._id}
-                  hover
-                  onClick={() => togglePurpose(purpose)}
-                  sx={{
-                    cursor: "pointer",
-                    background: isSelected(purpose._id)
-                      ? "rgba(25,118,210,0.08)"
-                      : "inherit",
-                  }}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      color="primary"
-                      checked={isSelected(purpose._id)}
-                    />
+                  <TableCell
+                    sx={{ fontWeight: "bold", fontSize: { xs: 12, sm: 14 } }}
+                  >
+                    Purpose
                   </TableCell>
-
-                  <TableCell sx={{ fontSize: { xs: 12, sm: 14 } }}>
-                    {purpose.type}
-                  </TableCell>
-
-                  <TableCell sx={{ fontSize: { xs: 12, sm: 14 } }}>
-                    {purpose.description || "No description"}
+                  <TableCell
+                    sx={{ fontWeight: "bold", fontSize: { xs: 12, sm: 14 } }}
+                  >
+                    Description
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
 
-        {/* Selected Purposes */}
-        <Activity mode={selectedPurposes.length > 0 ? "visible" : "hidden"}>
-          <Paper
-            elevation={2}
-            sx={{
-              mt: 4,
-              p: 2,
-              borderRadius: 3,
-            }}
-          >
-            <Typography
-              variant="subtitle1"
-              fontWeight="bold"
-              mb={1}
-              sx={{ fontSize: { xs: "0.85rem", sm: "1rem" } }}
-            >
-              Selected Purposes
-            </Typography>
+              <TableBody>
+                {survey?.purposes?.map((purpose) => (
+                  <TableRow
+                    key={purpose._id}
+                    hover
+                    onClick={() => togglePurpose(purpose)}
+                    sx={{
+                      cursor: "pointer",
+                      background: isSelected(purpose._id)
+                        ? "rgba(25,118,210,0.08)"
+                        : "inherit",
+                    }}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        color="primary"
+                        checked={isSelected(purpose._id)}
+                      />
+                    </TableCell>
 
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-              {selectedPurposes.map((p) => (
-                <Chip
-                  key={p._id}
-                  label={p.type}
-                  onDelete={() =>
-                    setSelectedPurposes((prev) =>
-                      prev.filter((x) => x._id !== p._id)
-                    )
-                  }
-                  deleteIcon={<MdDelete />}
-                  sx={{
-                    fontSize: { xs: 10, sm: 12 },
-                    height: { xs: 24, sm: 28 },
-                  }}
-                />
-              ))}
-            </Box>
+                    <TableCell sx={{ fontSize: { xs: 12, sm: 14 } }}>
+                      {purpose.type}
+                    </TableCell>
 
-            <Divider sx={{ my: 2 }} />
+                    <TableCell sx={{ fontSize: { xs: 12, sm: 14 } }}>
+                      {purpose.description || "No description"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-            <Button
-              variant="contained"
-              fullWidth
-              size="large"
-              disabled={!reportType || selectedPurposes.length === 0}
-              onClick={generateReport}
+          {/* Selected Purposes */}
+          <Activity mode={selectedPurposes.length > 0 ? "visible" : "hidden"}>
+            <Paper
+              elevation={2}
               sx={{
-                py: { xs: 1, sm: 1.5 },
-                borderRadius: 2,
-                fontSize: { xs: "0.75rem", sm: "0.9rem" },
+                mt: 4,
+                p: 2,
+                borderRadius: 3,
               }}
             >
-              Generate Report
-            </Button>
-          </Paper>
+              <Typography
+                variant="subtitle1"
+                fontWeight="bold"
+                mb={1}
+                sx={{ fontSize: { xs: "0.85rem", sm: "1rem" } }}
+              >
+                Selected Purposes
+              </Typography>
+
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {selectedPurposes.map((p) => (
+                  <Chip
+                    key={p._id}
+                    label={p.type}
+                    onDelete={() =>
+                      setSelectedPurposes((prev) =>
+                        prev.filter((x) => x._id !== p._id)
+                      )
+                    }
+                    deleteIcon={<MdDelete />}
+                    sx={{
+                      fontSize: { xs: 10, sm: 12 },
+                      height: { xs: 24, sm: 28 },
+                    }}
+                  />
+                ))}
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                disabled={!reportType || selectedPurposes.length === 0}
+                onClick={generateReport}
+                sx={{
+                  py: { xs: 1, sm: 1.5 },
+                  borderRadius: 2,
+                  fontSize: { xs: "0.75rem", sm: "0.9rem" },
+                }}
+              >
+                Generate Report
+              </Button>
+            </Paper>
+          </Activity>
         </Activity>
-      </Activity>
-    </Stack>
+      </Stack>
+    </>
   );
 };
 
