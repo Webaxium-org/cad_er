@@ -538,3 +538,105 @@ export const convertFuel = (from, to, value) => {
     return to === "kmpl" ? kmpl : value;
   }
 };
+
+export const quizQuestions = [
+  {
+    id: 1,
+    question: "What is the primary use of an auto level in surveying?",
+    options: [
+      "Measuring angles",
+      "Measuring distances",
+      "Leveling or height difference measurement",
+      "Mapping geographical features",
+    ],
+    correctAnswer: 2,
+  },
+  {
+    id: 2,
+    question:
+      "Which part of the auto level helps in ensuring horizontal alignment?",
+    options: ["Bubble level", "Objective lens", "Tripod", "Focusing knob"],
+    correctAnswer: 0,
+  },
+  {
+    id: 3,
+    question: "The accuracy of an auto level is typically expressed in:",
+    options: [
+      "Millimeters per kilometer",
+      "Centimeters per kilometer",
+      "Meters per kilometer",
+      "Feet per mile",
+    ],
+    correctAnswer: 1,
+  },
+  {
+    id: 4,
+    question: "What is the typical setup requirement for an auto level?",
+    options: [
+      "On uneven ground",
+      "On a stable tripod",
+      "On a moving platform",
+      "Handheld",
+    ],
+    correctAnswer: 1,
+  },
+  {
+    id: 5,
+    question:
+      "Which of the following is crucial before taking a leveling reading?",
+    options: [
+      "Ensuring the bubble is centered",
+      "Calibrating the objective lens",
+      "Adjusting the focusing knob",
+      "Checking the battery level",
+    ],
+    correctAnswer: 0,
+  },
+  {
+    id: 6,
+    question: "In which scenario is an auto level most useful?",
+    options: [
+      "For angle measurements in the horizontal plane",
+      "For measuring vertical distances in the field",
+      "For plotting topographical maps",
+      "For direct distance measurement",
+    ],
+    correctAnswer: 1,
+  },
+  {
+    id: 7,
+    question: 'What does the term "collimation" refer to in surveying?',
+    options: [
+      "The focusing of the instrument",
+      "The horizontal alignment of the line of sight",
+      "The adjustment of the leveling staff",
+      "The calibration of the bubble level",
+    ],
+    correctAnswer: 1,
+  },
+  {
+    id: 8,
+    question:
+      "If the staff reading on point A is 2.847 and on point B is 3.462, and their reduced levels are 283.665 m and 284.295 m respectively, what is the collimation error per 100 m?",
+    options: ["0.040 m", "0.050 m", "0.070 m", "0.060 m"],
+    correctAnswer: 3,
+  },
+  {
+    id: 9,
+    question:
+      "Which method is used to interpolate contour points between two points?",
+    options: [
+      "Automatic calculation",
+      "Using measuring tapes",
+      "Taking picture of area",
+      "Using LIDAR",
+    ],
+    correctAnswer: 0,
+  },
+  {
+    id: 10,
+    question: "Which unit collects data in total station processes?",
+    options: ["Data collector", "EDM", "Storage system", "Microprocessor"],
+    correctAnswer: 3,
+  },
+];

@@ -16,7 +16,11 @@ const Sidebar = () => {
         drawerList={<DrawerList toggleDrawer={toggleDrawer} />}
       />
 
-      <IoMenu size={28} onClick={toggleDrawer(true)} />
+      <IoMenu
+        size={28}
+        onClick={toggleDrawer(true)}
+        style={{ cursor: "pointer" }}
+      />
     </>
   );
 };

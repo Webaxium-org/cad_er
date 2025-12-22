@@ -1,5 +1,5 @@
-import User from '../models/user.js';
-import bcrypt from 'bcryptjs';
+import User from "../models/user.js";
+import bcrypt from "bcryptjs";
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -13,16 +13,16 @@ export const getAllUsers = async (req, res, next) => {
 
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
       ];
     }
 
     const users = await User.find(filter)
       .sort({ createdAt: -1 })
-      .populate('organization', 'name code')
-      .populate('createdBy', 'name email')
+      .populate("organization", "name code")
+      .populate("createdBy", "name email")
       .lean();
 
     res.status(200).json({
@@ -30,8 +30,8 @@ export const getAllUsers = async (req, res, next) => {
       count: users.length,
       message:
         users.length > 0
-          ? `${users.length} user${users.length > 1 ? 's' : ''} found`
-          : 'No users found',
+          ? `${users.length} user${users.length > 1 ? "s" : ""} found`
+          : "No users found",
       users,
     });
   } catch (err) {
@@ -42,14 +42,14 @@ export const getAllUsers = async (req, res, next) => {
 export const getUserById = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate('organization', 'name code')
-      .populate('createdBy', 'name email')
+      .populate("organization", "name code")
+      .populate("createdBy", "name email")
       .lean();
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
@@ -78,7 +78,7 @@ export const createUser = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'User created successfully',
+      message: "User created successfully",
       user,
     });
   } catch (err) {
@@ -103,13 +103,13 @@ export const updateUser = async (req, res, next) => {
     if (!updated) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'User updated successfully',
+      message: "User updated successfully",
       user: updated,
     });
   } catch (err) {
@@ -124,13 +124,26 @@ export const deleteUser = async (req, res, next) => {
     if (!deleted) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'User deleted successfully',
+      message: "User deleted successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const submitQuiz = async (req, res, next) => {
+  try {
+    const { userId, answers } = req.body;
+    // Process quiz submission logic here
+    res.status(200).json({
+      success: true,
+      message: "Quiz submitted successfully",
     });
   } catch (err) {
     next(err);

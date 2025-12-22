@@ -1,12 +1,12 @@
 // routes/ProtectedRoute.jsx
-import { Navigate, Outlet } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { Navigate, Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const ProtectedRoute = ({ requiredRoles = [] }) => {
-  const { user } = useSelector((state) => state.user);
+  const { user, loggedIn } = useSelector((state) => state.user);
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to={loggedIn === false ? "/login" : "/landing"} />;
   }
 
   if (requiredRoles?.length) {

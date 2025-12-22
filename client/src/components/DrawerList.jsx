@@ -71,17 +71,13 @@ const DrawerList = ({ toggleDrawer }) => {
   const handleLogout = async () => {
     try {
       await logoutUser();
-      dispatch(logOut());
-      persistor.purge();
-
-      navigate("/login");
     } catch (err) {
       console.error("Logout error:", err);
-      // Even if backend fails, still clear client state
+    } finally {
       dispatch(logOut());
       persistor.purge();
 
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
   };
 

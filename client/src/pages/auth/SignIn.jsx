@@ -11,17 +11,16 @@ import {
   CssBaseline,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import { useDispatch } from "react-redux";
 import { stopLoading } from "../../redux/loadingSlice";
-import { jwtDecode } from "jwt-decode";
 import { googleLogin, loginUser } from "../../services/indexServices";
+import { GoogleIcon, FacebookIcon } from "./components/CustomIcons";
 import { showAlert } from "../../redux/alertSlice";
 import { handleFormError } from "../../utils/handleFormError";
 import { useNavigate } from "react-router-dom";
 import { setUser } from "../../redux/userSlice";
 import BasicButtons from "../../components/BasicButton";
-import { GoogleIcon, FacebookIcon } from "./components/CustomIcons";
 import BasicInput from "../../components/BasicInput";
 import Logo from "../../assets/logo/CADer logo-loader.png";
 import BackgroundImage from "../../assets/back-ground-img.png";
@@ -104,16 +103,24 @@ export default function SignIn() {
   const [loading, setLoading] = React.useState(false);
 
   const handleSuccessLogin = (user) => {
+    const isQuizPending = user?.type === "Student" && !user?.isQuizCompleted;
+
+    const link = isQuizPending ? "/quiz" : "/";
+
+    const message = isQuizPending
+      ? `Hi ${user?.name}, before getting started, please complete the quiz.`
+      : `Hi ${user?.name}, everything's ready for you. Let's get started!`;
+
     dispatch(setUser(user));
 
     dispatch(
       showAlert({
         type: "success",
-        message: `Hi ${user?.name}, everything's ready for you. Let's get started!`,
+        message,
       })
     );
 
-    navigate("/");
+    navigate(link);
   };
 
   const handleInputChange = async (event) => {
@@ -158,26 +165,22 @@ export default function SignIn() {
     }
   };
 
-  // ✅ Google Sign-In Success
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      jwtDecode(credentialResponse.credential);
-
-      // Send token to your backend
+  const googleAuth = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
       const { data } = await googleLogin({
-        data: credentialResponse.credential,
+        accessToken: tokenResponse.access_token,
+        action: "login",
       });
 
       handleSuccessLogin(data.user);
-    } catch (error) {
-      handleFormError(error, null, dispatch, navigate);
-    }
-  };
-
-  const handleGoogleError = () => {
-    const error = new Error("Google Login Failed. Please try again.");
-    handleFormError(error, null, dispatch, navigate);
-  };
+    },
+    onError: () => {
+      showAlert({
+        type: "error",
+        message: "Google sign-in failed",
+      });
+    },
+  });
 
   React.useEffect(() => {
     dispatch(stopLoading());
@@ -195,7 +198,7 @@ export default function SignIn() {
         <Box
           sx={{
             position: "absolute",
-            inset: 0, // 🔥 replaces top/left/width/height
+            inset: 0,
             backgroundImage: `url(${BackgroundImage})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
@@ -283,26 +286,43 @@ export default function SignIn() {
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {/* ✅ Google Login Button */}
-            <Box className="google-sign-in-wrapper">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-              />
-            </Box>
-            <Button
+            <BasicButtons
+              fullWidth={true}
+              variant="outlined"
+              onClick={() => googleAuth()}
+              startIcon={<GoogleIcon />}
+              value={"Sign in with Google"}
+              sx={{
+                textTransform: "none",
+                height: "2.5rem",
+                color: "black",
+                backgroundColor: "#f5f6fa4d",
+                boxShadow: "none",
+                transition:
+                  "background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+                border: "1px solid hsl(220, 20%, 88%)",
+                "&:hover": {
+                  backgroundImage: "none",
+                  backgroundColor: "hsl(220, 30%, 94%)",
+                  borderColor: "hsl(220, 20%, 80%)",
+                },
+              }}
+            />
+
+            {/* <Button
               fullWidth
               variant="outlined"
               onClick={() => alert("Sign in with Facebook")}
               startIcon={<FacebookIcon />}
             >
               Sign in with Facebook
-            </Button>
+            </Button> */}
             <Typography sx={{ textAlign: "center" }}>
               Don&apos;t have an account?{" "}
               <Link
-                href="/material-ui/getting-started/templates/sign-in/"
+                component="button"
                 variant="body2"
-                sx={{ alignSelf: "center" }}
+                onClick={() => navigate("/register")}
               >
                 Sign up
               </Link>

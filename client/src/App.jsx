@@ -1,27 +1,30 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/home';
-import SurveyLanding from './pages/survey';
-import RoadSurveyForm from './pages/survey/RoadSurveyForm';
-import RootLayout from './layout/RootLayout';
-import RoadSurveyRowsForm from './pages/survey/RoadSurveyRowsForm';
-import Unauthorized from './pages/errors/Unauthorized';
-import ServerError from './pages/errors/ServerError';
-import NotFound from './pages/errors/NotFound';
-import FieldBook from './pages/survey/components/FieldBook';
-import Report from './pages/survey/Report';
-import AreaReport from './pages/survey/AreaReport';
-import VolumeReport from './pages/survey/VolumeReport';
-import SignIn from './pages/auth';
-import PublicRoute from './routes/PublicRoute';
-import ProtectedRoute from './routes/ProtectedRoute';
-import CrossSectionReport from './pages/survey/CrossSectionReport';
-import Profile from './pages/user/Profile';
-import OrganizationsDashboard from './pages/organization';
-import UsersDashboard from './pages/user';
-import LongitudinalSectionReport from './pages/survey/LongitudinalSectionReport';
-import ProjectsList from './pages/survey/ProjectsList';
-import CameraPage from './pages/home/components/CameraPage';
-import SelectEquipment from './pages/survey/SelectEquipment';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/home";
+import SurveyLanding from "./pages/survey";
+import RoadSurveyForm from "./pages/survey/RoadSurveyForm";
+import RootLayout from "./layout/RootLayout";
+import RoadSurveyRowsForm from "./pages/survey/RoadSurveyRowsForm";
+import Unauthorized from "./pages/errors/Unauthorized";
+import ServerError from "./pages/errors/ServerError";
+import NotFound from "./pages/errors/NotFound";
+import FieldBook from "./pages/survey/components/FieldBook";
+import Report from "./pages/survey/Report";
+import AreaReport from "./pages/survey/AreaReport";
+import VolumeReport from "./pages/survey/VolumeReport";
+import SignIn from "./pages/auth/SignIn";
+import SignUp from "./pages/auth/SignUp";
+import PublicRoute from "./routes/PublicRoute";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import CrossSectionReport from "./pages/survey/CrossSectionReport";
+import Profile from "./pages/user/Profile";
+import OrganizationsDashboard from "./pages/organization";
+import UsersDashboard from "./pages/user";
+import LongitudinalSectionReport from "./pages/survey/LongitudinalSectionReport";
+import ProjectsList from "./pages/survey/ProjectsList";
+import CameraPage from "./pages/home/components/CameraPage";
+import SelectEquipment from "./pages/survey/SelectEquipment";
+import Landing from "./pages/landing";
+import Quiz from "./pages/quiz";
 
 function App() {
   return (
@@ -29,7 +32,9 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<PublicRoute />}>
+            <Route path="/landing" element={<Landing />} />
             <Route path="/login" element={<SignIn />} />
+            <Route path="/register" element={<SignUp />} />
           </Route>
 
           <Route element={<ProtectedRoute />}>
@@ -38,6 +43,8 @@ function App() {
               <Route path="/camera" element={<CameraPage />} />
 
               <Route path="/profile" element={<Profile />} />
+
+              <Route path="/quiz" element={<Quiz />} />
 
               <Route path="organizations">
                 <Route index element={<OrganizationsDashboard />} />

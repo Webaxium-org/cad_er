@@ -2,8 +2,9 @@ import { Box, Stack } from "@mui/material";
 import BackgroundImage from "../assets/background-img.png";
 import logo from "../assets/logo/CADer logo-main.png";
 import Sidebar from "./Sidebar";
+import { Activity } from "react";
 
-const SmallHeader = () => {
+const SmallHeader = ({ sidebar = true }) => {
   return (
     <Stack
       p={2}
@@ -36,7 +37,9 @@ const SmallHeader = () => {
         zIndex={2}
       >
         <img src={logo} alt="CADer" style={{ width: "65px" }} />
-        <Sidebar />
+        <Activity mode={sidebar ? "visible" : "hidden"}>
+          <Sidebar />
+        </Activity>
       </Box>
     </Stack>
   );

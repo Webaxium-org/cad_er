@@ -1,15 +1,15 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { persistStore, persistReducer } from "redux-persist";
+import storage from "redux-persist/lib/storage";
 
-import loadingReducer from './loadingSlice';
-import alertReducer from './alertSlice';
-import userReducer from './userSlice';
+import loadingReducer from "./loadingSlice";
+import alertReducer from "./alertSlice";
+import userReducer from "./userSlice";
 
 const persistConfig = {
-  key: 'root',
+  key: "root",
   storage,
-  whitelist: ['user'],
+  whitelist: ["user"],
   // blacklist: ['loading', 'alert'],
 };
 
@@ -26,7 +26,11 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'], // ✅ Ignore redux-persist actions
+        ignoredActions: [
+          "persist/PERSIST",
+          "persist/REHYDRATE",
+          "persist/PURGE",
+        ], // ✅ Ignore redux-persist actions
       },
     }),
 });

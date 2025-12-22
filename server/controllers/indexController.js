@@ -1,10 +1,6 @@
-import bcrypt from 'bcryptjs';
-import User from '../models/user.js';
-import jwt from '../utils/jwt.js';
-
-import { OAuth2Client } from 'google-auth-library';
-
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+import bcrypt from "bcryptjs";
+import User from "../models/user.js";
+import jwt from "../utils/jwt.js";
 
 export const loginUser = async (req, res, next) => {
   try {
@@ -13,14 +9,14 @@ export const loginUser = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw Object.assign(new Error('Invalid credentials'), {
+      throw Object.assign(new Error("Invalid credentials"), {
         statusCode: 401,
       });
     }
 
-    if (user.authProvider === 'google') {
+    if (user.authProvider === "google") {
       throw Object.assign(
-        new Error('Please sign in with Google, not with email/password'),
+        new Error("Please sign in with Google, not with email/password"),
         {
           statusCode: 401,
         }
@@ -30,13 +26,13 @@ export const loginUser = async (req, res, next) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw Object.assign(new Error('Invalid credentials'), {
+      throw Object.assign(new Error("Invalid credentials"), {
         statusCode: 401,
       });
     }
 
     // Check if the user's status is not "Active"
-    if (user.status !== 'Active') {
+    if (user.status !== "Active") {
       throw Object.assign(
         new Error(`Login failed. Your account is currently ${user.status}.`),
         { statusCode: 403 } // Forbidden
@@ -47,19 +43,19 @@ export const loginUser = async (req, res, next) => {
 
     const { password: _, ...userWithoutPassword } = user.toObject();
 
-    const isProd = process.env.NODE_ENV === 'production';
+    const isProd = process.env.NODE_ENV === "production";
 
     res
-      .cookie('access__', token, {
+      .cookie("access__", token, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? 'none' : 'lax',
-        path: '/',
-        domain: isProd ? '.getcader.com' : undefined,
+        sameSite: isProd ? "none" : "lax",
+        path: "/",
+        domain: isProd ? ".getcader.com" : undefined,
         maxAge: Number(process.env.TOKEN_EXPIRY_DAYS) * 24 * 60 * 60 * 1000,
       })
       .status(200)
-      .json({ status: 'success', user: { ...userWithoutPassword } });
+      .json({ status: "success", user: { ...userWithoutPassword } });
   } catch (err) {
     next(err);
   }
@@ -68,52 +64,145 @@ export const loginUser = async (req, res, next) => {
 export const googleLogin = async (req, res, next) => {
   try {
     const {
-      body: { data },
+      body: { accessToken, type, action },
     } = req;
 
-    // verify Google token
-    const ticket = await client.verifyIdToken({
-      idToken: data,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    if (action !== "login" && action !== "register") {
+      throw Object.assign(new Error("Invalid action"), {
+        statusCode: 400,
+      });
+    }
 
-    const payload = ticket.getPayload();
-    const { email, name, sub } = payload;
+    if (action === "register" && !["Student", "Professional"].includes(type)) {
+      throw Object.assign(new Error("Invalid user type for registration"), {
+        statusCode: 400,
+      });
+    }
 
-    // check if user exists
+    const googleRes = await fetch(
+      `https://www.googleapis.com/oauth2/v3/userinfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const payload = await googleRes.json();
+    const { email, name, sub, picture } = payload;
+
+    if (!email) {
+      throw Object.assign(new Error("Google authentication failed"), {
+        statusCode: 401,
+      });
+    }
+
     let user = await User.findOne({ email });
+
+    if (action === "login" && !user) {
+      throw Object.assign(
+        new Error("Account not found. Please sign up first."),
+        { statusCode: 404 }
+      );
+    }
 
     if (!user) {
       user = await User.create({
         name,
         email,
         password: await bcrypt.hash(sub, 10),
-        designation: 'User',
-        department: 'General',
-        gender: 'Not Defined',
-        role: 'Guest',
-        status: 'Active',
-        authProvider: 'google',
+        type,
+        authProvider: "google",
+        status: "Active",
       });
     }
 
     const token = jwt(user._id);
 
-    const { password: _, ...userWithoutPassword } = user.toObject();
+    const { password, ...userWithoutPassword } = user.toObject();
 
-    const isProd = process.env.NODE_ENV === 'production';
+    const isProd = process.env.NODE_ENV === "production";
 
     res
-      .cookie('access__', token, {
+      .cookie("access__", token, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? 'none' : 'lax',
-        path: '/',
-        domain: isProd ? '.getcader.com' : undefined,
+        sameSite: isProd ? "none" : "lax",
+        path: "/",
+        domain: isProd ? ".getcader.com" : undefined,
         maxAge: Number(process.env.TOKEN_EXPIRY_DAYS) * 24 * 60 * 60 * 1000,
       })
       .status(200)
-      .json({ status: 'success', user: { ...userWithoutPassword } });
+      .json({
+        status: "success",
+        user: userWithoutPassword,
+      });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const registerUser = async (req, res, next) => {
+  try {
+    const {
+      body: { name, email, password, type },
+    } = req;
+
+    // Validate required fields
+    if (!name || !email || !password || !type) {
+      throw Object.assign(new Error("All fields are required"), {
+        statusCode: 400,
+      });
+    }
+
+    // Validate type
+    if (!["Student", "Professional"].includes(type)) {
+      throw Object.assign(new Error("Invalid user type"), { statusCode: 400 });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw Object.assign(new Error("Email already registered"), {
+        statusCode: 409,
+      });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      type,
+      authProvider: "local",
+      status: "Active",
+    });
+
+    // Generate JWT token
+    const token = jwt(newUser._id);
+
+    const { password: _, ...userWithoutPassword } = newUser.toObject();
+
+    const isProd = process.env.NODE_ENV === "production";
+
+    // Set cookie
+    res
+      .cookie("access__", token, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        path: "/",
+        domain: isProd ? ".getcader.com" : undefined,
+        maxAge: Number(process.env.TOKEN_EXPIRY_DAYS) * 24 * 60 * 60 * 1000,
+      })
+      .status(201)
+      .json({
+        status: "success",
+        user: userWithoutPassword,
+      });
   } catch (err) {
     next(err);
   }
@@ -121,19 +210,19 @@ export const googleLogin = async (req, res, next) => {
 
 export const logoutUser = (req, res, next) => {
   try {
-    const isProd = process.env.NODE_ENV === 'production';
+    const isProd = process.env.NODE_ENV === "production";
 
-    res.clearCookie('access__', {
+    res.clearCookie("access__", {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
-      path: '/',
-      domain: isProd ? '.getcader.com' : undefined,
+      sameSite: isProd ? "none" : "lax",
+      path: "/",
+      domain: isProd ? ".getcader.com" : undefined,
     });
 
     res.status(200).json({
-      status: 'success',
-      message: 'Logged out successfully',
+      status: "success",
+      message: "Logged out successfully",
     });
   } catch (err) {
     next(err);
@@ -146,7 +235,7 @@ export const getDashboard = async (req, res, next) => {
       user: { userId, organization },
     } = req;
 
-    res.status(200).json({ status: 'success' });
+    res.status(200).json({ status: "success" });
   } catch (err) {
     next(err);
   }
