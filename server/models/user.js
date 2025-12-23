@@ -79,6 +79,7 @@ const UserSchema = new Schema(
       index: true,
       required: true,
     },
+    qualification: String,
     isQuizCompleted: {
       type: Boolean,
       default: false,

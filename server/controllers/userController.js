@@ -139,11 +139,24 @@ export const deleteUser = async (req, res, next) => {
 
 export const submitQuiz = async (req, res, next) => {
   try {
-    const { userId, answers } = req.body;
+    const {
+      user: { userId },
+      body: { score },
+    } = req;
+
+    const user = await User.findById(userId);
+
+    user.isQuizCompleted = true;
+    user.quizScore = score;
+
+    await user.save();
+
     // Process quiz submission logic here
     res.status(200).json({
       success: true,
       message: "Quiz submitted successfully",
+      isQuizCompleted: user.isQuizCompleted,
+      quizScore: user.quizScore,
     });
   } catch (err) {
     next(err);

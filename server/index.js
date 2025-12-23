@@ -39,8 +39,8 @@ app.use(cookieParser());
 
 // 🟢 Routes
 app.use("/api", indexRouter);
-app.use("/api/organization", organizationRouter);
-app.use("/api/user", userRouter);
+app.use("/api/organizations", organizationRouter);
+app.use("/api/users", userRouter);
 app.use("/api/surveys", surveyRouter);
 
 // 🟢 Error Handler Middleware (Keep at the End)
