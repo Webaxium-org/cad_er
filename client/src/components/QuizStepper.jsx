@@ -9,12 +9,16 @@ import {
   FormControlLabel,
   LinearProgress,
   Stack,
-  useMediaQuery,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useState } from "react";
+
 import { quizQuestions } from "../constants";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { submitQuiz } from "../services/userServices";
+import { handleFormError } from "../utils/handleFormError";
+import { setUser } from "../redux/userSlice";
+import BasicButton from "./BasicButton";
 
 const getResultMessage = (score, total) => {
   const percentage = Math.round((score / total) * 100);
@@ -55,8 +59,9 @@ const getResultMessage = (score, total) => {
 };
 
 export default function QuizStepper() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user } = useSelector((state) => state.user);
 
   const [activeStep, setActiveStep] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -85,18 +90,34 @@ export default function QuizStepper() {
   };
 
   const finishQuiz = async () => {
-    let total = 0;
-    quizQuestions.forEach((q) => {
-      if (answers[q.id] === q.correctAnswer) total++;
-    });
+    try {
+      let total = 0;
+      quizQuestions.forEach((q) => {
+        if (answers[q.id] === q.correctAnswer) total++;
+      });
 
-    setScore(total);
-    setFinished(true);
+      setScore(total);
+      setFinished(true);
 
-    await axios.post("/quiz", {
-      score: total,
-      completedQuestions: Object.keys(answers),
-    });
+      const { data } = await submitQuiz({
+        score: total,
+        completedQuestions: Object.keys(answers),
+      });
+
+      if (data.success) {
+        const updatedUser = {
+          ...user,
+          isQuizCompleted: data.isQuizCompleted,
+          quizScore: data.quizScore,
+        };
+
+        dispatch(setUser(updatedUser));
+      } else {
+        throw Error("Failed to fetch purposes");
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    }
   };
 
   if (finished) {
@@ -126,7 +147,7 @@ export default function QuizStepper() {
             </Typography>
 
             <Box
-              mt={3}
+              my={3}
               sx={{
                 bgcolor: "success.light",
                 color: "success.contrastText",
@@ -139,19 +160,15 @@ export default function QuizStepper() {
               </Typography>
 
               <Typography variant="body2" mt={1}>
-                Continue to payment to unlock the course.
+                Continue to home page to unlock the course.
               </Typography>
             </Box>
 
-            <Button
-              fullWidth
-              size="large"
-              variant="contained"
-              sx={{ mt: 3 }}
-              //   onClick={() => navigate("/payment")}
-            >
-              Continue to Payment
-            </Button>
+            <BasicButton
+              fullWidth={true}
+              value={"Continue"}
+              onClick={() => navigate("/")}
+            />
           </CardContent>
         </Card>
       </Box>

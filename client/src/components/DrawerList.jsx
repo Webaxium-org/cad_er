@@ -4,7 +4,7 @@ import { GoPerson } from "react-icons/go";
 import { GoOrganization } from "react-icons/go";
 import { PiUsersThree } from "react-icons/pi";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { logOut } from "../redux/userSlice";
 import { persistor } from "../redux/store";
 import {
@@ -59,6 +59,8 @@ const DrawerList = ({ toggleDrawer }) => {
   const dispatch = useDispatch();
 
   const navigate = useNavigate();
+
+  const location = useLocation();
 
   const { user } = useSelector((state) => state.user);
 
@@ -150,8 +152,10 @@ const DrawerList = ({ toggleDrawer }) => {
                 borderRadius: "8px",
                 mx: 1,
                 my: 0.5,
+                backgroundColor:
+                  location.pathname === item.path ? "#006ffd29" : "transparent",
                 "&:hover": {
-                  backgroundColor: "rgba(99, 52, 250, 0.08)",
+                  backgroundColor: "#006ffd29",
                 },
               }}
             >

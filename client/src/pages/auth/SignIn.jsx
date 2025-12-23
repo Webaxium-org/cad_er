@@ -105,8 +105,6 @@ export default function SignIn() {
   const handleSuccessLogin = (user) => {
     const isQuizPending = user?.type === "Student" && !user?.isQuizCompleted;
 
-    const link = isQuizPending ? "/quiz" : "/";
-
     const message = isQuizPending
       ? `Hi ${user?.name}, before getting started, please complete the quiz.`
       : `Hi ${user?.name}, everything's ready for you. Let's get started!`;
@@ -120,7 +118,7 @@ export default function SignIn() {
       })
     );
 
-    navigate(link);
+    navigate("/");
   };
 
   const handleInputChange = async (event) => {

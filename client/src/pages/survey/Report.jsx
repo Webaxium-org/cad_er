@@ -164,7 +164,7 @@ const Report = () => {
         p={2}
         spacing={2}
         className="overlapping-header"
-        sx={{ maxWidth: 900, mx: "auto" }}
+        sx={{ mx: "auto" }}
       >
         <Typography variant="h6" fontSize={18} fontWeight={700} align="center">
           Generate Survey Report

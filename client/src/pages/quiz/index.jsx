@@ -14,7 +14,7 @@ const Quiz = () => {
 
   return (
     <>
-      <SmallHeader sidebar={false} />
+      <SmallHeader />
       <Box className="overlapping-header">
         <QuizStepper />
       </Box>

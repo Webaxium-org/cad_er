@@ -40,46 +40,59 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<RootLayout />}>
               <Route index element={<Home />} />
-              <Route path="/camera" element={<CameraPage />} />
+              <Route path="camera" element={<CameraPage />} />
+              <Route path="profile" element={<Profile />} />
 
-              <Route path="/profile" element={<Profile />} />
+              {/* 🎓 STUDENT ONLY */}
+              <Route path="quiz" element={<Quiz />} />
 
-              <Route path="/quiz" element={<Quiz />} />
-
-              <Route path="organizations">
-                <Route index element={<OrganizationsDashboard />} />
-              </Route>
-
-              <Route path="users">
-                <Route index element={<UsersDashboard />} />
-              </Route>
-
-              <Route path="survey">
-                <Route index element={<ProjectsList />} />
-                <Route path="select-equipment" element={<SelectEquipment />} />
-                <Route path="add-survey" element={<SurveyLanding />} />
-                <Route path="report" element={<Report />} />
-                <Route path=":id/report" element={<Report />} />
-
-                <Route path="road-survey">
-                  <Route index element={<RoadSurveyForm />} />
-                  <Route path=":id" element={<RoadSurveyForm />} />
-                  <Route path=":id/rows" element={<RoadSurveyRowsForm />} />
-
-                  <Route path=":id/field-book" element={<FieldBook />} />
-                  <Route path=":id/report" element={<CrossSectionReport />} />
-                  <Route
-                    path=":id/longitudinal-report"
-                    element={<LongitudinalSectionReport />}
-                  />
-                  <Route path=":id/area-report" element={<AreaReport />} />
-                  <Route path=":id/volume-report" element={<VolumeReport />} />
+              {/* 🔐 ADMIN ONLY */}
+              <Route
+                element={<ProtectedRoute requiredRoles={["Super Admin"]} />}
+              >
+                <Route path="organizations">
+                  <Route index element={<OrganizationsDashboard />} />
+                </Route>
+                <Route path="users">
+                  <Route index element={<UsersDashboard />} />
                 </Route>
               </Route>
 
-              {/* Error Pages */}
-              <Route path="/unauthorized" element={<Unauthorized />} />
-              <Route path="/server-error" element={<ServerError />} />
+              {/* 👷 PROFESSIONAL ONLY */}
+              <Route
+                element={<ProtectedRoute requiredTypes={["Professional"]} />}
+              >
+                <Route path="survey">
+                  <Route index element={<ProjectsList />} />
+                  <Route
+                    path="select-equipment"
+                    element={<SelectEquipment />}
+                  />
+                  <Route path="add-survey" element={<SurveyLanding />} />
+                  <Route path="report" element={<Report />} />
+                  <Route path=":id/report" element={<Report />} />
+                  <Route path="road-survey">
+                    <Route index element={<RoadSurveyForm />} />
+                    <Route path=":id" element={<RoadSurveyForm />} />
+                    <Route path=":id/rows" element={<RoadSurveyRowsForm />} />
+                    <Route path=":id/field-book" element={<FieldBook />} />
+                    <Route path=":id/report" element={<CrossSectionReport />} />
+                    <Route
+                      path=":id/longitudinal-report"
+                      element={<LongitudinalSectionReport />}
+                    />
+                    <Route path=":id/area-report" element={<AreaReport />} />
+                    <Route
+                      path=":id/volume-report"
+                      element={<VolumeReport />}
+                    />
+                  </Route>
+                </Route>
+              </Route>
+
+              {/* Errors */}
+              <Route path="unauthorized" element={<Unauthorized />} />
+              <Route path="server-error" element={<ServerError />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Route>
