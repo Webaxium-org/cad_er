@@ -8,7 +8,7 @@ import UnlockCourseBanner from "./UnlockCourseBanner";
 import VideoItem from "./VideoItem";
 import CourseUnlockModal from "./CourseUnlockModal";
 
-const course = {
+const courseDetails = {
   title: "AutoCAD Mastery Course",
   price: 999,
   isPurchased: false,
@@ -29,7 +29,9 @@ const course = {
 };
 
 const StudentDashboard = ({ user }) => {
+  const [course, setCourse] = useState(courseDetails);
   const [open, setOpen] = useState(false);
+
   return (
     <Stack spacing={2} sx={{ userSelect: "none" }} overflow={"hidden"}>
       <Stack
@@ -117,6 +119,10 @@ const StudentDashboard = ({ user }) => {
         <CourseUnlockModal
           open={open}
           course={course}
+          onUnlock={() => {
+            setCourse({ ...course, isPurchased: true });
+            setOpen(false);
+          }}
           onClose={() => setOpen(false)}
         />
       </Box>

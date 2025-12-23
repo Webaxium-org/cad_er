@@ -7,7 +7,7 @@ import {
   Typography,
 } from "@mui/material";
 
-const CourseUnlockModal = ({ open, course, onClose }) => {
+const CourseUnlockModal = ({ open, course, onUnlock, onClose }) => {
   return (
     <Dialog open={open} onClose={onClose} fullWidth>
       <DialogTitle>Unlock Full Course</DialogTitle>
@@ -25,7 +25,9 @@ const CourseUnlockModal = ({ open, course, onClose }) => {
 
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained">Proceed to Pay</Button>
+        <Button variant="contained" onClick={onUnlock}>
+          Proceed to Pay
+        </Button>
       </DialogActions>
     </Dialog>
   );
