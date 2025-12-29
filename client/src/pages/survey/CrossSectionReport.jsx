@@ -602,6 +602,9 @@ const CrossSectionReport = () => {
             backgroundColor: "#f4f6f8",
             borderBottom: "1px solid #e0e0e0",
 
+            borderTopLeftRadius: 4,
+            borderTopRightRadius: 4,
+
             // Optional: match table cell look
             boxSizing: "border-box",
           }}
@@ -613,6 +616,8 @@ const CrossSectionReport = () => {
           component={Paper}
           sx={{
             maxHeight: 440,
+            overflowX: "auto", // 👈 REQUIRED
+            borderRadius: 0,
           }}
         >
           <Table stickyHeader sx={{ tableLayout: "fixed" }}>
@@ -733,16 +738,15 @@ const CrossSectionReport = () => {
                               </TableBody>
                             </Table>
 
-                            <TableRow>
-                              <TableCell
-                                colSpan={selectedCs?.series?.length + 1}
+                            <Box py={2}>
+                              <Box
                                 sx={{
                                   position: "sticky",
-                                  left: 0,
-                                  zIndex: 6,
+                                  left: 0, // 👈 sticks horizontally
+                                  zIndex: 10,
                                   backgroundColor: "#fff",
-                                  textAlign: "left",
-                                  borderBottom: 0,
+                                  width: "fit-content",
+                                  paddingLeft: 2,
                                 }}
                               >
                                 <BasicButton
@@ -751,8 +755,8 @@ const CrossSectionReport = () => {
                                   sx={{ py: 1, px: 2 }}
                                   onClick={handleUpdateReducedLevels}
                                 />
-                              </TableCell>
-                            </TableRow>
+                              </Box>
+                            </Box>
                           </Collapse>
                         </TableCell>
                       </TableRow>
