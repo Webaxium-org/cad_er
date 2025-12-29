@@ -1,7 +1,7 @@
 import Survey from "../models/survey.js";
 import SurveyPurpose from "../models/surveyPurpose.js";
-import SurveyRow from "../models/surveyRowSchema.js";
-import History from "../models/historySchema.js";
+import SurveyRow from "../models/surveyRows.js";
+import History from "../models/history.js";
 import { isValidObjectId, calculateReducedLevel } from "../helper/index.js";
 import createHttpError from "http-errors";
 import mongoose from "mongoose";

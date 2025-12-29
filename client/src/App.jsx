@@ -25,6 +25,8 @@ import CameraPage from "./pages/home/components/CameraPage";
 import SelectEquipment from "./pages/survey/SelectEquipment";
 import Landing from "./pages/landing";
 import Quiz from "./pages/quiz";
+import TicketsDashboard from "./pages/tickets";
+import Followup from "./pages/tickets/Followup";
 
 function App() {
   return (
@@ -87,6 +89,11 @@ function App() {
                       element={<VolumeReport />}
                     />
                   </Route>
+                </Route>
+
+                <Route path="tickets">
+                  <Route index element={<TicketsDashboard />} />
+                  <Route path=":id/followup" element={<Followup />} />
                 </Route>
               </Route>
 

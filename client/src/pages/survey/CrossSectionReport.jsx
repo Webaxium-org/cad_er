@@ -742,7 +742,7 @@ const CrossSectionReport = () => {
                               <Box
                                 sx={{
                                   position: "sticky",
-                                  left: 0, // 👈 sticks horizontally
+                                  left: 0,
                                   zIndex: 10,
                                   backgroundColor: "#fff",
                                   width: "fit-content",

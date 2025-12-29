@@ -6,6 +6,7 @@ import ProfessionalDashboard from "./components/ProfessionalDashboard";
 import StudentDashboard from "./components/StudentDashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import { getDashboard } from "../../services/indexServices";
+import { handleFormError } from "../../utils/handleFormError";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -21,7 +22,7 @@ const Home = () => {
       const { data } = await getDashboard();
       setData(data);
     } catch (error) {
-      handleFormError(error, null, dispatch);
+      handleFormError(error, null, dispatch, navigate);
     } finally {
       dispatch(stopLoading());
     }

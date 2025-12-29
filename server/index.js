@@ -10,6 +10,7 @@ import indexRouter from "./routes/indexRoute.js";
 import organizationRouter from "./routes/organizationRoute.js";
 import userRouter from "./routes/userRoute.js";
 import surveyRouter from "./routes/surveyRoute.js";
+import ticketRouter from "./routes/ticketRoute.js";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api", indexRouter);
 app.use("/api/organizations", organizationRouter);
 app.use("/api/users", userRouter);
 app.use("/api/surveys", surveyRouter);
+app.use("/api/tickets", ticketRouter);
 
 // 🟢 Error Handler Middleware (Keep at the End)
 app.use(errorHandler);

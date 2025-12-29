@@ -22,6 +22,7 @@ import {
 import { useEffect, useState } from "react";
 import { logoutUser } from "../services/indexServices";
 import BasicDivider from "./BasicDevider";
+import { BiSupport } from "react-icons/bi";
 
 const menuListDetails = [
   {
@@ -52,6 +53,12 @@ const menuListDetails = [
       // "Chief Surveyor",
       // "Senior Surveyor",
     ],
+  },
+  {
+    label: "Tickets",
+    icon: <BiSupport />,
+    path: "/tickets",
+    required: ["Professional"],
   },
 ];
 
@@ -86,7 +93,11 @@ const DrawerList = ({ toggleDrawer }) => {
   useEffect(() => {
     if (user) {
       const filteredMenu = menuListDetails.filter((menu) =>
-        menu.required ? menu.required.includes(user.role) : true
+        menu.required
+          ? menu.required.includes(
+              menu.label === "Tickets" ? user.type : user.role
+            )
+          : true
       );
 
       setMenuList(filteredMenu);

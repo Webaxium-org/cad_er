@@ -37,27 +37,7 @@ import UniversalConverter from "../../../components/UniversalConverter";
 import StatusChip from "../../../components/StatusChip";
 import BasicSelect from "../../../components/BasicSelect";
 import Sidebar from "../../../components/Sidebar";
-
-const alertData = {
-  title: "Help & Support",
-  description: `If you have any questions or need assistance, we're here to help.
-            Please describe your issue below, and our support team will get back
-            to you as soon as possible.`,
-  content: (
-    <Stack spacing={2} mt={2}>
-      <BasicSelect
-        label={"Feedback Type"}
-        options={[
-          { label: "Complaints", value: "Complaints" },
-          { label: "Suggestions", value: "Suggestions" },
-        ]}
-      />
-      <BasicInput label="Message" placeholder="Enter your message" />
-    </Stack>
-  ),
-  cancelButtonText: "Cancel",
-  submitButtonText: "Continue",
-};
+import CreateTicket from "../../tickets/components/CreateTicket";
 
 const unitConverterAlertData = {
   title: "Unit Converter",
@@ -180,18 +160,21 @@ const ProfessionalDashboard = () => {
     navigate("/survey", { state: { search: value } });
   };
 
+  const alertData = {
+    title: "Help & Support",
+    description: `If you have any questions or need assistance, we're here to help.
+            Please describe your issue below, and our support team will get back
+            to you as soon as possible.`,
+    content: <CreateTicket onClose={handleClose} />,
+  };
+
   useEffect(() => {
     dispatch(stopLoading());
   }, []);
 
   return (
     <>
-      <AlertDialogSlide
-        {...alertData}
-        open={open}
-        onCancel={handleClose}
-        onSubmit={handleClose}
-      />
+      <AlertDialogSlide {...alertData} open={open} />
 
       <AlertDialogSlide
         {...unitConverterAlertData}
