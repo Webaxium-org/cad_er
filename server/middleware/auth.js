@@ -1,6 +1,6 @@
-import User from '../models/user.js';
-import jwt from 'jsonwebtoken';
-import createHttpError from 'http-errors';
+import User from "../models/user.js";
+import jwt from "jsonwebtoken";
+import createHttpError from "http-errors";
 
 export const requireAuth = async (req, res, next) => {
   try {
@@ -21,8 +21,8 @@ export const requireAuth = async (req, res, next) => {
       return next();
     }
 
-    if (user.status !== 'Active') {
-      throw createHttpError(403, 'Account suspended');
+    if (user.status !== "Active") {
+      throw createHttpError(403, "Account suspended");
     }
 
     req.user = {
@@ -37,10 +37,10 @@ export const requireAuth = async (req, res, next) => {
   } catch (error) {
     // Token invalid OR verify error → unauthorized
     if (
-      error.name === 'JsonWebTokenError' ||
-      error.name === 'TokenExpiredError'
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
     ) {
-      return next(createHttpError(401, 'Invalid or expired token'));
+      return next(createHttpError(401, "Invalid or expired token"));
     }
 
     next(error);
@@ -53,19 +53,26 @@ export const isAuthenticated = (req, res, next) => {
       return next();
     }
 
-    throw createHttpError(401, 'Authentication required');
+    throw createHttpError(401, "Authentication required");
   } catch (err) {
     next(err);
   }
 };
 
-export const isAuthorized = (roles = []) => {
+export const isAuthorized = ({ roles = [], types = [] } = {}) => {
   return (req, res, next) => {
     try {
       const userRole = req.user?.role;
+      const userType = req.user?.type;
 
-      if (!roles.includes(userRole)) {
-        throw createHttpError(403, 'Forbidden: Insufficient permissions');
+      /* ---------- ROLE CHECK ---------- */
+      if (roles.length && !roles.includes(userRole)) {
+        throw createHttpError(403, "Forbidden: Insufficient role permissions");
+      }
+
+      /* ---------- TYPE CHECK ---------- */
+      if (types.length && !types.includes(userType)) {
+        throw createHttpError(403, "Forbidden: Insufficient type permissions");
       }
 
       next();

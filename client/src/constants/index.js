@@ -640,3 +640,9 @@ export const quizQuestions = [
     correctAnswer: 3,
   },
 ];
+
+export const qualificationOptions = [
+  { label: "ITI CIVIL", fee: 5000, discount: 2000 },
+  { label: "POLYTECHNIC CIVIL", fee: 7000, discount: 2000 },
+  { label: "B.E/B.Tech CIVIL", fee: 10000, discount: 3000 },
+];

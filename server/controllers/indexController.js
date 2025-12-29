@@ -64,7 +64,7 @@ export const loginUser = async (req, res, next) => {
 export const googleLogin = async (req, res, next) => {
   try {
     const {
-      body: { accessToken, type, action },
+      body: { accessToken, type, action, qualification },
     } = req;
 
     if (action !== "login" && action !== "register") {
@@ -107,11 +107,21 @@ export const googleLogin = async (req, res, next) => {
     }
 
     if (!user) {
+      if (type === "Student" && !qualification) {
+        throw Object.assign(
+          new Error("Qualification is required for Students"),
+          {
+            statusCode: 400,
+          }
+        );
+      }
+
       user = await User.create({
         name,
         email,
         password: await bcrypt.hash(sub, 10),
         type,
+        qualification: type === "Student" ? qualification : undefined,
         authProvider: "google",
         status: "Active",
       });
@@ -145,7 +155,7 @@ export const googleLogin = async (req, res, next) => {
 export const registerUser = async (req, res, next) => {
   try {
     const {
-      body: { name, email, password, type },
+      body: { name, email, password, type, qualification },
     } = req;
 
     // Validate required fields
@@ -158,6 +168,12 @@ export const registerUser = async (req, res, next) => {
     // Validate type
     if (!["Student", "Professional"].includes(type)) {
       throw Object.assign(new Error("Invalid user type"), { statusCode: 400 });
+    }
+
+    if (type === "Student" && !qualification) {
+      throw Object.assign(new Error("Qualification is required for Students"), {
+        statusCode: 400,
+      });
     }
 
     // Check if user already exists
@@ -177,6 +193,7 @@ export const registerUser = async (req, res, next) => {
       email,
       password: hashedPassword,
       type,
+      qualification: type === "Student" ? qualification : undefined,
       authProvider: "local",
       status: "Active",
     });
@@ -232,10 +249,16 @@ export const logoutUser = (req, res, next) => {
 export const getDashboard = async (req, res, next) => {
   try {
     const {
-      user: { userId, organization },
+      user: { userId, role },
     } = req;
 
-    res.status(200).json({ status: "success" });
+    let users = null;
+
+    if (role === "Super Admin") {
+      users = await User.countDocuments({ _id: { $ne: userId } });
+    }
+
+    res.status(200).json({ status: "success", users });
   } catch (err) {
     next(err);
   }

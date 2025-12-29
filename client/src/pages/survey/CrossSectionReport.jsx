@@ -620,8 +620,8 @@ const CrossSectionReport = () => {
                           sx={{
                             position: "sticky",
                             left: 0,
-                            zIndex: 3, // higher than table body cells
-                            backgroundColor: "#fff", // IMPORTANT to avoid overlap transparency
+                            zIndex: 3,
+                            backgroundColor: "#fff",
                             borderBottom: 0,
                           }}
                         >
@@ -635,7 +635,11 @@ const CrossSectionReport = () => {
                       </TableRow>
                       <TableRow>
                         <TableCell
-                          style={{ paddingBottom: 0, paddingTop: 0 }}
+                          style={{
+                            paddingBottom: 0,
+                            paddingTop: 0,
+                            paddingLeft: 100,
+                          }}
                           colSpan={6}
                         >
                           <Collapse

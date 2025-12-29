@@ -1115,17 +1115,13 @@ const RoadSurveyRowsForm = () => {
   }, [id]);
 
   useEffect(() => {
-    window.history.pushState(null, "", window.location.href);
-
-    const handlePopState = () => {
-      window.history.pushState(null, "", window.location.href);
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
     };
 
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
   return (

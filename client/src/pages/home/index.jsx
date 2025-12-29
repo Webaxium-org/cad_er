@@ -4,6 +4,8 @@ import { stopLoading } from "../../redux/loadingSlice";
 import { useNavigate } from "react-router-dom";
 import ProfessionalDashboard from "./components/ProfessionalDashboard";
 import StudentDashboard from "./components/StudentDashboard";
+import AdminDashboard from "./components/AdminDashboard";
+import { getDashboard } from "../../services/indexServices";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -12,16 +14,33 @@ const Home = () => {
 
   const { user } = useSelector((state) => state.user);
 
+  const [data, setData] = useState(null);
+
+  const fetchData = async () => {
+    try {
+      const { data } = await getDashboard();
+      setData(data);
+    } catch (error) {
+      handleFormError(error, null, dispatch);
+    } finally {
+      dispatch(stopLoading());
+    }
+  };
+
   useEffect(() => {
-    dispatch(stopLoading());
+    fetchData();
   }, []);
 
   return (
     <>
       {user?.type === "Professional" ? (
-        <ProfessionalDashboard user={user} />
+        user.role === "Super Admin" ? (
+          <AdminDashboard user={user} data={data} />
+        ) : (
+          <ProfessionalDashboard user={user} data={data} />
+        )
       ) : (
-        <StudentDashboard user={user} />
+        <StudentDashboard user={user} data={data} />
       )}
     </>
   );

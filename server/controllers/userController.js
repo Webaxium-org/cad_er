@@ -3,9 +3,12 @@ import bcrypt from "bcryptjs";
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { status, role, search, organization } = req.query;
+    const {
+      user: { userId },
+      query: { status, role, search, organization },
+    } = req;
 
-    const filter = {};
+    const filter = { _id: { $ne: userId } };
 
     if (status) filter.status = status;
     if (role) filter.role = role;
@@ -119,9 +122,41 @@ export const updateUser = async (req, res, next) => {
 
 export const deleteUser = async (req, res, next) => {
   try {
-    const deleted = await User.findByIdAndDelete(req.params.id);
+    // const deleted = await User.findByIdAndDelete(req.params.id);
 
-    if (!deleted) {
+    // if (!deleted) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "User not found",
+    //   });
+    // }
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const toggleUserStatus = async (req, res, next) => {
+  try {
+    const {
+      params: { id },
+      body: { status },
+    } = req;
+
+    if (!["Active", "Inactive"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status value",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(id, { status }, { new: true });
+
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
@@ -130,7 +165,10 @@ export const deleteUser = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "User deleted successfully",
+      message: `User ${
+        status === "Active" ? "activated" : "deactivated"
+      } successfully`,
+      data: user,
     });
   } catch (err) {
     next(err);

@@ -7,7 +7,7 @@ import {
   Typography,
 } from "@mui/material";
 
-const CourseUnlockModal = ({ open, course, onUnlock, onClose }) => {
+const CourseUnlockModal = ({ open, course, price, onUnlock, onClose }) => {
   return (
     <Dialog open={open} onClose={onClose} fullWidth>
       <DialogTitle>Unlock Full Course</DialogTitle>
@@ -19,7 +19,7 @@ const CourseUnlockModal = ({ open, course, onUnlock, onClose }) => {
         </Typography>
 
         <Typography mt={2} fontSize={20} fontWeight={700}>
-          ₹{course.price}
+          ₹{price}
         </Typography>
       </DialogContent>
 

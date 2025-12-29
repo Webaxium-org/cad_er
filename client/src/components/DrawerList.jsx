@@ -48,9 +48,9 @@ const menuListDetails = [
     path: "/users",
     required: [
       "Super Admin",
-      "Survey Manager",
-      "Chief Surveyor",
-      "Senior Surveyor",
+      // "Survey Manager",
+      // "Chief Surveyor",
+      // "Senior Surveyor",
     ],
   },
 ];

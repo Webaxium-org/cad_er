@@ -26,6 +26,8 @@ import BasicInput from "../../components/BasicInput";
 import Logo from "../../assets/logo/CADer logo-loader.png";
 import BackgroundImage from "../../assets/back-ground-img.png";
 import { setUser } from "../../redux/userSlice";
+import BasicSelect from "../../components/BasicSelect";
+import { qualificationOptions } from "../../constants";
 
 /* =========================
    Styled Components
@@ -63,6 +65,11 @@ const schema = Yup.object().shape({
     )
     .email("Please enter a valid email address")
     .required("Email is required"),
+  qualification: Yup.string().when("type", {
+    is: "Student",
+    then: (schema) => schema.required("Qualification is required"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
   password: Yup.string().min(6).required("Password is required"),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("password")], "Passwords do not match")
@@ -73,6 +80,7 @@ const initialFormValues = {
   type: "",
   name: "",
   email: "",
+  qualification: "",
   password: "",
   confirmPassword: "",
 };
@@ -295,6 +303,20 @@ export default function SignUp() {
                   onChange={handleInputChange}
                   variant="filled"
                 />
+
+                {formValues.type === "Student" && (
+                  <BasicSelect
+                    label="Qualification"
+                    name="qualification"
+                    options={qualificationOptions.map((q) => ({
+                      label: q.label,
+                      value: q.label,
+                    }))}
+                    value={formValues.qualification}
+                    error={formErrors.qualification}
+                    onChange={handleInputChange}
+                  />
+                )}
 
                 {/* Password */}
                 <Box position="relative">

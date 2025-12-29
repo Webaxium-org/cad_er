@@ -7,10 +7,10 @@ import ImageAvatars from "../../../components/ImageAvatar";
 import UnlockCourseBanner from "./UnlockCourseBanner";
 import VideoItem from "./VideoItem";
 import CourseUnlockModal from "./CourseUnlockModal";
+import { qualificationOptions } from "../../../constants";
 
 const courseDetails = {
   title: "AutoCAD Mastery Course",
-  price: 999,
   isPurchased: false,
   videos: [
     {
@@ -31,6 +31,15 @@ const courseDetails = {
 const StudentDashboard = ({ user }) => {
   const [course, setCourse] = useState(courseDetails);
   const [open, setOpen] = useState(false);
+
+  const getPrice = () => {
+    const priceDetails = qualificationOptions.find(
+      (q) => q.label === user.qualification
+    );
+    if (priceDetails) {
+      return priceDetails.fee - priceDetails.discount;
+    }
+  };
 
   return (
     <Stack spacing={2} sx={{ userSelect: "none" }} overflow={"hidden"}>
@@ -97,7 +106,7 @@ const StudentDashboard = ({ user }) => {
       <Box className="overlapping-header">
         {!course.isPurchased && (
           <UnlockCourseBanner
-            price={course.price}
+            price={getPrice()}
             onUnlock={() => setOpen(true)}
           />
         )}
@@ -119,6 +128,7 @@ const StudentDashboard = ({ user }) => {
         <CourseUnlockModal
           open={open}
           course={course}
+          price={getPrice()}
           onUnlock={() => {
             setCourse({ ...course, isPurchased: true });
             setOpen(false);
