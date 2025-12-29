@@ -586,30 +586,36 @@ const CrossSectionReport = () => {
           />
         )}
 
+        <Box
+          sx={{
+            height: 56, // MUI table header height
+            display: "flex",
+            alignItems: "center",
+
+            px: 2,
+            mt: 2,
+            width: "100%",
+            fontWeight: 700,
+            fontSize: "0.875rem",
+            color: "rgba(0, 0, 0, 0.87)",
+
+            backgroundColor: "#f4f6f8",
+            borderBottom: "1px solid #e0e0e0",
+
+            // Optional: match table cell look
+            boxSizing: "border-box",
+          }}
+        >
+          Chainage
+        </Box>
+
         <TableContainer
           component={Paper}
           sx={{
-            mt: 2,
             maxHeight: 440,
           }}
         >
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell
-                  sx={{
-                    position: "sticky",
-                    left: 0,
-                    zIndex: 4,
-                    backgroundColor: "#f4f6f8",
-                    fontWeight: 700,
-                  }}
-                >
-                  Chainage
-                </TableCell>
-              </TableRow>
-            </TableHead>
-
+          <Table stickyHeader sx={{ tableLayout: "fixed" }}>
             <TableBody>
               {tableData[0]?.rows?.map(
                 (row, index) =>
@@ -620,8 +626,8 @@ const CrossSectionReport = () => {
                           sx={{
                             position: "sticky",
                             left: 0,
-                            zIndex: 3,
-                            backgroundColor: "#fff",
+                            zIndex: 3, // higher than table body cells
+                            backgroundColor: "#fff", // IMPORTANT to avoid overlap transparency
                             borderBottom: 0,
                           }}
                         >
@@ -727,28 +733,26 @@ const CrossSectionReport = () => {
                               </TableBody>
                             </Table>
 
-                            <Box
-                              sx={{
-                                overflowX: "auto",
-                                whiteSpace: "nowrap",
-                                position: "relative",
-                              }}
-                              my={2}
-                            >
-                              <Box
+                            <TableRow>
+                              <TableCell
+                                colSpan={selectedCs?.series?.length + 1}
                                 sx={{
                                   position: "sticky",
                                   left: 0,
+                                  zIndex: 6,
+                                  backgroundColor: "#fff",
+                                  textAlign: "left",
+                                  borderBottom: 0,
                                 }}
                               >
                                 <BasicButton
-                                  value="update"
+                                  value="Update"
                                   variant="outlined"
                                   sx={{ py: 1, px: 2 }}
                                   onClick={handleUpdateReducedLevels}
                                 />
-                              </Box>
-                            </Box>
+                              </TableCell>
+                            </TableRow>
                           </Collapse>
                         </TableCell>
                       </TableRow>
