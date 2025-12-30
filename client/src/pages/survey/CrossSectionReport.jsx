@@ -88,28 +88,39 @@ const CrossSectionReport = () => {
   const downloadPDF = async () => {
     if (!pdfRef.current) return;
 
-    const modebars = pdfRef.current.querySelectorAll(".modebar-container");
-    modebars.forEach((el) => (el.style.display = "none"));
-
-    // Wait for Plotly to fully render
     await new Promise((res) => setTimeout(res, 300));
 
     const canvas = await html2canvas(pdfRef.current, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
-      scrollX: 0,
-      scrollY: -window.scrollY,
     });
 
     const imgData = canvas.toDataURL("image/png");
 
-    // A4 Landscape (best for wide tables)
     const pdf = new jsPDF("l", "mm", "a5");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    const margin = 10;
+    const pageWidth = pdf.internal.pageSize.getWidth() - margin * 2;
+    const pageHeight = pdf.internal.pageSize.getHeight() - margin * 2;
+
+    const imgRatio = canvas.width / canvas.height;
+    const pageRatio = pageWidth / pageHeight;
+
+    let imgWidth, imgHeight;
+
+    if (imgRatio > pageRatio) {
+      imgWidth = pageWidth;
+      imgHeight = imgWidth / imgRatio;
+    } else {
+      imgHeight = pageHeight;
+      imgWidth = imgHeight * imgRatio;
+    }
+
+    const x = (pdf.internal.pageSize.getWidth() - imgWidth) / 2;
+    const y = (pdf.internal.pageSize.getHeight() - imgHeight) / 2;
+
+    pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
     pdf.save("cross-section.pdf");
   };
 
