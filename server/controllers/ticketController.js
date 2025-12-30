@@ -20,7 +20,7 @@ export const createTicket = async (req, res, next) => {
 
     await send_support_mail(
       process.env.SUPPORT_EMAILS,
-      `New Ticket: ${ticket.title}`,
+      `New Ticket: ${ticket.feedbackType}`,
       EMAIL_TEMPLATES.TICKET_CREATED_ADMIN(ticket, req.user)
     );
 

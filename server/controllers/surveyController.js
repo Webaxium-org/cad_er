@@ -362,8 +362,8 @@ const createSurveyRow = async (req, res, next) => {
       remarks.push(...remark);
     } else {
       if (type === "CP") {
-        const cpLength = purpose.rows?.filter((r) => r.type === "CP");
-        remarks.push(`${type - cpLength + 1} - ${remark}`);
+        const allCp = purpose.rows?.filter((r) => r.type === "CP");
+        remarks.push(`${type} - ${allCp.length + 1} - ${remark}`);
       } else {
         remarks.push(`${type} - ${remark}`);
       }
@@ -797,7 +797,7 @@ const endSurveyPurpose = async (req, res, next) => {
         "Cannot finish purpose — survey already finished"
       );
 
-    if (purpose.type === "Initial Level") {
+    if (purpose.phase === "Actual") {
       if (!finalForesight || !pls)
         throw createHttpError(400, "Missing required field");
 
