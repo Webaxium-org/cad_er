@@ -35,6 +35,7 @@ import BasicCard from "../../components/BasicCard";
 import BasicDivider from "../../components/BasicDevider";
 import EditPreviousReading from "./components/EditPreviousReading";
 import SmallHeader from "../../components/SmallHeader";
+import useHardBackLock from "../../hooks/useHardBackLock";
 
 const colors = {
   Initial: "green",
@@ -112,6 +113,8 @@ const inputDetails = [
 ];
 
 const RoadSurveyRowsForm = () => {
+  useHardBackLock(true);
+
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -1113,21 +1116,6 @@ const RoadSurveyRowsForm = () => {
     };
     fetchData();
   }, [id]);
-
-  useEffect(() => {
-    // Push the current page again so back button won't leave it
-    window.history.pushState(null, "", window.location.href);
-
-    const handlePopState = () => {
-      window.history.pushState(null, "", window.location.href);
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, []);
 
   return (
     <>
