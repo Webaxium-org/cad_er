@@ -256,33 +256,66 @@ const VolumeReport = () => {
         const chainage =
           row.chainage?.split(survey?.separator || "/")?.[1] ?? "";
 
-        // --- Compute area for each offset ---
+        let prevReadings = [];
+
         const data = (row?.offsets ?? []).map((entry, idx) => {
-          const initRL = Number(row?.reducedLevels?.[idx] ?? 0);
-          const propRL = Number(secondaryRow?.reducedLevels?.[idx] ?? 0);
+          const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
+          const secondaryEntryRL = secondaryRow?.reducedLevels?.[idx] ?? 0;
+
+          const initRL = Number(initialEntryRL);
+          const propRL = Number(secondaryEntryRL);
           const offsetVal = Number(entry);
           const prevOffsetVal = Number(row?.offsets?.[idx - 1] ?? 0);
 
+          // Determine whether it's cutting or filling
           const isCutting = initRL > propRL;
+
+          // Shared width (W) for both cutting and filling
           const widthMtr =
-            idx === 0 ? 0 : (prevOffsetVal - offsetVal).toFixed(3);
+            idx === 0 ? "0.000" : (offsetVal - prevOffsetVal).toFixed(3);
 
-          const cuttingAvgMtr = isCutting
-            ? ((initRL + propRL) / 2).toFixed(3)
-            : "0.000";
+          const cuttingMtr = isCutting ? (initRL - propRL).toFixed(3) : "0.000";
 
-          const fillingAvgMtr = isCutting
-            ? "0.000"
-            : ((propRL + initRL) / 2).toFixed(3);
+          const cuttingAvgMtr =
+            isCutting || idx === 0
+              ? "0.000"
+              : (
+                  (Number(cuttingMtr) +
+                    Number(prevReadings[idx - 1]?.cuttingMtr || 0)) /
+                  2
+                ).toFixed(3);
 
-          return {
+          const fillingMtr = isCutting ? "0.000" : (propRL - initRL).toFixed(3);
+
+          const fillingAvgMtr =
+            isCutting || idx === 0
+              ? "0.000"
+              : (
+                  (Number(fillingMtr) +
+                    Number(prevReadings[idx - 1]?.fillingMtr || 0)) /
+                  2
+                ).toFixed(3);
+
+          const dataDoc = {
+            offset: entry,
+            initialEntryRL,
+            secondaryEntryRL,
+            cuttingMtr,
+            cuttingAvgMtr,
+            cuttingWMtr: widthMtr,
             cuttingAreaSqMtr: (
               Number(cuttingAvgMtr) * Number(widthMtr)
             ).toFixed(3),
+            fillingMtr,
+            fillingAvgMtr,
+            fillingWMtr: widthMtr,
             fillingAreaSqMtr: (
               Number(fillingAvgMtr) * Number(widthMtr)
             ).toFixed(3),
           };
+
+          prevReadings.push(dataDoc);
+          return dataDoc;
         });
 
         // --- Total area for this section ---

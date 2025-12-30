@@ -3,22 +3,22 @@ const { Schema, model, Types } = mongoose;
 
 const typeEnum = [
   "Initial Level",
-  "Final Level",
-  "Final Earth Work",
-  "Final Quarry Muck",
-  "Final GSB",
-  "Final WMM",
-  "Final BM",
-  "Final BC",
-  "Final Tile Top",
   "Proposed Level",
+  "Final Earth Work",
   "Proposed Earth Work",
-  "Proposed Muck",
+  "Final Quarry Muck",
+  "Proposed Quarry Muck",
+  "Final GSB",
   "Proposed GSB",
+  "Final WMM",
   "Proposed WMM",
+  "Final BM",
   "Proposed BM",
+  "Final BC",
   "Proposed BC",
+  "Final Tile Top",
   "Proposed Tile Top",
+  "Final Level",
 ];
 
 const SurveyPurposeSchema = new Schema(

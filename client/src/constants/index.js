@@ -95,7 +95,7 @@ export const purposeCode = {
 export const proposalLevels = [
   "Proposed Level",
   "Proposed Earth Work",
-  "Proposed Muck",
+  "Proposed Quarry Muck",
   "Proposed GSB",
   "Proposed WMM",
   "Proposed BM",

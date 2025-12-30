@@ -266,6 +266,8 @@ const AreaReport = () => {
         const chainage =
           row.chainage?.split(survey?.separator || "/")?.[1] ?? "";
 
+        let prevReadings = [];
+
         const data = (row?.offsets ?? []).map((entry, idx) => {
           const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
           const secondaryEntryRL = proposedRow?.reducedLevels?.[idx] ?? 0;
@@ -280,33 +282,50 @@ const AreaReport = () => {
 
           // Shared width (W) for both cutting and filling
           const widthMtr =
-            idx === 0 ? "0.000" : (prevOffsetVal - offsetVal).toFixed(3);
+            idx === 0 ? "0.000" : (offsetVal - prevOffsetVal).toFixed(3);
 
-          const cuttingAvgMtr = isCutting
-            ? ((initRL + propRL) / 2).toFixed(3)
-            : "0.000";
+          const cuttingMtr = isCutting ? (initRL - propRL).toFixed(3) : "0.000";
 
-          const fillingAvgMtr = isCutting
-            ? "0.000"
-            : ((propRL + initRL) / 2).toFixed(3);
+          const cuttingAvgMtr =
+            isCutting || idx === 0
+              ? "0.000"
+              : (
+                  (Number(cuttingMtr) +
+                    Number(prevReadings[idx - 1]?.cuttingMtr || 0)) /
+                  2
+                ).toFixed(3);
 
-          return {
+          const fillingMtr = isCutting ? "0.000" : (propRL - initRL).toFixed(3);
+
+          const fillingAvgMtr =
+            isCutting || idx === 0
+              ? "0.000"
+              : (
+                  (Number(fillingMtr) +
+                    Number(prevReadings[idx - 1]?.fillingMtr || 0)) /
+                  2
+                ).toFixed(3);
+
+          const dataDoc = {
             offset: entry,
             initialEntryRL,
             secondaryEntryRL,
-            cuttingMtr: isCutting ? (initRL - propRL).toFixed(3) : "0.000",
+            cuttingMtr,
             cuttingAvgMtr,
             cuttingWMtr: widthMtr,
             cuttingAreaSqMtr: (
               Number(cuttingAvgMtr) * Number(widthMtr)
             ).toFixed(3),
-            fillingMtr: isCutting ? "0.000" : (propRL - initRL).toFixed(3),
+            fillingMtr,
             fillingAvgMtr,
             fillingWMtr: widthMtr,
             fillingAreaSqMtr: (
               Number(fillingAvgMtr) * Number(widthMtr)
             ).toFixed(3),
           };
+
+          prevReadings.push(dataDoc);
+          return dataDoc;
         });
 
         const totalCuttingAreaSqMtr = data.reduce(
