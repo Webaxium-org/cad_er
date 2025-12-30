@@ -190,6 +190,13 @@ const inputDetails = [
     for: "Initial Level",
   },
   {
+    label: "Width*",
+    name: "width",
+    type: "number",
+    hidden: true,
+    for: "Proposed Level",
+  },
+  {
     label: "Length*",
     name: "length",
     mode: "select",
@@ -363,6 +370,11 @@ const RoadSurveyForm = () => {
             .required("Quantity is required")
         : Yup.string().nullable(),
 
+    width:
+      type && entryType === "autoGenerate"
+        ? Yup.string().required("Width is required")
+        : Yup.string().nullable(),
+
     length:
       type && entryType === "autoGenerate"
         ? Yup.string().required("Length is required")
@@ -480,7 +492,7 @@ const RoadSurveyForm = () => {
 
         const link =
           id && entryType === "autoGenerate"
-            ? "/survey/purpose"
+            ? `/survey/${id}/report`
             : `/survey/road-survey/${purposeId}/rows`;
 
         // dispatch(
@@ -598,7 +610,7 @@ const RoadSurveyForm = () => {
               return { ...e, hidden: entryType === "manualEntry" };
             }
 
-            if (e.name === "length") {
+            if (e.name === "length" || e.name === "width") {
               return { ...e, hidden: entryType === "manualEntry" };
             }
 

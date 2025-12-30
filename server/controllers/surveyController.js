@@ -1097,6 +1097,7 @@ const generateSurveyPurpose = async (req, res, next) => {
         proposal,
         quantity,
         length,
+        width,
         // lSection,
         // lsSlop,
         cSection,
@@ -1112,7 +1113,7 @@ const generateSurveyPurpose = async (req, res, next) => {
 
     // Required fields used for proposal generation
     // const requiredFields = [quantity, lSection, lsSlop, length];
-    const requiredFields = [quantity, length];
+    const requiredFields = [quantity, length, width];
     const missingRequired = requiredFields.some(
       (x) => x === undefined || x === null || x === ""
     );
@@ -1209,6 +1210,8 @@ const generateSurveyPurpose = async (req, res, next) => {
           phase: "Proposal",
           createdBy: userId,
           quantity,
+          length,
+          width,
           // lSection,
           // lsSlop,
           cSection,
@@ -1227,7 +1230,7 @@ const generateSurveyPurpose = async (req, res, next) => {
     // 🔹 Bulk Insert Rows (FASTEST)
     // -----------------------------
 
-    const roadWidth = Number(readingsToCreate[0]?.roadWidth) || 0;
+    const roadWidth = Number(width) || 0;
 
     const bulkOps = readingsToCreate.map((reading) => {
       // ✅ FIX 1: Correct reduce (your version mutated curr incorrectly)
