@@ -559,8 +559,8 @@ const createSurveyPurpose = async (req, res, next) => {
         proposedLevel,
         reducedLevel,
         backSight,
-        lSection,
-        lsSlop,
+        // lSection,
+        // lsSlop,
         cSection,
         csSlop,
         csCamper,
@@ -677,8 +677,8 @@ const createSurveyPurpose = async (req, res, next) => {
           phase: proposal ? "Proposal" : "Actual",
           ...(proposal && {
             proposedLevel,
-            lSection,
-            lsSlop,
+            // lSection,
+            // lsSlop,
             cSection,
             csSlop,
             csCamper,
@@ -1097,8 +1097,8 @@ const generateSurveyPurpose = async (req, res, next) => {
         proposal,
         quantity,
         length,
-        lSection,
-        lsSlop,
+        // lSection,
+        // lsSlop,
         cSection,
         csSlop,
         csCamper,
@@ -1111,7 +1111,8 @@ const generateSurveyPurpose = async (req, res, next) => {
     }
 
     // Required fields used for proposal generation
-    const requiredFields = [quantity, lSection, lsSlop, length];
+    // const requiredFields = [quantity, lSection, lsSlop, length];
+    const requiredFields = [quantity, length];
     const missingRequired = requiredFields.some(
       (x) => x === undefined || x === null || x === ""
     );
@@ -1208,8 +1209,8 @@ const generateSurveyPurpose = async (req, res, next) => {
           phase: "Proposal",
           createdBy: userId,
           quantity,
-          lSection,
-          lsSlop,
+          // lSection,
+          // lsSlop,
           cSection,
           csSlop,
           csCamper,
