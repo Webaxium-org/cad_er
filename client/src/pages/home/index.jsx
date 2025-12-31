@@ -20,7 +20,7 @@ const Home = () => {
   const fetchData = async () => {
     try {
       const { data } = await getDashboard();
-      setData(data);
+      setData(data?.stats);
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     } finally {

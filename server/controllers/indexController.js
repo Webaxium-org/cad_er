@@ -252,13 +252,33 @@ export const getDashboard = async (req, res, next) => {
       user: { userId, role },
     } = req;
 
-    let users = null;
+    let stats = {
+      totalUsers: 0,
+      students: 0,
+      professionals: 0,
+    };
 
     if (role === "Super Admin") {
-      users = await User.countDocuments({ _id: { $ne: userId } });
+      // Exclude current logged-in admin if needed
+      const baseQuery = { _id: { $ne: userId } };
+
+      const [totalUsers, students, professionals] = await Promise.all([
+        User.countDocuments(baseQuery),
+        User.countDocuments({ ...baseQuery, type: "Student" }),
+        User.countDocuments({ ...baseQuery, type: "Professional" }),
+      ]);
+
+      stats = {
+        totalUsers,
+        students,
+        professionals,
+      };
     }
 
-    res.status(200).json({ status: "success", users });
+    res.status(200).json({
+      status: "success",
+      stats,
+    });
   } catch (err) {
     next(err);
   }

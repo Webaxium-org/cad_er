@@ -7,6 +7,7 @@ import { handleFormError } from "../../utils/handleFormError";
 import { useNavigate } from "react-router-dom";
 import { stopLoading } from "../../redux/loadingSlice";
 import SmallHeader from "../../components/SmallHeader";
+import TicketsGrid from "./components/TicketsGrid";
 
 const TicketsDashboard = () => {
   const dispatch = useDispatch();
@@ -46,13 +47,18 @@ const TicketsDashboard = () => {
           </Typography>
         )}
 
-        <Grid container spacing={2} mt={2}>
-          {tickets.map((ticket) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={ticket._id}>
-              <TicketCard ticket={ticket} user={user} />
-            </Grid>
-          ))}
-        </Grid>
+        {/* Super Admin → DataGrid */}
+        {user.role === "Super Admin" ? (
+          <TicketsGrid tickets={tickets} />
+        ) : (
+          <Grid container spacing={2} mt={2}>
+            {tickets.map((ticket) => (
+              <Grid key={ticket._id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                <TicketCard ticket={ticket} user={user} />
+              </Grid>
+            ))}
+          </Grid>
+        )}
       </Box>
     </>
   );

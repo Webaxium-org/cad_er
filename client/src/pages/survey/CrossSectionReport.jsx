@@ -28,6 +28,26 @@ import BasicButton from "../../components/BasicButton";
 import { MdDownload } from "react-icons/md";
 import { showAlert } from "../../redux/alertSlice";
 
+const LEVEL_ORDER = [
+  "Initial Level",
+  "Proposed Level",
+  "Final Earth Work",
+  "Proposed Earth Work",
+  "Final Quarry Muck",
+  "Proposed Quarry Muck",
+  "Final GSB",
+  "Proposed GSB",
+  "Final WMM",
+  "Proposed WMM",
+  "Final BM",
+  "Proposed BM",
+  "Final BC",
+  "Proposed BC",
+  "Final Tile Top",
+  "Proposed Tile Top",
+  "Final Level",
+];
+
 const menuItems = [
   // { label: "v1", value: "v1" },
   // { label: "v2", value: "v2" },
@@ -188,17 +208,24 @@ const CrossSectionReport = () => {
   };
 
   const handleSetTableData = (survey) => {
-    const data = [];
+    let data = [];
 
     if (state && state?.selectedPurposeIds?.length) {
-      state?.selectedPurposeIds?.forEach((entry) => {
-        data.push(
-          survey?.purposes?.find((p) => String(p._id) === String(entry))
+      state.selectedPurposeIds.forEach((entry) => {
+        const purpose = survey?.purposes?.find(
+          (p) => String(p._id) === String(entry)
         );
+
+        if (purpose) data.push(purpose);
       });
     } else {
-      data.push(survey?.purposes?.find((p) => p.type === "Initial Level"));
+      const initial = survey?.purposes?.find((p) => p.type === "Initial Level");
+      if (initial) data.push(initial);
     }
+
+    data.sort(
+      (a, b) => LEVEL_ORDER.indexOf(a.type) - LEVEL_ORDER.indexOf(b.type)
+    );
 
     setTableData(data);
   };
@@ -249,6 +276,15 @@ const CrossSectionReport = () => {
         };
       });
 
+    // Add initial (original)
+    data.series.push({
+      _id: row._id,
+      purpose: initialEntry._id,
+      name: initialEntry.type,
+      color: getColor(initialEntry.type),
+      data: makeSeries(rawOffsets, safeInitial),
+    });
+
     // Additional tables (Proposed, Level-2...)
     if (tableData.length > 1) {
       for (let i = 1; i < tableData.length; i++) {
@@ -275,15 +311,6 @@ const CrossSectionReport = () => {
         });
       }
     }
-
-    // Add initial (original)
-    data.series.push({
-      _id: row._id,
-      purpose: initialEntry._id,
-      name: initialEntry.type,
-      color: getColor(initialEntry.type),
-      data: makeSeries(rawOffsets, safeInitial),
-    });
 
     // Sort offsets for categories
     data.offsets.sort((a, b) => a - b);

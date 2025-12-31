@@ -122,7 +122,7 @@ const Followup = () => {
                 { label: "In progress", value: "IN_PROGRESS" },
                 { label: "Postponed", value: "POSTPONED" },
                 { label: "Resolved", value: "RESOLVED" },
-                { label: "Reopened", value: "REOPENED" },
+                // { label: "Reopened", value: "REOPENED" },
               ]}
             />
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { handleFormError } from "../../utils/handleFormError";
@@ -10,6 +10,28 @@ import { v1ChartOptions, v2ChartOptions } from "../../constants";
 import BasicMenu from "../../components/BasicMenu";
 import { BsThreeDots } from "react-icons/bs";
 import { MdDownload } from "react-icons/md";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
+const LEVEL_ORDER = [
+  "Initial Level",
+  "Proposed Level",
+  "Final Earth Work",
+  "Proposed Earth Work",
+  "Final Quarry Muck",
+  "Proposed Quarry Muck",
+  "Final GSB",
+  "Proposed GSB",
+  "Final WMM",
+  "Proposed WMM",
+  "Final BM",
+  "Proposed BM",
+  "Final BC",
+  "Proposed BC",
+  "Final Tile Top",
+  "Proposed Tile Top",
+  "Final Level",
+];
 
 const menuItems = [
   // { label: "v1", value: "v1" },
@@ -42,6 +64,8 @@ const LongitudinalSectionReport = () => {
 
   const { global } = useSelector((state) => state.loading);
 
+  const pdfRef = useRef();
+
   const [chartOptions, setChartOptions] = useState(v1ChartOptions);
 
   const [survey, setSurvey] = useState(null);
@@ -50,7 +74,48 @@ const LongitudinalSectionReport = () => {
 
   const [selectedCs, setSelectedCs] = useState(null);
 
+  const downloadPDF = async () => {
+    if (!pdfRef.current) return;
+
+    await new Promise((res) => setTimeout(res, 300));
+
+    const canvas = await html2canvas(pdfRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("l", "mm", "a5");
+
+    const margin = 10;
+    const pageWidth = pdf.internal.pageSize.getWidth() - margin * 2;
+    const pageHeight = pdf.internal.pageSize.getHeight() - margin * 2;
+
+    const imgRatio = canvas.width / canvas.height;
+    const pageRatio = pageWidth / pageHeight;
+
+    let imgWidth, imgHeight;
+
+    if (imgRatio > pageRatio) {
+      imgWidth = pageWidth;
+      imgHeight = imgWidth / imgRatio;
+    } else {
+      imgHeight = pageHeight;
+      imgWidth = imgHeight * imgRatio;
+    }
+
+    const x = (pdf.internal.pageSize.getWidth() - imgWidth) / 2;
+    const y = (pdf.internal.pageSize.getHeight() - imgHeight) / 2;
+
+    pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
+    pdf.save("cross-section.pdf");
+  };
+
   const handleMenuSelect = (item) => {
+    if (item.value === "download") return downloadPDF();
+
     if (!selectedCs) return;
 
     // Compute bounds
@@ -110,17 +175,24 @@ const LongitudinalSectionReport = () => {
   };
 
   const handleSetTableData = (survey) => {
-    const data = [];
+    let data = [];
 
     if (state && state?.selectedPurposeIds?.length) {
-      state?.selectedPurposeIds?.forEach((entry) => {
-        data.push(
-          survey?.purposes?.find((p) => String(p._id) === String(entry))
+      state.selectedPurposeIds.forEach((entry) => {
+        const purpose = survey?.purposes?.find(
+          (p) => String(p._id) === String(entry)
         );
+
+        if (purpose) data.push(purpose);
       });
     } else {
-      data.push(survey?.purposes?.find((p) => p.type === "Initial Level"));
+      const initial = survey?.purposes?.find((p) => p.type === "Initial Level");
+      if (initial) data.push(initial);
     }
+
+    data.sort(
+      (a, b) => LEVEL_ORDER.indexOf(a.type) - LEVEL_ORDER.indexOf(b.type)
+    );
 
     setTableData(data);
   };
@@ -171,6 +243,13 @@ const LongitudinalSectionReport = () => {
         y: Number(Number(levels?.[i] ?? 0).toFixed(3)),
       }));
 
+    // Add the Initial Entry at the end
+    data.series.push({
+      name: initialEntry.type,
+      color: getColor(initialEntry.type),
+      data: makeSeries(safeChainages, safeInitial),
+    });
+
     // Add all additional tableData (Proposed, Level 2, etc.)
     if (tableData.length > 1) {
       for (let i = 1; i < tableData.length; i++) {
@@ -200,13 +279,6 @@ const LongitudinalSectionReport = () => {
         });
       }
     }
-
-    // Add the Initial Entry at the end
-    data.series.push({
-      name: initialEntry.type,
-      color: getColor(initialEntry.type),
-      data: makeSeries(safeChainages, safeInitial),
-    });
 
     data.allRl.push(...safeInitial);
 
@@ -309,7 +381,7 @@ const LongitudinalSectionReport = () => {
           <CrossSectionChart
             selectedCs={selectedCs}
             chartOptions={chartOptions}
-            download={true}
+            pdfRef={pdfRef}
           />
         )}
 

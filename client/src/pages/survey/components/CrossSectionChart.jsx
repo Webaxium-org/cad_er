@@ -342,7 +342,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef }) => {
                 </TableRow>
 
                 {/* LEVEL / DIST ROWS */}
-                {selectedCs?.series?.map((s, idx) => {
+                {[...(selectedCs?.series || [])]?.reverse()?.map((s, idx) => {
                   // detect color for series
                   const color =
                     colors[

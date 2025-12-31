@@ -24,7 +24,7 @@ const AdminDashboard = ({ user, data }) => {
   const navigate = useNavigate();
 
   return (
-    <Stack spacing={3} sx={{ userSelect: "none" }} overflow="hidden">
+    <Stack spacing={2} sx={{ userSelect: "none" }} overflow="hidden">
       {/* ================= HEADER ================= */}
       <Stack
         p={2}
@@ -89,41 +89,76 @@ const AdminDashboard = ({ user, data }) => {
       {/* ================= CONTENT ================= */}
       <Box px={2} className="overlapping-header">
         {/* -------- KPI CARDS -------- */}
-        <Grid container spacing={2}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            overflowX: "auto",
+            "&::-webkit-scrollbar": { display: "none" },
+          }}
+        >
           {[
             {
               label: "Total Users",
-              value: data?.users || 0,
+              value: data?.totalUsers || 0,
               icon: <MdPeople />,
+              bg: "linear-gradient(135deg,#1976d2,#42a5f5)",
             },
-            // { label: "Active Courses", value: "56", icon: <MdSchool /> },
-            // { label: "Revenue (₹)", value: "3.2L", icon: <MdAttachMoney /> },
-            // {
-            //   label: "Pending Requests",
-            //   value: "14",
-            //   icon: <MdNotifications />,
-            // },
+            {
+              label: "Professionals",
+              value: data?.professionals || 0,
+              icon: <MdPeople />,
+              bg: "linear-gradient(135deg,#2e7d32,#66bb6a)",
+            },
+            {
+              label: "Students",
+              value: data?.students || 0,
+              icon: <MdPeople />,
+              bg: "linear-gradient(135deg,#ed6c02,#ff9800)",
+            },
           ].map((item, idx) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
-              <Card sx={{ borderRadius: 3 }}>
-                <CardContent>
-                  <Stack spacing={1}>
-                    <Box fontSize={22} color="primary.main">
+            <Card
+              key={idx}
+              sx={{
+                minWidth: 130,
+                height: 70, // 🔥 controlled height
+                borderRadius: 2.5,
+                flexShrink: 0,
+                background: item.bg,
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+              }}
+              onClick={() => navigate("/users")}
+            >
+              <CardContent
+                sx={{
+                  p: 1.5, // 🔥 reduced padding
+                  "&:last-child": { pb: 1.5 },
+                  width: "100%",
+                }}
+              >
+                <Stack spacing={0.2}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Box fontSize={20} opacity={0.9}>
                       {item.icon}
                     </Box>
-                    <Typography variant="h6">{item.value}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {item.label}
+                    <Typography fontSize={18} fontWeight={700}>
+                      {item.value}
                     </Typography>
                   </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
+
+                  <Typography fontSize={11} sx={{ opacity: 0.9 }}>
+                    {item.label}
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
           ))}
-        </Grid>
+        </Box>
 
         {/* -------- QUICK ACTIONS -------- */}
-        <Card sx={{ mt: 3, borderRadius: 3 }}>
+        <Card sx={{ mt: 2, borderRadius: 3 }}>
           <CardContent>
             <Typography fontWeight={700} mb={1}>
               Quick Actions
@@ -141,7 +176,7 @@ const AdminDashboard = ({ user, data }) => {
         </Card>
 
         {/* -------- ACTIVITY + STATUS -------- */}
-        <Grid container spacing={2} mt={1}>
+        <Grid container spacing={2} mt={2}>
           <Grid size={{ xs: 12, md: 8 }}>
             <Card sx={{ borderRadius: 3, height: "100%" }}>
               <CardContent>
@@ -150,7 +185,7 @@ const AdminDashboard = ({ user, data }) => {
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
 
-                <Stack spacing={1}>
+                {/* <Stack spacing={1}>
                   <Typography variant="body2">• New user registered</Typography>
                   <Typography variant="body2">
                     • Course “AutoCAD Pro” published
@@ -158,7 +193,7 @@ const AdminDashboard = ({ user, data }) => {
                   <Typography variant="body2">
                     • Payment received from Student
                   </Typography>
-                </Stack>
+                </Stack> */}
               </CardContent>
             </Card>
           </Grid>
