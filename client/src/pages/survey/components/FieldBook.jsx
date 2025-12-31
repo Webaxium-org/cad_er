@@ -160,6 +160,28 @@ export default function FieldBook() {
     return calculateTableData(purpose);
   }, [purpose]);
 
+  const handleRLChange = (rowIndex, value) => {
+    setPurpose((prev) => ({
+      ...prev,
+      surveyId: { ...prev.surveyId, reducedLevel: value },
+      rows: prev.rows?.map((row) => {
+        if (row.type === "Instrument setup") {
+          return {
+            ...row,
+            reducedLevels: [value],
+          };
+        }
+
+        return row;
+      }),
+    }));
+
+    setUpdatedRows((prev) => ({
+      ...prev,
+      [rowIndex]: true,
+    }));
+  };
+
   // --- Handle field edits from the table (immutable updates) ---
   const handleFieldChange = useCallback(
     (rowIndex, fieldKey, nestedIndex, value) => {
@@ -373,6 +395,7 @@ export default function FieldBook() {
           tableData={tableData}
           isEditing={isEditing}
           onFieldChange={handleFieldChange}
+          onRLChange={handleRLChange}
         />
       </TableContainer>
     </Box>

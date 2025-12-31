@@ -1300,31 +1300,54 @@ const generateSurveyPurpose = async (req, res, next) => {
 };
 
 const editSurveyPurpose = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
-      params: { purposeId },
+      params: { id, purposeId },
       body: { updatedRows },
     } = req;
 
+    const survey = await Survey.findById(id)
+      .populate("purposes")
+      .session(session);
+    if (!survey) throw Error("Survey not found");
+
     // 1. get full list of rows in correct order
-    const rows = await SurveyRow.find({ purposeId }).sort({ createdAt: 1 });
+    const rows = await SurveyRow.find({ purposeId })
+      .sort({ createdAt: 1 })
+      .session(session);
 
     // 2. find which row changed
     const changedIndex = updatedRows[0].index;
     const changes = updatedRows[0].data;
 
-    // 3. apply user edits to the changed row only
+    // 3. apply user edits to the changed row only (in-memory)
     Object.assign(rows[changedIndex], changes);
 
+    // 4. get starting RL
     const startRl = rows.find((r) => r.type === "Instrument setup")
-      .reducedLevels[0];
+      ?.reducedLevels?.[0];
 
     if (!startRl) throw Error("Something went wrong!");
 
+    // 5. sync survey reducedLevel if mismatched
+    if (Number(survey.reducedLevel) !== Number(startRl)) {
+      if (survey.purposes.length > 1)
+        throw new Error(
+          "Cannot update the survey reduced level because this survey has multiple purposes. " +
+            "Reduced level can only be updated when the survey has a single purpose."
+        );
+
+      survey.reducedLevel = Number(startRl);
+      await survey.save({ session });
+    }
+    return;
     let hi = 0;
     let rl = Number(startRl);
 
-    // 5. Recalculate all rows beginning from changedIndex
+    // 6. Recalculate all rows beginning from changedIndex
     for (let i = changedIndex; i < rows.length; i++) {
       const row = rows[i];
 
@@ -1352,7 +1375,7 @@ const editSurveyPurpose = async (req, res, next) => {
       }
     }
 
-    // 6. Write only rows from changedIndex
+    // 7. Write only rows from changedIndex
     const ops = rows.slice(changedIndex).map((r) => ({
       updateOne: {
         filter: { _id: r._id },
@@ -1370,7 +1393,12 @@ const editSurveyPurpose = async (req, res, next) => {
       },
     }));
 
-    await SurveyRow.bulkWrite(ops);
+    if (ops.length) {
+      await SurveyRow.bulkWrite(ops, { session });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
 
     return res.json({
       success: true,
@@ -1378,6 +1406,8 @@ const editSurveyPurpose = async (req, res, next) => {
       message: "Rows recalculated and updated",
     });
   } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
     next(err);
   }
 };

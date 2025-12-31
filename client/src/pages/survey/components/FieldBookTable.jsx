@@ -10,7 +10,7 @@ import BasicInput from "../../../components/BasicInput";
 
 // editable config by row.type
 const editableFields = {
-  "Instrument setup": ["BS", "remarks"],
+  "Instrument setup": ["BS", "RL", "remarks"],
   Chainage: ["CH", "IS", "Offset", "remarks"],
   CP: ["BS", "FS", "remarks"],
   TBM: ["IS", "remarks"],
@@ -36,8 +36,8 @@ export function calculateTableData(purpose) {
 
     switch (row.type) {
       case "Instrument setup": {
-        rl = Number(survey.reducedLevel || 0);
-        hi = rl + Number(row.backSight || 0);
+        rl = survey.reducedLevel;
+        hi = Number(rl) + Number(row.backSight || 0);
         rows.push({
           rowIndex: rIndex,
           rowType: row.type,
@@ -46,7 +46,7 @@ export function calculateTableData(purpose) {
           IS: "-",
           FS: "-",
           HI: hi.toFixed(3),
-          RL: rl.toFixed(3),
+          RL: rl,
           Offset: "-",
           remarks: (row.remarks && row.remarks[0]) ?? "",
         });
@@ -150,6 +150,7 @@ export default function FieldBookTable({
   tableData = [],
   isEditing = false,
   onFieldChange = () => {},
+  onRLChange = () => {},
 }) {
   const head = ["CH", "BS", "IS", "FS", "HI", "RL", "Offset", "Remarks"];
 
@@ -164,7 +165,9 @@ export default function FieldBookTable({
       <BasicInput
         value={value ?? ""}
         onChange={(e) =>
-          onFieldChange(row.rowIndex, key, nestedIndex, e.target.value)
+          key === "RL"
+            ? onRLChange(row.rowIndex, e.target.value)
+            : onFieldChange(row.rowIndex, key, nestedIndex, e.target.value)
         }
         sx={{ minWidth: "90px" }}
       />
@@ -201,7 +204,9 @@ export default function FieldBookTable({
               {renderEditable(row, "FS", row.FS)}
             </TableCell>
             <TableCell align="right">{row.HI}</TableCell>
-            <TableCell align="right">{row.RL}</TableCell>
+            <TableCell align="right">
+              {renderEditable(row, "RL", row.RL)}
+            </TableCell>
             <TableCell align="right">
               {renderEditable(row, "Offset", row.Offset)}
             </TableCell>
