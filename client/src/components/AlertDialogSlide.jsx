@@ -31,6 +31,11 @@ export default function AlertDialogSlide({
         keepMounted
         onClose={onCancel}
         aria-describedby="alert-dialog-slide-description"
+        sx={{
+          "& .MuiDialog-container , .MuiPaper-elevation": {
+            width: "100%",
+          },
+        }}
       >
         <DialogTitle>{title}</DialogTitle>
         <DialogContent>
@@ -40,7 +45,7 @@ export default function AlertDialogSlide({
 
           {content}
         </DialogContent>
-        {(onCancel || onSubmit) && (
+        {(cancelButtonText || submitButtonText) && (
           <DialogActions>
             <Button onClick={onCancel}>{cancelButtonText}</Button>
             <Button onClick={onSubmit}>{submitButtonText}</Button>

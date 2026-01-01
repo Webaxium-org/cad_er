@@ -29,6 +29,8 @@ import { MdDelete } from "react-icons/md";
 import BasicAutocomplete from "../../components/BasicAutocomplete";
 import BasicButton from "../../components/BasicButton";
 import SmallHeader from "../../components/SmallHeader";
+import DeductionContent from "./components/DeductionContent";
+import AlertDialogSlide from "../../components/AlertDialogSlide";
 
 const toggleButtonSx = {
   flex: 1,
@@ -68,6 +70,8 @@ const Report = () => {
   const [selectedPurposes, setSelectedPurposes] = useState([]);
 
   const [reportType, setReportType] = useState(null);
+
+  const [open, setOpen] = useState(null);
 
   const handleInputChange = (e, newValue) => {
     const surveyId = newValue.value;
@@ -136,7 +140,7 @@ const Report = () => {
     return link;
   };
 
-  const generateReport = () => {
+  const generateReport = (rows) => {
     try {
       if (
         (reportType === "area" || reportType === "volume") &&
@@ -150,10 +154,35 @@ const Report = () => {
       const link = getLink();
       const selectedIds = selectedPurposes.map((p) => p._id);
 
-      navigate(link, { state: { selectedPurposeIds: selectedIds } });
+      navigate(link, { state: { selectedPurposeIds: selectedIds, rows } });
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     }
+  };
+
+  const generateDeductionReport = (rows) => {
+    generateReport(rows);
+  };
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const alertData = {
+    title: "",
+    description: "",
+    content: (
+      <DeductionContent
+        purpose={selectedPurposes[0]}
+        onCancel={handleClose}
+        onSubmit={generateDeductionReport}
+      />
+    ),
+    onCancel: handleClose,
   };
 
   return (
@@ -235,8 +264,13 @@ const Report = () => {
         </Paper>
 
         <Activity
-          mode={survey && reportType === "volume" ? "visible" : "hidden"}
+          mode={
+            survey && reportType === "volume" && selectedPurposes.length === 2
+              ? "visible"
+              : "hidden"
+          }
         >
+          <AlertDialogSlide {...alertData} open={open} />
           <Box display={"flex"} justifyContent={"center"}>
             <BasicButton
               value={"DEDUCTION"}
@@ -246,6 +280,7 @@ const Report = () => {
                 padding: "5.6px 11px",
                 minWidth: "200px",
               }}
+              onClick={handleOpen}
             />
           </Box>
         </Activity>

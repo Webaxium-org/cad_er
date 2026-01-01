@@ -1230,32 +1230,23 @@ const generateSurveyPurpose = async (req, res, next) => {
     // 🔹 Bulk Insert Rows (FASTEST)
     // -----------------------------
 
-    const roadWidth = Number(width) || 0;
+    const roadWidth = Number(width);
+    const safeQuantity = Number(quantity);
+    const lastReading = readingsToCreate.at(-1);
+    const limit =
+      Number(lastReading?.chainage?.split(survey.separator || "/")?.[1]) || 0;
 
     const bulkOps = readingsToCreate.map((reading) => {
-      // ✅ FIX 1: Correct reduce (your version mutated curr incorrectly)
       const totalReadingReducedLevel = reading.reducedLevels.reduce(
         (acc, curr) => acc + Number(curr),
         0
       );
 
-      // Assuming always 2 readings?
       const avgReadingReducedLevel =
         totalReadingReducedLevel / reading.reducedLevels.length;
 
-      // Last reading always same → calculate once outside map (optimization)
-      const lastReading = readingsToCreate.at(-1);
-
-      // chainage format "X/Y" → get Y safely
-      const limit =
-        Number(lastReading?.chainage?.split(survey.separator || "/")?.[1]) || 0;
-
-      // quantity MUST be non-zero
-      const safeQuantity = Number(quantity) || 1;
-
       const value = (limit * roadWidth) / safeQuantity;
 
-      // Build updated RL array
       const reducedLevels = reading.reducedLevels.map(() =>
         Number(avgReadingReducedLevel + value).toFixed(3)
       );
