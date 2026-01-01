@@ -1253,10 +1253,10 @@ const generateSurveyPurpose = async (req, res, next) => {
       const avgReadingReducedLevel =
         totalReadingReducedLevel / reading.reducedLevels.length;
 
-      const value = (limit * roadWidth) / safeQuantity;
+      const height = (limit * roadWidth) / safeQuantity;
 
       const reducedLevels = reading.reducedLevels.map(() =>
-        Number(avgReadingReducedLevel + value).toFixed(3)
+        Number(avgReadingReducedLevel + height).toFixed(3)
       );
 
       return {
@@ -1280,6 +1280,8 @@ const generateSurveyPurpose = async (req, res, next) => {
 
     if (bulkOps.length > 0) {
       await SurveyRow.bulkWrite(bulkOps, { session });
+    } else {
+      throw createHttpError(409, `Something went wrong!`);
     }
 
     // 🔹 Commit transaction
