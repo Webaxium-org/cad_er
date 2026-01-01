@@ -1351,7 +1351,7 @@ const editSurveyPurpose = async (req, res, next) => {
       survey.reducedLevel = Number(startRl);
       await survey.save({ session });
     }
-    return;
+
     let hi = 0;
     let rl = Number(startRl);
 
