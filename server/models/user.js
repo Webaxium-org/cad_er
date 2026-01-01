@@ -14,11 +14,11 @@ const UserSchema = new Schema(
     },
     designation: {
       type: String,
-      required: true,
+      // required: true,
     },
     department: {
       type: String,
-      required: true,
+      // required: true,
     },
     createdBy: {
       type: Types.ObjectId,

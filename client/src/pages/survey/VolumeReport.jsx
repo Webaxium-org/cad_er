@@ -170,7 +170,7 @@ const VolumeReport = () => {
   const { global } = useSelector((state) => state.loading);
 
   const [survey, setSurvey] = useState([]);
-
+  console.log(state);
   const handleMenuSelect = (item) => {
     if (item.value === "excel download") {
       exportToExcel();

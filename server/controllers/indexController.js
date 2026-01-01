@@ -194,7 +194,6 @@ export const registerUser = async (req, res, next) => {
       password: hashedPassword,
       type,
       qualification: type === "Student" ? qualification : undefined,
-      authProvider: "local",
       status: "Active",
     });
 
