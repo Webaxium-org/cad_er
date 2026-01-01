@@ -154,7 +154,12 @@ const Report = () => {
       const link = getLink();
       const selectedIds = selectedPurposes.map((p) => p._id);
 
-      navigate(link, { state: { selectedPurposeIds: selectedIds, rows } });
+      navigate(link, {
+        state: {
+          selectedPurposeIds: selectedIds,
+          rows: rows ? structuredClone(rows) : null,
+        },
+      });
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     }
@@ -395,7 +400,7 @@ const Report = () => {
                 fullWidth
                 size="large"
                 disabled={!reportType || selectedPurposes.length === 0}
-                onClick={generateReport}
+                onClick={() => generateReport()}
                 sx={{
                   py: { xs: 1, sm: 1.5 },
                   borderRadius: 2,

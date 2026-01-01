@@ -35,7 +35,15 @@ const getAllSurvey = async (req, res, next) => {
 
     const surveys = await Survey.find(filter)
       .sort({ createdAt: -1 })
-      .populate("purposes")
+      .populate({
+        path: "purposes",
+        match: { deleted: false },
+        populate: {
+          path: "rows",
+          match: { deleted: false },
+          options: { sort: { createdAt: 1 } },
+        },
+      })
       // .populate('createdBy', 'name email')
       .lean();
 

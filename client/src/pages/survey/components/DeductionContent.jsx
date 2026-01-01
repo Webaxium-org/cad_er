@@ -127,7 +127,12 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
     <Stack spacing={2}>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h2" component="h6" fontSize={"20px"}>
+        <Typography
+          variant="h2"
+          component="h6"
+          fontWeight={500}
+          fontSize={"20px"}
+        >
           Deduction
         </Typography>
 
