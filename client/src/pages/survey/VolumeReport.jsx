@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
@@ -170,7 +170,7 @@ const VolumeReport = () => {
   const { global } = useSelector((state) => state.loading);
 
   const [survey, setSurvey] = useState([]);
-  console.log(state);
+
   const handleMenuSelect = (item) => {
     if (item.value === "excel download") {
       exportToExcel();
@@ -211,6 +211,8 @@ const VolumeReport = () => {
   const tableData = useMemo(() => {
     let initialEntry = null;
     let secondaryEntry = null;
+    const deductions = (state && state?.rows) || [];
+    const isDeduction = deductions.length;
 
     if (state && state?.selectedPurposeIds?.length) {
       initialEntry = survey?.purposes?.find(
@@ -331,9 +333,29 @@ const VolumeReport = () => {
         // --- Compute chainage difference ---
         const currentChainage = Number(chainage) || 0;
         const prevChainage = Number(prevSection) || 0;
-        const difference = prevSection
-          ? (currentChainage - prevChainage).toFixed(3)
-          : "0.000";
+        let difference = null;
+        let deductionMessage = null;
+        let flag = false;
+
+        if (isDeduction) {
+          const isDeductionRow = deductions.find(
+            (d) => d.from === row.chainage
+          );
+
+          if (isDeductionRow) {
+            difference = "0.000";
+            deductionMessage = `Deduction - from ${isDeductionRow?.from} to ${isDeductionRow?.to}`;
+            flag = true;
+          } else {
+            difference = prevSection
+              ? (currentChainage - prevChainage).toFixed(3)
+              : "0.000";
+          }
+        } else {
+          difference = prevSection
+            ? (currentChainage - prevChainage).toFixed(3)
+            : "0.000";
+        }
 
         // --- Average areas ---
         const cuttingAvgSqrMtr = (
@@ -367,6 +389,8 @@ const VolumeReport = () => {
           fillingPrevArea,
           fillingAvgSqrMtr,
           fillingVolumeCubicMtr,
+          deductionMessage,
+          isDeductionRow: flag,
         });
 
         // --- Prepare for next iteration ---
@@ -634,21 +658,29 @@ const VolumeReport = () => {
 
           <TableBody>
             {tableData?.rows?.map((row, index) => (
-              <TableRow key={index}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{row.section}</TableCell>
-                <TableCell>{row.prevSection}</TableCell>
-                <TableCell>{row.difference}</TableCell>
-                <TableCell>{row.width}</TableCell>
-                <TableCell>{row.cuttingAreaSqMtr}</TableCell>
-                <TableCell>{row.cuttingPrevArea}</TableCell>
-                <TableCell>{row.cuttingAvgSqrMtr}</TableCell>
-                <TableCell>{row.cuttingVolumeCubicMtr}</TableCell>
-                <TableCell>{row.fillingAreaSqMtr}</TableCell>
-                <TableCell>{row.fillingPrevArea}</TableCell>
-                <TableCell>{row.fillingAvgSqrMtr}</TableCell>
-                <TableCell>{row.fillingVolumeCubicMtr}</TableCell>
-              </TableRow>
+              <React.Fragment key={index}>
+                {row.isDeductionRow && (
+                  <TableRow>
+                    <TableCell colSpan={13}>{row.deductionMessage}</TableCell>
+                  </TableRow>
+                )}
+
+                <TableRow>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{row.section}</TableCell>
+                  <TableCell>{row.prevSection}</TableCell>
+                  <TableCell>{row.difference}</TableCell>
+                  <TableCell>{row.width}</TableCell>
+                  <TableCell>{row.cuttingAreaSqMtr}</TableCell>
+                  <TableCell>{row.cuttingPrevArea}</TableCell>
+                  <TableCell>{row.cuttingAvgSqrMtr}</TableCell>
+                  <TableCell>{row.cuttingVolumeCubicMtr}</TableCell>
+                  <TableCell>{row.fillingAreaSqMtr}</TableCell>
+                  <TableCell>{row.fillingPrevArea}</TableCell>
+                  <TableCell>{row.fillingAvgSqrMtr}</TableCell>
+                  <TableCell>{row.fillingVolumeCubicMtr}</TableCell>
+                </TableRow>
+              </React.Fragment>
             ))}
 
             <TableRow>
