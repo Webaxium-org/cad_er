@@ -228,12 +228,12 @@ const inputDetails = [
     for: "Proposed Level",
     options: [
       {
-        name: "slop",
-        label: "Slop",
-      },
-      {
         name: "camper",
         label: "Camper",
+      },
+      {
+        name: "slop",
+        label: "Slop",
       },
     ],
   },
@@ -303,7 +303,7 @@ const RoadSurveyForm = () => {
 
   const [type, setType] = useState(false);
 
-  const [crossSection, setCrossSection] = useState("slop");
+  const [crossSection, setCrossSection] = useState("camper");
 
   const [entryType, setEntryType] = useState("manualEntry");
 

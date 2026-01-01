@@ -818,6 +818,13 @@ const endSurveyPurpose = async (req, res, next) => {
     purpose.isPurposeFinish = true;
     purpose.purposeFinishDate = new Date();
 
+    if (purpose.type === "Final Level") {
+      survey.isSurveyFinish = true;
+      survey.surveyFinishDate = new Date();
+
+      await survey.save({ session });
+    }
+
     await purpose.save({ session });
 
     await session.commitTransaction();

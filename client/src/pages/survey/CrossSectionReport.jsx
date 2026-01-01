@@ -654,8 +654,9 @@ const CrossSectionReport = () => {
           component={Paper}
           sx={{
             maxHeight: 440,
-            overflowX: "auto", // 👈 REQUIRED
+            overflowX: "auto",
             borderRadius: 0,
+            position: "relative",
           }}
         >
           <Table stickyHeader sx={{ tableLayout: "fixed" }}>
@@ -687,7 +688,6 @@ const CrossSectionReport = () => {
                           style={{
                             paddingBottom: 0,
                             paddingTop: 0,
-                            paddingLeft: 100,
                           }}
                           colSpan={6}
                         >
@@ -699,7 +699,19 @@ const CrossSectionReport = () => {
                             <Table size="small" aria-label="purchases">
                               <TableBody>
                                 <TableRow>
-                                  <TableCell>Offset</TableCell>
+                                  <TableCell
+                                    sx={{
+                                      position: "sticky",
+                                      left: 0,
+                                      zIndex: 3,
+                                      backgroundColor: "#fff",
+                                      fontWeight: 600,
+                                      borderRight: "1px solid #e0e0e0",
+                                    }}
+                                  >
+                                    Offset
+                                  </TableCell>
+
                                   {selectedCs?.series?.map((s) => (
                                     <TableCell
                                       key={s._id}
@@ -713,7 +725,15 @@ const CrossSectionReport = () => {
                                 {selectedCs?.offsets?.map((offset) => (
                                   <TableRow key={offset}>
                                     {/* Offset Column */}
-                                    <TableCell>
+                                    <TableCell
+                                      sx={{
+                                        position: "sticky",
+                                        left: 0,
+                                        zIndex: 2,
+                                        backgroundColor: "#fff",
+                                        borderRight: "1px solid #e0e0e0",
+                                      }}
+                                    >
                                       {Number(offset).toFixed(3)}
                                     </TableCell>
 
