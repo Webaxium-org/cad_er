@@ -58,6 +58,22 @@ const exportVolumeReportPdf = ({ tableData, reportDetails }) => {
   const body = [];
 
   tableData?.rows?.forEach((row, index) => {
+    /* ---------------- Deduction Row ---------------- */
+    if (row.isDeductionRow) {
+      body.push([
+        {
+          content: row.deductionMessage,
+          colSpan: 13,
+          styles: {
+            fontStyle: "bolditalic",
+            halign: "left",
+            fillColor: [245, 245, 245],
+          },
+        },
+      ]);
+    }
+
+    /* ---------------- Normal Data Row ---------------- */
     body.push([
       index + 1,
       row.section,
@@ -240,6 +256,7 @@ const VolumeReport = () => {
     const rows = [];
 
     let prevSection = null;
+    let prevDeductionTo = null;
     let cuttingPrevArea = "0.000";
     let fillingPrevArea = "0.000";
 
@@ -249,157 +266,170 @@ const VolumeReport = () => {
     };
 
     // Process only "Chainage" rows
-    initialRows
-      .filter((row) => row.type === "Chainage")
-      .forEach((row) => {
-        const secondaryRow = secondaryRows?.find(
-          (p) => p.chainage === row.chainage
-        );
-        const chainage =
-          row.chainage?.split(survey?.separator || "/")?.[1] ?? "";
+    const filteredInitialRows = initialRows.filter(
+      (row) => row.type === "Chainage"
+    );
 
-        let prevReadings = [];
+    filteredInitialRows.forEach((row) => {
+      const secondaryRow = secondaryRows?.find(
+        (p) => p.chainage === row.chainage
+      );
+      const chainage = row.chainage?.split(survey?.separator || "/")?.[1] ?? "";
 
-        const data = (row?.offsets ?? []).map((entry, idx) => {
-          const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
-          const secondaryEntryRL = secondaryRow?.reducedLevels?.[idx] ?? 0;
+      let prevReadings = [];
 
-          const initRL = Number(initialEntryRL);
-          const propRL = Number(secondaryEntryRL);
-          const offsetVal = Number(entry);
-          const prevOffsetVal = Number(row?.offsets?.[idx - 1] ?? 0);
+      const data = (row?.offsets ?? []).map((entry, idx) => {
+        const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
+        const secondaryEntryRL = secondaryRow?.reducedLevels?.[idx] ?? 0;
 
-          // Determine whether it's cutting or filling
-          const isCutting = initRL > propRL;
+        const initRL = Number(initialEntryRL);
+        const propRL = Number(secondaryEntryRL);
+        const offsetVal = Number(entry);
+        const prevOffsetVal = Number(row?.offsets?.[idx - 1] ?? 0);
 
-          // Shared width (W) for both cutting and filling
-          const widthMtr =
-            idx === 0 ? "0.000" : (offsetVal - prevOffsetVal).toFixed(3);
+        // Determine whether it's cutting or filling
+        const isCutting = initRL > propRL;
 
-          const cuttingMtr = isCutting ? (initRL - propRL).toFixed(3) : "0.000";
+        // Shared width (W) for both cutting and filling
+        const widthMtr =
+          idx === 0 ? "0.000" : (offsetVal - prevOffsetVal).toFixed(3);
 
-          const cuttingAvgMtr =
-            isCutting || idx === 0
-              ? "0.000"
-              : (
-                  (Number(cuttingMtr) +
-                    Number(prevReadings[idx - 1]?.cuttingMtr || 0)) /
-                  2
-                ).toFixed(3);
+        const cuttingMtr = isCutting ? (initRL - propRL).toFixed(3) : "0.000";
 
-          const fillingMtr = isCutting ? "0.000" : (propRL - initRL).toFixed(3);
+        const cuttingAvgMtr =
+          isCutting || idx === 0
+            ? "0.000"
+            : (
+                (Number(cuttingMtr) +
+                  Number(prevReadings[idx - 1]?.cuttingMtr || 0)) /
+                2
+              ).toFixed(3);
 
-          const fillingAvgMtr =
-            isCutting || idx === 0
-              ? "0.000"
-              : (
-                  (Number(fillingMtr) +
-                    Number(prevReadings[idx - 1]?.fillingMtr || 0)) /
-                  2
-                ).toFixed(3);
+        const fillingMtr = isCutting ? "0.000" : (propRL - initRL).toFixed(3);
 
-          const dataDoc = {
-            offset: entry,
-            initialEntryRL,
-            secondaryEntryRL,
-            cuttingMtr,
-            cuttingAvgMtr,
-            cuttingWMtr: widthMtr,
-            cuttingAreaSqMtr: (
-              Number(cuttingAvgMtr) * Number(widthMtr)
-            ).toFixed(3),
-            fillingMtr,
-            fillingAvgMtr,
-            fillingWMtr: widthMtr,
-            fillingAreaSqMtr: (
-              Number(fillingAvgMtr) * Number(widthMtr)
-            ).toFixed(3),
-          };
+        const fillingAvgMtr =
+          isCutting || idx === 0
+            ? "0.000"
+            : (
+                (Number(fillingMtr) +
+                  Number(prevReadings[idx - 1]?.fillingMtr || 0)) /
+                2
+              ).toFixed(3);
 
-          prevReadings.push(dataDoc);
-          return dataDoc;
-        });
+        const dataDoc = {
+          offset: entry,
+          initialEntryRL,
+          secondaryEntryRL,
+          cuttingMtr,
+          cuttingAvgMtr,
+          cuttingWMtr: widthMtr,
+          cuttingAreaSqMtr: (Number(cuttingAvgMtr) * Number(widthMtr)).toFixed(
+            3
+          ),
+          fillingMtr,
+          fillingAvgMtr,
+          fillingWMtr: widthMtr,
+          fillingAreaSqMtr: (Number(fillingAvgMtr) * Number(widthMtr)).toFixed(
+            3
+          ),
+        };
 
-        // --- Total area for this section ---
-        const cuttingAreaSqMtr = data.reduce(
-          (acc, curr) => acc + Number(curr.cuttingAreaSqMtr || 0),
-          0
-        );
-        const fillingAreaSqMtr = data.reduce(
-          (acc, curr) => acc + Number(curr.fillingAreaSqMtr || 0),
-          0
-        );
+        prevReadings.push(dataDoc);
+        return dataDoc;
+      });
 
-        // --- Compute chainage difference ---
-        const currentChainage = Number(chainage) || 0;
-        const prevChainage = Number(prevSection) || 0;
-        let difference = null;
-        let deductionMessage = null;
-        let flag = false;
+      // --- Total area for this section ---
+      const cuttingAreaSqMtr = data.reduce(
+        (acc, curr) => acc + Number(curr.cuttingAreaSqMtr || 0),
+        0
+      );
+      const fillingAreaSqMtr = data.reduce(
+        (acc, curr) => acc + Number(curr.fillingAreaSqMtr || 0),
+        0
+      );
 
-        if (isDeduction) {
-          const isDeductionRow = deductions.find(
-            (d) => d.from === row.chainage
-          );
+      // --- Compute chainage difference ---
+      const currentChainage = Number(chainage) || 0;
+      const prevChainage = Number(prevSection) || 0;
+      let difference = null;
+      let deductionMessage = null;
+      let flag = false;
 
-          if (isDeductionRow) {
-            difference = "0.000";
-            deductionMessage = `Deduction - from ${isDeductionRow?.from} to ${isDeductionRow?.to}`;
-            flag = true;
-          } else {
-            difference = prevSection
-              ? (currentChainage - prevChainage).toFixed(3)
-              : "0.000";
-          }
+      if (isDeduction) {
+        const isDeductionRow = deductions.find((d) => d.from === row.chainage);
+
+        if (isDeductionRow) {
+          const trimmedRemark = isDeductionRow?.remark?.trim();
+
+          prevDeductionTo = isDeductionRow?.to;
+          difference = "0.000";
+          flag = true;
+
+          deductionMessage =
+            "Deduction - " +
+            (trimmedRemark
+              ? trimmedRemark
+              : `from ${isDeductionRow?.from} to ${isDeductionRow?.to}`);
+        } else if (
+          prevDeductionTo !== null &&
+          prevDeductionTo !== row.chainage
+        ) {
+          difference = "0.000";
         } else {
+          prevDeductionTo = null;
           difference = prevSection
             ? (currentChainage - prevChainage).toFixed(3)
             : "0.000";
         }
+      } else {
+        difference = prevSection
+          ? (currentChainage - prevChainage).toFixed(3)
+          : "0.000";
+      }
 
-        // --- Average areas ---
-        const cuttingAvgSqrMtr = (
-          (Number(cuttingAreaSqMtr) + Number(cuttingPrevArea)) /
-          2
-        ).toFixed(3);
-        const fillingAvgSqrMtr = (
-          (Number(fillingAreaSqMtr) + Number(fillingPrevArea)) /
-          2
-        ).toFixed(3);
+      // --- Average areas ---
+      const cuttingAvgSqrMtr = (
+        (Number(cuttingAreaSqMtr) + Number(cuttingPrevArea)) /
+        2
+      ).toFixed(3);
+      const fillingAvgSqrMtr = (
+        (Number(fillingAreaSqMtr) + Number(fillingPrevArea)) /
+        2
+      ).toFixed(3);
 
-        // --- Volumes ---
-        const cuttingVolumeCubicMtr = (
-          Number(difference) * Number(cuttingAvgSqrMtr)
-        ).toFixed(3);
-        const fillingVolumeCubicMtr = (
-          Number(difference) * Number(fillingAvgSqrMtr)
-        ).toFixed(3);
+      // --- Volumes ---
+      const cuttingVolumeCubicMtr = (
+        Number(difference) * Number(cuttingAvgSqrMtr)
+      ).toFixed(3);
+      const fillingVolumeCubicMtr = (
+        Number(difference) * Number(fillingAvgSqrMtr)
+      ).toFixed(3);
 
-        // --- Push row ---
-        rows.push({
-          section: currentChainage.toFixed(3),
-          prevSection: prevSection ? prevChainage.toFixed(3) : "-",
-          difference,
-          width: row?.roadWidth ?? "-",
-          cuttingAreaSqMtr: cuttingAreaSqMtr.toFixed(3),
-          cuttingPrevArea,
-          cuttingAvgSqrMtr,
-          cuttingVolumeCubicMtr,
-          fillingAreaSqMtr: fillingAreaSqMtr.toFixed(3),
-          fillingPrevArea,
-          fillingAvgSqrMtr,
-          fillingVolumeCubicMtr,
-          deductionMessage,
-          isDeductionRow: flag,
-        });
-
-        // --- Prepare for next iteration ---
-        cuttingPrevArea = Number(cuttingAreaSqMtr)?.toFixed(3);
-        fillingPrevArea = Number(fillingAreaSqMtr)?.toFixed(3);
-        totals.totalCuttingVolume += Number(cuttingVolumeCubicMtr);
-        totals.totalFillingVolume += Number(fillingVolumeCubicMtr);
-        prevSection = chainage;
+      // --- Push row ---
+      rows.push({
+        section: currentChainage.toFixed(3),
+        prevSection: prevSection ? prevChainage.toFixed(3) : "-",
+        difference,
+        width: row?.roadWidth ?? "-",
+        cuttingAreaSqMtr: cuttingAreaSqMtr.toFixed(3),
+        cuttingPrevArea,
+        cuttingAvgSqrMtr,
+        cuttingVolumeCubicMtr,
+        fillingAreaSqMtr: fillingAreaSqMtr.toFixed(3),
+        fillingPrevArea,
+        fillingAvgSqrMtr,
+        fillingVolumeCubicMtr,
+        deductionMessage,
+        isDeductionRow: flag,
       });
+
+      // --- Prepare for next iteration ---
+      cuttingPrevArea = Number(cuttingAreaSqMtr)?.toFixed(3);
+      fillingPrevArea = Number(fillingAreaSqMtr)?.toFixed(3);
+      totals.totalCuttingVolume += Number(cuttingVolumeCubicMtr);
+      totals.totalFillingVolume += Number(fillingVolumeCubicMtr);
+      prevSection = chainage;
+    });
 
     return { ...totals, rows };
   }, [survey]);
@@ -479,8 +509,36 @@ const VolumeReport = () => {
     // ===== Data =====
     let currentRow = 3;
 
+    // ===== Data =====
     tableData?.rows?.forEach((entry, idx) => {
-      // Data rows
+      /* ---------------- Deduction Row ---------------- */
+      if (entry.isDeductionRow) {
+        const deductionRow = sheet.addRow([entry.deductionMessage]);
+
+        // Merge A → M (13 columns)
+        sheet.mergeCells(deductionRow.number, 1, deductionRow.number, 13);
+
+        const cell = deductionRow.getCell(1);
+        cell.font = { italic: true, bold: true };
+        cell.alignment = {
+          horizontal: "left",
+          vertical: "middle",
+          wrapText: true,
+        };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF5F5F5" },
+        };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      }
+
+      /* ---------------- Normal Data Row ---------------- */
       const dataRow = sheet.addRow([
         idx + 1,
         entry.section,
@@ -497,18 +555,18 @@ const VolumeReport = () => {
         entry.fillingVolumeCubicMtr,
       ]);
 
-      dataRow.eachCell((cell, colNumber) => {
-        // Common border + alignment for all cells
+      dataRow.eachCell((cell) => {
         cell.border = {
           top: { style: "thin" },
           left: { style: "thin" },
           bottom: { style: "thin" },
           right: { style: "thin" },
         };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+        };
       });
-
-      currentRow++;
     });
 
     // Totals Row

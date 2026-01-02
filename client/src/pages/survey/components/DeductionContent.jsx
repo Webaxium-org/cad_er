@@ -4,10 +4,12 @@ import BasicSelect from "../../../components/BasicSelect";
 import { IoAdd } from "react-icons/io5";
 import { IoIosRemove } from "react-icons/io";
 import BasicButton from "../../../components/BasicButton";
+import BasicInput from "../../../components/BasicInput";
 
 const initialRow = {
   from: "",
   to: "",
+  remark: "",
 };
 
 const addButtonSx = {
@@ -145,24 +147,27 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
       {/* Rows */}
       {rows.map((row, idx) => (
         <Stack direction="row" alignItems="end" spacing={2} key={idx}>
-          <Box flex={1}>
-            <BasicSelect
-              label="From"
-              value={row.from}
-              options={getFromOptions(idx)}
-              onChange={(e) => handleInputChange(idx, "from", e.target.value)}
-            />
-          </Box>
+          <BasicSelect
+            label="From"
+            value={row.from}
+            options={getFromOptions(idx)}
+            onChange={(e) => handleInputChange(idx, "from", e.target.value)}
+          />
 
-          <Box flex={1}>
-            <BasicSelect
-              label="To"
-              value={row.to}
-              options={getToOptions(idx)}
-              onChange={(e) => handleInputChange(idx, "to", e.target.value)}
-              disabled={!row.from}
-            />
-          </Box>
+          <BasicSelect
+            label="To"
+            value={row.to}
+            options={getToOptions(idx)}
+            onChange={(e) => handleInputChange(idx, "to", e.target.value)}
+            disabled={!row.from}
+          />
+
+          <BasicInput
+            label="Remark"
+            value={row.remark}
+            onChange={(e) => handleInputChange(idx, "remark", e.target.value)}
+            disabled={!row.from}
+          />
 
           <Box
             onClick={() => handleRemoveRow(idx)}
