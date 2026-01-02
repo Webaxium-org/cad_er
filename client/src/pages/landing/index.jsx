@@ -9,6 +9,7 @@ import {
   useTheme,
   useMediaQuery,
   Link,
+  Container,
 } from "@mui/material";
 import {
   AiOutlineWarning,
@@ -104,12 +105,17 @@ const Landing = () => {
   }, []);
 
   const isLgDown = useMediaQuery(theme.breakpoints.down("lg"));
-  const isMdDown = useMediaQuery(theme.breakpoints.down("md"));
-  const isSmDown = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleNavigate = (link) => navigate(link);
   return (
-    <Box>
+    <Container
+      maxWidth={false}
+      disableGutters
+      sx={{
+        maxWidth: "1300px",
+        overflow: "hidden",
+      }}
+    >
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 6 }}>
           <Stack
@@ -761,7 +767,7 @@ const Landing = () => {
           </Typography>
         </Box>
       </Box>
-    </Box>
+    </Container>
   );
 };
 
