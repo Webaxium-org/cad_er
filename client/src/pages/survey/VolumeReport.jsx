@@ -256,7 +256,9 @@ const VolumeReport = () => {
     const rows = [];
 
     let prevSection = null;
-    let prevDeductionTo = null;
+    let currentDeduction = null;
+    let isDeductionStarted = false;
+    let isDeductionRemarkAdded = false;
     let cuttingPrevArea = "0.000";
     let fillingPrevArea = "0.000";
 
@@ -359,24 +361,37 @@ const VolumeReport = () => {
         const isDeductionRow = deductions.find((d) => d.from === row.chainage);
 
         if (isDeductionRow) {
-          const trimmedRemark = isDeductionRow?.remark?.trim();
+          isDeductionStarted = true;
+          currentDeduction = isDeductionRow;
 
-          prevDeductionTo = isDeductionRow?.to;
-          difference = "0.000";
-          flag = true;
+          difference = prevSection
+            ? (currentChainage - prevChainage).toFixed(3)
+            : "0.000";
+        } else if (isDeductionStarted) {
+          if (!isDeductionRemarkAdded) {
+            const trimmedRemark = currentDeduction?.remark?.trim();
 
-          deductionMessage =
-            "Deduction - " +
-            (trimmedRemark
-              ? trimmedRemark
-              : `from ${isDeductionRow?.from} to ${isDeductionRow?.to}`);
-        } else if (
-          prevDeductionTo !== null &&
-          prevDeductionTo !== row.chainage
-        ) {
-          difference = "0.000";
+            difference = "0.000";
+            flag = true;
+
+            deductionMessage =
+              "Deduction - " +
+              (trimmedRemark
+                ? trimmedRemark
+                : `from ${currentDeduction?.from} to ${currentDeduction?.to}`);
+
+            isDeductionRemarkAdded = true;
+          } else {
+            const isDeductionEndingNow = currentDeduction.to === row.chainage;
+
+            if (isDeductionEndingNow) {
+              currentDeduction = null;
+              isDeductionStarted = false;
+            }
+
+            difference = "0.000";
+          }
         } else {
-          prevDeductionTo = null;
           difference = prevSection
             ? (currentChainage - prevChainage).toFixed(3)
             : "0.000";
