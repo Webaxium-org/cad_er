@@ -1862,7 +1862,7 @@ const generateSurveyPurpose = async (req, res, next) => {
         );
         const safeIdx =
           idx === -1 || idx === undefined
-            ? Math.round(r.offsets.length / 2)
+            ? Math.round((r.intermediateOffsets || []).length / 2)
             : idx;
         const val = r.reducedLevels[safeIdx];
         return val !== null && val !== undefined && val !== ""
@@ -1999,9 +1999,9 @@ const generateSurveyPurpose = async (req, res, next) => {
       const numericOffsets = (r.intermediateOffsets || []).map((e) =>
         Number(e.offset),
       );
-      const oglProfile = (r.intermediateOffsets || []).map((e) => ({
+      const oglProfile = (r.intermediateOffsets || []).map((e, idx) => ({
         offset: Number(e.offset),
-        ogl: Number(e.rl),
+        ogl: Number(r.reducedLevels?.[idx] ?? 0),
       }));
       return { chainage: chainageMeters, oglProfile, numericOffsets };
     });
@@ -2096,8 +2096,8 @@ const generateSurveyPurpose = async (req, res, next) => {
 
       if (isInterpolate) {
         const initialLevelMap = {};
-        (reading.intermediateOffsets || []).forEach((e) => {
-          initialLevelMap[e.offset] = e.rl;
+        (reading.intermediateOffsets || []).forEach((e, idx) => {
+          initialLevelMap[e.offset] = reading.reducedLevels?.[idx];
         });
 
         const cropAndInterpolate = (targetWidth, sourceMap) => {
@@ -2242,21 +2242,21 @@ const generateSurveyPurpose = async (req, res, next) => {
           });
         }
       } else {
-        const totalReadingReducedLevel = (
-          reading.intermediateOffsets || []
-        ).reduce((acc, e) => acc + Number(e.rl), 0);
-        const avgReadingReducedLevel = (reading.intermediateOffsets || [])
-          .length
-          ? totalReadingReducedLevel / reading.intermediateOffsets.length
+        const totalReadingReducedLevel = (reading.reducedLevels || []).reduce(
+          (acc, rl) => acc + Number(rl),
+          0,
+        );
+        const avgReadingReducedLevel = (reading.reducedLevels || []).length
+          ? totalReadingReducedLevel / reading.reducedLevels.length
           : 0;
 
         // Find centerline OGL for the current reading
-        const centerlineEntry = (reading.intermediateOffsets || []).find(
+        const centerlineIdx = (reading.intermediateOffsets || []).findIndex(
           (e) => Number(e.offset) === plsVal,
         );
         const centerlineOGL =
-          centerlineEntry !== undefined
-            ? Number(centerlineEntry.rl)
+          centerlineIdx !== -1
+            ? Number(reading.reducedLevels?.[centerlineIdx] ?? avgReadingReducedLevel)
             : avgReadingReducedLevel;
 
         // ── Proposed level per offset ──────────────────────────────────────
