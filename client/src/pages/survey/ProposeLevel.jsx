@@ -4,6 +4,7 @@ import {
   Container,
   Grid,
   IconButton,
+  InputAdornment,
   Paper,
   Stack,
   Typography,
@@ -197,6 +198,7 @@ const inputDetails = [
     name: "csCamper",
     type: "text",
     for: "camper",
+    endAdornment: <InputAdornment position="end">%</InputAdornment>,
   },
 ];
 

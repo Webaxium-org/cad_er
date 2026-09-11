@@ -7,6 +7,7 @@ import {
   Paper,
   Container,
   IconButton,
+  InputAdornment,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -23,6 +24,7 @@ import BasicInput from "../../components/BasicInput";
 import {
   createSurveyPurpose,
   generateSurveyPurpose,
+  generateWaterWayProposalPurpose,
   getSurvey,
 } from "../../services/surveyServices";
 import AlertDialogSlide from "../../components/AlertDialogSlide";
@@ -189,6 +191,53 @@ const inputDetails = [
     type: "text",
     hidden: true,
     for: "Proposed Level",
+    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+  },
+  {
+    label: "Water Way proposal method*",
+    name: "proposalMethod",
+    mode: "select",
+    options: [
+      { label: "Bottom Width Fixed", value: "Bottom Width Fixed" },
+      { label: "Slope End-to-End Type", value: "Slope End-to-End Type" },
+      { label: "With Respect to Buffer", value: "With Respect to Buffer" },
+    ],
+    hidden: true,
+    for: "waterWay",
+  },
+  {
+    label: "Bottom width*",
+    name: "bottomWidth",
+    type: "number",
+    hidden: true,
+    for: "bottomWidthFixed",
+  },
+  {
+    label: "Side slope ratio (H:V)*",
+    name: "slope",
+    type: "text",
+    hidden: true,
+    for: "waterWaySlope",
+  },
+  {
+    label: "Buffer*",
+    name: "buffer",
+    type: "number",
+    hidden: true,
+    for: "buffer",
+    size: 6,
+  },
+  {
+    label: "Buffer direction*",
+    name: "bufferDirection",
+    mode: "select",
+    options: [
+      { label: "Below existing level", value: "below" },
+      { label: "Above existing level", value: "above" },
+    ],
+    hidden: true,
+    for: "buffer",
+    size: 6,
   },
 ];
 
@@ -212,6 +261,11 @@ const initialFormValues = {
   csSlop: "",
   csCamper: "0",
   formula: "Default",
+  proposalMethod: "Bottom Width Fixed",
+  bottomWidth: "",
+  slope: "",
+  buffer: "",
+  bufferDirection: "below",
 };
 
 const ContinueSurveyForm = () => {
@@ -230,6 +284,8 @@ const ContinueSurveyForm = () => {
   const [inputData, setInputData] = useState(inputDetails);
 
   const [survey, setSurvey] = useState(null);
+
+  const isWaterWay = survey?.type === "Water Way";
 
   const [type, setType] = useState(state?.fromPL || false);
 
@@ -321,8 +377,36 @@ const ContinueSurveyForm = () => {
         : Yup.string().nullable(),
 
     csCamper:
-      type && crossSection === "camper"
+      type && !isWaterWay && crossSection === "camper"
         ? Yup.string().required("Cross section camper is required")
+        : Yup.string().nullable(),
+
+    proposalMethod:
+      type && isWaterWay
+        ? Yup.string().required("Water Way proposal method is required")
+        : Yup.string().nullable(),
+
+    bottomWidth:
+      type && isWaterWay && formValues.proposalMethod === "Bottom Width Fixed"
+        ? Yup.number()
+            .typeError("Bottom width is required")
+            .required("Bottom width is required")
+        : Yup.string().nullable(),
+
+    slope:
+      type &&
+      isWaterWay &&
+      ["Bottom Width Fixed", "Slope End-to-End Type"].includes(
+        formValues.proposalMethod,
+      )
+        ? Yup.string().required("Side slope ratio is required")
+        : Yup.string().nullable(),
+
+    buffer:
+      type && isWaterWay && formValues.proposalMethod === "With Respect to Buffer"
+        ? Yup.number()
+            .typeError("Buffer is required")
+            .required("Buffer is required")
         : Yup.string().nullable(),
   });
 
@@ -376,10 +460,12 @@ const ContinueSurveyForm = () => {
       const { data } =
         entryType === "autoGenerate" && type === false
           ? await createSurveyPurpose(id, formValues)
-          : await generateSurveyPurpose(id, {
-              ...formValues,
-              interpolation: rows,
-            });
+          : isWaterWay
+            ? await generateWaterWayProposalPurpose(id, formValues)
+            : await generateSurveyPurpose(id, {
+                ...formValues,
+                interpolation: rows,
+              });
 
       if (data.success) {
         const purposeId = data?.survey?.purposeId;
@@ -446,7 +532,7 @@ const ContinueSurveyForm = () => {
         ?.filter((p) => p.phase === "Proposal")
         .map((p) => p.type);
 
-      updateInputData(completedLevels, completedPurposes);
+      updateInputData(completedLevels, completedPurposes, surveyDoc.type);
 
       setFormValues(updatedFormValues);
       setSurvey(surveyDoc);
@@ -457,7 +543,9 @@ const ContinueSurveyForm = () => {
     }
   };
 
-  const updateInputData = (completedLevels = [], completedPurposes = []) => {
+  const updateInputData = (completedLevels = [], completedPurposes = [], surveyType = survey?.type) => {
+    const isWaterWaySurvey = surveyType === "Water Way";
+
     setInputData((prev) =>
       prev.map((e) => {
         if (e.for === "All") {
@@ -485,12 +573,22 @@ const ContinueSurveyForm = () => {
         }
 
         if (type && e.for === "Proposed Level") {
-          if (e.name === "cSection" || e.name === "csSlop") {
-            return { ...e, hidden: crossSection === "camper" };
+          // Hide road-specific fields for Water Way surveys
+          if (
+            isWaterWaySurvey &&
+            ["cSection", "csSlop", "csCamper", "crossSectionType"].includes(e.name)
+          ) {
+            return { ...e, hidden: true };
           }
 
-          if (e.name === "csCamper") {
-            return { ...e, hidden: crossSection === "slop" };
+          if (!isWaterWaySurvey) {
+            if (e.name === "cSection" || e.name === "csSlop") {
+              return { ...e, hidden: crossSection === "camper" };
+            }
+
+            if (e.name === "csCamper") {
+              return { ...e, hidden: crossSection === "slop" };
+            }
           }
 
           if (e.name === "proposedLevel") {
@@ -498,14 +596,43 @@ const ContinueSurveyForm = () => {
           }
 
           if (e.name === "quantity") {
-            return { ...e, hidden: entryType === "manualEntry" };
+            return { ...e, hidden: entryType === "manualEntry" || isWaterWaySurvey };
           }
 
           if (e.name === "length" || e.name === "width") {
-            return { ...e, hidden: entryType === "manualEntry" };
+            return { ...e, hidden: entryType === "manualEntry" || isWaterWaySurvey };
           }
 
           return { ...e, hidden: false };
+        }
+
+        if (e.for === "waterWay") {
+          return { ...e, hidden: !(type && isWaterWaySurvey) };
+        }
+
+        if (e.for === "bottomWidthFixed") {
+          return {
+            ...e,
+            hidden: !(type && isWaterWaySurvey && formValues.proposalMethod === "Bottom Width Fixed"),
+          };
+        }
+
+        if (e.for === "waterWaySlope") {
+          return {
+            ...e,
+            hidden: !(
+              type &&
+              isWaterWaySurvey &&
+              ["Bottom Width Fixed", "Slope End-to-End Type"].includes(formValues.proposalMethod)
+            ),
+          };
+        }
+
+        if (e.for === "buffer") {
+          return {
+            ...e,
+            hidden: !(type && isWaterWaySurvey && formValues.proposalMethod === "With Respect to Buffer"),
+          };
         }
 
         if (e.for === "actual" && !type) {
@@ -659,7 +786,7 @@ const ContinueSurveyForm = () => {
     } else {
       didMount.current = true;
     }
-  }, [type, crossSection, entryType]);
+  }, [type, crossSection, entryType, formValues.proposalMethod]);
 
   useEffect(() => {
     fetchData();
