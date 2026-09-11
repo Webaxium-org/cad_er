@@ -262,10 +262,12 @@ const initialFormValues = {
   csCamper: "0",
   formula: "Default",
   proposalMethod: "Bottom Width Fixed",
+  quantity: "",
   bottomWidth: "",
   slope: "",
   buffer: "",
   bufferDirection: "below",
+  surveyType: "",
 };
 
 const ContinueSurveyForm = () => {
@@ -319,19 +321,31 @@ const ContinueSurveyForm = () => {
 
     quantity:
       type && entryType === "autoGenerate"
-        ? Yup.number()
-            .typeError("Quantity is required")
-            .required("Quantity is required")
+        ? Yup.string().when(["surveyType", "proposalMethod"], {
+            is: (surveyType, proposalMethod) =>
+              surveyType !== "Water Way" ||
+              proposalMethod === "Bottom Width Fixed",
+            then: (s) => s.required("Quantity is required"),
+            otherwise: (s) => s.nullable(),
+          })
         : Yup.string().nullable(),
 
     width:
       type && entryType === "autoGenerate"
-        ? Yup.string().required("Width is required")
+        ? Yup.string().when("surveyType", {
+            is: (val) => val !== "Water Way",
+            then: (s) => s.required("Width is required"),
+            otherwise: (s) => s.nullable(),
+          })
         : Yup.string().nullable(),
 
     length:
       type && entryType === "autoGenerate"
-        ? Yup.string().required("Length is required")
+        ? Yup.string().when("surveyType", {
+            is: (val) => val !== "Water Way",
+            then: (s) => s.required("Length is required"),
+            otherwise: (s) => s.nullable(),
+          })
         : Yup.string().nullable(),
 
     formula: Yup.string().nullable(),
@@ -524,6 +538,7 @@ const ContinueSurveyForm = () => {
         project: surveyDoc?.project,
         reducedLevel: surveyDoc?.reducedLevel || "",
         backSight: initialLevel?.rows[0]?.backSight || "",
+        surveyType: surveyDoc?.type || "",
       };
 
       const completedLevels = surveyDoc?.purposes?.map((p) => p.type) || [];
@@ -596,7 +611,10 @@ const ContinueSurveyForm = () => {
           }
 
           if (e.name === "quantity") {
-            return { ...e, hidden: entryType === "manualEntry" || isWaterWaySurvey };
+            if (isWaterWaySurvey) {
+              return { ...e, hidden: formValues.proposalMethod !== "Bottom Width Fixed" };
+            }
+            return { ...e, hidden: entryType === "manualEntry" };
           }
 
           if (e.name === "length" || e.name === "width") {
