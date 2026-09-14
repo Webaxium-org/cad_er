@@ -107,7 +107,7 @@ const inputDetails = [
     options: [
       { label: "Bottom Width Fixed", value: "Bottom Width Fixed" },
       { label: "Slope End-to-End Type", value: "Slope End-to-End Type" },
-      { label: "With Respect to Buffer", value: "With Respect to Buffer" },
+      { label: "With Respect to Berm", value: "With Respect to Berm" },
     ],
     for: "waterWay",
   },
@@ -124,6 +124,18 @@ const inputDetails = [
     for: "waterWaySlope",
   },
   {
+    label: "Bank limits*",
+    name: "bankLimitsMode",
+    mode: "select",
+    options: [
+      { label: "Enter left and right bank offsets", value: "custom" },
+      { label: "Recorded width at each chainage, centred on PLS", value: "surveyWidth" },
+    ],
+    for: "channelBanks",
+  },
+  { label: "Left bank offset (m)*", name: "leftBankOffset", type: "number", for: "customBanks", size: 6 },
+  { label: "Right bank offset (m)*", name: "rightBankOffset", type: "number", for: "customBanks", size: 6 },
+  {
     label: "Start RL*",
     name: "startRL",
     type: "number",
@@ -138,22 +150,10 @@ const inputDetails = [
     size: 6,
   },
   {
-    label: "Buffer*",
-    name: "buffer",
+    label: "Total berm width (m; half on each side)*",
+    name: "bermWidth",
     type: "number",
-    for: "buffer",
-    size: 6,
-  },
-  {
-    label: "Buffer direction*",
-    name: "bufferDirection",
-    mode: "select",
-    options: [
-      { label: "Below existing level", value: "below" },
-      { label: "Above existing level", value: "above" },
-    ],
-    for: "buffer",
-    size: 6,
+    for: "berm",
   },
   {
     label: "Quantity*",
@@ -235,8 +235,10 @@ const initialFormValues = {
   startRL: "",
   endRL: "",
   slope: "",
-  buffer: "",
-  bufferDirection: "below",
+  bermWidth: "",
+  bankLimitsMode: "",
+  leftBankOffset: "",
+  rightBankOffset: "",
   cSection: "",
   csSlop: "",
   csCamper: "0",
@@ -296,15 +298,18 @@ export default function ProposeLevel() {
             .required("Bottom width is required")
         : Yup.string().nullable(),
     slope:
-      isWaterWay && formValues.proposalMethod === "Bottom Width Fixed"
-        ? Yup.string()
-            .trim()
-            .matches(
-              /^\d+(?:\.\d+)?\s*(?::|\/)\s*\d+(?:\.\d+)?$/,
-              "Slope must be in H:V ratio format, e.g. 0.75:1",
-            )
-            .required("Side slope ratio is required")
+      isWaterWay
+        ? Yup.string().required("Side slope ratio is required").matches(
+            /^(\d+(?:\.\d+)?|\.\d+)\s*[:/?]\s*(\d+(?:\.\d+)?|\.\d+)$/,
+            "Enter a positive H:V ratio, e.g. 1:1",
+          )
         : Yup.string().nullable(),
+    bankLimitsMode: isWaterWay && formValues.proposalMethod === "Slope End-to-End Type"
+      ? Yup.string().oneOf(["custom", "surveyWidth"]).required("Choose bank limits") : Yup.string().nullable(),
+    leftBankOffset: isWaterWay && formValues.proposalMethod === "Slope End-to-End Type" && formValues.bankLimitsMode === "custom"
+      ? Yup.number().typeError("Enter left bank offset").required("Enter left bank offset") : Yup.mixed().nullable(),
+    rightBankOffset: isWaterWay && formValues.proposalMethod === "Slope End-to-End Type" && formValues.bankLimitsMode === "custom"
+      ? Yup.number().typeError("Enter right bank offset").moreThan(Yup.ref("leftBankOffset"), "Right bank must be after left bank").required("Enter right bank offset") : Yup.mixed().nullable(),
     startRL:
       isWaterWay && formValues.proposalMethod === "Slope End-to-End Type"
         ? Yup.number()
@@ -317,19 +322,12 @@ export default function ProposeLevel() {
             .typeError("End RL is required")
             .required("End RL is required")
         : Yup.string().nullable(),
-    buffer:
-      isWaterWay && formValues.proposalMethod === "With Respect to Buffer"
-        ? Yup.number()
-            .typeError("Buffer is required")
-            .required("Buffer is required")
-        : Yup.string().nullable(),
-    bufferDirection:
-      isWaterWay && formValues.proposalMethod === "With Respect to Buffer"
-        ? Yup.string().required("Buffer direction is required")
-        : Yup.string().nullable(),
+    bermWidth: isWaterWay && formValues.proposalMethod === "With Respect to Berm"
+      ? Yup.number().typeError("Enter total berm width").min(0, "Berm width must not be negative").required("Enter total berm width")
+      : Yup.mixed().nullable(),
     quantity:
       (entryType === "autoGenerate" && !isWaterWay) ||
-      (isWaterWay && formValues.proposalMethod === "Bottom Width Fixed")
+      (isWaterWay && ["Bottom Width Fixed", "With Respect to Berm"].includes(formValues.proposalMethod))
         ? Yup.number()
             .typeError("Quantity is required")
             .required("Quantity is required")
@@ -400,7 +398,7 @@ export default function ProposeLevel() {
             ...input,
             hidden:
               isWaterWaySurvey
-                ? formValues.proposalMethod !== "Bottom Width Fixed"
+                ? formValues.proposalMethod === "Slope End-to-End Type"
                 : entryType === "manualEntry",
           };
         }
@@ -414,19 +412,17 @@ export default function ProposeLevel() {
             ...input,
             hidden:
               !isWaterWaySurvey ||
-              formValues.proposalMethod !== "Bottom Width Fixed",
+              formValues.proposalMethod === "Slope End-to-End Type",
           };
         }
 
         if (input.for === "waterWaySlope") {
-          return {
-            ...input,
-            hidden:
-              !isWaterWaySurvey ||
-              formValues.proposalMethod !== "Bottom Width Fixed",
-          };
+          return { ...input, hidden: !(isWaterWaySurvey) };
         }
-
+        if (input.for === "channelBanks" || input.for === "customBanks") {
+          return { ...input, hidden: !(isWaterWaySurvey) || formValues.proposalMethod !== "Slope End-to-End Type" ||
+            (input.for === "customBanks" && formValues.bankLimitsMode !== "custom") };
+        }
         if (input.for === "slopeEndToEnd") {
           return {
             ...input,
@@ -436,12 +432,12 @@ export default function ProposeLevel() {
           };
         }
 
-        if (input.for === "buffer") {
+        if (input.for === "berm") {
           return {
             ...input,
             hidden:
               !isWaterWaySurvey ||
-              formValues.proposalMethod !== "With Respect to Buffer",
+              formValues.proposalMethod !== "With Respect to Berm",
           };
         }
 
@@ -714,7 +710,7 @@ export default function ProposeLevel() {
     } else {
       didMount.current = true;
     }
-  }, [crossSection, entryType, formValues.proposalMethod, survey?.type]);
+  }, [crossSection, entryType, formValues.proposalMethod, formValues.bankLimitsMode, survey?.type]);
 
   useEffect(() => {
     fetchData();

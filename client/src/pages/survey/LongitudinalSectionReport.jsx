@@ -1,3 +1,7 @@
+import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
+import { createSectionPdf } from "../../utils/sectionPdf";
+import SectionScaleInputs from "./components/SectionScaleInputs";
+import { profilePoints, profileLevel, chainageValue } from "../../utils/surveyGeometry";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -10,8 +14,6 @@ import { v1ChartOptions, v2ChartOptions } from "../../constants";
 import BasicMenu from "../../components/BasicMenu";
 import { BsThreeDots } from "react-icons/bs";
 import { MdDownload } from "react-icons/md";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import SmallHeader from "../../components/SmallHeader";
 
 const LEVEL_ORDER = [
@@ -74,44 +76,15 @@ const LongitudinalSectionReport = () => {
   const [tableData, setTableData] = useState([]);
 
   const [selectedCs, setSelectedCs] = useState(null);
+  const [drawingScales, setDrawingScales] = useState({ horizontal: 2400, vertical: 300 });
 
   const downloadPDF = async () => {
-    if (!pdfRef.current) return;
-
-    await new Promise((res) => setTimeout(res, 300));
-
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const margin = 10;
-    const pageWidth = pdf.internal.pageSize.getWidth() - margin * 2;
-    const pageHeight = pdf.internal.pageSize.getHeight() - margin * 2;
-
-    const imgRatio = canvas.width / canvas.height;
-    const pageRatio = pageWidth / pageHeight;
-
-    let imgWidth, imgHeight;
-
-    if (imgRatio > pageRatio) {
-      imgWidth = pageWidth;
-      imgHeight = imgWidth / imgRatio;
-    } else {
-      imgHeight = pageHeight;
-      imgWidth = imgHeight * imgRatio;
+    if (!selectedCs) return;
+    try {
+      createSectionPdf([selectedCs], drawingScales).save("longitudinal-section.pdf");
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
     }
-
-    const x = (pdf.internal.pageSize.getWidth() - imgWidth) / 2;
-    const y = (pdf.internal.pageSize.getHeight() - imgHeight) / 2;
-
-    pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
-    pdf.save("cross-section.pdf");
   };
 
   const handleMenuSelect = (item) => {
@@ -199,7 +172,7 @@ const LongitudinalSectionReport = () => {
   };
 
   const getSafeChainage = (chainage) => {
-    return Number(chainage?.split(survey.separator || "/")[1]);
+    return chainageValue(chainage, survey.separator || "/");
   };
 
   const getColor = (type) => {
@@ -217,26 +190,25 @@ const LongitudinalSectionReport = () => {
     );
     if (!row.length) return;
 
-    const filteredRow = row.filter((r) => r.type === "Chainage");
+    const filteredRow = row.filter((r) => r.type === "Chainage").sort((a, b) => getSafeChainage(a.chainage) - getSafeChainage(b.chainage));
 
     const pls = Number(initialEntry.pls || 0);
     const safeChainages =
       filteredRow.map((r) => getSafeChainage(r.chainage)) || [];
 
-    const breakIndexes = [];
-    row.forEach((r, i) => {
-      if (r.type === "Break") breakIndexes.push(i);
+    const breakBeforeChainages = new Set();
+    let pendingBreak = false;
+    row.forEach((r) => {
+      if (r.type === "Break") pendingBreak = true;
+      else if (r.type === "Chainage" && pendingBreak) {
+        breakBeforeChainages.add(getSafeChainage(r.chainage)); pendingBreak = false;
+      }
     });
 
     // Helper to extract numeric RL
-    const getRlValue = (r) => {
-      const idx = r.offsets?.findIndex((o) => Number(o) === pls);
-      const safeIdx = idx === -1 ? Math.round(r.offsets.length / 2) : idx;
-      const val = r.reducedLevels[safeIdx];
-      return val !== null && val !== undefined && val !== ""
-        ? Number(val)
-        : null;
-    };
+    const getRlValue = (r) => r
+      ? profileLevel(profilePoints(r.offsets, r.reducedLevels), pls)
+      : null;
 
     // 1. Get clean numeric arrays for the data
     const initialLevels = filteredRow.map(getRlValue);
@@ -248,7 +220,7 @@ const LongitudinalSectionReport = () => {
         const yVal = levels[i];
 
         // BREAK LOGIC: Lift the pen after index 1
-        if (breakIndexes?.length && breakIndexes.includes(i)) {
+        if (breakBeforeChainages.has(o)) {
           result.push({ x: Number(Number(o).toFixed(3)), y: null });
         }
 
@@ -287,14 +259,14 @@ const LongitudinalSectionReport = () => {
         const newRows = table?.rows?.filter((r) => r.type === "Chainage") || [];
         if (!newRows.length) continue;
 
-        const proposalLevels = newRows.map(getRlValue);
+        const proposalLevels = filteredRow.map((r) => getRlValue(newRows.find((p) => p.chainage === r.chainage)));
         data.allRl.push(...proposalLevels.filter((v) => v !== null));
 
         data.series.push({
           name: table.type,
           color: getColor(table.type),
           connectgaps: false,
-          data: makeSeries(safeChainages, proposalLevels, breakIndexes),
+          data: makeSeries(safeChainages, proposalLevels),
         });
       }
     }
@@ -421,11 +393,16 @@ const LongitudinalSectionReport = () => {
             }}
           >
             {selectedCs && selectedCs?.series?.length && (
+              <>
+              <WaterWayProposalNotice purposes={tableData} />
+              <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
               <CrossSectionChart
+              drawingScales={drawingScales}
                 selectedCs={selectedCs}
                 chartOptions={chartOptions}
                 pdfRef={pdfRef}
               />
+            </>
             )}
 
             {/* Footer */}

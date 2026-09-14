@@ -1,3 +1,4 @@
+import { compareProfiles, chainageValue } from "../../utils/surveyGeometry";
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -255,6 +256,10 @@ const VolumeReport = () => {
   const calculationModeRef = useRef(calculationMode);
 
   const handleMenuSelect = (item) => {
+    if (tableDataRef.current?.missingSections?.length) {
+      handleFormError(new Error("Quantity is incomplete. Resolve the missing or invalid cross-section profiles before exporting."), null, dispatch, navigate);
+      return;
+    }
     if (item.value === "excel download") {
       exportToExcel();
     }
@@ -354,6 +359,8 @@ const VolumeReport = () => {
     const fixedBottomWidth = Number(
       secondaryEntry?.bottomWidth ?? secondaryEntry?.width,
     );
+    const missingSections = [];
+    const useChannelGeometry = survey.type === "Water Way" && !isBottomWidthFixed;
     const rows = [];
 
     let prevSection = null;
@@ -385,11 +392,11 @@ const VolumeReport = () => {
         (p) => p.chainage === row.chainage,
       );
 
-      const chainage = row.chainage?.split(survey?.separator || "/")?.[1] ?? "";
+      const chainage = useChannelGeometry ? chainageValue(row.chainage, survey?.separator || "/") : row.chainage?.split(survey?.separator || "/")?.[1] ?? "";
 
       let prevReadings = [];
 
-      const data = (secondaryRow?.offsets ?? []).map((entry, idx) => {
+      const data = useChannelGeometry ? compareProfiles(row, secondaryRow) : (secondaryRow?.offsets ?? []).map((entry, idx) => {
         const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
         const secondaryEntryRL = secondaryRow?.reducedLevels?.[idx] ?? 0;
 
@@ -449,6 +456,14 @@ const VolumeReport = () => {
         return dataDoc;
       });
 
+      if (useChannelGeometry && !data.length) {
+        missingSections.push(row.chainage);
+        prevSection = null;
+        cuttingPrevArea = "0.000";
+        fillingPrevArea = "0.000";
+        return;
+      }
+
       // --- Total area for this section ---
       let cuttingAreaSqMtr = data.reduce(
         (acc, curr) => acc + Number(curr.cuttingAreaSqMtr || 0),
@@ -503,7 +518,7 @@ const VolumeReport = () => {
           isDeductionStarted = true;
           currentDeduction = isDeductionRow;
 
-          difference = prevSection
+          difference = prevSection !== null
             ? (currentChainage - prevChainage).toFixed(3)
             : "0.000";
         } else if (isDeductionStarted) {
@@ -528,19 +543,19 @@ const VolumeReport = () => {
               isDeductionStarted = false;
             }
 
-            difference = prevSection
+            difference = prevSection !== null
               ? (currentChainage - prevChainage).toFixed(3)
               : "0.000";
           }
         } else {
-          difference = prevSection
+          difference = prevSection !== null
             ? (currentChainage - prevChainage).toFixed(3)
             : "0.000";
         }
       } else {
         difference = isBreak
           ? "0.000"
-          : prevSection
+          : prevSection !== null
             ? (currentChainage - prevChainage).toFixed(3)
             : "0.000";
       }
@@ -557,11 +572,11 @@ const VolumeReport = () => {
 
       // --- Volumes ---
       const cuttingVolumeCubicMtr = (
-        Number(difference) * Number(cuttingAvgSqrMtr)
+        Number(difference) * (useChannelGeometry ? (cuttingAreaSqMtr + Number(cuttingPrevArea)) / 2 : Number(cuttingAvgSqrMtr))
       ).toFixed(3);
 
       const fillingVolumeCubicMtr = (
-        Number(difference) * Number(fillingAvgSqrMtr)
+        Number(difference) * (useChannelGeometry ? (fillingAreaSqMtr + Number(fillingPrevArea)) / 2 : Number(fillingAvgSqrMtr))
       ).toFixed(3);
 
       const initialRoadWidth =
@@ -570,21 +585,21 @@ const VolumeReport = () => {
       const reportWidth =
         isBottomWidthFixed && Number.isFinite(fixedBottomWidth)
           ? fixedBottomWidth
-          : initialRoadWidth;
+          : useChannelGeometry ? Number(data.at(-1).offset) - Number(data[0].offset) : initialRoadWidth;
 
       // --- Push row ---
       rows.push({
         section: currentChainage.toFixed(3),
-        prevSection: prevSection ? prevChainage.toFixed(3) : "-",
+        prevSection: prevSection !== null ? prevChainage.toFixed(3) : "-",
         difference,
         width: Number(reportWidth).toFixed(3),
         cuttingAreaSqMtr: cuttingAreaSqMtr.toFixed(3),
         data,
-        cuttingPrevArea,
+        cuttingPrevArea: Number(cuttingPrevArea).toFixed(3),
         cuttingAvgSqrMtr,
         cuttingVolumeCubicMtr,
         fillingAreaSqMtr: fillingAreaSqMtr.toFixed(3),
-        fillingPrevArea,
+        fillingPrevArea: Number(fillingPrevArea).toFixed(3),
         fillingAvgSqrMtr,
         fillingVolumeCubicMtr,
         deductionMessage,
@@ -602,8 +617,8 @@ const VolumeReport = () => {
       // }
 
       // --- Prepare for next iteration ---
-      cuttingPrevArea = Number(cuttingAreaSqMtr)?.toFixed(3);
-      fillingPrevArea = Number(fillingAreaSqMtr)?.toFixed(3);
+      cuttingPrevArea = useChannelGeometry ? cuttingAreaSqMtr : Number(cuttingAreaSqMtr)?.toFixed(3);
+      fillingPrevArea = useChannelGeometry ? fillingAreaSqMtr : Number(fillingAreaSqMtr)?.toFixed(3);
       totals.totalCuttingVolume += Number(cuttingVolumeCubicMtr);
       totals.totalFillingVolume += Number(fillingVolumeCubicMtr);
       prevSection = chainage;
@@ -611,8 +626,8 @@ const VolumeReport = () => {
       breakMessage = "";
     });
 
-    return { ...totals, rows };
-  }, [survey]);
+    return { ...totals, rows, missingSections };
+  }, [survey, state]);
 
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
@@ -1176,6 +1191,10 @@ const VolumeReport = () => {
 
   return (
     <Box p={2}>
+      {tableData?.missingSections?.length > 0 && <Typography color="error" sx={{ mb: 2 }}>
+        Quantity is incomplete: matching valid ground and proposal profiles are missing at chainage(s) {tableData.missingSections.join(", ")}.
+        The figures below cover valid sections only. Export is disabled until these sections are resolved.
+      </Typography>}
       <Stack
         direction={"row"}
         justifyContent={"space-between"}

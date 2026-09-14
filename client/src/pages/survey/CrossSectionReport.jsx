@@ -1,5 +1,6 @@
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
+import { createSectionPdf } from "../../utils/sectionPdf";
+import SectionScaleInputs from "./components/SectionScaleInputs";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -20,7 +21,6 @@ import {
   Typography,
 } from "@mui/material";
 import CrossSectionChart from "./components/CrossSectionChart";
-import CrossSectionChartV2 from "./components/CrossSectionChartV2";
 import { v1ChartOptions, v2ChartOptions } from "../../constants";
 import { BsThreeDots } from "react-icons/bs";
 import BasicMenu from "../../components/BasicMenu";
@@ -110,7 +110,6 @@ const CrossSectionReport = () => {
 
   const pdfRef = useRef();
 
-  const allCsRef = useRef({});
 
   const [chartOptions, setChartOptions] = useState(null);
 
@@ -121,12 +120,12 @@ const CrossSectionReport = () => {
   const [tableData, setTableData] = useState([]);
 
   const [selectedCs, setSelectedCs] = useState(null);
+  const [drawingScales, setDrawingScales] = useState({ horizontal: 150, vertical: 150 });
 
   const [openRowId, setOpenRowId] = useState(null);
 
   const [selectedMenu, setSelectedMenu] = useState("v1");
 
-  const [allCs, setAllCs] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
@@ -159,169 +158,13 @@ const CrossSectionReport = () => {
     setOpenRowId((prev) => (prev === rowId ? null : rowId));
   };
 
-  const downloadAllAsPDF = async () => {
-    if (!allCsRef.current) return;
-
-    setLoading(true);
-    setProgress({ percent: 0, message: "Initializing PDF document...", estimatedTimeLeft: null });
-
-    const pdf = new jsPDF({
-      orientation: "p",
-      unit: "mm",
-      format: "a4",
-      compress: true,
-    });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const pageBorder = 5;
-    const contentMargin = 10;
-    const chartGap = 6;
-    const chartAreaWidth = pageWidth - contentMargin * 2;
-    const chartAreaHeight = pageHeight - contentMargin * 2;
-    const chartSlotHeight = (chartAreaHeight - chartGap) / 2;
-    const chartPadding = 2;
-
-    const drawPageLayout = () => {
-      pdf.setDrawColor(35, 35, 35);
-      pdf.setLineWidth(0.4);
-      pdf.rect(
-        pageBorder,
-        pageBorder,
-        pageWidth - pageBorder * 2,
-        pageHeight - pageBorder * 2,
-      );
-    };
-
-    drawPageLayout();
-
-    const items = allCsRef.current.querySelectorAll(".pdf-chart-item");
-    const totalSteps = items.length;
-    const startTime = Date.now();
-
-    for (let i = 0; i < items.length; i++) {
-      const el = items[i];
-
-      // Calculate dynamic progress & time left
-      const percent = Math.min(Math.round((i / totalSteps) * 100), 99);
-      let estimatedTimeLeft = null;
-      if (i > 0) {
-        const elapsed = Date.now() - startTime;
-        const avgTimePerStep = elapsed / i;
-        const remainingSteps = totalSteps - i;
-        estimatedTimeLeft = Math.round((avgTimePerStep * remainingSteps) / 1000);
-      }
-
-      setProgress({
-        percent,
-        message: `Processing chart ${i + 1} of ${totalSteps}...`,
-        estimatedTimeLeft,
-      });
-
-      await new Promise((res) => setTimeout(res, 250));
-
-      const canvas = await html2canvas(el, {
-        scale: 3, // 🔥 Increase this for more sharpness (2–4)
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-
-      const imgData = canvas.toDataURL("image/png"); // 🔥 PNG = no quality loss
-
-      void imgData;
-      const exportCanvas = document.createElement("canvas");
-      exportCanvas.width = Math.max(1, Math.round(canvas.width * 0.5));
-      exportCanvas.height = Math.max(1, Math.round(canvas.height * 0.5));
-      const exportContext = exportCanvas.getContext("2d");
-      exportContext.drawImage(
-        canvas,
-        0,
-        0,
-        exportCanvas.width,
-        exportCanvas.height,
-      );
-      const compressedImgData = exportCanvas.toDataURL("image/jpeg", 0.8);
-      const slotIndex = i % 2;
-
-      if (i > 0 && slotIndex === 0) {
-        pdf.addPage();
-        drawPageLayout();
-      }
-
-      const slotY =
-        contentMargin + slotIndex * (chartSlotHeight + chartGap);
-      const availableWidth = chartAreaWidth - chartPadding * 2;
-      const availableHeight = chartSlotHeight - chartPadding * 2;
-      const imageRatio = exportCanvas.width / exportCanvas.height;
-
-      let imgWidth = availableWidth;
-      let imgHeight = imgWidth / imageRatio;
-
-      if (imgHeight > availableHeight) {
-        imgHeight = availableHeight;
-        imgWidth = imgHeight * imageRatio;
-      }
-
-      const x = (pageWidth - imgWidth) / 2;
-      const y = slotY + (chartSlotHeight - imgHeight) / 2;
-
-      pdf.setDrawColor(55, 55, 55);
-      pdf.setLineWidth(0.25);
-      pdf.rect(contentMargin, slotY, chartAreaWidth, chartSlotHeight);
-      pdf.addImage(
-        compressedImgData,
-        "JPEG",
-        x,
-        y,
-        imgWidth,
-        imgHeight,
-        undefined,
-        "FAST",
-      );
-    }
-
-    setProgress({ percent: 100, message: "Saving PDF document...", estimatedTimeLeft: 0 });
-    pdf.save("cross-section.pdf");
-
-    setLoading(false);
-  };
-
   const downloadPDF = async () => {
-    if (!pdfRef.current) return;
-
-    await new Promise((res) => setTimeout(res, 300));
-
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const margin = 10;
-    const pageWidth = pdf.internal.pageSize.getWidth() - margin * 2;
-    const pageHeight = pdf.internal.pageSize.getHeight() - margin * 2;
-
-    const imgRatio = canvas.width / canvas.height;
-    const pageRatio = pageWidth / pageHeight;
-
-    let imgWidth, imgHeight;
-
-    if (imgRatio > pageRatio) {
-      imgWidth = pageWidth;
-      imgHeight = imgWidth / imgRatio;
-    } else {
-      imgHeight = pageHeight;
-      imgWidth = imgHeight * imgRatio;
+    if (!selectedCs) return;
+    try {
+      createSectionPdf([selectedCs], drawingScales).save("cross-section.pdf");
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
     }
-
-    const x = (pdf.internal.pageSize.getWidth() - imgWidth) / 2;
-    const y = (pdf.internal.pageSize.getHeight() - imgHeight) / 2;
-
-    pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
-    pdf.save("cross-section.pdf");
   };
 
   const exportToDXF = () => {
@@ -411,7 +254,7 @@ const CrossSectionReport = () => {
 
     const uniqueOffsets = [...new Set(rawOffsets.map((n) => Number(n)))]
       .sort((a, b) => a - b)
-      .map((n) => Number(n).toFixed(3));
+      .map((n) => Number(n).toFixed(6));
 
     const data = {
       id: row._id,
@@ -424,11 +267,12 @@ const CrossSectionReport = () => {
 
     const makeSeries = (offsets, levels) =>
       offsets.map((o, i) => {
-        const y = Number(levels?.[i] ?? 0).toFixed(3);
-        data.allRl.push(Number(y));
+        const level = levels?.[i];
+        const y = level !== null && level !== undefined && level !== "" && Number.isFinite(Number(level)) ? Number(level).toFixed(3) : null;
+        if (y !== null) data.allRl.push(Number(y));
 
         return {
-          x: Number(o).toFixed(3),
+          x: Number(o).toFixed(6),
           y,
         };
       });
@@ -454,7 +298,7 @@ const CrossSectionReport = () => {
         const safeProposalLevels = newRow.reducedLevels || [];
 
         rawProposalOffsets.forEach((o) => {
-          const num = Number(o).toFixed(3);
+          const num = Number(o).toFixed(6);
           if (!data.offsets.includes(num)) data.offsets.push(num);
         });
 
@@ -498,10 +342,14 @@ const CrossSectionReport = () => {
         .map((row) => buildCsData(row))
         .filter(Boolean);
 
-      setAllCs(allFormattedData);
-    } catch (err) {
-      console.error(err);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      createSectionPdf(allFormattedData, drawingScales).save("cross-sections.pdf");
       setLoading(false);
+      setProgress(null);
+    } catch (err) {
+      handleFormError(err, null, dispatch, navigate);
+      setLoading(false);
+      setProgress(null);
     }
   };
 
@@ -617,7 +465,7 @@ const CrossSectionReport = () => {
     const safeInitial = row.reducedLevels || [];
 
     // UNIQUE OFFSETS ONLY FOR XAXIS
-    const uniqueOffsets = [...new Set(rawOffsets.map((n) => n))].sort(
+    const uniqueOffsets = [...new Set(rawOffsets.map((n) => Number(n).toFixed(6)))].sort(
       (a, b) => a - b,
     );
 
@@ -633,11 +481,12 @@ const CrossSectionReport = () => {
     // Keep duplicates in the plotted series
     const makeSeries = (offsets, levels) =>
       offsets.map((o, i) => {
-        const y = Number(levels?.[i] ?? 0).toFixed(3);
-        data.allRl.push(y);
+        const level = levels?.[i];
+        const y = level !== null && level !== undefined && level !== "" && Number.isFinite(Number(level)) ? Number(level).toFixed(3) : null;
+        if (y !== null) data.allRl.push(Number(y));
 
         return {
-          x: Number(o).toFixed(3),
+          x: Number(o).toFixed(6),
           y,
         };
       });
@@ -664,7 +513,7 @@ const CrossSectionReport = () => {
 
         // Merge unique offsets for category labels
         rawProposalOffsets.forEach((o) => {
-          const num = Number(o).toFixed(3);
+          const num = Number(o).toFixed(6);
           if (!data.offsets.includes(num)) data.offsets.push(num);
         });
 
@@ -897,16 +746,6 @@ const CrossSectionReport = () => {
   };
 
   useEffect(() => {
-    if (allCs?.length > 0) {
-      const timer = setTimeout(() => {
-        downloadAllAsPDF();
-      }, 1500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [allCs]);
-
-  useEffect(() => {
     fetchSurvey();
   }, []);
 
@@ -986,39 +825,17 @@ const CrossSectionReport = () => {
           zIndex: 3,
         }}
       >
+        <WaterWayProposalNotice purposes={tableData} />
+        <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
         {selectedCs && selectedCs?.series && interactiveChartOptions && (
           <CrossSectionChart
+              drawingScales={drawingScales}
             selectedCs={selectedCs}
             chartOptions={interactiveChartOptions}
             pdfRef={pdfRef}
           />
         )}
 
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            opacity: 0,
-            pointerEvents: "none",
-            zIndex: -1,
-          }}
-        >
-          <Box sx={{ bgcolor: "transparent" }}>
-            {allCs?.length > 0 && (
-              <Box ref={allCsRef} sx={{ padding: 2 }}>
-                {allCs.map((cs, key) => (
-                  <Box key={key} className="pdf-chart-item" sx={{ mb: 4 }}>
-                    <CrossSectionChartV2
-                      selectedCs={cs}
-                      chartOptions={chartOptions}
-                    />
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
-        </Box>
         <Box
           sx={{
             height: 56, // MUI table header height

@@ -6,6 +6,7 @@ import Branch from "../models/branch.js";
 import { isValidObjectId, calculateReducedLevel } from "../helper/index.js";
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
+import { prepareWaterWaySections } from "../helper/waterWayGeometry.js";
 
 const checkSurveyExists = async (req, res, next) => {
   try {
@@ -2380,8 +2381,10 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
         startRL,
         endRL,
         slope,
-        buffer,
-        bufferDirection,
+        bermWidth,
+        bankLimitsMode,
+        leftBankOffset,
+        rightBankOffset,
         length,
       },
     } = req;
@@ -2393,7 +2396,7 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
     const waterWayMethods = [
       "Bottom Width Fixed",
       "Slope End-to-End Type",
-      "With Respect to Buffer",
+      "With Respect to Berm",
     ];
 
     if (!waterWayMethods.includes(proposalMethod)) {
@@ -2480,10 +2483,10 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
     }
 
     if (
-      proposalMethod === "With Respect to Buffer" &&
-      (buffer === undefined || buffer === null || buffer === "")
+      proposalMethod === "With Respect to Berm" &&
+      (bermWidth === undefined || bermWidth === null || bermWidth === "")
     ) {
-      throw createHttpError(400, "Buffer is required.");
+      throw createHttpError(400, "Total berm width is required.");
     }
 
     const survey = await Survey.findOne({
@@ -2548,10 +2551,8 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
       return (Number(km) || 0) * 1000 + (Number(m) || 0);
     };
 
-    const numericBuffer = Number(buffer || 0);
     const numericBottomWidth = Number(bottomWidth || 0);
     const numericQuantity = Number(quantity || 0);
-    const bufferSign = bufferDirection === "above" ? 1 : -1;
     // Convert the parsed V/H gradient back to horizontal run per unit vertical
     // rise for the fixed-bottom side-batter geometry.
     const bottomWidthSideSlope =
@@ -2757,29 +2758,20 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
         ? solveBottomWidthProposedRL()
         : null;
 
-    const numericStartRL = Number(startRL || 0);
-    const numericEndRL = Number(endRL || 0);
-
-    const slopeEndToEndBedLevels = proposalMethod === "Slope End-to-End Type"
-      ? (() => {
-          const sorted = [...readingsToCreate]
-            .map((r) => ({ reading: r, chainage: parseChainage(r.chainage) }))
-            .sort((a, b) => a.chainage - b.chainage);
-
-          const firstCh = sorted[0]?.chainage ?? 0;
-          const lastCh = sorted.at(-1)?.chainage ?? 0;
-          const totalLength = lastCh - firstCh || 1;
-
-          const map = new Map();
-          for (const { reading, chainage } of sorted) {
-            const bedLevel =
-              numericStartRL +
-              ((chainage - firstCh) / totalLength) * (numericEndRL - numericStartRL);
-            map.set(reading._id.toString(), bedLevel);
-          }
-          return map;
-        })()
-      : null;
+    let channelSections = null;
+    if (proposalMethod !== "Bottom Width Fixed") {
+      try {
+        channelSections = prepareWaterWaySections({
+          readings: readingsToCreate,
+          centerOffset: basePurpose.pls,
+          separator: survey.separator || "/",
+          config: { proposalMethod, startRL, endRL, bermWidth, quantity, bankLimitsMode,
+            leftBankOffset, rightBankOffset, slope },
+        });
+      } catch (error) {
+        throw createHttpError(400, error.message);
+      }
+    }
 
     const [purposeDoc] = await SurveyPurpose.create(
       [
@@ -2796,13 +2788,18 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
           length: length || "All",
           quantity,
           proposalMethod,
-          proposedLevel,
+          proposedLevel: proposalMethod === "With Respect to Berm" ? channelSections.values().next().value.bedLevel : proposedLevel,
           bottomWidth,
           startRL,
           endRL,
           slope,
-          buffer,
-          bufferDirection: bufferDirection || "below",
+          bermWidth: proposalMethod === "With Respect to Berm" ? bermWidth : undefined,
+          ...(channelSections ? {
+            bankLimitsMode: proposalMethod === "Slope End-to-End Type" ? bankLimitsMode : undefined,
+            leftBankOffset: proposalMethod === "Slope End-to-End Type" && bankLimitsMode === "custom" ? leftBankOffset : undefined,
+            rightBankOffset: proposalMethod === "Slope End-to-End Type" && bankLimitsMode === "custom" ? rightBankOffset : undefined,
+            geometryVersion: proposalMethod === "With Respect to Berm" ? 3 : 2,
+          } : {}),
           width:
             proposalMethod === "Bottom Width Fixed"
               ? Number(bottomWidth)
@@ -2816,7 +2813,7 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
       const bottomWidthData =
         proposalMethod === "Bottom Width Fixed"
           ? buildBottomWidthOffsets(reading, bottomWidthProposedRL)
-          : null;
+          : channelSections.get(String(reading._id));
       const intermediateOffsets =
         bottomWidthData?.offsets ||
         (reading.intermediateOffsets || []).map((entry) => ({
@@ -2834,19 +2831,8 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
         fixedRL = bottomWidthProposedRL || centerLevel;
       }
 
-      const reducedLevels =
-        proposalMethod === "Slope End-to-End Type"
-          ? (() => {
-              const bedLevel = slopeEndToEndBedLevels?.get(reading._id.toString()) ?? 0;
-              return intermediateOffsets.map(() => bedLevel.toFixed(3));
-            })()
-          : proposalMethod === "With Respect to Buffer"
-          ? (() => {
-              const proposedBedLevel = centerLevel + bufferSign * numericBuffer;
-              return intermediateOffsets.map(() => proposedBedLevel.toFixed(3));
-            })()
-          : bottomWidthData?.proposedLevels ||
-            intermediateOffsets.map(() => Number(fixedRL || 0).toFixed(3));
+      const reducedLevels = bottomWidthData?.proposedLevels ||
+        intermediateOffsets.map(() => Number(fixedRL || 0).toFixed(3));
 
       return {
         insertOne: {
@@ -2860,12 +2846,12 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
             roadWidth:
               proposalMethod === "Bottom Width Fixed"
                 ? String(bottomWidth)
-                : reading.roadWidth,
+                : String(bottomWidthData.width),
             reducedLevels,
             intermediateOffsets,
             heightOfInstrument: reading.heightOfInstrument,
             interpolatedReducedLevels:
-              proposalMethod === "Bottom Width Fixed" ? initialLevels : [],
+              initialLevels,
             remark: reading.remark,
           },
         },

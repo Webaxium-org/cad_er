@@ -1,3 +1,4 @@
+import SectionSheet from "./SectionSheet";
 import Plot from "react-plotly.js";
 import { useEffect, useState } from "react";
 import {
@@ -11,7 +12,6 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { proposalCode, purposeCode } from "../../../constants";
 
 const colors = {
   Initial: "green",
@@ -19,7 +19,7 @@ const colors = {
   Final: "red",
 };
 
-const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef }) => {
+const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef, drawingScales }) => {
   const [width, setWidth] = useState(window.innerWidth);
 
   const calcWidth = () => {
@@ -94,8 +94,8 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef }) => {
                 >
                   <Plot
                     data={selectedCs?.series?.map((s) => ({
-                      x: s?.data?.map((p) => p.x),
-                      y: s?.data?.map((p) => p.y),
+                      x: [...(s.data || [])].sort((a, b) => Number(a.x) - Number(b.x)).map((p) => Number(p.x)),
+                      y: [...(s.data || [])].sort((a, b) => Number(a.x) - Number(b.x)).map((p) => p.y === null ? null : Number(p.y)),
                       type: "scatter",
                       mode: "lines",
                       name: s.name,
@@ -240,8 +240,8 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef }) => {
                 <Box width="100%" height="250px">
                   <Plot
                     data={selectedCs?.series?.map((s) => ({
-                      x: s?.data?.map((p) => p.x),
-                      y: s?.data?.map((p) => p.y),
+                      x: [...(s.data || [])].sort((a, b) => Number(a.x) - Number(b.x)).map((p) => Number(p.x)),
+                      y: [...(s.data || [])].sort((a, b) => Number(a.x) - Number(b.x)).map((p) => p.y === null ? null : Number(p.y)),
                       type: "scatter",
                       mode: "lines",
                       name: s.name,
@@ -299,157 +299,8 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef }) => {
         </Table>
       </TableContainer>
 
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          opacity: 0,
-          pointerEvents: "none",
-          zIndex: -1,
-        }}
-      >
-        <Box sx={{ bgcolor: "transparent" }} ref={pdfRef}>
-          <Typography fontSize="12px" textAlign={"center"}>
-            CHAINAGE {selectedCs?.chainage}
-          </Typography>
-          <Stack
-            alignItems={"end"}
-            sx={{ width: `${calcWidth()}px`, mx: "auto" }}
-          >
-            <Typography fontSize="8px">SCALE X- 1:100</Typography>
-            <Typography fontSize="8px">SCALE Y- 1:100</Typography>
-          </Stack>
-          <TableContainer component={Paper}>
-            <Table size="small" sx={{ tableLayout: "fixed" }}>
-              <TableBody>
-                {/* CHART ROW */}
-                <TableRow>
-                  <TableCell sx={{ border: "none", p: 0 }}>
-                    <Box
-                      sx={{
-                        width: `${calcWidth()}px`,
-                        height: "250px",
-                        mb: 2,
-                        mx: "auto",
-                      }}
-                    >
-                      <Plot
-                        data={selectedCs?.series?.map((s) => ({
-                          x: s?.data?.map((p) => p.x),
-                          y: s?.data?.map((p) => p.y),
-                          type: "scatter",
-                          mode: "lines",
-                          name: s.name,
-                          line: { shape: "linear", width: 1, color: s.color },
-                        }))}
-                        config={{
-                          ...chartOptions.config,
-                          displayModeBar: false,
-                        }}
-                        layout={chartOptions.layout}
-                        useResizeHandler
-                        style={{
-                          ...chartOptions.style,
-                          width: "100%",
-                          height: "250px",
-                        }}
-                      />
-                    </Box>
-                  </TableCell>
-                </TableRow>
-
-                {/* LEVEL / DIST ROWS */}
-                {[...(selectedCs?.series || [])]?.reverse()?.map((s, idx) => {
-                  // detect color for series
-                  const color =
-                    colors[
-                      s.name?.includes("Initial")
-                        ? "Initial"
-                        : s.name?.includes("Proposed")
-                        ? "Proposed"
-                        : "Final"
-                    ];
-
-                  return (
-                    <TableRow key={idx}>
-                      <TableCell sx={{ border: "none", px: "6px", py: 0 }}>
-                        <Stack
-                          direction="row"
-                          sx={{ width: `${calcWidth()}px`, mx: "auto" }}
-                        >
-                          {/* Name column */}
-                          <Typography
-                            color={color}
-                            fontSize="12px"
-                            sx={{
-                              minWidth: "50px",
-                              maxWidth: "50px",
-                              textAlign: "right",
-                              pr: 1,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {{ ...proposalCode, ...purposeCode }?.[s.name]}
-                          </Typography>
-
-                          {/* Data section */}
-                          <Box
-                            sx={{
-                              position: "relative",
-                              height: "65px",
-                              flex: 1,
-                              minWidth: 0,
-                              mr: "20px",
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                position: "absolute",
-                                top: "10px",
-                                left: 0,
-                                right: 0,
-                                height: "2px",
-                                backgroundColor: color,
-                              }}
-                            />
-
-                            <Box
-                              sx={{
-                                position: "absolute",
-                                top: "28px",
-                                left: 0,
-                                right: 0,
-                                display: "flex",
-                                justifyContent: "space-between",
-                                width: "100%",
-                              }}
-                            >
-                              {s.data.map((val, i) => (
-                                <Typography
-                                  key={i}
-                                  fontSize="12px"
-                                  sx={{
-                                    transform: "rotate(-90deg)",
-                                    color,
-                                    width: "10px",
-                                    mt: "12px",
-                                  }}
-                                >
-                                  {val?.y}
-                                </Typography>
-                              ))}
-                            </Box>
-                          </Box>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+      <Box sx={{ mt: 2, width: "100%" }} ref={pdfRef}>
+        <SectionSheet section={selectedCs} scales={drawingScales} />
       </Box>
     </>
   );
