@@ -220,6 +220,22 @@ const inputDetails = [
     for: "waterWaySlope",
   },
   {
+    label: "Start RL*",
+    name: "startRL",
+    type: "number",
+    hidden: true,
+    for: "slopeEndToEnd",
+    size: 6,
+  },
+  {
+    label: "End RL*",
+    name: "endRL",
+    type: "number",
+    hidden: true,
+    for: "slopeEndToEnd",
+    size: 6,
+  },
+  {
     label: "Buffer*",
     name: "buffer",
     type: "number",
@@ -264,6 +280,8 @@ const initialFormValues = {
   proposalMethod: "Bottom Width Fixed",
   quantity: "",
   bottomWidth: "",
+  startRL: "",
+  endRL: "",
   slope: "",
   buffer: "",
   bufferDirection: "below",
@@ -408,12 +426,22 @@ const ContinueSurveyForm = () => {
         : Yup.string().nullable(),
 
     slope:
-      type &&
-      isWaterWay &&
-      ["Bottom Width Fixed", "Slope End-to-End Type"].includes(
-        formValues.proposalMethod,
-      )
+      type && isWaterWay && formValues.proposalMethod === "Bottom Width Fixed"
         ? Yup.string().required("Side slope ratio is required")
+        : Yup.string().nullable(),
+
+    startRL:
+      type && isWaterWay && formValues.proposalMethod === "Slope End-to-End Type"
+        ? Yup.number()
+            .typeError("Start RL is required")
+            .required("Start RL is required")
+        : Yup.string().nullable(),
+
+    endRL:
+      type && isWaterWay && formValues.proposalMethod === "Slope End-to-End Type"
+        ? Yup.number()
+            .typeError("End RL is required")
+            .required("End RL is required")
         : Yup.string().nullable(),
 
     buffer:
@@ -638,11 +666,14 @@ const ContinueSurveyForm = () => {
         if (e.for === "waterWaySlope") {
           return {
             ...e,
-            hidden: !(
-              type &&
-              isWaterWaySurvey &&
-              ["Bottom Width Fixed", "Slope End-to-End Type"].includes(formValues.proposalMethod)
-            ),
+            hidden: !(type && isWaterWaySurvey && formValues.proposalMethod === "Bottom Width Fixed"),
+          };
+        }
+
+        if (e.for === "slopeEndToEnd") {
+          return {
+            ...e,
+            hidden: !(type && isWaterWaySurvey && formValues.proposalMethod === "Slope End-to-End Type"),
           };
         }
 

@@ -2422,10 +2422,24 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
     }
 
     if (
-      ["Bottom Width Fixed", "Slope End-to-End Type"].includes(proposalMethod) &&
+      proposalMethod === "Bottom Width Fixed" &&
       (slope === undefined || slope === null || slope === "")
     ) {
       throw createHttpError(400, "Side slope ratio is required.");
+    }
+
+    if (
+      proposalMethod === "Slope End-to-End Type" &&
+      (startRL === undefined || startRL === null || startRL === "")
+    ) {
+      throw createHttpError(400, "Start RL is required for Slope End-to-End Type.");
+    }
+
+    if (
+      proposalMethod === "Slope End-to-End Type" &&
+      (endRL === undefined || endRL === null || endRL === "")
+    ) {
+      throw createHttpError(400, "End RL is required for Slope End-to-End Type.");
     }
 
     const parseSlopeRatio = (value) => {
@@ -2451,12 +2465,12 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
     };
 
     const numericSlopeRatio =
-      ["Bottom Width Fixed", "Slope End-to-End Type"].includes(proposalMethod)
+      proposalMethod === "Bottom Width Fixed"
         ? parseSlopeRatio(slope)
         : null;
 
     if (
-      ["Bottom Width Fixed", "Slope End-to-End Type"].includes(proposalMethod) &&
+      proposalMethod === "Bottom Width Fixed" &&
       numericSlopeRatio === null
     ) {
       throw createHttpError(
@@ -2743,35 +2757,29 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
         ? solveBottomWidthProposedRL()
         : null;
 
-    const calculateSlopeEndToEndLevels = (offsets, initialLevels) => {
-      const points = (offsets || [])
-        .map((entry, index) => ({
-          offset: Number(entry.offset),
-          rl: Number(initialLevels?.[index]),
-        }))
-        .filter((point) => Number.isFinite(point.offset) && Number.isFinite(point.rl))
-        .sort((a, b) => a.offset - b.offset);
+    const numericStartRL = Number(startRL || 0);
+    const numericEndRL = Number(endRL || 0);
 
-      if (!points.length) return [];
+    const slopeEndToEndBedLevels = proposalMethod === "Slope End-to-End Type"
+      ? (() => {
+          const sorted = [...readingsToCreate]
+            .map((r) => ({ reading: r, chainage: parseChainage(r.chainage) }))
+            .sort((a, b) => a.chainage - b.chainage);
 
-      const configuredCenter = Number(basePurpose?.pls);
-      const centerOffset = Number.isFinite(configuredCenter)
-        ? configuredCenter
-        : (points[0].offset + points.at(-1).offset) / 2;
-      const leftEdge = points[0];
-      const rightEdge = points.at(-1);
+          const firstCh = sorted[0]?.chainage ?? 0;
+          const lastCh = sorted.at(-1)?.chainage ?? 0;
+          const totalLength = lastCh - firstCh || 1;
 
-      return (offsets || []).map((entry) => {
-        const offset = Number(entry.offset);
-        if (!Number.isFinite(offset)) return "0.000";
-
-        const sideEdge = offset <= centerOffset ? leftEdge : rightEdge;
-        const distanceFromEdge = Math.abs(offset - sideEdge.offset);
-        const level = sideEdge.rl - distanceFromEdge * numericSlopeRatio;
-
-        return level.toFixed(3);
-      });
-    };
+          const map = new Map();
+          for (const { reading, chainage } of sorted) {
+            const bedLevel =
+              numericStartRL +
+              ((chainage - firstCh) / totalLength) * (numericEndRL - numericStartRL);
+            map.set(reading._id.toString(), bedLevel);
+          }
+          return map;
+        })()
+      : null;
 
     const [purposeDoc] = await SurveyPurpose.create(
       [
@@ -2828,11 +2836,15 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
 
       const reducedLevels =
         proposalMethod === "Slope End-to-End Type"
-          ? calculateSlopeEndToEndLevels(intermediateOffsets, initialLevels)
+          ? (() => {
+              const bedLevel = slopeEndToEndBedLevels?.get(reading._id.toString()) ?? 0;
+              return intermediateOffsets.map(() => bedLevel.toFixed(3));
+            })()
           : proposalMethod === "With Respect to Buffer"
-          ? initialLevels.map((level) =>
-              (Number(level || 0) + bufferSign * numericBuffer).toFixed(3),
-            )
+          ? (() => {
+              const proposedBedLevel = centerLevel + bufferSign * numericBuffer;
+              return intermediateOffsets.map(() => proposedBedLevel.toFixed(3));
+            })()
           : bottomWidthData?.proposedLevels ||
             intermediateOffsets.map(() => Number(fixedRL || 0).toFixed(3));
 

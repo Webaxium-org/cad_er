@@ -124,6 +124,20 @@ const inputDetails = [
     for: "waterWaySlope",
   },
   {
+    label: "Start RL*",
+    name: "startRL",
+    type: "number",
+    for: "slopeEndToEnd",
+    size: 6,
+  },
+  {
+    label: "End RL*",
+    name: "endRL",
+    type: "number",
+    for: "slopeEndToEnd",
+    size: 6,
+  },
+  {
     label: "Buffer*",
     name: "buffer",
     type: "number",
@@ -282,10 +296,7 @@ export default function ProposeLevel() {
             .required("Bottom width is required")
         : Yup.string().nullable(),
     slope:
-      isWaterWay &&
-      ["Bottom Width Fixed", "Slope End-to-End Type"].includes(
-        formValues.proposalMethod,
-      )
+      isWaterWay && formValues.proposalMethod === "Bottom Width Fixed"
         ? Yup.string()
             .trim()
             .matches(
@@ -293,6 +304,18 @@ export default function ProposeLevel() {
               "Slope must be in H:V ratio format, e.g. 0.75:1",
             )
             .required("Side slope ratio is required")
+        : Yup.string().nullable(),
+    startRL:
+      isWaterWay && formValues.proposalMethod === "Slope End-to-End Type"
+        ? Yup.number()
+            .typeError("Start RL is required")
+            .required("Start RL is required")
+        : Yup.string().nullable(),
+    endRL:
+      isWaterWay && formValues.proposalMethod === "Slope End-to-End Type"
+        ? Yup.number()
+            .typeError("End RL is required")
+            .required("End RL is required")
         : Yup.string().nullable(),
     buffer:
       isWaterWay && formValues.proposalMethod === "With Respect to Buffer"
@@ -400,9 +423,16 @@ export default function ProposeLevel() {
             ...input,
             hidden:
               !isWaterWaySurvey ||
-              !["Bottom Width Fixed", "Slope End-to-End Type"].includes(
-                formValues.proposalMethod,
-              ),
+              formValues.proposalMethod !== "Bottom Width Fixed",
+          };
+        }
+
+        if (input.for === "slopeEndToEnd") {
+          return {
+            ...input,
+            hidden:
+              !isWaterWaySurvey ||
+              formValues.proposalMethod !== "Slope End-to-End Type",
           };
         }
 
