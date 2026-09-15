@@ -1,49 +1,32 @@
-# Please confirm with the surveyor
+# Water way: confirmed client requirements
 
-The software now builds a flat bed with sloping sides joining the selected banks. Please ask the client to answer the following for one actual section, preferably chainage 300.
+Confirmed by the client on 15 September 2026:
 
-1. **Buffer reference:** When entering a buffer of, for example, 0.185 m, is it subtracted from the ground level at the centreline/PLS, the lowest ground level within the banks, a water-level reading, or another specified RL?
-2. **Bank limits:** Which offsets are the left and right ends of the proposed channel? In the CH300 image they are -3.000 and +3.000, although measurements extend to -4.000 and +4.000. Are the limits fixed throughout the survey, or do they change by chainage? Does the recorded section width represent these limits?
-3. **Side slope:** What is the specified horizontal:vertical ratio for each method? CH300 indicates 1:1. Should both sides use the same ratio? Please do not infer the project specification from the appearance of a drawing.
-4. **Longitudinal grade:** Confirm the first/last chainages and their proposed bed RLs. If the grade changes partway through the survey, supply the intermediate grade-change chainages and RLs.
-5. **Above-level proposals:** If the proposed bed is higher than a bank, is filling/embankment intended? Its limits and side geometry need to be specified separately from this bank-to-bank channel template.
+- Bottom Width Fixed and With Respect to Berm were accepted.
+- Slope End-to-End is exactly With Respect to Berm with total berm width 0, using the same quantity and side slope. It requires no entered RLs or separate bank limits.
+- Proposed bed RL uses 0.005 m increments. Small quantity differences are acceptable. Nearest rounding is the implementation interpretation; the client did not explicitly specify a rounding direction.
+- The client reported an area error at zero berm width and missing initial levels in the quantity table.
 
-A useful worked example consists of: measured offset/RL pairs, chosen left/right bank offsets, side slope H:V, selected method and inputs, and expected proposed offset/RL pairs. If possible, obtain a second section with a different width. An Excel table or the original drawing is preferable to reading rounded values from a screenshot.
+## Implemented correction
 
-## Available inputs in the corrected app
+End-to-End and Berm now share the quantity solver. It finds a common bed RL, rounds to the nearest feasible 0.005 m increment, and rebuilds the bed edges from that level. Surveyed bank tie levels remain ground levels. If no 0.005 m bed fits, generation reports an error.
 
-- **Slope End-to-End Type:** start/end bed RLs, side slope, and bank limits. The grade follows actual chainage distance.
-- **With Respect to Buffer:** buffer amount, above/below direction, explicit reference choice, side slope, and bank limits. Lowest ground means within the selected banks. A specified reference RL is constant across the selected survey.
-- **Bank limits:** either explicit left/right offsets applied to all sections, or the recorded width at each chainage centred on PLS. The latter supports varying symmetric widths; varying asymmetric bank limits or independent left/right side slopes still need client details before adding an input workflow.
-- Bank-to-bank templates require the bed to lie below both bank RLs, have positive width, and include PLS. The app gives a chainage-specific error if those conditions fail.
-- PDF horizontal/vertical scales are selectable. Print at actual size (100%). Long sections paginate horizontally at the selected scale.
+Area and combined plotting/quantity reports now compare ground and proposal at common physical offsets for these methods, including interpolated ground levels and cut/fill crossings. The final triangle where cutting returns to zero is included. The existing Volume report already uses this calculation. Bottom Width Fixed calculation is preserved.
 
-## Checking the CH300 example
+Both proposal forms show quantity and side slope for End-to-End, without fixed/start/end RL or bank-limit inputs.
 
-Use centreline reference RL 7.340, buffer 0.185 below, side slope 1:1, and bank offsets -3 and +3. The expected proposed points are:
+## Existing saved proposals
 
-| Offset | Proposed RL |
-| ---: | ---: |
-| -3.000 | 7.865 |
-| -2.290 | 7.155 |
-| 0.000 | 7.155 |
-| 2.240 | 7.155 |
-| 3.000 | 7.915 |
+New Berm and End-to-End proposals use geometry version 4. Reports flag older proposals. Preserve any manual edits before recreating a proposal through the existing workflow. Viewing a report does not regenerate stored designs. No live project data was modified during this correction.
 
-This is a numerical reproduction using a reference choice that yields the illustrated bed, not evidence that centreline reference was the original designer's chosen buffer method. See `water-way-ch300-verification.pdf` for the generated drawing.
+## Verification
 
-## Existing proposals
-
-The correction affects newly generated proposals. It does not overwrite saved project data. Preserve/export any manually adjusted proposal before removing and recreating it through the existing proposal workflow with confirmed inputs. The authenticated live survey has not been used for the automated checks.
-
-## Technical verification
-
-Regression command, from the repository root:
+From the repository root:
 
 ```
 node --test server/test/waterWayController.test.js server/test/waterWayGeometry.test.js client/src/utils/surveyGeometry.test.js
 ```
 
-Coverage includes the CH300 geometry, irregular chainage distances across kilometre boundaries, missing centreline interpolation, explicit buffer references, varying recorded widths, invalid geometry transaction rollback, matching-offset cut/fill integration, scaled PDF pagination, and unchanged fixed-width output. Controller tests mock persistence; they do not modify the database.
+Tests cover zero-berm equivalence, nearest 0.005 rounding, resulting quantity tolerance, side triangles, ground interpolation, nonzero berm limits, invalid quantities, transaction rollback, preserved fixed-width output, and PDF geometry. Controller tests mock database persistence.
 
-The separation of invert elevation, channel dimensions, and side slopes agrees with the [USACE HEC-RAS channel modification documentation](https://www.hec.usace.army.mil/confluence/rasdocs/rasum/6.0/performing-channel-design-modifications). That reference supports the geometric model; project bank limits, grading and side-slope specifications must come from the client.
+The earlier investigation describes superseded buffer and longitudinal-grade assumptions; it is historical context, not the current design contract.

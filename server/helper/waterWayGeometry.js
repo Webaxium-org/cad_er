@@ -72,38 +72,13 @@ export const channelSection = ({ points, bed, left, right, ratio, center }) => {
 };
 
 export const prepareWaterWaySections = ({ readings, config, centerOffset, separator }) => {
-  if (config.proposalMethod === "With Respect to Berm") {
-    return prepareBermSections({ readings, config, centerOffset, separator });
+  if (!["With Respect to Berm", "Slope End-to-End Type"].includes(config.proposalMethod)) {
+    throw new Error("Choose With Respect to Berm or Slope End-to-End Type.");
   }
-  if (config.proposalMethod !== "Slope End-to-End Type") {
-    throw new Error("The old buffer calculation is no longer supported. Generate a With Respect to Berm proposal using berm width and quantity.");
-  }
-  const center = finite(centerOffset ?? 0, "PLS offset");
-  const ratio = sideSlope(config.slope);
-  if (!["custom", "surveyWidth"].includes(config.bankLimitsMode)) throw new Error("Choose how the bank limits are specified.");
-  const sorted = readings.map((reading) => ({ reading, chainage: chainageMetres(reading.chainage, separator) })).sort((a, b) => a.chainage - b.chainage);
-  if (!sorted.length) throw new Error("No chainage readings found.");
-  if (sorted.some((item, i) => i > 0 && item.chainage === sorted[i - 1].chainage)) throw new Error("Duplicate chainages must be resolved before generating a proposal.");
-  const first = sorted[0].chainage, last = sorted.at(-1).chainage;
-  const start = finite(config.startRL, "Start RL"), end = finite(config.endRL, "End RL");
-  if (last === first) throw new Error("At least two distinct chainages are required for an end-to-end grade.");
-  return new Map(sorted.map(({ reading, chainage }) => {
-    try {
-      const points = groundProfile(reading);
-      let left, right;
-      if (config.bankLimitsMode === "surveyWidth") {
-        const width = finite(reading.roadWidth, "Recorded section width");
-        if (width <= 0) throw new Error("Recorded section width must be positive.");
-        left = center - width / 2;
-        right = center + width / 2;
-      } else {
-        left = finite(config.leftBankOffset, "Left bank offset");
-        right = finite(config.rightBankOffset, "Right bank offset");
-      }
-      const bed = start + (end - start) * (chainage - first) / (last - first);
-      return [String(reading._id), channelSection({ points, bed, left, right, ratio, center })];
-    } catch (error) { throw new Error(`Chainage ${reading.chainage}: ${error.message}`); }
-  }));
+  return prepareBermSections({ readings, config: {
+    ...config,
+    bermWidth: config.proposalMethod === "Slope End-to-End Type" ? 0 : config.bermWidth,
+  }, centerOffset, separator });
 };
 
 // Integral of positive ground-minus-design depth, split at every profile vertex
@@ -146,12 +121,13 @@ export const prepareBermSections = ({ readings, config, centerOffset, separator 
   let lower = Math.max(...sections.map((s) => Math.max(s.leftRL - (center - s.left) / ratio, s.rightRL - (s.right - center) / ratio)));
   let upper = Math.min(...sections.map((s) => Math.min(s.leftRL, s.rightRL)));
   lower += 0.000002 / ratio;
-  if (lower > upper) throw new Error("No common bed RL fits all berm sections with this side slope. Review the section limits or use an end-to-end grade.");
+  if (lower > upper) throw new Error("No common bed RL fits all berm sections with this side slope. Review the section limits or revise the requested design.");
   const atLevel = (s, bed) => channelSection({ ...s, bed, ratio, center });
   const volume = (bed) => {
     const areas = sections.map((s) => excavationArea(s.points, atLevel(s, bed).geometry));
     return sections.slice(1).reduce((sum, s, i) => sum + (s.chainage - sections[i].chainage) * (areas[i] + areas[i + 1]) / 2, 0);
   };
+  const minimumBed = lower, maximumBed = upper;
   const minimum = volume(upper), maximum = volume(lower);
   const tolerance = Math.max(0.0001, quantity * 1e-10);
   if (quantity < minimum - tolerance || quantity > maximum + tolerance) {
@@ -164,8 +140,11 @@ export const prepareBermSections = ({ readings, config, centerOffset, separator 
     if (Math.abs(value - quantity) <= tolerance) break;
     if (value > quantity) lower = bed; else upper = bed;
   }
-  // RLs are stored to millimetres. Build all vertices from that same stored bed.
-  const storedBed = Number(bed.toFixed(3));
+  // Use the nearest feasible 5 mm level, then rebuild geometry from that level.
+  const lowestStep = Math.ceil((minimumBed - 1e-10) * 200);
+  const highestStep = Math.floor((maximumBed + 1e-10) * 200);
+  if (lowestStep > highestStep) throw new Error("No bed RL in 0.005 m increments fits these sections. Review the berm limits or side slope.");
+  const storedBed = Math.min(highestStep, Math.max(lowestStep, Math.round(bed * 200))) / 200;
   return new Map(sections.map((s) => {
     try { return [String(s.reading._id), atLevel(s, storedBed)]; }
     catch (error) { throw new Error(`Chainage ${s.reading.chainage}: Rounded bed RL ${storedBed.toFixed(3)} cannot fit this geometry. ${error.message}`); }

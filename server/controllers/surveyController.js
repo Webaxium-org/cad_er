@@ -2378,13 +2378,8 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
         proposedLevel,
         quantity,
         bottomWidth,
-        startRL,
-        endRL,
         slope,
         bermWidth,
-        bankLimitsMode,
-        leftBankOffset,
-        rightBankOffset,
         length,
       },
     } = req;
@@ -2429,20 +2424,6 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
       (slope === undefined || slope === null || slope === "")
     ) {
       throw createHttpError(400, "Side slope ratio is required.");
-    }
-
-    if (
-      proposalMethod === "Slope End-to-End Type" &&
-      (startRL === undefined || startRL === null || startRL === "")
-    ) {
-      throw createHttpError(400, "Start RL is required for Slope End-to-End Type.");
-    }
-
-    if (
-      proposalMethod === "Slope End-to-End Type" &&
-      (endRL === undefined || endRL === null || endRL === "")
-    ) {
-      throw createHttpError(400, "End RL is required for Slope End-to-End Type.");
     }
 
     const parseSlopeRatio = (value) => {
@@ -2765,8 +2746,7 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
           readings: readingsToCreate,
           centerOffset: basePurpose.pls,
           separator: survey.separator || "/",
-          config: { proposalMethod, startRL, endRL, bermWidth, quantity, bankLimitsMode,
-            leftBankOffset, rightBankOffset, slope },
+          config: { proposalMethod, bermWidth, quantity, slope },
         });
       } catch (error) {
         throw createHttpError(400, error.message);
@@ -2788,17 +2768,13 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
           length: length || "All",
           quantity,
           proposalMethod,
-          proposedLevel: proposalMethod === "With Respect to Berm" ? channelSections.values().next().value.bedLevel : proposedLevel,
+          proposedLevel: channelSections ? channelSections.values().next().value.bedLevel : proposedLevel,
           bottomWidth,
-          startRL,
-          endRL,
+
           slope,
-          bermWidth: proposalMethod === "With Respect to Berm" ? bermWidth : undefined,
+          bermWidth: proposalMethod === "Slope End-to-End Type" ? 0 : proposalMethod === "With Respect to Berm" ? bermWidth : undefined,
           ...(channelSections ? {
-            bankLimitsMode: proposalMethod === "Slope End-to-End Type" ? bankLimitsMode : undefined,
-            leftBankOffset: proposalMethod === "Slope End-to-End Type" && bankLimitsMode === "custom" ? leftBankOffset : undefined,
-            rightBankOffset: proposalMethod === "Slope End-to-End Type" && bankLimitsMode === "custom" ? rightBankOffset : undefined,
-            geometryVersion: proposalMethod === "With Respect to Berm" ? 3 : 2,
+            geometryVersion: 4,
           } : {}),
           width:
             proposalMethod === "Bottom Width Fixed"

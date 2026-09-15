@@ -29,28 +29,27 @@ test("accepted fixed-width generation retains its solved RL and offsets", async 
   assert.equal(calls.purposes[0].geometryVersion, undefined);
 });
 
-test("buffer endpoint persists geometry, initial interpolation and explicit design settings", async (t) => {
-  const calls = await generate(t, { proposalMethod: "With Respect to Buffer", buffer: .25, bufferDirection: "below", bufferReference: "centerline", bankLimitsMode: "surveyWidth", slope: "0.75:1" });
+test("berm endpoint persists rounded geometry and interpolated ground", async (t) => {
+  const calls = await generate(t, { proposalMethod: "With Respect to Berm", bermWidth: 0, quantity: 200, slope: "0.75:1" });
   assert.equal(calls.error, undefined);
   assert.equal(calls.committed, true);
-  assert.deepEqual(calls.rows[0].reducedLevels, ["8.000", "6.750", "6.750", "6.750", "8.000"]);
   assert.equal(calls.rows[0].interpolatedReducedLevels.length, 5);
-  assert.equal(calls.purposes[0].geometryVersion, 2);
-  assert.equal(calls.purposes[0].bufferReference, "centerline");
+  assert.equal(calls.purposes[0].geometryVersion, 4);
+  assert.ok(Math.abs(Number(calls.rows[0].reducedLevels[2]) * 200 - Math.round(Number(calls.rows[0].reducedLevels[2]) * 200)) < 1e-9);
 });
-
-test("end-to-end endpoint generates banks and bed, not flat values at every offset", async (t) => {
-  const calls = await generate(t, { proposalMethod: "Slope End-to-End Type", startRL: 6.75, endRL: 7, bankLimitsMode: "custom", leftBankOffset: -2, rightBankOffset: 2, slope: "0.75:1" });
+test("end-to-end accepts quantity without RLs and persists zero berm", async (t) => {
+  const calls = await generate(t, { proposalMethod: "Slope End-to-End Type", quantity: 200, slope: "0.75:1" });
   assert.equal(calls.error, undefined);
-  assert.equal(calls.rows[0].reducedLevels[2], "6.750");
-  assert.equal(calls.rows[1].reducedLevels[2], "7.000");
+  assert.equal(calls.rows[0].reducedLevels[2], calls.rows[1].reducedLevels[2]);
   assert.equal(calls.rows[1].reducedLevels[0], "8.000");
+  assert.equal(calls.purposes[0].bermWidth, 0);
+  assert.equal(calls.purposes[0].geometryVersion, 4);
+  assert.equal(Number(calls.rows[0].reducedLevels[2]), calls.purposes[0].proposedLevel);
 });
-
-test("invalid channel geometry aborts before inserting a purpose or rows", async (t) => {
-  const calls = await generate(t, { proposalMethod: "With Respect to Buffer", buffer: 20, bufferDirection: "below", bufferReference: "centerline", bankLimitsMode: "surveyWidth", slope: "1:1" });
+test("infeasible quantity aborts before inserting any data", async (t) => {
+  const calls = await generate(t, { proposalMethod: "With Respect to Berm", bermWidth: 0, quantity: 1e8, slope: "1:1" });
   assert.equal(calls.error.status, 400);
-  assert.match(calls.error.message, /Chainage 0\/0: Side slopes/);
+  assert.match(calls.error.message, /Feasible quantity/);
   assert.equal(calls.aborted, true);
   assert.equal(calls.committed, false);
   assert.equal(calls.purposes.length, 0);

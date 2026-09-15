@@ -1,3 +1,4 @@
+import { compareProfiles } from "../../utils/surveyGeometry.js";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -353,7 +354,8 @@ const AreaReport = () => {
 
         let prevReadings = [];
 
-        const data = (proposedRow?.offsets ?? []).map((entry, idx) => {
+        const data = survey.type === "Water Way" && secondaryEntry?.proposalMethod !== "Bottom Width Fixed"
+          ? compareProfiles(row, proposedRow) : (proposedRow?.offsets ?? []).map((entry, idx) => {
           const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
           const secondaryEntryRL = proposedRow?.reducedLevels?.[idx] ?? 0;
 
@@ -422,6 +424,9 @@ const AreaReport = () => {
           prevReadings.push(dataDoc);
           return dataDoc;
         });
+
+        if (data.some((point) => Number(point.cuttingAreaSqMtr) > 0) && !showArea.cutting) setShowArea((prev) => ({ ...prev, cutting: true }));
+        if (data.some((point) => Number(point.fillingAreaSqMtr) > 0) && !showArea.filling) setShowArea((prev) => ({ ...prev, filling: true }));
 
         const totalCuttingAreaSqMtr = data.reduce(
           (acc, curr) => acc + Number(curr.cuttingAreaSqMtr || 0),

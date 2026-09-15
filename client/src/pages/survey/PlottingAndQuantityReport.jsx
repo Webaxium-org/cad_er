@@ -1,3 +1,4 @@
+import { compareProfiles } from "../../utils/surveyGeometry.js";
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -1091,7 +1092,8 @@ const PlottingAndQuantityReport = () => {
 
       let prevReadings = [];
 
-      const data = (row?.offsets ?? []).map((entry, idx) => {
+      const data = survey.type === "Water Way" && secondaryEntry?.proposalMethod !== "Bottom Width Fixed"
+          ? compareProfiles(row, secondaryRow) : (row?.offsets ?? []).map((entry, idx) => {
         const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
         const secondaryEntryRL = secondaryRow?.reducedLevels?.[idx] ?? 0;
 

@@ -1,58 +1,61 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { prepareWaterWaySections, chainageMetres, sideSlope } from "../helper/waterWayGeometry.js";
+import { prepareWaterWaySections, channelSection, excavationArea, chainageMetres, sideSlope } from "../helper/waterWayGeometry.js";
+import { compareProfiles } from "../../client/src/utils/surveyGeometry.js";
+const readings = [0, 30, 180].map((ch, i) => ({ _id: String(i), chainage: `0/${ch}`, reducedLevels: [8.86, 8.66, 8.87], intermediateOffsets: [-2, 0, 2].map(offset => ({ offset })) }));
+const config = { proposalMethod: "With Respect to Berm", bermWidth: 0, quantity: 30, slope: "1:1" };
+const prepare = (changes = {}, rows = readings) => prepareWaterWaySections({ readings: rows, config: { ...config, ...changes }, centerOffset: 0 });
 
-const reading = (id, chainage, levels = [8.830, 7.865, 7.340, 7.915, 8.855]) => ({
-  _id: id, chainage, roadWidth: "6", reducedLevels: levels,
-  intermediateOffsets: [-4, -3, 0, 3, 4].map((offset) => ({ offset })),
+test("end-to-end is exactly zero berm, without RL or bank inputs", () => {
+  assert.deepEqual(prepare({ proposalMethod: "Slope End-to-End Type", bermWidth: 2, startRL: 1, endRL: 2 }), prepare());
+  assert.deepEqual(prepare({}, [...readings].reverse()), prepare());
 });
-const config = { proposalMethod: "With Respect to Buffer", slope: "1:1", bufferReference: "centerline", bufferDirection: "below", buffer: .185, bankLimitsMode: "custom", leftBankOffset: -3, rightBankOffset: 3 };
-const prepare = (options = {}) => prepareWaterWaySections({ readings: [reading("a", "0/300")], config, centerOffset: 0, ...options });
-
-test("CH300 reference: exact asymmetric toes, bank ties, bed and interpolated initial RLs", () => {
-  const section = prepare().get("a");
-  assert.deepEqual(section.offsets.map((p) => Number(p.offset)), [-3, -2.29, 0, 2.24, 3]);
-  assert.deepEqual(section.proposedLevels, ["7.865", "7.155", "7.155", "7.155", "7.915"]);
-  assert.equal(section.initialLevels[2], "7.340");
-  assert.equal(section.initialLevels.length, section.offsets.length);
+test("nearest 0.005 bed rebuilds toes and keeps quantity close", () => {
+  const points = [{ x: -2, y: 8.86 }, { x: 0, y: 8.66 }, { x: 2, y: 8.87 }];
+  const exact = channelSection({ points, bed: 8.614, left: -2, right: 2, ratio: 1, center: 0 });
+  const quantity = excavationArea(points, exact.geometry) * 180;
+  const result = prepare({ quantity });
+  const section = result.get("0");
+  assert.equal(section.bedLevel, 8.615);
+  assert.ok(Math.abs(section.geometry[1].x - (-1.755)) < 1e-9);
+  const actual = excavationArea(points, section.geometry) * 180;
+  assert.ok(Math.abs(actual - quantity) < 0.72);
+  for (const s of result.values()) assert.equal(s.bedLevel, 8.615);
 });
-
-test("grade follows actual chainage distance and reversed row order across kilometre boundaries", () => {
-  const result = prepare({ readings: [reading("c", "1/080"), reading("a", "0/900"), reading("b", "0/930")],
-    config: { ...config, proposalMethod: "Slope End-to-End Type", startRL: 7, endRL: 7.6 } });
-  assert.equal(result.get("a").proposedLevels[2], "7.000");
-  assert.equal(result.get("b").proposedLevels[2], "7.100");
-  assert.equal(result.get("c").proposedLevels[2], "7.600");
+test("zero berm area includes interpolated ground and final side triangle", () => {
+  const section = prepare().get("0");
+  const ground = { offsets: [-2, 0, 2], reducedLevels: readings[0].reducedLevels };
+  const rows = compareProfiles(ground, { offsets: section.offsets.map(p => p.offset), reducedLevels: section.proposedLevels });
+  assert.ok(rows.every(row => Number(row.initialEntryRL) > 8));
+  assert.equal(rows.at(-1).cuttingMtr, "0.000");
+  assert.ok(rows.at(-1).cuttingAreaSqMtr > 0);
+  const expected = excavationArea(ground.offsets.map((x,i) => ({ x, y: ground.reducedLevels[i] })), section.geometry);
+  assert.ok(Math.abs(rows.reduce((sum, row) => sum + row.cuttingAreaSqMtr, 0) - expected) < 1e-8);
 });
-
-test("buffer interpolates centreline instead of selecting a middle array value", () => {
-  const r = { _id: "a", chainage: "0/0", intermediateOffsets: [-4, -1, 2, 4].map((offset) => ({ offset })), reducedLevels: [8, 7, 6, 8] };
-  const result = prepare({ readings: [r], config: { ...config, leftBankOffset: -4, rightBankOffset: 4, buffer: .1 } });
-  assert.equal(result.get("a").proposedLevels[2], "6.567");
+test("positive berm insets each end by half the total width", () => {
+  const section = prepare({ bermWidth: 1 }).get("0");
+  assert.equal(section.geometry[0].x, -1.5);
+  assert.equal(section.geometry.at(-1).x, 1.5);
 });
-
-test("reference choice is explicit and lowest is restricted to chosen banks", () => {
-  const r = reading("a", "0/0", [1, 7.865, 7.34, 7.915, 1]);
-  assert.equal(prepare({ readings: [r], config: { ...config, bufferReference: "lowest" } }).get("a").proposedLevels[2], "7.155");
-  assert.equal(prepare({ config: { ...config, bufferReference: "referenceRL", bufferReferenceRL: 7.5, buffer: .2 } }).get("a").proposedLevels[2], "7.300");
-  assert.throws(() => prepare({ config: { ...config, bufferReference: "" } }), /Choose the level/);
-});
-
-test("recorded widths can vary by chainage when explicitly selected", () => {
-  const rows = [reading("a", "0/0"), { ...reading("b", "0/30"), roadWidth: "7" }];
-  const result = prepare({ readings: rows, config: { ...config, bankLimitsMode: "surveyWidth" } });
-  assert.equal(result.get("a").width, 6);
-  assert.equal(result.get("b").width, 7);
-});
-
-test("rejects missing values, extrapolation, overlap, invalid grade and unsupported embankments", () => {
-  for (const change of [{ slope: "1:0" }, { buffer: -1 }, { buffer: Infinity }, { bufferDirection: "" },
-    { bankLimitsMode: "" }, { leftBankOffset: -5 }, { buffer: 20 }, { bufferDirection: "above", buffer: 2 }]) {
-    assert.throws(() => prepare({ config: { ...config, ...change } }));
-  }
-  assert.throws(() => prepare({ config: { ...config, proposalMethod: "Slope End-to-End Type", startRL: 7, endRL: 7 } }), /two distinct/);
-  const r = reading("a", "0/0"); r.reducedLevels[1] = "";
-  assert.throws(() => prepare({ readings: [r] }), /Chainage 0\/0: Ground RL/);
+test("rejects invalid inputs and infeasible quantities", () => {
+  for (const change of [{ quantity: 0 }, { quantity: -1 }, { quantity: 1e8 }, { bermWidth: -1 }, { slope: "1:0" }, { quantity: "" }]) assert.throws(() => prepare(change));
+  assert.throws(() => prepare({}, readings.slice(0, 1)), /two distinct/);
+  assert.throws(() => prepare({}, [readings[0], readings[0]]), /Duplicate/);
   assert.equal(chainageMetres("1+020", "+"), 1020);
   assert.equal(sideSlope("0.75:1"), .75);
+});
+
+test("CH300 bank geometry retains asymmetric toes and interpolated ground", () => {
+  const section = channelSection({ points: [-4, -3, 0, 3, 4].map((x, i) => ({ x, y: [8.83, 7.865, 7.34, 7.915, 8.855][i] })), bed: 7.155, left: -3, right: 3, ratio: 1, center: 0 });
+  assert.deepEqual(section.offsets.map(p => Number(p.offset)), [-3, -2.29, 0, 2.24, 3]);
+  assert.deepEqual(section.proposedLevels, ["7.865", "7.155", "7.155", "7.155", "7.915"]);
+  assert.equal(section.initialLevels[2], "7.340");
+});
+test("rounding stays within feasible bank levels", () => {
+  const rows = readings.map(row => ({ ...row, reducedLevels: [8.863, 8.66, 8.873] }));
+  const points = rows[0].intermediateOffsets.map((p, i) => ({ x: p.offset, y: rows[0].reducedLevels[i] }));
+  const design = channelSection({ points, bed: 8.863, left: -2, right: 2, ratio: 1, center: 0 });
+  const result = prepare({ quantity: excavationArea(points, design.geometry) * 180 }, rows);
+  assert.ok(result.get("0").bedLevel <= 8.863);
+  assert.equal(result.get("0").bedLevel * 200, Math.round(result.get("0").bedLevel * 200));
 });
