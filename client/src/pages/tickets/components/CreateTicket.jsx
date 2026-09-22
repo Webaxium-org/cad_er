@@ -74,11 +74,14 @@ const CreateTicket = ({ onClose }) => {
   return (
     <Stack spacing={2} mt={2}>
       <BasicSelect
-        label={"Feedback Type"}
+        label={"Category"}
         name={"feedbackType"}
         options={[
-          { label: "Complaints", value: "Complaints" },
-          { label: "Suggestions", value: "Suggestions" },
+          { label: "💡 Idea (Suggestions)", value: "Idea" },
+          { label: "🐛 Glitch (Bugs)", value: "Glitch" },
+          { label: "🚀 Evolution (Features)", value: "Evolution" },
+          { label: "🤝 SOS (Assistance)", value: "SOS" },
+          { label: "✨ Review (Feedback)", value: "Review" },
         ]}
         value={formValues?.feedbackType || ""}
         error={(formErrors && formErrors?.feedbackType) || ""}

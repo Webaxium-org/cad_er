@@ -501,6 +501,34 @@ const SignIn = () => {
                         Don&apos;t have an account?{" "}
                         <StyledLink to={"/register"}>Sign up</StyledLink>
                       </Typography>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          textAlign: "center",
+                          color: "text.secondary",
+                          display: "block",
+                        }}
+                      >
+                        By signing in you agree to our{" "}
+                        <StyledLink
+                          to={"#"}
+                          onClick={() =>
+                            alert("Terms & Conditions coming soon!")
+                          }
+                          style={{ fontSize: 12 }}
+                        >
+                          Terms &amp; Conditions
+                        </StyledLink>{" "}
+                        and{" "}
+                        <StyledLink
+                          to={"#"}
+                          onClick={() => alert("Privacy Policy coming soon!")}
+                          style={{ fontSize: 12 }}
+                        >
+                          Privacy Policy
+                        </StyledLink>
+                      </Typography>
                     </Box>
                   </Card>
                 </Box>
@@ -547,53 +575,92 @@ const SignIn = () => {
                   </Typography>
 
                   <Typography
-                    variant="h2"
+                    variant="h3"
                     color="white"
                     sx={{
                       fontWeight: 800,
-                      mb: 2,
+                      mb: 3,
                       letterSpacing: "-0.02em",
-                      lineHeight: 1.1,
+                      lineHeight: 1.2,
                     }}
                   >
-                    Engineering the{" "}
-                    <span style={{ color: "#60A5FA", position: "relative" }}>
-                      Future
-                      <svg
-                        style={{
-                          position: "absolute",
-                          bottom: -5,
-                          left: 0,
-                          width: "100%",
-                        }}
-                        viewBox="0 0 100 10"
-                      >
-                        <motion.path
-                          initial={{ pathLength: 0 }}
-                          animate={{ pathLength: 1 }}
-                          transition={{ duration: 1.5, delay: 0.5 }}
-                          d="M0 5 Q 25 0, 50 5 T 100 5"
-                          fill="transparent"
-                          stroke="#60A5FA"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    </span>
+                    We're better{" "}
+                    <span style={{ color: "#60A5FA" }}>together!</span>
+                  </Typography>
+
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "rgba(255,255,255,0.75)",
+                      fontWeight: 400,
+                      lineHeight: 1.7,
+                      maxWidth: 450,
+                      mx: "auto",
+                      mb: 2,
+                    }}
+                  >
+                    I'm CADER, your AI integrated terrain imagining system. I
+                    deliver precise cut-and-fill quantities before even you
+                    pack-up your gear.
+                  </Typography>
+
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "rgba(255,255,255,0.65)",
+                      fontWeight: 400,
+                      lineHeight: 1.7,
+                      maxWidth: 450,
+                      mx: "auto",
+                      mb: 2,
+                    }}
+                  >
+                    Whether it's intricate waterways, rugged pipelines, complex
+                    rail networks, or vast highway arteries, I help you handle
+                    it all with unmatched speed and accuracy.
+                  </Typography>
+
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "rgba(255,255,255,0.65)",
+                      fontWeight: 400,
+                      lineHeight: 1.7,
+                      maxWidth: 450,
+                      mx: "auto",
+                      mb: 2,
+                    }}
+                  >
+                    From initial field observations to final volume reports. I
+                    combine deep domain knowledge in levelling, proposal
+                    generation, and quantity calculation with modern cloud and
+                    mobile technology.
+                  </Typography>
+
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "rgba(255,255,255,0.55)",
+                      fontWeight: 400,
+                      lineHeight: 1.7,
+                      maxWidth: 450,
+                      mx: "auto",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    Now, let's sign in to eliminate post-processing
+                    wrestling—and get you back some quality family time.
                   </Typography>
 
                   <Typography
                     variant="h6"
                     sx={{
-                      color: "rgba(255,255,255,0.6)",
-                      fontWeight: 300,
-                      lineHeight: 1.6,
-                      maxWidth: 450,
-                      mx: "auto",
+                      color: "#60A5FA",
+                      fontWeight: 700,
+                      mt: 3,
                     }}
                   >
-                    Transforming raw spatial data into precision infrastructure.
-                    CADer empowers surveyors with real-time topographical
-                    accuracy.
+                    Sign up – let's wrap up the race!
                   </Typography>
                 </motion.div>
               </Box>

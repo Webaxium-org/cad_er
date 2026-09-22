@@ -91,6 +91,28 @@ const colors = {
   Final: "red",
 };
 
+const shortLabel = (name) => {
+  if (!name) return name;
+  return name
+    .replace("Initial Level", "INITIAL RL")
+    .replace("Proposed Level", "PL")
+    .replace("Final Earth Work", "FL EW")
+    .replace("Proposed Earth Work", "PL EW")
+    .replace("Final Quarry Muck", "FL QM")
+    .replace("Proposed Quarry Muck", "PL QM")
+    .replace("Final GSB", "FL GSB")
+    .replace("Proposed GSB", "PL GSB")
+    .replace("Final WMM", "FL WMM")
+    .replace("Proposed WMM", "PL WMM")
+    .replace("Final BM", "FL BM")
+    .replace("Proposed BM", "PL BM")
+    .replace("Final BC", "FL BC")
+    .replace("Proposed BC", "PL BC")
+    .replace("Final Tile Top", "FL TILE")
+    .replace("Proposed Tile Top", "PL TILE")
+    .replace("Final Level", "FL");
+};
+
 const inputColors = {
   green: { borderColor: "#00800081", color: "#008000" },
   blue: { borderColor: "#0000ff8a", color: "#0000FF" },
@@ -800,9 +822,27 @@ const CrossSectionReport = () => {
             spacing={2}
             mb={4}
           >
-            <Typography variant="h6" fontSize={20} fontWeight={800} color="#1e293b">
-              CROSS SECTION AT CH {selectedCs?.chainage}
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <BasicButton
+                variant="text"
+                sx={{
+                  height: 40,
+                  width: 40,
+                  minWidth: 40,
+                  borderRadius: "12px",
+                  color: "#334155",
+                  bgcolor: "#f1f5f9",
+                  border: "none",
+                  boxShadow: "none",
+                  "&:hover": { bgcolor: "#e2e8f0", color: "#1e293b" },
+                }}
+                onClick={() => navigate(-1)}
+                value={<MdArrowBackIosNew fontSize={18} />}
+              />
+              <Typography variant="h6" fontSize={20} fontWeight={800} color="#1e293b">
+                CS AT CH {selectedCs?.chainage}
+              </Typography>
+            </Stack>
 
             <Box textAlign={"end"}>
               <BasicMenu
@@ -859,7 +899,7 @@ const CrossSectionReport = () => {
             boxSizing: "border-box",
           }}
         >
-          Chainage
+          CH
         </Box>
 
         <TableContainer
@@ -940,7 +980,7 @@ const CrossSectionReport = () => {
                                       align="center"
                                       sx={{ color: s.color, fontWeight: 600 }}
                                     >
-                                      {s.name}
+                                      {shortLabel(s.name)}
                                     </TableCell>
                                   ))}
                                 </TableRow>

@@ -162,7 +162,11 @@ const ExportLoader = ({
                 letterSpacing: "-0.01em",
               }}
             >
-              {loader === "export" ? "Generating PDF" : "Initializing System"}
+              {loader === "export"
+                ? "PREMIERING PROJECT"
+                : loader === "terrain"
+                  ? "ENVISIONING TERRAIN"
+                  : "INITIALISING CADER"}
             </Typography>
             <Typography
               variant="body2"

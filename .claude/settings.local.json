@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \" import docx doc = docx.Document\\('CADER Pages.docx'\\) for para in doc.paragraphs: if para.text.strip\\(\\): print\\(para.text\\) \")",
+      "Bash(python -c ' *)",
+      "Read(//tmp/**)"
+    ]
+  }
+}

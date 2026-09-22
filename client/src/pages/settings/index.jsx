@@ -15,6 +15,8 @@ import {
   Divider,
   IconButton,
   Collapse,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import {
   FiSettings,
@@ -26,6 +28,7 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiInfo,
+  FiMonitor,
 } from "react-icons/fi";
 import BigHeader from "../../components/BigHeader";
 
@@ -151,6 +154,11 @@ export default function Settings() {
     2: false,
     3: false,
   });
+  const [pegName, setPegName] = useState("Chainage");
+  const [fieldInputMethod, setFieldInputMethod] = useState("HI Method");
+  const [displayMode, setDisplayMode] = useState("System Settings");
+  const [hatchType, setHatchType] = useState("Solid");
+  const [reportModel, setReportModel] = useState("Standard Model");
 
   const toggleHierarchy = (level) => {
     setHierarchyExpanded((prev) => ({ ...prev, [level]: !prev[level] }));
@@ -256,6 +264,144 @@ export default function Settings() {
                   <MenuItem value="metric">Metric (m / Km)</MenuItem>
                   <MenuItem value="imperial">Imperial (ft / mi)</MenuItem>
                 </CustomTextField>
+
+                {/* Peg Name */}
+                <Box>
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    color="#64748b"
+                    display="block"
+                    mb={1}
+                  >
+                    PEG NAME
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={pegName}
+                    exclusive
+                    onChange={(_, v) => v && setPegName(v)}
+                    size="small"
+                    sx={{
+                      "& .MuiToggleButton-root": {
+                        borderRadius: "10px !important",
+                        px: 3,
+                        fontWeight: 700,
+                        fontSize: "0.8rem",
+                        color: "#64748b",
+                        borderColor: "#e2e8f0",
+                        "&.Mui-selected": {
+                          bgcolor: PRIMARY_BRAND,
+                          color: "white",
+                          borderColor: PRIMARY_BRAND,
+                        },
+                      },
+                    }}
+                  >
+                    <ToggleButton value="Chainage">Chainage</ToggleButton>
+                    <ToggleButton value="Station">Station</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+
+                {/* Field Date Input Method */}
+                <Box>
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    color="#64748b"
+                    display="block"
+                    mb={1}
+                  >
+                    FIELD DATE INPUT METHOD
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={fieldInputMethod}
+                    exclusive
+                    onChange={(_, v) => v && setFieldInputMethod(v)}
+                    size="small"
+                    sx={{
+                      "& .MuiToggleButton-root": {
+                        borderRadius: "10px !important",
+                        px: 2,
+                        fontWeight: 700,
+                        fontSize: "0.8rem",
+                        color: "#64748b",
+                        borderColor: "#e2e8f0",
+                        "&.Mui-selected": {
+                          bgcolor: PRIMARY_BRAND,
+                          color: "white",
+                          borderColor: PRIMARY_BRAND,
+                        },
+                      },
+                    }}
+                  >
+                    <ToggleButton value="HI Method">HI Method</ToggleButton>
+                    <ToggleButton value="RF Method">RF Method</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+
+                {/* Area Volume Report Model */}
+                <CustomTextField
+                  select
+                  label="Area Volume Report Model"
+                  value={reportModel}
+                  onChange={(e) => setReportModel(e.target.value)}
+                >
+                  <MenuItem value="Standard Model">Standard Model (Tabular)</MenuItem>
+                  <MenuItem value="Detailed Model">Detailed Equation Model</MenuItem>
+                </CustomTextField>
+
+                {/* Hatch Settings */}
+                <CustomTextField
+                  select
+                  label="Hatch Type"
+                  value={hatchType}
+                  onChange={(e) => setHatchType(e.target.value)}
+                  helperText="Applied to cut/fill areas in CS drawings."
+                >
+                  <MenuItem value="Solid">Solid</MenuItem>
+                  <MenuItem value="Diagonal">Diagonal</MenuItem>
+                  <MenuItem value="Cross">Cross</MenuItem>
+                  <MenuItem value="Dot">Dot</MenuItem>
+                </CustomTextField>
+
+                {/* Display Mode */}
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                    <FiMonitor size={14} color="#64748b" />
+                    <Typography
+                      variant="caption"
+                      fontWeight={700}
+                      color="#64748b"
+                    >
+                      DISPLAY MODE
+                    </Typography>
+                  </Stack>
+                  <ToggleButtonGroup
+                    value={displayMode}
+                    exclusive
+                    onChange={(_, v) => v && setDisplayMode(v)}
+                    size="small"
+                    sx={{
+                      "& .MuiToggleButton-root": {
+                        borderRadius: "10px !important",
+                        px: 2,
+                        fontWeight: 700,
+                        fontSize: "0.75rem",
+                        color: "#64748b",
+                        borderColor: "#e2e8f0",
+                        "&.Mui-selected": {
+                          bgcolor: PRIMARY_BRAND,
+                          color: "white",
+                          borderColor: PRIMARY_BRAND,
+                        },
+                      },
+                    }}
+                  >
+                    <ToggleButton value="Light">Light</ToggleButton>
+                    <ToggleButton value="Dark">Dark</ToggleButton>
+                    <ToggleButton value="System Settings">System</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
 
                 <Box>
                   <Stack direction="row" justifyContent="space-between" mb={1}>

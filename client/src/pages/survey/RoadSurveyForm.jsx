@@ -790,6 +790,7 @@ const RoadSurveyForm = () => {
                         label: "QUEUE",
                         icon: <CgGoogleTasks fontSize="20px" />,
                         onClick: handleOpenQueue,
+                        queue: true,
                       },
                       {
                         label: "NEXT",
@@ -836,7 +837,7 @@ const RoadSurveyForm = () => {
 };
 
 // ─── Small reusable action button ────────────────────────────────────────────
-const ActionBtn = ({ label, icon, onClick, muted }) => (
+const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
   <Box
     onClick={onClick}
     sx={{
@@ -850,11 +851,15 @@ const ActionBtn = ({ label, icon, onClick, muted }) => (
       minWidth: "70px",
       whiteSpace: "nowrap",
       flexShrink: 0,
-      bgcolor: muted ? "rgba(255,255,255,0.6)" : "white",
-      color: muted ? "#64748b" : "#6366f1",
+      bgcolor: muted
+        ? "rgba(255,255,255,0.6)"
+        : queue
+          ? "#ea580c"
+          : "white",
+      color: muted ? "#64748b" : queue ? "white" : "#6366f1",
       transition: "all 0.3s ease",
       "&:hover": {
-        bgcolor: muted ? "#e2e8f0" : "#6366f1",
+        bgcolor: muted ? "#e2e8f0" : queue ? "#c2410c" : "#6366f1",
         color: muted ? "#1e293b" : "white",
       },
     }}

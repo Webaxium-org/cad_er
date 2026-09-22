@@ -579,8 +579,9 @@ export default function ProjectsList() {
                             </Stack>
 
                             <Typography
-                              variant="subtitle1"
+                              variant="body2"
                               fontWeight={800}
+                              fontSize="13px"
                               color="#1e293b"
                               sx={{
                                 whiteSpace: "nowrap",
@@ -772,8 +773,9 @@ export default function ProjectsList() {
                               </Typography>
                             </Stack>
                             <Typography
-                              variant="subtitle1"
+                              variant="body2"
                               fontWeight={800}
+                              fontSize="13px"
                               color="#1e293b"
                               sx={{
                                 whiteSpace: "nowrap",
@@ -1004,8 +1006,9 @@ export default function ProjectsList() {
                               </Typography>
                             </Stack>
                             <Typography
-                              variant="subtitle1"
+                              variant="body2"
                               fontWeight={800}
+                              fontSize="13px"
                               color="#1e293b"
                               sx={{
                                 whiteSpace: "nowrap",
@@ -1210,7 +1213,7 @@ export default function ProjectsList() {
               letterSpacing="-0.5px"
               mb={0}
             >
-              Here's Your Library!
+              Explore your projects!
             </Typography>
           </motion.div>
 

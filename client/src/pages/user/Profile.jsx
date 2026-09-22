@@ -225,6 +225,30 @@ const Profile = () => {
                   >
                     Save Changes
                   </Button>
+
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    sx={{
+                      mt: 2,
+                      color: "#ef4444",
+                      borderColor: "#fca5a5",
+                      fontWeight: 700,
+                      borderRadius: "12px",
+                      py: 1.5,
+                      "&:hover": {
+                        bgcolor: "#fef2f2",
+                        borderColor: "#ef4444",
+                      },
+                    }}
+                    onClick={() =>
+                      alert(
+                        "Delete account feature — please contact support to proceed.",
+                      )
+                    }
+                  >
+                    Delete Account
+                  </Button>
                 </Paper>
               </motion.div>
             </Grid>

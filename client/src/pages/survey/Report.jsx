@@ -293,7 +293,7 @@ const Report = () => {
             fontSize: { xs: "1.5rem", md: "2rem" },
           }}
         >
-          Your Reports Are Here!
+          Explore your library!
         </Typography>
         <Typography
           variant="body2"
@@ -302,7 +302,7 @@ const Report = () => {
           fontWeight={600}
           mt={1}
         >
-          Select a report type from the bottom menu to continue
+          Hey, designate a category from the footer navigation island to advance.
         </Typography>
       </Box>
 

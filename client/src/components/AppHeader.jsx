@@ -123,11 +123,13 @@ const AppHeader = ({ sidebar = true }) => {
               <motion.div whileHover={{ scale: 1.05 }}>
                 <Avatar
                   src={profileImage}
+                  onClick={() => navigate("/")}
                   sx={{
                     width: { xs: 40, md: 48 },
                     height: { xs: 40, md: 48 },
                     border: "2px solid rgba(255,255,255,0.3)",
                     bgcolor: PRIMARY_BRAND,
+                    cursor: "pointer",
                   }}
                 />
               </motion.div>

@@ -19,6 +19,7 @@ import {
   Stack,
   Paper,
   TableContainer,
+  Typography,
 } from "@mui/material";
 
 import FieldBookTable from "./FieldBookTable";
@@ -560,6 +561,15 @@ export default function FieldBook() {
       <SmallHeader />
 
       <Box p={2}>
+        <Typography
+          variant="h5"
+          fontWeight={800}
+          color="#1e293b"
+          sx={{ mb: 2, letterSpacing: "-0.01em" }}
+        >
+          Field Observations!
+        </Typography>
+
         <Stack
           direction="row"
           justifyContent="space-between"
