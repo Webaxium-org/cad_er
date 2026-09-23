@@ -4,6 +4,7 @@ const initialState = {
   type: null,
   message: '',
   visible: false,
+  duration: 10000,
 };
 
 export const alertSlice = createSlice({
@@ -13,6 +14,7 @@ export const alertSlice = createSlice({
     showAlert: (state, action) => {
       state.type = action.payload.type;
       state.message = action.payload.message;
+      state.duration = action.payload.duration ?? 10000;
       state.visible = true;
     },
     hideAlert: (state) => {

@@ -120,13 +120,6 @@ const step1Fields = [
   { label: "Assistant 3", name: "assistant3", type: "text", size: 6 },
   { label: "Assistant 4", name: "assistant4", type: "text", size: 6 },
   { label: "Assistant 5", name: "assistant5", type: "text", size: 6 },
-];
-
-// ─── Step 2 Fields ────────────────────────────────────────────────────────────
-const step2Fields = [
-  { label: "Reduced level*", name: "reducedLevel", type: "number" },
-  { label: "Back sight*", name: "backSight", type: "number", size: 6 },
-  { label: "Remark*", name: "remark", type: "text", size: 6 },
   {
     label: "Set chainage multiple*",
     name: "chainageMultiple",
@@ -141,6 +134,13 @@ const step2Fields = [
     options: ["/", "+", ","].map((n) => ({ label: n, value: n })),
     size: 6,
   },
+];
+
+// ─── Step 2 Fields ────────────────────────────────────────────────────────────
+const step2Fields = [
+  { label: "Reduced level*", name: "reducedLevel", type: "number" },
+  { label: "Back sight*", name: "backSight", type: "number", size: 6 },
+  { label: "Remark*", name: "remark", type: "text", size: 6 },
 ];
 
 // ─── Initial values ───────────────────────────────────────────────────────────
@@ -219,6 +219,13 @@ const buildStep1Schema = (category) =>
     assistant3: Yup.string().nullable(),
     assistant4: Yup.string().nullable(),
     assistant5: Yup.string().nullable(),
+    chainageMultiple: Yup.number()
+      .typeError("Chainage multiple must be a number")
+      .required("Chainage multiple is required")
+      .moreThan(0, "Chainage multiple must be greater than 0"),
+    separator: Yup.string()
+      .required("Separator is required")
+      .matches(/^[/+,]$/, "Only '/', '+', ',' are allowed"),
   });
 
 const step2Schema = Yup.object().shape({
@@ -229,13 +236,6 @@ const step2Schema = Yup.object().shape({
   reducedLevel: Yup.number()
     .typeError("Reduced level is required")
     .required("Reduced level is required"),
-  chainageMultiple: Yup.number()
-    .typeError("Chainage multiple must be a number")
-    .required("Chainage multiple is required")
-    .moreThan(0, "Chainage multiple must be greater than 0"),
-  separator: Yup.string()
-    .required("Separator is required")
-    .matches(/^[/+,]$/, "Only '/', '+', ',' are allowed"),
 });
 
 const queueSchema = Yup.object().shape({
@@ -247,6 +247,18 @@ const queueSchema = Yup.object().shape({
   finalScheduleDate: Yup.string().nullable(),
   finalDeadline: Yup.string().nullable(),
 });
+
+const getDefaultRemark = () => {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = now.getFullYear();
+  const hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const h12 = hours % 12 || 12;
+  return `TBM - 1 (${day}-${month}-${year} ${h12}.${minutes}${ampm})`;
+};
 
 // ─── Animation variants ───────────────────────────────────────────────────────
 const slideVariants = {
@@ -271,10 +283,11 @@ const RoadSurveyForm = () => {
   const [step, setStep] = useState(locationState?.step === 2 ? 2 : 1);
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
 
-  const [category, setCategory] = useState("publicProject");
+  const [category, setCategory] = useState(null);
   const [formValues, setFormValues] = useState(() => ({
     ...initialFormValues,
     type: locationState?.type || "Road Survey",
+    remark: getDefaultRemark(),
   }));
   const [formErrors, setFormErrors] = useState(null);
   const [queueValues, setQueueValues] = useState(initialQueueValues);
@@ -289,6 +302,9 @@ const RoadSurveyForm = () => {
     }
     if (["consultant", "client", "contractor"].includes(f.name)) {
       return { ...f, hidden: category !== "privateProject" };
+    }
+    if (["agreementNo", "instrumentNo", "engineerSurveyor", "assistant1", "assistant2", "assistant3", "assistant4", "assistant5", "chainageMultiple", "separator"].includes(f.name)) {
+      return { ...f, hidden: !category };
     }
     return f;
   });
@@ -310,6 +326,10 @@ const RoadSurveyForm = () => {
 
   // ─── Step navigation ────────────────────────────────────────────────────────
   const handleNext = async () => {
+    if (!category) {
+      setFormErrors((prev) => ({ ...prev, category: "Please select a project type" }));
+      return;
+    }
     const schema = buildStep1Schema(category);
     try {
       await schema.validate(formValues, { abortEarly: false });
@@ -335,6 +355,10 @@ const RoadSurveyForm = () => {
 
   // ─── Open Queue modal (validates step 1 first) ──────────────────────────────
   const handleOpenQueue = async () => {
+    if (!category) {
+      setFormErrors((prev) => ({ ...prev, category: "Please select a project type" }));
+      return;
+    }
     const schema = buildStep1Schema(category);
     try {
       await schema.validate(formValues, { abortEarly: false });
@@ -500,24 +524,34 @@ const RoadSurveyForm = () => {
             onChange={handleInputChange}
           />
         ) : mode === "checkbox" ? (
-          <Stack direction="row">
-            {input.options?.map((option, idx) => (
-              <Box display="flex" alignItems="center" key={idx}>
-                <Typography
-                  variant="body2"
-                  fontSize="16px"
-                  fontWeight={600}
-                  color="black"
-                >
-                  {option.label}
-                </Typography>
-                <BasicCheckbox
-                  checked={category === option.name}
-                  onChange={() => setCategory(option.name)}
-                />
-              </Box>
-            ))}
-          </Stack>
+          <Box>
+            <Stack direction="row">
+              {input.options?.map((option, idx) => (
+                <Box display="flex" alignItems="center" key={idx}>
+                  <Typography
+                    variant="body2"
+                    fontSize="16px"
+                    fontWeight={600}
+                    color="black"
+                  >
+                    {option.label}
+                  </Typography>
+                  <BasicCheckbox
+                    checked={category === option.name}
+                    onChange={() => {
+                      setCategory(option.name);
+                      setFormErrors((prev) => ({ ...prev, category: null }));
+                    }}
+                  />
+                </Box>
+              ))}
+            </Stack>
+            {formErrors?.category && (
+              <Typography variant="caption" color="error" mt={0.5}>
+                {formErrors.category}
+              </Typography>
+            )}
+          </Box>
         ) : (
           <BasicInput
             {...input}
@@ -854,12 +888,12 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
       bgcolor: muted
         ? "rgba(255,255,255,0.6)"
         : queue
-          ? "#ea580c"
+          ? "white"
           : "white",
-      color: muted ? "#64748b" : queue ? "white" : "#6366f1",
+      color: muted ? "#64748b" : queue ? "#ea580c" : "#6366f1",
       transition: "all 0.3s ease",
       "&:hover": {
-        bgcolor: muted ? "#e2e8f0" : queue ? "#c2410c" : "#6366f1",
+        bgcolor: muted ? "#e2e8f0" : queue ? "#ea580c" : "#6366f1",
         color: muted ? "#1e293b" : "white",
       },
     }}

@@ -197,6 +197,84 @@ const drawPDFHeader = (doc, surveyInfo, reportDetails, tableData) => {
   doc.text("Executive Engineer", 180, currentY, { align: "center" });
 };
 
+// html2canvas cannot reliably capture Plotly charts (position:sticky/absolute
+// containers, cross-origin fonts from the global Carlito CSS rule).
+// This helper swaps each .js-plotly-plot element for a static <img> made from
+// the chart's own SVG, runs html2canvas, then restores the DOM.
+const captureChartElement = async (el) => {
+  const plotlyEls = [...el.querySelectorAll(".js-plotly-plot")];
+  const replacements = [];
+
+  for (const plotlyEl of plotlyEls) {
+    const mainSvg = plotlyEl.querySelector("svg.main-svg");
+    if (!mainSvg) continue;
+
+    const rect = mainSvg.getBoundingClientRect();
+    if (!rect.width || !rect.height) continue;
+
+    const svgClone = mainSvg.cloneNode(true);
+    svgClone.setAttribute("width", rect.width);
+    svgClone.setAttribute("height", rect.height);
+    // embed white background so transparent SVG renders correctly
+    svgClone.style.background = "#ffffff";
+
+    const svgStr = new XMLSerializer().serializeToString(svgClone);
+    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+
+    const imgEl = document.createElement("img");
+    imgEl.style.width = `${rect.width}px`;
+    imgEl.style.height = `${rect.height}px`;
+    imgEl.style.display = "block";
+    imgEl.style.background = "#ffffff";
+
+    try {
+      await new Promise((res, rej) => {
+        imgEl.onload = res;
+        imgEl.onerror = rej;
+        imgEl.src = blobUrl;
+      });
+    } catch {
+      URL.revokeObjectURL(blobUrl);
+      continue;
+    }
+    URL.revokeObjectURL(blobUrl);
+
+    plotlyEl.parentNode.insertBefore(imgEl, plotlyEl);
+    plotlyEl.style.display = "none";
+    replacements.push({ plotlyEl, imgEl });
+  }
+
+  const canvas = await html2canvas(el, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: "#ffffff",
+    logging: false,
+    onclone: (doc) => {
+      // Remove cross-origin font rule so html2canvas can render without tainting
+      [...doc.styleSheets].forEach((ss) => {
+        try {
+          [...ss.cssRules].forEach((rule, idx) => {
+            if (rule.cssText && rule.cssText.includes("fonts.googleapis")) {
+              ss.deleteRule(idx);
+            }
+          });
+        } catch {
+          // cross-origin stylesheet — skip
+        }
+      });
+    },
+  });
+
+  for (const { plotlyEl, imgEl } of replacements) {
+    plotlyEl.style.display = "";
+    imgEl.remove();
+  }
+
+  return canvas;
+};
+
 const exportPdf = async ({
   tableData,
   reportDetails,
@@ -600,13 +678,7 @@ const exportPdf = async ({
       // Give time for charts to render
       await new Promise((res) => setTimeout(res, 500));
 
-      // Optimization 2: Lower scale (2.0 is high quality for print but way smaller than 3.0)
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
+      const canvas = await captureChartElement(el);
 
       // Rotate canvas -90 degrees so it fits portrait page vertically
       const rotatedCanvas = document.createElement("canvas");

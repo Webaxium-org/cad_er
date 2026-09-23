@@ -61,6 +61,18 @@ const colors = {
   Final: "red",
 };
 
+const formatDateTime = () => {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = now.getFullYear();
+  const hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const h12 = hours % 12 || 12;
+  return `${day}-${month}-${year} ${h12}.${minutes}${ampm}`;
+};
+
 const fUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
@@ -180,7 +192,7 @@ const inputDetails = [
     type: "select",
     options: ["Readings", "Soundings"],
   },
-  { label: "Road width*", name: "roadWidth", type: "number", size: 6 },
+  { label: "Width*", name: "roadWidth", type: "number", size: 6 },
   { label: "Spacing*", name: "spacing", type: "number", size: 6 },
   { label: "Fore sight*", name: "foreSight", type: "number", size: 6 },
   { label: "Back sight*", name: "backSight", type: "number", size: 6 },
@@ -220,6 +232,7 @@ const RoadSurveyRowsForm = () => {
   const isWaterWay = purpose?.surveyId?.type === "Water Way";
   const isRoadSurvey = purpose?.surveyId?.type === "Road Survey";
   const showBasis = rowType === "Chainage" && !isRoadSurvey;
+  const waterLevelLocked = rowType === "Water Level" && !!formValues.intermediateSight;
 
   const schema = Yup.object().shape({
     type: Yup.string().required("Type is required"),
@@ -253,12 +266,12 @@ const RoadSurveyRowsForm = () => {
             .typeError(
               isWaterWay
                 ? "Water way width is required"
-                : "Road width is required",
+                : "Width is required",
             )
             .required(
               isWaterWay
                 ? "Water way width is required"
-                : "Road width is required",
+                : "Width is required",
             ),
         otherwise: (schema) => schema.nullable(),
       }),
@@ -606,13 +619,12 @@ const RoadSurveyRowsForm = () => {
     if (type === "CP" || type === "TBM" || type === "Water Level") {
       const length = purpose?.rows?.filter((r) => r.type === type)?.length || 0;
       const remarkLabel = type === "Water Level" ? "WL" : type;
+      const remarkNumber = length + (type === "TBM" && purpose.type === "Initial Level" ? 2 : 1);
+      const remark = type === "Water Level"
+        ? `${remarkLabel} - ${remarkNumber} (${formatDateTime()})`
+        : `${remarkLabel} - ${remarkNumber}`;
 
-      setFormValues((prev) => ({
-        ...prev,
-        remark: `${remarkLabel} - ${
-          length + (type === "TBM" && purpose.type === "Initial Level" ? 2 : 1)
-        }`,
-      }));
+      setFormValues((prev) => ({ ...prev, remark }));
     }
 
     setRowType(type);
@@ -678,6 +690,19 @@ const RoadSurveyRowsForm = () => {
 
   const handleInputChange = async (event, index, field) => {
     const { name, value } = event.target;
+
+    if (name === "basis" && value === "Soundings") {
+      const hasWaterLevel = purpose?.rows?.some((r) => r.type === "Water Level");
+      if (!hasWaterLevel) {
+        dispatch(
+          showAlert({
+            type: "error",
+            message: "Add a Water Level reading first before selecting Soundings",
+          }),
+        );
+        return;
+      }
+    }
 
     if (rowType === "CP") {
       if (name === "foreSight") {
@@ -996,6 +1021,15 @@ const RoadSurveyRowsForm = () => {
             purpose?.surveyId?.type === "Water Way"
               ? "Water Level"
               : "Chainage",
+          );
+        } else if (rowType === "Water Level") {
+          setRowType("Chainage");
+          dispatch(
+            showAlert({
+              type: "success",
+              message: `Water Level added at ${formatDateTime()}`,
+              duration: 3000,
+            }),
           );
         }
 
@@ -2272,8 +2306,9 @@ const RoadSurveyRowsForm = () => {
                       //   onClick: () => console.log("hi"),
                       // },
                     ].map(
-                      (type, i) =>
-                        rowType !== type.value && (
+                      (type, i) => {
+                        const isDisabled = waterLevelLocked && type.label !== "NEXT";
+                        return rowType !== type.value && (
                           <Box
                             key={i}
                             sx={{
@@ -2284,20 +2319,21 @@ const RoadSurveyRowsForm = () => {
                               px: { xs: 2, md: 6 },
                               height: "100%",
                               borderRadius: "16px",
-                              cursor: "pointer",
+                              cursor: isDisabled ? "not-allowed" : "pointer",
                               minWidth: "70px",
                               whiteSpace: "nowrap",
                               flexShrink: 0,
                               bgcolor: "white",
-                              color:
-                                rowType === type.value ? "white" : "#6366f1",
+                              color: rowType === type.value ? "white" : "#6366f1",
+                              opacity: isDisabled ? 0.35 : 1,
                               transition: "all 0.3s ease",
                               "&:hover": {
-                                bgcolor:
-                                  rowType === type.value ? "white" : "#f8fafc",
+                                bgcolor: isDisabled
+                                  ? "white"
+                                  : rowType === type.value ? "white" : "#f8fafc",
                               },
                             }}
-                            onClick={type.onClick}
+                            onClick={isDisabled ? undefined : type.onClick}
                           >
                             {rowType === type.value && (
                               <Box
@@ -2361,7 +2397,8 @@ const RoadSurveyRowsForm = () => {
                               </Typography>
                             </Box>
                           </Box>
-                        ),
+                        );
+                      }
                     )}
                   </Paper>
                 </Box>

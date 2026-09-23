@@ -41,6 +41,7 @@ export default defineConfig({
         background_color: "#ffffff",
 
         display: "standalone",
+        display_override: ["standalone", "minimal-ui", "browser"],
         start_url: "/",
         scope: "/",
 

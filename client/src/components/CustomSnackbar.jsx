@@ -7,7 +7,7 @@ import alertColors from '../constants/alertColors';
 import { hideAlert } from '../redux/alertSlice';
 
 const CustomSnackbar = () => {
-  const { type, message, visible } = useSelector((state) => state.alert);
+  const { type, message, visible, duration } = useSelector((state) => state.alert);
 
   const dispatch = useDispatch();
 
@@ -34,7 +34,7 @@ const CustomSnackbar = () => {
       <Snackbar
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         open={open}
-        autoHideDuration={10000}
+        autoHideDuration={duration ?? 10000}
         onClose={handleClose}
         sx={{ zIndex: 2000 }}
       >
