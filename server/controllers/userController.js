@@ -1,4 +1,5 @@
 import User from "../models/user.js";
+import Survey from "../models/survey.js";
 import bcrypt from "bcryptjs";
 
 export const getAllUsers = async (req, res, next) => {
@@ -28,6 +29,24 @@ export const getAllUsers = async (req, res, next) => {
       .populate("createdBy", "name email")
       .lean();
 
+    const projectCounts = await Survey.aggregate([
+      {
+        $match: {
+          createdBy: { $in: users.map((user) => user._id) },
+          deleted: false,
+          "branchDetails.isBranch": false,
+        },
+      },
+      { $group: { _id: "$createdBy", count: { $sum: 1 } } },
+    ]);
+    const countsByUser = new Map(
+      projectCounts.map(({ _id, count }) => [_id.toString(), count]),
+    );
+    const usersWithProjects = users.map((user) => ({
+      ...user,
+      projectCount: countsByUser.get(user._id.toString()) ?? 0,
+    }));
+
     res.status(200).json({
       success: true,
       count: users.length,
@@ -35,7 +54,7 @@ export const getAllUsers = async (req, res, next) => {
         users.length > 0
           ? `${users.length} user${users.length > 1 ? "s" : ""} found`
           : "No users found",
-      users,
+      users: usersWithProjects,
     });
   } catch (err) {
     next(err);

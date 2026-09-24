@@ -228,6 +228,42 @@ const RoadSurveyRowsForm = () => {
   const [openAddBreak, setOpenAddBreak] = useState(false);
   const [openEnterBranch, setOpenEnterBranch] = useState(false);
   const [upcomingBranches, setUpcomingBranches] = useState([]);
+  const graphRef = useRef(null);
+  const [graphHeight, setGraphHeight] = useState(0);
+  const [keyboardViewportTop, setKeyboardViewportTop] = useState(null);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return undefined;
+
+    let fullHeight = viewport.height;
+    const updateKeyboardPosition = () => {
+      const focused = document.activeElement;
+      const isEditing = focused?.matches?.("input, textarea, [contenteditable='true']");
+      if (!isEditing) fullHeight = Math.max(fullHeight, viewport.height);
+      setKeyboardViewportTop(
+        isEditing && fullHeight - viewport.height > 120 ? viewport.offsetTop : null,
+      );
+    };
+
+    viewport.addEventListener("resize", updateKeyboardPosition);
+    viewport.addEventListener("scroll", updateKeyboardPosition);
+    document.addEventListener("focusin", updateKeyboardPosition);
+    document.addEventListener("focusout", updateKeyboardPosition);
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardPosition);
+      viewport.removeEventListener("scroll", updateKeyboardPosition);
+      document.removeEventListener("focusin", updateKeyboardPosition);
+      document.removeEventListener("focusout", updateKeyboardPosition);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!graphRef.current || !window.ResizeObserver) return undefined;
+    const observer = new ResizeObserver(([entry]) => setGraphHeight(entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height));
+    observer.observe(graphRef.current);
+    return () => observer.disconnect();
+  }, [page, rowType, selectedCs]);
 
   const isWaterWay = purpose?.surveyId?.type === "Water Way";
   const isRoadSurvey = purpose?.surveyId?.type === "Road Survey";
@@ -1455,12 +1491,20 @@ const RoadSurveyRowsForm = () => {
           page === 1 &&
           selectedCs &&
           selectedCs?.series && (
+            <Box sx={{ display: keyboardViewportTop !== null ? "block" : "contents", height: keyboardViewportTop !== null ? graphHeight : "auto" }}>
             <Box
-              position={"sticky"}
-              top={"68px"}
+              ref={graphRef}
+              position={keyboardViewportTop !== null ? "fixed" : "sticky"}
+              top={keyboardViewportTop !== null ? `${keyboardViewportTop}px` : "68px"}
               bgcolor={"white"}
-              zIndex={2}
+              zIndex={keyboardViewportTop !== null ? 1101 : 2}
               sx={{
+                ...(keyboardViewportTop !== null && {
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: "calc(100% - 32px)",
+                  maxWidth: "852px",
+                }),
                 p: "8px",
                 borderRadius: "0px 0px 20px 20px",
                 gap: { xs: 1, md: 2 },
@@ -1544,6 +1588,7 @@ const RoadSurveyRowsForm = () => {
                 layout={chartOptions.layout}
                 style={{ width: "100%", height: 100 }}
               />
+            </Box>
             </Box>
           )}
 

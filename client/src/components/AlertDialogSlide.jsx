@@ -18,6 +18,7 @@ export default function AlertDialogSlide({
   content,
   cancelButtonText,
   submitButtonText,
+  submitDisabled = false,
   onCancel,
   onSubmit,
 }) {
@@ -47,8 +48,8 @@ export default function AlertDialogSlide({
         </DialogContent>
         {(cancelButtonText || submitButtonText) && (
           <DialogActions>
-            <Button onClick={onCancel}>{cancelButtonText}</Button>
-            <Button onClick={onSubmit}>{submitButtonText}</Button>
+            {cancelButtonText && <Button onClick={onCancel} disabled={submitDisabled}>{cancelButtonText}</Button>}
+            {submitButtonText && <Button onClick={onSubmit} disabled={submitDisabled}>{submitButtonText}</Button>}
           </DialogActions>
         )}
       </Dialog>

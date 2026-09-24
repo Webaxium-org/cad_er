@@ -71,7 +71,7 @@ const Icons = {
   ),
 };
 
-const AppHeader = ({ sidebar = true }) => {
+const AppHeader = ({ sidebar = true, showSearch = true, showNotifications = true }) => {
   const [search, setSearch] = useState("");
   const { user } = useSelector((state) => state.user || { user: null });
   const navigate = useNavigate();
@@ -155,7 +155,7 @@ const AppHeader = ({ sidebar = true }) => {
             </Stack>
 
             <Stack direction="row" spacing={1.5} alignItems="center">
-              <TextField
+              {showSearch && <TextField
                 size="small"
                 placeholder="Search..."
                 value={search}
@@ -187,9 +187,9 @@ const AppHeader = ({ sidebar = true }) => {
                     </InputAdornment>
                   ),
                 }}
-              />
+              />}
 
-              <IconButton
+              {showNotifications && <IconButton
                 onClick={handleNotifClick}
                 sx={{
                   color: "white",
@@ -201,9 +201,9 @@ const AppHeader = ({ sidebar = true }) => {
                 <Badge color="error" variant="dot">
                   <Icons.Notification />
                 </Badge>
-              </IconButton>
+              </IconButton>}
 
-              <Menu
+              {showNotifications && <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleNotifClose}
@@ -232,7 +232,7 @@ const AppHeader = ({ sidebar = true }) => {
                     </Box>
                   </MenuItem>
                 ))}
-              </Menu>
+              </Menu>}
 
               {sidebar && (
                 <IconButton
