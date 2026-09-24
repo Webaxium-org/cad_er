@@ -26,7 +26,7 @@ import { BsThreeDots } from "react-icons/bs";
 import BasicMenu from "../../components/BasicMenu";
 import BasicInput from "../../components/BasicInput";
 import BasicButton from "../../components/BasicButton";
-import { MdDownload } from "react-icons/md";
+import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
 import { showAlert } from "../../redux/alertSlice";
 import { DxfWriter, Units, point2d, point3d } from "@tarikjabiri/dxf";
 import { saveAs } from "file-saver";
@@ -132,7 +132,6 @@ const CrossSectionReport = () => {
 
   const pdfRef = useRef();
 
-
   const [chartOptions, setChartOptions] = useState(null);
 
   const [survey, setSurvey] = useState([]);
@@ -142,12 +141,14 @@ const CrossSectionReport = () => {
   const [tableData, setTableData] = useState([]);
 
   const [selectedCs, setSelectedCs] = useState(null);
-  const [drawingScales, setDrawingScales] = useState({ horizontal: 150, vertical: 150 });
+  const [drawingScales, setDrawingScales] = useState({
+    horizontal: 150,
+    vertical: 150,
+  });
 
   const [openRowId, setOpenRowId] = useState(null);
 
   const [selectedMenu, setSelectedMenu] = useState("v1");
-
 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
@@ -243,7 +244,9 @@ const CrossSectionReport = () => {
       });
 
       if (!exportedSeries) {
-        throw new Error("The cross-section does not contain enough valid points");
+        throw new Error(
+          "The cross-section does not contain enough valid points",
+        );
       }
 
       const chainage = String(selectedCs.chainage || "cross-section").replace(
@@ -290,7 +293,13 @@ const CrossSectionReport = () => {
     const makeSeries = (offsets, levels) =>
       offsets.map((o, i) => {
         const level = levels?.[i];
-        const y = level !== null && level !== undefined && level !== "" && Number.isFinite(Number(level)) ? Number(level).toFixed(3) : null;
+        const y =
+          level !== null &&
+          level !== undefined &&
+          level !== "" &&
+          Number.isFinite(Number(level))
+            ? Number(level).toFixed(3)
+            : null;
         if (y !== null) data.allRl.push(Number(y));
 
         return {
@@ -357,7 +366,11 @@ const CrossSectionReport = () => {
       if (!initialEntry?.rows?.length) return;
 
       setLoading(true);
-      setProgress({ percent: 0, message: "Preparing report data...", estimatedTimeLeft: null });
+      setProgress({
+        percent: 0,
+        message: "Preparing report data...",
+        estimatedTimeLeft: null,
+      });
 
       const allFormattedData = initialEntry.rows
         ?.filter((row) => row.type === "Chainage")
@@ -365,7 +378,9 @@ const CrossSectionReport = () => {
         .filter(Boolean);
 
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      createSectionPdf(allFormattedData, drawingScales).save("cross-sections.pdf");
+      createSectionPdf(allFormattedData, drawingScales).save(
+        "cross-sections.pdf",
+      );
       setLoading(false);
       setProgress(null);
     } catch (err) {
@@ -487,9 +502,9 @@ const CrossSectionReport = () => {
     const safeInitial = row.reducedLevels || [];
 
     // UNIQUE OFFSETS ONLY FOR XAXIS
-    const uniqueOffsets = [...new Set(rawOffsets.map((n) => Number(n).toFixed(6)))].sort(
-      (a, b) => a - b,
-    );
+    const uniqueOffsets = [
+      ...new Set(rawOffsets.map((n) => Number(n).toFixed(6))),
+    ].sort((a, b) => a - b);
 
     const data = {
       id,
@@ -504,7 +519,13 @@ const CrossSectionReport = () => {
     const makeSeries = (offsets, levels) =>
       offsets.map((o, i) => {
         const level = levels?.[i];
-        const y = level !== null && level !== undefined && level !== "" && Number.isFinite(Number(level)) ? Number(level).toFixed(3) : null;
+        const y =
+          level !== null &&
+          level !== undefined &&
+          level !== "" &&
+          Number.isFinite(Number(level))
+            ? Number(level).toFixed(3)
+            : null;
         if (y !== null) data.allRl.push(Number(y));
 
         return {
@@ -803,8 +824,7 @@ const CrossSectionReport = () => {
               left: 0,
               right: 0,
               height: "6px",
-              background:
-                "linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%)",
+              background: "linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%)",
             }}
           />
 
@@ -820,7 +840,6 @@ const CrossSectionReport = () => {
             justifyContent={"space-between"}
             alignItems={"center"}
             spacing={2}
-            mb={4}
           >
             <Stack direction="row" alignItems="center" spacing={1}>
               <BasicButton
@@ -839,7 +858,12 @@ const CrossSectionReport = () => {
                 onClick={() => navigate(-1)}
                 value={<MdArrowBackIosNew fontSize={18} />}
               />
-              <Typography variant="h6" fontSize={20} fontWeight={800} color="#1e293b">
+              <Typography
+                variant="h6"
+                fontSize={20}
+                fontWeight={800}
+                color="#1e293b"
+              >
                 CS AT CH {selectedCs?.chainage}
               </Typography>
             </Stack>
@@ -854,242 +878,253 @@ const CrossSectionReport = () => {
             </Box>
           </Stack>
 
-      <Box
-        sx={{
-          textAlign: "center",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          position: "sticky",
-          top: 0,
-          zIndex: 3,
-        }}
-      >
-        <WaterWayProposalNotice purposes={tableData} />
-        <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
-        {selectedCs && selectedCs?.series && interactiveChartOptions && (
-          <CrossSectionChart
-              drawingScales={drawingScales}
-            selectedCs={selectedCs}
-            chartOptions={interactiveChartOptions}
-            pdfRef={pdfRef}
-          />
-        )}
+          <Box
+            sx={{
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              position: "sticky",
+              top: 0,
+              zIndex: 3,
+            }}
+          >
+            <WaterWayProposalNotice purposes={tableData} />
+            <SectionScaleInputs
+              scales={drawingScales}
+              onChange={setDrawingScales}
+            />
+            {selectedCs && selectedCs?.series && interactiveChartOptions && (
+              <CrossSectionChart
+                drawingScales={drawingScales}
+                selectedCs={selectedCs}
+                chartOptions={interactiveChartOptions}
+                pdfRef={pdfRef}
+              />
+            )}
 
-        <Box
-          sx={{
-            height: 56, // MUI table header height
-            display: "flex",
-            alignItems: "center",
+            <Box
+              sx={{
+                height: 56, // MUI table header height
+                display: "flex",
+                alignItems: "center",
 
-            px: 2,
-            mt: 2,
-            width: "100%",
-            fontWeight: 700,
-            fontSize: "0.875rem",
-            color: "rgba(0, 0, 0, 0.87)",
+                px: 2,
+                mt: 2,
+                width: "100%",
+                fontWeight: 700,
+                fontSize: "0.875rem",
+                color: "rgba(0, 0, 0, 0.87)",
 
-            backgroundColor: "#f4f6f8",
-            borderBottom: "1px solid #e0e0e0",
+                backgroundColor: "#f4f6f8",
+                borderBottom: "1px solid #e0e0e0",
 
-            borderTopLeftRadius: 4,
-            borderTopRightRadius: 4,
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
 
-            // Optional: match table cell look
-            boxSizing: "border-box",
-          }}
-        >
-          CH
-        </Box>
+                // Optional: match table cell look
+                boxSizing: "border-box",
+              }}
+            >
+              CH
+            </Box>
 
-        <TableContainer
-          component={Paper}
-          sx={{
-            maxHeight: 440,
-            overflowX: "auto",
-            borderRadius: 0,
-            position: "relative",
-          }}
-        >
-          <Table stickyHeader sx={{ tableLayout: "fixed" }}>
-            <TableBody>
-              {tableData[0]?.rows?.map(
-                (row, index) =>
-                  row.type === "Chainage" && (
-                    <Fragment key={index}>
-                      <TableRow>
-                        <TableCell
-                          sx={{
-                            position: "sticky",
-                            left: 0,
-                            zIndex: 3, // higher than table body cells
-                            backgroundColor: "#fff", // IMPORTANT to avoid overlap transparency
-                            borderBottom: 0,
-                          }}
-                        >
-                          <BasicButton
-                            value={row.chainage}
-                            variant="outlined"
-                            sx={{
-                              py: 1,
-                              px: 2,
-                              cursor: "pointer",
-                              border: "1px solid #6366f1",
-                              color: "#6366f1",
-                              "&:hover": {
-                                bgcolor: "#f8fafc",
-                                color: "#6366f1",
-                              },
-                            }}
-                            onClick={() => handleTableToggle(row._id)}
-                          />
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell
-                          style={{
-                            paddingBottom: 0,
-                            paddingTop: 0,
-                          }}
-                          colSpan={6}
-                        >
-                          <Collapse
-                            in={openRowId === row._id}
-                            timeout="auto"
-                            unmountOnExit
-                          >
-                            <Table size="small" aria-label="purchases">
-                              <TableBody>
-                                <TableRow>
-                                  <TableCell
+            <TableContainer
+              component={Paper}
+              sx={{
+                maxHeight: 440,
+                overflowX: "auto",
+                borderRadius: 0,
+                position: "relative",
+              }}
+            >
+              <Table stickyHeader sx={{ tableLayout: "fixed" }}>
+                <TableBody>
+                  {tableData[0]?.rows?.map(
+                    (row, index) =>
+                      row.type === "Chainage" && (
+                        <Fragment key={index}>
+                          <TableRow>
+                            <TableCell
+                              sx={{
+                                position: "sticky",
+                                left: 0,
+                                zIndex: 3, // higher than table body cells
+                                backgroundColor: "#fff", // IMPORTANT to avoid overlap transparency
+                                borderBottom: 0,
+                              }}
+                            >
+                              <BasicButton
+                                value={row.chainage}
+                                variant="outlined"
+                                sx={{
+                                  py: 1,
+                                  px: 2,
+                                  cursor: "pointer",
+                                  border: "1px solid #6366f1",
+                                  color: "#6366f1",
+                                  "&:hover": {
+                                    bgcolor: "#f8fafc",
+                                    color: "#6366f1",
+                                  },
+                                }}
+                                onClick={() => handleTableToggle(row._id)}
+                              />
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell
+                              style={{
+                                paddingBottom: 0,
+                                paddingTop: 0,
+                              }}
+                              colSpan={6}
+                            >
+                              <Collapse
+                                in={openRowId === row._id}
+                                timeout="auto"
+                                unmountOnExit
+                              >
+                                <Table size="small" aria-label="purchases">
+                                  <TableBody>
+                                    <TableRow>
+                                      <TableCell
+                                        sx={{
+                                          position: "sticky",
+                                          left: 0,
+                                          zIndex: 3,
+                                          backgroundColor: "#fff",
+                                          fontWeight: 600,
+                                          borderRight: "1px solid #e0e0e0",
+                                        }}
+                                      >
+                                        Offset
+                                      </TableCell>
+
+                                      {selectedCs?.series?.map((s) => (
+                                        <TableCell
+                                          key={s._id}
+                                          align="center"
+                                          sx={{
+                                            color: s.color,
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          {shortLabel(s.name)}
+                                        </TableCell>
+                                      ))}
+                                    </TableRow>
+                                    {selectedCs?.offsets?.map((offset) => (
+                                      <TableRow key={offset}>
+                                        {/* Offset Column */}
+                                        <TableCell
+                                          sx={{
+                                            position: "sticky",
+                                            left: 0,
+                                            zIndex: 2,
+                                            backgroundColor: "#fff",
+                                            borderRight: "1px solid #e0e0e0",
+                                          }}
+                                        >
+                                          {Number(offset).toFixed(3)}
+                                        </TableCell>
+
+                                        {/* Series Columns */}
+                                        {selectedCs?.series?.map((s) => {
+                                          const idx = s.data?.findIndex(
+                                            (d) => d?.x === offset,
+                                          );
+                                          const cellData =
+                                            idx > -1 ? s.data[idx] : null;
+
+                                          return (
+                                            <TableCell
+                                              key={s._id}
+                                              sx={{ p: 1 }}
+                                            >
+                                              {cellData ? (
+                                                <BasicInput
+                                                  type="number"
+                                                  value={cellData.y}
+                                                  sx={{
+                                                    minWidth: "100px",
+                                                    borderColor:
+                                                      inputColors[s.color]
+                                                        ?.borderColor,
+                                                    color:
+                                                      inputColors[s.color]
+                                                        ?.color,
+                                                  }}
+                                                  error={
+                                                    cellData.y === ""
+                                                      ? "Required"
+                                                      : ""
+                                                  }
+                                                  onChange={(e) =>
+                                                    handleRlChange(
+                                                      s.name,
+                                                      s._id,
+                                                      idx,
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                />
+                                              ) : (
+                                                <BasicInput
+                                                  type="text"
+                                                  value="N/A"
+                                                  disabled
+                                                  sx={{
+                                                    minWidth: "100px",
+                                                    borderColor:
+                                                      inputColors[s.color]
+                                                        ?.borderColor,
+                                                    color:
+                                                      inputColors[s.color]
+                                                        ?.color,
+                                                  }}
+                                                />
+                                              )}
+                                            </TableCell>
+                                          );
+                                        })}
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+
+                                <Box py={2}>
+                                  <Box
                                     sx={{
                                       position: "sticky",
                                       left: 0,
-                                      zIndex: 3,
+                                      zIndex: 10,
                                       backgroundColor: "#fff",
-                                      fontWeight: 600,
-                                      borderRight: "1px solid #e0e0e0",
+                                      width: "fit-content",
+                                      paddingLeft: 2,
                                     }}
                                   >
-                                    Offset
-                                  </TableCell>
-
-                                  {selectedCs?.series?.map((s) => (
-                                    <TableCell
-                                      key={s._id}
-                                      align="center"
-                                      sx={{ color: s.color, fontWeight: 600 }}
-                                    >
-                                      {shortLabel(s.name)}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
-                                {selectedCs?.offsets?.map((offset) => (
-                                  <TableRow key={offset}>
-                                    {/* Offset Column */}
-                                    <TableCell
-                                      sx={{
-                                        position: "sticky",
-                                        left: 0,
-                                        zIndex: 2,
-                                        backgroundColor: "#fff",
-                                        borderRight: "1px solid #e0e0e0",
-                                      }}
-                                    >
-                                      {Number(offset).toFixed(3)}
-                                    </TableCell>
-
-                                    {/* Series Columns */}
-                                    {selectedCs?.series?.map((s) => {
-                                      const idx = s.data?.findIndex(
-                                        (d) => d?.x === offset,
-                                      );
-                                      const cellData =
-                                        idx > -1 ? s.data[idx] : null;
-
-                                      return (
-                                        <TableCell key={s._id} sx={{ p: 1 }}>
-                                          {cellData ? (
-                                            <BasicInput
-                                              type="number"
-                                              value={cellData.y}
-                                              sx={{
-                                                minWidth: "100px",
-                                                borderColor:
-                                                  inputColors[s.color]
-                                                    ?.borderColor,
-                                                color:
-                                                  inputColors[s.color]?.color,
-                                              }}
-                                              error={
-                                                cellData.y === ""
-                                                  ? "Required"
-                                                  : ""
-                                              }
-                                              onChange={(e) =>
-                                                handleRlChange(
-                                                  s.name,
-                                                  s._id,
-                                                  idx,
-                                                  e.target.value,
-                                                )
-                                              }
-                                            />
-                                          ) : (
-                                            <BasicInput
-                                              type="text"
-                                              value="N/A"
-                                              disabled
-                                              sx={{
-                                                minWidth: "100px",
-                                                borderColor:
-                                                  inputColors[s.color]
-                                                    ?.borderColor,
-                                                color:
-                                                  inputColors[s.color]?.color,
-                                              }}
-                                            />
-                                          )}
-                                        </TableCell>
-                                      );
-                                    })}
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-
-                            <Box py={2}>
-                              <Box
-                                sx={{
-                                  position: "sticky",
-                                  left: 0,
-                                  zIndex: 10,
-                                  backgroundColor: "#fff",
-                                  width: "fit-content",
-                                  paddingLeft: 2,
-                                }}
-                              >
-                                <BasicButton
-                                  value="Update"
-                                  variant="outlined"
-                                  sx={{ py: 1, px: 2 }}
-                                  onClick={handleUpdateReducedLevels}
-                                />
-                              </Box>
-                            </Box>
-                          </Collapse>
-                        </TableCell>
-                      </TableRow>
-                    </Fragment>
-                  ),
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                                    <BasicButton
+                                      value="Update"
+                                      variant="outlined"
+                                      sx={{ py: 1, px: 2 }}
+                                      onClick={handleUpdateReducedLevels}
+                                    />
+                                  </Box>
+                                </Box>
+                              </Collapse>
+                            </TableCell>
+                          </TableRow>
+                        </Fragment>
+                      ),
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        </Paper>
       </Box>
-    </Paper>
-  </Box>
-</Box>
+    </Box>
   );
 };
 

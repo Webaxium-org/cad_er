@@ -31,7 +31,9 @@ import CrossSectionChartV2 from "./components/CrossSectionChartV2";
 import { v1ChartOptions } from "../../constants";
 import CrossSectionChart from "./components/CrossSectionChart";
 import html2canvas from "html2canvas";
+import Plotly from "plotly.js/dist/plotly";
 import ExportLoader from "../../components/ExportLoader";
+import SmallHeader from "../../components/SmallHeader";
 
 const LEVEL_ORDER = [
   "Initial Level",
@@ -199,28 +201,23 @@ const drawPDFHeader = (doc, surveyInfo, reportDetails, tableData) => {
 
 // html2canvas cannot reliably capture Plotly charts (position:sticky/absolute
 // containers, cross-origin fonts from the global Carlito CSS rule).
-// This helper swaps each .js-plotly-plot element for a static <img> made from
-// the chart's own SVG, runs html2canvas, then restores the DOM.
+// This helper swaps each Plotly chart for Plotly's own rendered image while
+// html2canvas captures the surrounding report, then restores the DOM.
 const captureChartElement = async (el) => {
   const plotlyEls = [...el.querySelectorAll(".js-plotly-plot")];
   const replacements = [];
 
   for (const plotlyEl of plotlyEls) {
-    const mainSvg = plotlyEl.querySelector("svg.main-svg");
-    if (!mainSvg) continue;
-
-    const rect = mainSvg.getBoundingClientRect();
-    if (!rect.width || !rect.height) continue;
-
-    const svgClone = mainSvg.cloneNode(true);
-    svgClone.setAttribute("width", rect.width);
-    svgClone.setAttribute("height", rect.height);
-    // embed white background so transparent SVG renders correctly
-    svgClone.style.background = "#ffffff";
-
-    const svgStr = new XMLSerializer().serializeToString(svgClone);
-    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-    const blobUrl = URL.createObjectURL(blob);
+    const rect = plotlyEl.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      throw new Error("Chart has no size for PDF export.");
+    }
+    const imageUrl = await Plotly.toImage(plotlyEl, {
+      format: "png",
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      scale: 2,
+    });
 
     const imgEl = document.createElement("img");
     imgEl.style.width = `${rect.width}px`;
@@ -232,20 +229,20 @@ const captureChartElement = async (el) => {
       await new Promise((res, rej) => {
         imgEl.onload = res;
         imgEl.onerror = rej;
-        imgEl.src = blobUrl;
+        imgEl.src = imageUrl;
       });
-    } catch {
-      URL.revokeObjectURL(blobUrl);
-      continue;
+    } catch (error) {
+      throw new Error("Could not render chart for PDF export.", { cause: error });
     }
-    URL.revokeObjectURL(blobUrl);
 
     plotlyEl.parentNode.insertBefore(imgEl, plotlyEl);
     plotlyEl.style.display = "none";
     replacements.push({ plotlyEl, imgEl });
   }
 
-  const canvas = await html2canvas(el, {
+  let canvas;
+  try {
+    canvas = await html2canvas(el, {
     scale: 2,
     useCORS: true,
     allowTaint: false,
@@ -265,11 +262,12 @@ const captureChartElement = async (el) => {
         }
       });
     },
-  });
-
-  for (const { plotlyEl, imgEl } of replacements) {
-    plotlyEl.style.display = "";
-    imgEl.remove();
+    });
+  } finally {
+    for (const { plotlyEl, imgEl } of replacements) {
+      plotlyEl.style.display = "";
+      imgEl.remove();
+    }
   }
 
   return canvas;
@@ -282,6 +280,7 @@ const exportPdf = async ({
   showArea,
   setLoading,
   setProgress,
+  onError,
 }) => {
   if (setLoading) setLoading(true);
   if (setProgress) setProgress({ percent: 0, message: "Initializing document...", estimatedTimeLeft: null });
@@ -334,6 +333,9 @@ const exportPdf = async ({
     if (tableData?.rows?.length > 0) {
       const volumeBody = [];
       tableData.rows.forEach((row, index) => {
+        if (row.isBreak) {
+          volumeBody.push([{ content: row.message, colSpan: 13, styles: { fontStyle: "bold" } }]);
+        }
         if (row.isDeductionRow) {
           volumeBody.push([
             {
@@ -473,6 +475,10 @@ const exportPdf = async ({
     if (tableData?.areaReport?.length > 0) {
       const areaBody = [];
       tableData.areaReport.forEach((section) => {
+        if (section.type === "Break") {
+          areaBody.push([{ content: section.message, colSpan: 12, styles: { fontStyle: "bold" } }]);
+          return;
+        }
         areaBody.push([
           {
             content: `Section: ${section.section}`,
@@ -755,6 +761,7 @@ const exportPdf = async ({
     doc.save(`plotting-and-quantity-report.pdf`);
   } catch (err) {
     console.error("Export error:", err);
+    onError?.(err);
   } finally {
     if (setLoading) setLoading(false);
   }
@@ -781,7 +788,6 @@ const PlottingAndQuantityReport = () => {
 
   const [purpose, setPurpose] = useState(null);
 
-  const [showArea, setShowArea] = useState({ cutting: false, filling: false });
 
   const [selectedLs, setSelectedLs] = useState(null);
 
@@ -807,6 +813,7 @@ const PlottingAndQuantityReport = () => {
         showArea,
         setLoading,
         setProgress,
+        onError: (error) => handleFormError(error, null, dispatch, navigate),
       });
     }
   };
@@ -945,7 +952,6 @@ const PlottingAndQuantityReport = () => {
     if (!row.length) return;
 
     const pls = Number(initialEntry.pls || 0);
-
     const safeChainages = row.map((r) => getSafeChainage(r.chainage)) || [];
     const safeInitial = row.map((r) => {
       const offsetPointIndex = r.offsets?.findIndex((o) => Number(o) === pls);
@@ -1126,7 +1132,11 @@ const PlottingAndQuantityReport = () => {
       );
     }
 
-    if (!survey || !initialEntry || !secondaryEntry) return [];
+    if (!survey || !initialEntry || !secondaryEntry) return null;
+
+    if (LEVEL_ORDER.indexOf(initialEntry.type) > LEVEL_ORDER.indexOf(secondaryEntry.type)) {
+      [initialEntry, secondaryEntry] = [secondaryEntry, initialEntry];
+    }
 
     reportDetails.current = {
       initialEntry: shortType(initialEntry.type),
@@ -1151,21 +1161,36 @@ const PlottingAndQuantityReport = () => {
 
     // Process only Chainage section rows. Water Level is a point reading, not a CS row.
     const filteredInitialRows = initialRows.filter(
-      (row) => row.type === "Chainage",
+      (row) => row.type === "Chainage" || row.type === "Break",
     );
 
     const areaReport = [];
+    let breakMessage = "";
 
     filteredInitialRows.forEach((row) => {
+      if (row.type === "Break") {
+        breakMessage = row.remarks?.[0] || "Break";
+        prevSection = null;
+        cuttingPrevArea = "0.000";
+        fillingPrevArea = "0.000";
+        areaReport.push({ section: row.from || row.chainage, type: "Break", data: [], message: breakMessage });
+        return;
+      }
       const secondaryRow = secondaryRows?.find(
         (p) => p.chainage === row.chainage,
       );
+      if (!secondaryRow) {
+        prevSection = null;
+        cuttingPrevArea = "0.000";
+        fillingPrevArea = "0.000";
+        return;
+      }
       const chainage = row.chainage?.split(survey?.separator || "/")?.[1] ?? "";
 
       let prevReadings = [];
 
       const data = survey.type === "Water Way" && secondaryEntry?.proposalMethod !== "Bottom Width Fixed"
-          ? compareProfiles(row, secondaryRow) : (row?.offsets ?? []).map((entry, idx) => {
+          ? compareProfiles(row, secondaryRow) : (secondaryRow?.offsets ?? []).map((entry, idx) => {
         const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
         const secondaryEntryRL = secondaryRow?.reducedLevels?.[idx] ?? 0;
 
@@ -1237,6 +1262,7 @@ const PlottingAndQuantityReport = () => {
 
       areaReport.push({
         section: Number(chainage),
+        type: row.type,
         data,
         totalCuttingAreaSqMtr: cuttingAreaSqMtr,
         totalFillingAreaSqMtr: fillingAreaSqMtr,
@@ -1256,7 +1282,7 @@ const PlottingAndQuantityReport = () => {
           isDeductionStarted = true;
           currentDeduction = isDeductionRow;
 
-          difference = prevSection
+          difference = prevSection !== null
             ? (currentChainage - prevChainage).toFixed(3)
             : "0.000";
         } else if (isDeductionStarted) {
@@ -1284,12 +1310,12 @@ const PlottingAndQuantityReport = () => {
             difference = "0.000";
           }
         } else {
-          difference = prevSection
+          difference = prevSection !== null
             ? (currentChainage - prevChainage).toFixed(3)
             : "0.000";
         }
       } else {
-        difference = prevSection
+        difference = prevSection !== null
           ? (currentChainage - prevChainage).toFixed(3)
           : "0.000";
       }
@@ -1315,9 +1341,13 @@ const PlottingAndQuantityReport = () => {
       // --- Push row ---
       rows.push({
         section: currentChainage.toFixed(3),
-        prevSection: prevSection ? prevChainage.toFixed(3) : "-",
+        prevSection: prevSection !== null ? prevChainage.toFixed(3) : "-",
         difference,
-        width: row?.roadWidth ?? "-",
+        width: Number.isFinite(Number(row?.roadWidth))
+          ? Number(row.roadWidth).toFixed(3)
+          : row?.offsets?.length > 1
+            ? (Number(row.offsets.at(-1)) - Number(row.offsets[0])).toFixed(3)
+            : "-",
         cuttingAreaSqMtr: cuttingAreaSqMtr.toFixed(3),
         cuttingPrevArea,
         cuttingAvgSqrMtr,
@@ -1328,15 +1358,9 @@ const PlottingAndQuantityReport = () => {
         fillingVolumeCubicMtr,
         deductionMessage,
         isDeductionRow: flag,
+        isBreak: Boolean(breakMessage),
+        message: breakMessage,
       });
-
-      if (!showArea.cutting && Number(totals.totalCuttingVolume) > 0) {
-        setShowArea((prev) => ({ ...prev, cutting: true }));
-      }
-
-      if (!showArea.filling && Number(totals.totalFillingVolume) > 0) {
-        setShowArea((prev) => ({ ...prev, filling: true }));
-      }
 
       // --- Prepare for next iteration ---
       cuttingPrevArea = Number(cuttingAreaSqMtr)?.toFixed(3);
@@ -1344,10 +1368,16 @@ const PlottingAndQuantityReport = () => {
       totals.totalCuttingVolume += Number(cuttingVolumeCubicMtr);
       totals.totalFillingVolume += Number(fillingVolumeCubicMtr);
       prevSection = chainage;
+      breakMessage = "";
     });
 
     return { ...totals, rows, areaReport };
-  }, [survey]);
+  }, [survey, state]);
+
+  const showArea = useMemo(() => ({
+    cutting: Boolean(tableData?.areaReport?.some((section) => Number(section.totalCuttingAreaSqMtr) > 0)),
+    filling: Boolean(tableData?.areaReport?.some((section) => Number(section.totalFillingAreaSqMtr) > 0)),
+  }), [tableData]);
 
   const fieldBookData = useMemo(() => {
     if (!purpose) return [];
@@ -1375,6 +1405,8 @@ const PlottingAndQuantityReport = () => {
   }, []);
 
   return (
+    <>
+    <SmallHeader />
     <Box p={2} sx={{ maxWidth: '210mm', margin: '0 auto' }}>
       <ExportLoader
         open={loading}
@@ -1693,6 +1725,11 @@ const PlottingAndQuantityReport = () => {
                     <TableCell colSpan={13}>{row.deductionMessage}</TableCell>
                   </TableRow>
                 )}
+                {row.isBreak && (
+                  <TableRow>
+                    <TableCell colSpan={13}>{row.message}</TableCell>
+                  </TableRow>
+                )}
 
                 <TableRow>
                   <TableCell>{index + 1}</TableCell>
@@ -1842,6 +1879,12 @@ const PlottingAndQuantityReport = () => {
               <TableBody>
                 {tableData?.areaReport.map((row, index) => (
                   <Fragment key={index}>
+                    {row.type === "Break" ? (
+                      <TableRow>
+                        <TableCell colSpan={12} sx={{ fontWeight: "bold" }}>{row.message}</TableCell>
+                      </TableRow>
+                    ) : (
+                    <>
                     <TableRow>
                       <TableCell colSpan={12} sx={{ fontWeight: "bold" }}>
                         Section: {row.section}
@@ -1900,6 +1943,8 @@ const PlottingAndQuantityReport = () => {
                         </>
                       )}
                     </TableRow>
+                    </>
+                    )}
                   </Fragment>
                 ))}
               </TableBody>
@@ -1927,6 +1972,7 @@ const PlottingAndQuantityReport = () => {
             <CrossSectionChart
               selectedCs={selectedLs}
               chartOptions={chartOptions}
+              drawingScales={{ horizontal: 2400, vertical: 300 }}
             />
           </Box>
         )}
@@ -1946,12 +1992,14 @@ const PlottingAndQuantityReport = () => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          width: "100%",
+          minWidth: 0,
         }}
         mt={2}
       >
         {allCs?.length > 0 &&
           allCs.map((cs, key) => (
-            <Box key={key} className="pdf-chart-item" sx={{ mb: 4 }}>
+            <Box key={key} className="pdf-chart-item" sx={{ mb: 4, width: "100%", maxWidth: "100%", minWidth: 0 }}>
               <CrossSectionChartV2
                 selectedCs={cs}
                 chartOptions={cs.specificOptions || chartOptions}
@@ -1960,6 +2008,7 @@ const PlottingAndQuantityReport = () => {
           ))}
       </Box>
     </Box>
+    </>
   );
 };
 

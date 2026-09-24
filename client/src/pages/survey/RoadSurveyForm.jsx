@@ -13,7 +13,7 @@ import {
   Divider,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useNavigate, useLocation } from "react-router-dom";
 import BasicButtons from "../../components/BasicButton";
@@ -32,9 +32,42 @@ import {
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import AdvancedAutoComplete from "../../components/AdvancedAutoComplete";
 import SmallHeader from "../../components/SmallHeader";
+import { getSettings } from "../../services/settingsServices";
 import { CgGoogleTasks } from "react-icons/cg";
 import { FaLocationArrow } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
+
+const commissioningFields = {
+  publicProject: {
+    Department: "department",
+    Division: "division",
+    "Sub-Division": "subDivision",
+    Section: "section",
+  },
+  privateProject: {
+    Client: "client",
+    Contractor: "contractor",
+    Consultant: "consultant",
+  },
+};
+
+const surveyorRoles = [
+  { label: "Engineer", value: "Engineer" },
+  { label: "Senior Surveyor", value: "Senior Surveyor" },
+  { label: "Junior Surveyor", value: "Junior Surveyor" },
+];
+
+const assistantsForRole = (staff, role) => {
+  const settingsRole = role === "Engineer" ? "Engineer / Site In-Charge" : role;
+  const saved = staff?.[settingsRole] || {};
+  const legacyFields = ["Name", "Phone", "Email", "Field 4", "Field 5"];
+  return Object.fromEntries(
+    legacyFields.map((legacyField, index) => [
+      `assistant${index + 1}`,
+      saved[`Staff ${index + 1}`] ?? saved[legacyField] ?? "",
+    ]),
+  );
+};
 
 // ─── Step 1 Fields ────────────────────────────────────────────────────────────
 const step1Fields = [
@@ -112,7 +145,8 @@ const step1Fields = [
   {
     label: "Engineer / Surveyor",
     name: "engineerSurveyor",
-    type: "text",
+    mode: "select",
+    options: surveyorRoles,
     size: 6,
   },
   { label: "Assistant 1", name: "assistant1", type: "text", size: 6 },
@@ -120,6 +154,10 @@ const step1Fields = [
   { label: "Assistant 3", name: "assistant3", type: "text", size: 6 },
   { label: "Assistant 4", name: "assistant4", type: "text", size: 6 },
   { label: "Assistant 5", name: "assistant5", type: "text", size: 6 },
+];
+
+// ─── Step 2 Fields ────────────────────────────────────────────────────────────
+const step2Fields = [
   {
     label: "Set chainage multiple*",
     name: "chainageMultiple",
@@ -134,10 +172,6 @@ const step1Fields = [
     options: ["/", "+", ","].map((n) => ({ label: n, value: n })),
     size: 6,
   },
-];
-
-// ─── Step 2 Fields ────────────────────────────────────────────────────────────
-const step2Fields = [
   { label: "Reduced level*", name: "reducedLevel", type: "number" },
   { label: "Back sight*", name: "backSight", type: "number", size: 6 },
   { label: "Remark*", name: "remark", type: "text", size: 6 },
@@ -219,16 +253,16 @@ const buildStep1Schema = (category) =>
     assistant3: Yup.string().nullable(),
     assistant4: Yup.string().nullable(),
     assistant5: Yup.string().nullable(),
-    chainageMultiple: Yup.number()
-      .typeError("Chainage multiple must be a number")
-      .required("Chainage multiple is required")
-      .moreThan(0, "Chainage multiple must be greater than 0"),
-    separator: Yup.string()
-      .required("Separator is required")
-      .matches(/^[/+,]$/, "Only '/', '+', ',' are allowed"),
   });
 
 const step2Schema = Yup.object().shape({
+  chainageMultiple: Yup.number()
+    .typeError("Chainage multiple must be a number")
+    .required("Chainage multiple is required")
+    .moreThan(0, "Chainage multiple must be greater than 0"),
+  separator: Yup.string()
+    .required("Separator is required")
+    .matches(/^[/+,]$/, "Only '/', '+', ',' are allowed"),
   backSight: Yup.number()
     .typeError("Backsight is required")
     .required("Backsight is required"),
@@ -284,6 +318,10 @@ const RoadSurveyForm = () => {
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
 
   const [category, setCategory] = useState(null);
+  const [commissioningDefaults, setCommissioningDefaults] = useState(null);
+  const [staffDefaults, setStaffDefaults] = useState(null);
+  const agreementByCategory = useRef({});
+  const editedFieldsByCategory = useRef({});
   const [formValues, setFormValues] = useState(() => ({
     ...initialFormValues,
     type: locationState?.type || "Road Survey",
@@ -295,6 +333,81 @@ const RoadSurveyForm = () => {
   const [queueOpen, setQueueOpen] = useState(false);
   const [btnLoading, setBtnLoading] = useState(false);
 
+  useEffect(() => {
+    if (existingSurveyId) return;
+    let active = true;
+    getSettings()
+      .then(({ data }) => {
+        if (!active) return;
+        const settings = data.settings || {};
+        setStaffDefaults(settings.staff || {});
+        const instrumentSerial = settings.instruments?.find(
+          (instrument) => instrument?.serial?.trim(),
+        )?.serial;
+        if (instrumentSerial) {
+          setFormValues((current) => ({
+            ...current,
+            instrumentNo: current.instrumentNo || instrumentSerial,
+          }));
+        }
+        const saved = settings.commissioning || {};
+        const commissioning = saved.Government || saved["Corporate / Private"]
+          ? saved
+          : { [settings.commissioningType || "Government"]: saved };
+        setCommissioningDefaults(commissioning);
+        const preferredCategory = settings.commissioningType === "Corporate / Private"
+          ? "privateProject"
+          : "publicProject";
+        if (Object.keys(commissioning[settings.commissioningType || "Government"] || {}).length) {
+          setCategory((current) => current || preferredCategory);
+        }
+      })
+      .catch(() => {
+        // Survey creation remains available when settings cannot be loaded.
+      });
+    return () => { active = false; };
+  }, [existingSurveyId]);
+
+  useEffect(() => {
+    if (!staffDefaults || existingSurveyId) return;
+    setFormValues((current) => {
+      if (!current.engineerSurveyor) return current;
+      const assistants = assistantsForRole(staffDefaults, current.engineerSurveyor);
+      return {
+        ...current,
+        ...Object.fromEntries(
+          Object.entries(assistants).map(([key, value]) => [
+            key,
+            current[key] || value,
+          ]),
+        ),
+      };
+    });
+  }, [staffDefaults, existingSurveyId]);
+
+  useEffect(() => {
+    if (!category || !commissioningDefaults || existingSurveyId) return;
+    const savedFields = commissioningDefaults[
+      category === "publicProject" ? "Government" : "Corporate / Private"
+    ] || {};
+    setFormValues((current) => {
+      const next = { ...current };
+      for (const [settingsField, formField] of Object.entries(commissioningFields[category])) {
+        if (
+          !editedFieldsByCategory.current[category]?.has(formField) &&
+          !next[formField] &&
+          savedFields[settingsField]
+        ) {
+          next[formField] = savedFields[settingsField];
+        }
+      }
+      next.agreementNo = agreementByCategory.current[category]
+        ?? savedFields["Agreement No."]
+        ?? "";
+      return next;
+    });
+  }, [category, commissioningDefaults, existingSurveyId]);
+
   // Derive visible step-1 fields based on category
   const visibleStep1Fields = step1Fields.map((f) => {
     if (["department", "division", "subDivision", "section"].includes(f.name)) {
@@ -303,7 +416,7 @@ const RoadSurveyForm = () => {
     if (["consultant", "client", "contractor"].includes(f.name)) {
       return { ...f, hidden: category !== "privateProject" };
     }
-    if (["agreementNo", "instrumentNo", "engineerSurveyor", "assistant1", "assistant2", "assistant3", "assistant4", "assistant5", "chainageMultiple", "separator"].includes(f.name)) {
+    if (["agreementNo", "instrumentNo", "engineerSurveyor", "assistant1", "assistant2", "assistant3", "assistant4", "assistant5"].includes(f.name)) {
       return { ...f, hidden: !category };
     }
     return f;
@@ -314,7 +427,19 @@ const RoadSurveyForm = () => {
   // ─── Input changes ──────────────────────────────────────────────────────────
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setFormValues((prev) => ({ ...prev, [name]: value }));
+    if (name === "agreementNo" && category) {
+      agreementByCategory.current[category] = value;
+    } else if (category && Object.values(commissioningFields[category]).includes(name)) {
+      if (!editedFieldsByCategory.current[category]) {
+        editedFieldsByCategory.current[category] = new Set();
+      }
+      editedFieldsByCategory.current[category].add(name);
+    }
+    setFormValues((prev) =>
+      name === "engineerSurveyor"
+        ? { ...prev, engineerSurveyor: value, ...assistantsForRole(staffDefaults, value) }
+        : { ...prev, [name]: value },
+    );
     setFormErrors((prev) => ({ ...prev, [name]: null }));
   };
 

@@ -410,7 +410,7 @@ const LongitudinalSectionReport = () => {
               variant="caption"
               sx={{ mt: 1, fontStyle: "italic", color: "text.secondary" }}
             >
-              [Hor Scale – 1 in 150 : Ver Scale – 1 in 150]
+              [Hor Scale 1:{drawingScales.horizontal} : Ver Scale 1:{drawingScales.vertical}]
             </Typography>
           </Box>
         </Paper>

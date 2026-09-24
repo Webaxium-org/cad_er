@@ -1,4 +1,3 @@
-import SectionSheet from "./SectionSheet";
 import Plot from "react-plotly.js";
 import { useEffect, useState } from "react";
 import {
@@ -19,8 +18,48 @@ const colors = {
   Final: "red",
 };
 
-const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef, drawingScales }) => {
+const CrossSectionChart = ({
+  selectedCs,
+  chartOptions,
+  pdfRef,
+  drawingScales = { horizontal: 150, vertical: 150 },
+}) => {
   const [width, setWidth] = useState(window.innerWidth);
+  const isLs = selectedCs.type === "ls";
+  const baseScales = isLs
+    ? { horizontal: 2400, vertical: 300 }
+    : { horizontal: 150, vertical: 150 };
+  const scaleRange = (range, denominator, baseDenominator) => {
+    const scale = Number(denominator);
+    if (!Array.isArray(range) || range.length !== 2 || !(scale > 0))
+      return range;
+    const start = Number(range[0]);
+    const end = Number(range[1]);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return range;
+    const center = (start + end) / 2;
+    const halfSpan =
+      (Math.max(Math.abs(end - start), 0.001) * scale) / baseDenominator / 2;
+    return [center - halfSpan, center + halfSpan];
+  };
+  const scaledLayout = {
+    ...chartOptions.layout,
+    xaxis: {
+      ...chartOptions.layout.xaxis,
+      range: scaleRange(
+        chartOptions.layout.xaxis?.range,
+        drawingScales?.horizontal ?? baseScales.horizontal,
+        baseScales.horizontal,
+      ),
+    },
+    yaxis: {
+      ...chartOptions.layout.yaxis,
+      range: scaleRange(
+        chartOptions.layout.yaxis?.range,
+        drawingScales?.vertical ?? baseScales.vertical,
+        baseScales.vertical,
+      ),
+    },
+  };
 
   const calcWidth = () => {
     const effectiveWidth = Math.min(width, 794);
@@ -94,15 +133,19 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef, drawingScales }) 
                 >
                   <Plot
                     data={selectedCs?.series?.map((s) => ({
-                      x: [...(s.data || [])].sort((a, b) => Number(a.x) - Number(b.x)).map((p) => Number(p.x)),
-                      y: [...(s.data || [])].sort((a, b) => Number(a.x) - Number(b.x)).map((p) => p.y === null ? null : Number(p.y)),
+                      x: [...(s.data || [])]
+                        .sort((a, b) => Number(a.x) - Number(b.x))
+                        .map((p) => Number(p.x)),
+                      y: [...(s.data || [])]
+                        .sort((a, b) => Number(a.x) - Number(b.x))
+                        .map((p) => (p.y === null ? null : Number(p.y))),
                       type: "scatter",
                       mode: "lines",
                       name: s.name,
                       line: { shape: "linear", width: 1, color: s.color },
                     }))}
                     config={chartOptions.config}
-                    layout={chartOptions.layout}
+                    layout={scaledLayout}
                     style={{ width: `${calcWidth() + 5}px`, height: 100 }}
                   />
                 </Box>
@@ -140,8 +183,8 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef, drawingScales }) 
                           s.name?.includes("Initial")
                             ? "Initial"
                             : s.name?.includes("Proposed")
-                            ? "Proposed"
-                            : "Final"
+                              ? "Proposed"
+                              : "Final"
                         ],
                       fontWeight: 500,
                       height: "85px",
@@ -225,6 +268,7 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef, drawingScales }) 
     <>
       <TableContainer
         component={Paper}
+        ref={pdfRef}
         sx={{
           mt: 0,
           width: "100%",
@@ -240,15 +284,19 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef, drawingScales }) 
                 <Box width="100%" height="250px">
                   <Plot
                     data={selectedCs?.series?.map((s) => ({
-                      x: [...(s.data || [])].sort((a, b) => Number(a.x) - Number(b.x)).map((p) => Number(p.x)),
-                      y: [...(s.data || [])].sort((a, b) => Number(a.x) - Number(b.x)).map((p) => p.y === null ? null : Number(p.y)),
+                      x: [...(s.data || [])]
+                        .sort((a, b) => Number(a.x) - Number(b.x))
+                        .map((p) => Number(p.x)),
+                      y: [...(s.data || [])]
+                        .sort((a, b) => Number(a.x) - Number(b.x))
+                        .map((p) => (p.y === null ? null : Number(p.y))),
                       type: "scatter",
                       mode: "lines",
                       name: s.name,
                       line: { shape: "linear", width: 1, color: s.color },
                     }))}
                     config={chartOptions.config}
-                    layout={chartOptions.layout}
+                    layout={scaledLayout}
                     useResizeHandler
                     style={{ ...chartOptions.style, width: "100%" }}
                   />
@@ -265,8 +313,8 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef, drawingScales }) 
                         s.name?.includes("Initial")
                           ? "Initial"
                           : s.name?.includes("Proposed")
-                          ? "Proposed"
-                          : "Final"
+                            ? "Proposed"
+                            : "Final"
                       ];
 
                     return (
@@ -298,10 +346,6 @@ const CrossSectionChart = ({ selectedCs, chartOptions, pdfRef, drawingScales }) 
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Box sx={{ mt: 2, width: "100%" }} ref={pdfRef}>
-        <SectionSheet section={selectedCs} scales={drawingScales} />
-      </Box>
     </>
   );
 };

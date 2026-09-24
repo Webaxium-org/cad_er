@@ -48,11 +48,15 @@ export default function FieldBookTable({
   return (
     <Table
       size="small"
+      stickyHeader
       sx={{
-        borderCollapse: "collapse",
-        border: "1px solid #d3d3d3",
+        borderCollapse: "separate",
+        borderSpacing: 0,
+        border: "1px solid #475569",
         "& td, & th": {
-          border: "1px solid #d3d3d3",
+          border: 0,
+          borderRight: "1px solid #475569",
+          borderBottom: "1px solid #475569",
           textAlign: "center",
           fontFamily: "Calibri, Arial, sans-serif",
           fontSize: "13px",
@@ -60,12 +64,23 @@ export default function FieldBookTable({
           px: 1,
           fontWeight: "bold",
         },
+        "& tr > :last-child": { borderRight: 0 },
+        "& tbody tr:last-child > *": { borderBottom: 0 },
       }}
     >
       <TableHead>
         <TableRow>
           {head.map((h) => (
-            <TableCell key={h} sx={{ fontWeight: 700, fontStyle: "italic" }}>
+            <TableCell
+              key={h}
+              sx={{
+                fontWeight: 700,
+                fontStyle: "italic",
+                bgcolor: "#6366f1",
+                color: "#fff",
+                zIndex: 2,
+              }}
+            >
               {h}
             </TableCell>
           ))}

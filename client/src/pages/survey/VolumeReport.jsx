@@ -18,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import SmallHeader from "../../components/SmallHeader";
 import BasicButtons from "../../components/BasicButton";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -1190,6 +1191,8 @@ const VolumeReport = () => {
   }, []);
 
   return (
+    <>
+    <SmallHeader />
     <Box p={2}>
       {tableData?.missingSections?.length > 0 && <Typography color="error" sx={{ mb: 2 }}>
         Quantity is incomplete: matching valid ground and proposal profiles are missing at chainage(s) {tableData.missingSections.join(", ")}.
@@ -1476,6 +1479,7 @@ const VolumeReport = () => {
         </strong>
       </Typography>
     </Box>
+    </>
   );
 };
 

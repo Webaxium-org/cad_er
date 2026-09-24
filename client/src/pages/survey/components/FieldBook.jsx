@@ -17,7 +17,6 @@ import { IoIosAddCircleOutline } from "react-icons/io";
 import {
   Box,
   Stack,
-  Paper,
   TableContainer,
   Typography,
 } from "@mui/material";
@@ -560,30 +559,22 @@ export default function FieldBook() {
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 4 }}>
       <SmallHeader />
 
-      <Box p={2}>
-        <Typography
-          variant="h5"
-          fontWeight={800}
-          color="#1e293b"
-          sx={{ mb: 2, letterSpacing: "-0.01em" }}
-        >
-          Field Observations!
-        </Typography>
-
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2 }}>
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="center"
-          spacing={2}
+          gap={{ xs: 0.75, sm: 2 }}
+          flexWrap="nowrap"
           mb={2}
         >
           <BasicButtons
             variant="text"
             sx={{
-              height: 48,
-              width: 48,
-              minWidth: 48,
-              borderRadius: "14px",
+              height: { xs: 34, sm: 48 },
+              width: { xs: 34, sm: 48 },
+              minWidth: { xs: 34, sm: 48 },
+              borderRadius: { xs: "10px", sm: "14px" },
               color: "#334155",
               bgcolor: "#f1f5f9",
               border: "none",
@@ -594,17 +585,35 @@ export default function FieldBook() {
               },
             }}
             onClick={() => navigate(-1)}
-            value={<MdArrowBackIosNew fontSize={22} />}
+            value={<MdArrowBackIosNew fontSize={18} />}
           />
 
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography
+            variant="h5"
+            fontWeight={800}
+            color="#1e293b"
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: { xs: "0.76rem", sm: "1.1rem", md: "1.5rem" },
+              letterSpacing: "-0.01em",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            Field Observations!
+          </Typography>
+
+          <Stack direction="row" alignItems="center" gap={{ xs: 0.5, sm: 1 }} flexShrink={0}>
             <BasicButtons
               variant="contained"
               sx={{
-                py: 1,
-                px: 2,
-                fontSize: 12,
-                borderRadius: "14px",
+                py: { xs: 0.5, sm: 1 },
+                px: { xs: 0.75, sm: 2 },
+                fontSize: { xs: 10, sm: 12 },
+                height: { xs: 34, sm: 40 },
+                borderRadius: { xs: "10px", sm: "14px" },
                 bgcolor: "#6366f1",
                 color: "#ffffff",
                 boxShadow: "0 10px 24px -12px rgba(99, 102, 241, 0.8)",
@@ -625,16 +634,17 @@ export default function FieldBook() {
                 )
               }
               loading={saving}
+              loadingIndicator="..."
             />
             <BasicButtons
               variant="outlined"
               sx={{
-                py: 1,
-                px: 2,
-                fontSize: 12,
-                height: 40,
-                minWidth: "76px",
-                borderRadius: "14px",
+                py: { xs: 0.5, sm: 1 },
+                px: { xs: 0.75, sm: 2 },
+                fontSize: { xs: 10, sm: 12 },
+                height: { xs: 34, sm: 40 },
+                minWidth: { xs: 0, sm: "76px" },
+                borderRadius: { xs: "10px", sm: "14px" },
                 borderColor: "rgba(99, 102, 241, 0.28)",
                 color: "#4f46e5",
                 bgcolor: "#ffffff",
@@ -667,10 +677,11 @@ export default function FieldBook() {
                 items={menuItems}
                 onSelect={handleMenuSelect}
                 sx={{
-                  minWidth: "40px",
-                  height: 40,
-                  p: 1,
-                  borderRadius: "14px",
+                  minWidth: { xs: "32px", sm: "40px" },
+                  width: { xs: "32px", sm: "40px" },
+                  height: { xs: 34, sm: 40 },
+                  p: { xs: 0.5, sm: 1 },
+                  borderRadius: { xs: "10px", sm: "14px" },
                   border: "1px solid rgba(99, 102, 241, 0.28)",
                   color: "#4f46e5",
                   bgcolor: "#ffffff",
@@ -696,17 +707,12 @@ export default function FieldBook() {
           </Stack>
         </Stack>
 
-        <Paper
-          elevation={0}
+        <TableContainer
           sx={{
-            p: { xs: 1.5, sm: 2 },
-            border: "1px solid #e2e8f0",
-            borderRadius: "8px",
-            backgroundColor: "#ffffff",
-            overflowX: "auto",
+            maxHeight: "calc(100dvh - 200px)",
+            overflow: "auto",
           }}
         >
-        <TableContainer sx={{ border: "none", boxShadow: "none" }}>
           <FieldBookTable
             tableData={tableData}
             isEditing={isEditing}
@@ -714,7 +720,6 @@ export default function FieldBook() {
             onRLChange={handleRLChange}
           />
         </TableContainer>
-        </Paper>
       </Box>
     </Box>
   );

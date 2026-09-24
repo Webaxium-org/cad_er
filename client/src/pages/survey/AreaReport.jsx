@@ -18,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import SmallHeader from "../../components/SmallHeader";
 
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -938,6 +939,8 @@ const AreaReport = () => {
   }, []);
 
   return (
+    <>
+    <SmallHeader />
     <Box p={2}>
       <Stack
         direction={"row"}
@@ -1184,6 +1187,7 @@ const AreaReport = () => {
         )}
       </Box>
     </Box>
+    </>
   );
 };
 
