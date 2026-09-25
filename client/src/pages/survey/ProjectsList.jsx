@@ -500,7 +500,7 @@ const calendarEventUrl = (survey, provider) => {
     .filter(Boolean)
     .join("\n");
   if (provider === "google") {
-    const url = new URL("https://calendar.google.com/calendar/r/eventedit");
+    const url = new URL("https://calendar.google.com/calendar/render");
     url.search = new URLSearchParams({
       action: "TEMPLATE",
       text: survey.project,
