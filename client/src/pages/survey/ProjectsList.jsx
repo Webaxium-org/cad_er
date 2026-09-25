@@ -7,6 +7,8 @@ import {
   IconButton,
   TextField,
   Paper,
+  Button,
+  LinearProgress,
 } from "@mui/material";
 import IOSegmentedTabs from "../../components/IOSegmentedTabs";
 import { useDispatch } from "react-redux";
@@ -15,6 +17,8 @@ import { stopLoading } from "../../redux/loadingSlice";
 import { handleFormError } from "../../utils/handleFormError";
 import { deleteSurvey, getAllSurvey } from "../../services/surveyServices";
 import { motion, AnimatePresence } from "framer-motion";
+import Lottie from "lottie-react";
+import autoLevelIcon from "../../assets/icons/compass.json";
 import BasicAccordion from "../../components/BasicAccordion";
 import { MdOutlineExpandMore, MdOutlineSearch } from "react-icons/md";
 import { MdSort } from "react-icons/md";
@@ -31,6 +35,7 @@ import SmallHeader from "../../components/SmallHeader";
 import BasicDivider from "../../components/BasicDevider";
 import { CgGoogleTasks } from "react-icons/cg";
 import { GoClock } from "react-icons/go";
+import { FiBookOpen, FiFileText, FiPlay, FiEdit3, FiFlag, FiTrash2 } from "react-icons/fi";
 
 const alertDetails = {
   title: "Field Book",
@@ -59,6 +64,35 @@ const HEADER_GRADIENT_START = "#4f46e5";
 const HEADER_GRADIENT_END = "#6366f1";
 const BG_COLOR = "#f8fafc";
 const CARD_BORDER = "#e2e8f0";
+
+const formatProjectDate = (value) => value && !Number.isNaN(new Date(value).getTime())
+  ? new Date(value).toLocaleDateString("en-IN")
+  : "N/A";
+
+const getLastEditedAt = (survey) => {
+  const dates = [survey.updatedAt, survey.createdAt];
+  for (const purpose of survey.purposes || []) {
+    dates.push(purpose.updatedAt, purpose.purposeFinishDate);
+    for (const row of purpose.rows || []) dates.push(row.updatedAt, row.createdAt);
+  }
+  return dates.filter(Boolean).reduce((latest, date) =>
+    new Date(date) > new Date(latest) ? date : latest, survey.createdAt);
+};
+
+const getProjectProgress = (survey) => {
+  const finished = (survey.purposes || []).filter((purpose) => purpose.isPurposeFinish);
+  if (finished.some((purpose) => purpose.type === "Final Level" && purpose.phase === "Actual")) return 80;
+  if (finished.some((purpose) => purpose.phase === "Proposal" && purpose.type?.includes("Proposed"))) return 50;
+  if (finished.some((purpose) => purpose.type === "Initial Level" && purpose.phase === "Actual")) return 30;
+  return 0;
+};
+
+const getCurrentPurpose = (survey) => {
+  const purposes = survey.purposes || [];
+  const current = purposes.find((purpose) => !purpose.isPurposeFinish)
+    || [...purposes].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))[0];
+  return current ? `${current.type} · ${current.status || (current.isPurposeFinish ? "Finished" : "Active")}` : "Initial Level · Active";
+};
 
 const Item = styled(Box)(({ theme }) => ({
   ...theme.typography.body2,
@@ -202,9 +236,9 @@ export default function ProjectsList() {
       const { data } = await getAllSurvey(params);
       if (data.success) {
         const fetched = data?.surveys?.map((survey) => {
-          const lastPurposeDoc = survey?.purposes
-            ?.reverse()
-            ?.find((p) => p.phase === "Actual");
+          const lastPurposeDoc = [...(survey?.purposes || [])]
+            .reverse()
+            .find((p) => p.phase === "Actual");
 
           return {
             ...survey,
@@ -392,6 +426,13 @@ export default function ProjectsList() {
     } finally {
       setDeleteProjectAlert(false);
     }
+  };
+
+  const handleFinalLevel = (survey) => {
+    const activeFinal = survey.purposes?.find((purpose) => purpose.type === "Final Level" && !purpose.isPurposeFinish);
+    navigate(activeFinal
+      ? `/survey/road-survey/${activeFinal._id}/rows`
+      : `/survey/road-survey/continue-survey/${survey._id}`);
   };
 
   const handleClickFiledBook = (surveyId) => {
@@ -699,184 +740,92 @@ export default function ProjectsList() {
       <motion.div {...fadeSlide}>
         {filteredSurveys?.length ? (
           <Stack spacing={2}>
-            {filteredSurveys?.map((survey, idx) => (
+            {filteredSurveys?.map((survey) => (
               <BasicCard
-                key={idx}
+                key={survey._id}
+                contentSx={{ p: "16px !important" }}
                 content={
-                  <Box>
+                  <Box sx={{ minWidth: 0 }}>
                     <BasicAccordion
                       summary={
                         <Stack
                           direction="row"
-                          spacing={2}
+                          spacing={1.5}
                           alignItems="center"
                           width="100%"
-                          pr={1}
-                          sx={{ minWidth: 0, overflow: "hidden" }}
+                          sx={{ minWidth: 0, overflow: "hidden", pr: 0.5 }}
                         >
                           <Box
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleContinueSurvey(survey._id);
-                            }}
                             sx={{
-                              minWidth: 50,
-                              height: 50,
+                              flex: "0 0 48px",
+                              height: 48,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              bgcolor: `${PRIMARY_BRAND}15`,
+                              bgcolor: "#eef2ff",
                               borderRadius: "14px",
                               color: PRIMARY_BRAND,
-                              fontWeight: 800,
-                              fontSize: "1.2rem",
-                              cursor: "pointer",
                             }}
+                            title="Auto Level"
                           >
-                            {survey.project.slice(0, 1).toUpperCase()}
+                            <Lottie animationData={autoLevelIcon} style={{ width: 40, height: 40 }} aria-label="Auto Level" />
                           </Box>
-                          <Stack
-                            spacing={0.5}
-                            sx={{ flexGrow: 1, minWidth: 0 }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Typography
-                                variant="caption"
-                                fontWeight={800}
-                                sx={{
-                                  color: PRIMARY_BRAND,
-                                  letterSpacing: "0.05em",
-                                }}
-                              >
-                                {survey.type?.toUpperCase() || "SURVEY"}
+                          <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
+                            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+                              <Typography variant="caption" fontWeight={800} color={PRIMARY_BRAND} noWrap>
+                                {survey.type || "Survey"}
                               </Typography>
-                              <Box
-                                sx={{
-                                  width: 4,
-                                  height: 4,
-                                  borderRadius: "50%",
-                                  bgcolor: "#cbd5e1",
-                                }}
-                              />
-                              <Typography
-                                variant="caption"
-                                fontWeight={700}
-                                color="#94a3b8"
-                              >
-                                {new Date(survey.createdAt)?.toLocaleDateString(
-                                  "en-IN",
-                                )}
+                              <Typography variant="caption" color="#94a3b8">•</Typography>
+                              <Typography variant="caption" fontWeight={600} color="#64748b" noWrap>
+                                Edited {formatProjectDate(getLastEditedAt(survey))}
                               </Typography>
                             </Stack>
                             <Typography
                               variant="body2"
                               fontWeight={800}
-                              fontSize="13px"
+                              fontSize="15px"
                               color="#1e293b"
                               sx={{
                                 whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
-                                ".MuiAccordionSummary-root.Mui-expanded &": {
-                                  whiteSpace: "normal",
-                                  textOverflow: "clip",
-                                  overflowWrap: "anywhere",
-                                },
                               }}
+                              title={survey.project}
                             >
                               {highlightText(survey.project, search)}
                             </Typography>
                           </Stack>
+                          <Stack alignItems="flex-end" spacing={0.5} sx={{ flexShrink: 0 }}>
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#16a34a", boxShadow: "0 0 0 3px #dcfce7", animation: "pulse 1.8s ease-in-out infinite", "@keyframes pulse": { "50%": { opacity: 0.45, boxShadow: "0 0 0 6px #dcfce7" } } }} />
+                              <Typography variant="caption" fontWeight={800} color="#15803d">Active</Typography>
+                            </Stack>
+                            <Typography variant="caption" fontWeight={800} color={PRIMARY_BRAND}>{getProjectProgress(survey)}%</Typography>
+                          </Stack>
                         </Stack>
                       }
                       details={
-                        <Stack>
-                          {fieldsToMap
-                            ?.filter((item) => item.value !== "Scheduled Date")
-                            .map(({ key, value, type }, idx) => (
-                              <Item key={idx}>
-                                {value}
-
-                                {type === "Icon" ? (
-                                  value === "Field Book" ? (
-                                    <Box
-                                      onClick={() =>
-                                        handleClickFiledBook(survey._id)
-                                      }
-                                    >
-                                      {key}
-                                    </Box>
-                                  ) : (
-                                    <Link to={getLink(survey, value)}>
-                                      {key}
-                                    </Link>
-                                  )
-                                ) : (
-                                  <Typography
-                                    color={
-                                      key === "lastPurpose"
-                                        ? colors[
-                                            survey[key]?.includes("Initial")
-                                              ? "Initial"
-                                              : survey[key]?.includes("Final")
-                                                ? "Final"
-                                                : ""
-                                          ]
-                                        : ""
-                                    }
-                                    fontSize={14}
-                                    fontWeight={700}
-                                  >
-                                    {type === "Date"
-                                      ? new Date(
-                                          survey[key],
-                                        )?.toLocaleDateString("en-IN")
-                                      : type === "constant"
-                                        ? key
-                                        : survey[key]}
-                                  </Typography>
-                                )}
-                              </Item>
+                        <Stack spacing={2} sx={{ pt: 1.5 }}>
+                          <LinearProgress variant="determinate" value={getProjectProgress(survey)} aria-label="Project progress" sx={{ height: 8, borderRadius: 5, bgcolor: "#e0e7ff", "& .MuiLinearProgress-bar": { bgcolor: PRIMARY_BRAND, borderRadius: 5 } }} />
+                          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between">
+                            <Typography variant="body2"><strong>Iteration / status / purpose:</strong> {getCurrentPurpose(survey)}</Typography>
+                            <Typography variant="body2"><strong>Started:</strong> {formatProjectDate(survey.createdAt)}</Typography>
+                          </Stack>
+                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, p: 1.5, borderRadius: 3, bgcolor: "#f8fafc", border: `1px solid ${CARD_BORDER}` }}>
+                            {[
+                              { label: "Resume", icon: <FiPlay />, onClick: () => handleContinueSurvey(survey._id) },
+                              { label: "Field Book", icon: <FiBookOpen />, onClick: () => handleClickFiledBook(survey._id) },
+                              { label: "Reports / Library", icon: <FiFileText />, onClick: () => navigate(getLink(survey, "reports")) },
+                              { label: "Final Level", icon: <FiFlag />, onClick: () => handleFinalLevel(survey), disabled: getProjectProgress(survey) < 50 || getProjectProgress(survey) >= 80 || Boolean(survey.purposes?.some((purpose) => !purpose.isPurposeFinish && purpose.type !== "Final Level")) },
+                              { label: "Proposed Level", icon: <FiEdit3 />, onClick: () => navigate(getLink(survey, "Propose Level")) },
+                              { label: "Delete", icon: <FiTrash2 />, onClick: () => handleOpenDeleteProjectAlert(survey._id), color: "error" },
+                              ...(survey.branchDetails?.hasBranching ? [{ label: "Branch Reports", icon: <FiFileText />, onClick: () => navigate("/survey/report", { state: { getBranchReport: true, surveyId: survey._id } }) }] : []),
+                            ].map((action) => (
+                              <Button key={action.label} size="small" variant="outlined" color={action.color || "inherit"} startIcon={action.icon} onClick={action.onClick} disabled={action.disabled} sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700, whiteSpace: "nowrap", ...(action.color ? {} : { color: PRIMARY_BRAND, borderColor: PRIMARY_BRAND, "&:hover": { borderColor: HEADER_GRADIENT_START, bgcolor: `${PRIMARY_BRAND}0d` } }) }}>
+                                {action.label}
+                              </Button>
                             ))}
-
-                          {survey?.branchDetails?.hasBranching && (
-                            <Item>
-                              Branch Reports
-                              <Typography fontSize={14} fontWeight={700}>
-                                <IoIosArrowForward
-                                  fontSize={20}
-                                  color="rgba(0, 111, 253, 1)"
-                                  onClick={() =>
-                                    navigate(`/survey/report`, {
-                                      state: {
-                                        getBranchReport: true,
-                                        surveyId: survey._id,
-                                      },
-                                    })
-                                  }
-                                  style={{ cursor: "pointer" }}
-                                />
-                              </Typography>
-                            </Item>
-                          )}
-
-                          <Item sx={{ color: "red" }}>
-                            Delete Project
-                            <Typography fontSize={14} fontWeight={700}>
-                              <MdDelete
-                                fontSize={20}
-                                color="red"
-                                style={{ cursor: "pointer" }}
-                                onClick={() =>
-                                  handleOpenDeleteProjectAlert(survey._id)
-                                }
-                              />
-                            </Typography>
-                          </Item>
+                          </Box>
                         </Stack>
                       }
                       expandIcon={
@@ -885,32 +834,14 @@ export default function ProjectsList() {
                           fontSize={28}
                         />
                       }
-                      sx={{ boxShadow: "none" }}
+                      sx={{ boxShadow: "none", "&:before": { display: "none" } }}
                     />
-
-                    <BasicDivider borderBottomWidth={0.5} color="#d9d9d9" />
-
-                    <Stack
-                      direction={"row"}
-                      justifyContent={"space-between"}
-                      alignItems={"center"}
-                      px={1}
-                    >
-                      <Typography
-                        fontWeight={600}
-                        fontSize="14px"
-                        color="rgba(0, 0, 0, 0.74)"
-                      >
-                        Status
-                      </Typography>
-
-                      <StatusChip status={survey.status} />
-                    </Stack>
                   </Box>
                 }
                 sx={{
-                  borderRadius: "12px",
-                  boxShadow: "0px 4px 8px 0px #1c252c2a",
+                  borderRadius: "18px",
+                  border: `1px solid ${CARD_BORDER}`,
+                  boxShadow: "0 6px 20px -12px rgba(30, 41, 59, 0.28)",
                 }}
               />
             ))}

@@ -51,6 +51,13 @@ const commissioningFields = {
   },
 };
 
+const commissioningOptionFields = Object.fromEntries(
+  Object.entries(commissioningFields).map(([category, fields]) => [
+    category,
+    Object.fromEntries(Object.entries(fields).map(([label, name]) => [name, label])),
+  ]),
+);
+
 const surveyorRoles = [
   { label: "Engineer", value: "Engineer" },
   { label: "Senior Surveyor", value: "Senior Surveyor" },
@@ -319,9 +326,9 @@ const RoadSurveyForm = () => {
 
   const [category, setCategory] = useState(null);
   const [commissioningDefaults, setCommissioningDefaults] = useState(null);
+  const [instrumentOptions, setInstrumentOptions] = useState([]);
   const [staffDefaults, setStaffDefaults] = useState(null);
   const agreementByCategory = useRef({});
-  const editedFieldsByCategory = useRef({});
   const [formValues, setFormValues] = useState(() => ({
     ...initialFormValues,
     type: locationState?.type || "Road Survey",
@@ -341,26 +348,16 @@ const RoadSurveyForm = () => {
         if (!active) return;
         const settings = data.settings || {};
         setStaffDefaults(settings.staff || {});
-        const instrumentSerial = settings.instruments?.find(
-          (instrument) => instrument?.serial?.trim(),
-        )?.serial;
-        if (instrumentSerial) {
-          setFormValues((current) => ({
-            ...current,
-            instrumentNo: current.instrumentNo || instrumentSerial,
-          }));
-        }
+        setInstrumentOptions(
+          [...new Set((settings.instruments || [])
+            .map((instrument) => instrument?.serial?.trim())
+            .filter(Boolean))].map((serial) => ({ label: serial, value: serial })),
+        );
         const saved = settings.commissioning || {};
         const commissioning = saved.Government || saved["Corporate / Private"]
           ? saved
           : { [settings.commissioningType || "Government"]: saved };
         setCommissioningDefaults(commissioning);
-        const preferredCategory = settings.commissioningType === "Corporate / Private"
-          ? "privateProject"
-          : "publicProject";
-        if (Object.keys(commissioning[settings.commissioningType || "Government"] || {}).length) {
-          setCategory((current) => current || preferredCategory);
-        }
       })
       .catch(() => {
         // Survey creation remains available when settings cannot be loaded.
@@ -386,27 +383,12 @@ const RoadSurveyForm = () => {
   }, [staffDefaults, existingSurveyId]);
 
   useEffect(() => {
-    if (!category || !commissioningDefaults || existingSurveyId) return;
-    const savedFields = commissioningDefaults[
-      category === "publicProject" ? "Government" : "Corporate / Private"
-    ] || {};
-    setFormValues((current) => {
-      const next = { ...current };
-      for (const [settingsField, formField] of Object.entries(commissioningFields[category])) {
-        if (
-          !editedFieldsByCategory.current[category]?.has(formField) &&
-          !next[formField] &&
-          savedFields[settingsField]
-        ) {
-          next[formField] = savedFields[settingsField];
-        }
-      }
-      next.agreementNo = agreementByCategory.current[category]
-        ?? savedFields["Agreement No."]
-        ?? "";
-      return next;
-    });
-  }, [category, commissioningDefaults, existingSurveyId]);
+    if (!category || existingSurveyId) return;
+    setFormValues((current) => ({
+      ...current,
+      agreementNo: agreementByCategory.current[category] ?? "",
+    }));
+  }, [category, existingSurveyId]);
 
   // Derive visible step-1 fields based on category
   const visibleStep1Fields = step1Fields.map((f) => {
@@ -429,11 +411,6 @@ const RoadSurveyForm = () => {
     const { name, value } = event.target;
     if (name === "agreementNo" && category) {
       agreementByCategory.current[category] = value;
-    } else if (category && Object.values(commissioningFields[category]).includes(name)) {
-      if (!editedFieldsByCategory.current[category]) {
-        editedFieldsByCategory.current[category] = new Set();
-      }
-      editedFieldsByCategory.current[category].add(name);
     }
     setFormValues((prev) =>
       name === "engineerSurveyor"
@@ -630,6 +607,16 @@ const RoadSurveyForm = () => {
   const renderField = (field, index) => {
     const { hidden, mode, size, ...input } = field;
     if (hidden) return null;
+    const savedFields = commissioningDefaults?.[
+      category === "publicProject" ? "Government" : "Corporate / Private"
+    ] || {};
+    const settingsField = commissioningOptionFields[category]?.[input.name]
+      || (input.name === "agreementNo" ? "Agreement No." : null);
+    const savedOption = settingsField && savedFields[settingsField]?.trim();
+    const options = input.name === "instrumentNo"
+      ? instrumentOptions
+      : savedOption ? [{ label: savedOption, value: savedOption }] : [];
+    const isTypedSelect = Boolean(settingsField || input.name === "instrumentNo");
     return (
       <Grid size={{ xs: size || 12 }} key={index}>
         {mode === "select" ? (
@@ -640,9 +627,10 @@ const RoadSurveyForm = () => {
             sx={{ width: "100%" }}
             onChange={handleInputChange}
           />
-        ) : mode === "solo-create" ? (
+        ) : mode === "solo-create" || isTypedSelect ? (
           <AdvancedAutoComplete
             {...input}
+            options={isTypedSelect ? options : input.options}
             value={formValues[input.name] || ""}
             error={(formErrors && formErrors[input.name]) || ""}
             sx={{ width: "100%" }}
