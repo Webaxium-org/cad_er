@@ -31,11 +31,25 @@ import {
   deleteSurveyPurpose,
 } from "../controllers/surveyController.js";
 import { isAuthenticated, requireAuth } from "../middleware/auth.js";
+import lookupLocation from "../services/weatherLocationService.js";
 
 router.use(requireAuth, isAuthenticated);
 
 // 🔹 Static routes
 router.get("/exists", checkSurveyExists);
+router.get("/weather-location", async (req, res, next) => {
+  try {
+    const name = String(req.query.name || "").trim();
+    if (name.length < 2 || name.length > 200) {
+      return res.status(400).json({ message: "Enter a valid location" });
+    }
+    const location = await lookupLocation(name);
+    if (!location) return res.status(404).json({ message: "Location not found" });
+    return res.json(location);
+  } catch (error) {
+    return next(error);
+  }
+});
 router.get("/purposes", getAllSurveyPurpose);
 
 // 🔹 Survey routes

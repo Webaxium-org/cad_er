@@ -95,6 +95,7 @@ const step1Fields = [
     mode: "checkbox",
     hidden: false,
     options: [
+      { name: "noneProject", label: "None" },
       { name: "publicProject", label: "Public project" },
       { name: "privateProject", label: "Private project" },
     ],
@@ -187,6 +188,7 @@ const step2Fields = [
 // ─── Initial values ───────────────────────────────────────────────────────────
 const initialFormValues = {
   project: "",
+  projectType: "None",
   purpose: "Initial Level",
   department: "",
   division: "",
@@ -252,8 +254,14 @@ const buildStep1Schema = (category) =>
       category === "privateProject"
         ? Yup.string().required("Contractor is required")
         : Yup.string().nullable(),
-    agreementNo: Yup.string().required("Agreement no is required"),
-    instrumentNo: Yup.string().required("Instrument number is required"),
+    agreementNo:
+      category === "noneProject"
+        ? Yup.string().nullable()
+        : Yup.string().required("Agreement no is required"),
+    instrumentNo:
+      category === "noneProject"
+        ? Yup.string().nullable()
+        : Yup.string().required("Instrument number is required"),
     engineerSurveyor: Yup.string().nullable(),
     assistant1: Yup.string().nullable(),
     assistant2: Yup.string().nullable(),
@@ -324,7 +332,7 @@ const RoadSurveyForm = () => {
   const [step, setStep] = useState(locationState?.step === 2 ? 2 : 1);
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
 
-  const [category, setCategory] = useState(null);
+  const [category, setCategory] = useState("noneProject");
   const [commissioningDefaults, setCommissioningDefaults] = useState(null);
   const [instrumentOptions, setInstrumentOptions] = useState([]);
   const [staffDefaults, setStaffDefaults] = useState(null);
@@ -338,6 +346,7 @@ const RoadSurveyForm = () => {
   const [queueValues, setQueueValues] = useState(initialQueueValues);
   const [queueErrors, setQueueErrors] = useState(null);
   const [queueOpen, setQueueOpen] = useState(false);
+  const [noneWarningAction, setNoneWarningAction] = useState(null);
   const [btnLoading, setBtnLoading] = useState(false);
 
   useEffect(() => {
@@ -398,8 +407,11 @@ const RoadSurveyForm = () => {
     if (["consultant", "client", "contractor"].includes(f.name)) {
       return { ...f, hidden: category !== "privateProject" };
     }
-    if (["agreementNo", "instrumentNo", "engineerSurveyor", "assistant1", "assistant2", "assistant3", "assistant4", "assistant5"].includes(f.name)) {
-      return { ...f, hidden: !category };
+    if (f.name === "agreementNo") {
+      return { ...f, hidden: category === "noneProject" };
+    }
+    if (["instrumentNo", "engineerSurveyor", "assistant1", "assistant2", "assistant3", "assistant4", "assistant5"].includes(f.name)) {
+      return { ...f, hidden: category === "noneProject" };
     }
     return f;
   });
@@ -428,16 +440,16 @@ const RoadSurveyForm = () => {
 
   // ─── Step navigation ────────────────────────────────────────────────────────
   const handleNext = async () => {
-    if (!category) {
-      setFormErrors((prev) => ({ ...prev, category: "Please select a project type" }));
-      return;
-    }
     const schema = buildStep1Schema(category);
     try {
       await schema.validate(formValues, { abortEarly: false });
-      setDirection(1);
-      setStep(2);
       setFormErrors(null);
+      if (category === "noneProject") {
+        setNoneWarningAction("next");
+      } else {
+        setDirection(1);
+        setStep(2);
+      }
     } catch (err) {
       if (err.inner) {
         const errs = {};
@@ -457,15 +469,15 @@ const RoadSurveyForm = () => {
 
   // ─── Open Queue modal (validates step 1 first) ──────────────────────────────
   const handleOpenQueue = async () => {
-    if (!category) {
-      setFormErrors((prev) => ({ ...prev, category: "Please select a project type" }));
-      return;
-    }
     const schema = buildStep1Schema(category);
     try {
       await schema.validate(formValues, { abortEarly: false });
       setFormErrors(null);
-      setQueueOpen(true);
+      if (category === "noneProject") {
+        setNoneWarningAction("queue");
+      } else {
+        setQueueOpen(true);
+      }
     } catch (err) {
       if (err.inner) {
         const errs = {};
@@ -475,6 +487,16 @@ const RoadSurveyForm = () => {
         setFormErrors(errs);
       }
     }
+  };
+
+  const handleConfirmNone = () => {
+    if (noneWarningAction === "next") {
+      setDirection(1);
+      setStep(2);
+    } else if (noneWarningAction === "queue") {
+      setQueueOpen(true);
+    }
+    setNoneWarningAction(null);
   };
 
   // ─── Queue submit ───────────────────────────────────────────────────────────
@@ -572,12 +594,19 @@ const RoadSurveyForm = () => {
         if (!s) return;
 
         // Detect which category was used when the survey was queued
-        const isPrivate = !!(s.consultant || s.client);
-        setCategory(isPrivate ? "privateProject" : "publicProject");
+        const loadedCategory = s.projectType === "None"
+          ? "noneProject"
+          : s.projectType === "Private" || s.consultant || s.client
+            ? "privateProject"
+            : s.department || s.division || s.section
+              ? "publicProject"
+              : "noneProject";
+        setCategory(loadedCategory);
 
         setFormValues((prev) => ({
           ...prev,
           project: s.project || "",
+          projectType: s.projectType || (loadedCategory === "privateProject" ? "Private" : loadedCategory === "publicProject" ? "Public" : "None"),
           type: s.type || "Road Survey",
           purpose: s.purposes?.[0]?.type || "Initial Level",
           department: s.department || "",
@@ -653,6 +682,25 @@ const RoadSurveyForm = () => {
                     checked={category === option.name}
                     onChange={() => {
                       setCategory(option.name);
+                      setFormValues((current) => ({
+                        ...current,
+                        projectType: option.name === "noneProject" ? "None" : option.name === "publicProject" ? "Public" : "Private",
+                        department: "",
+                        division: "",
+                        subDivision: "",
+                        section: "",
+                        consultant: "",
+                        client: "",
+                        contractor: "",
+                        agreementNo: "",
+                        instrumentNo: option.name === "noneProject" ? "" : current.instrumentNo,
+                        engineerSurveyor: option.name === "noneProject" ? "" : current.engineerSurveyor,
+                        assistant1: option.name === "noneProject" ? "" : current.assistant1,
+                        assistant2: option.name === "noneProject" ? "" : current.assistant2,
+                        assistant3: option.name === "noneProject" ? "" : current.assistant3,
+                        assistant4: option.name === "noneProject" ? "" : current.assistant4,
+                        assistant5: option.name === "noneProject" ? "" : current.assistant5,
+                      }));
                       setFormErrors((prev) => ({ ...prev, category: null }));
                     }}
                   />
@@ -743,6 +791,16 @@ const RoadSurveyForm = () => {
       sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 10, md: 14 } }}
     >
       <SmallHeader />
+
+      <AlertDialogSlide
+        title="Continue without project details?"
+        description="The plotting report won't show public or private project details. Are you sure you want to continue?"
+        cancelButtonText="Cancel"
+        submitButtonText="Continue"
+        open={Boolean(noneWarningAction)}
+        onCancel={() => setNoneWarningAction(null)}
+        onSubmit={handleConfirmNone}
+      />
 
       {/* Queue Modal */}
       <AlertDialogSlide

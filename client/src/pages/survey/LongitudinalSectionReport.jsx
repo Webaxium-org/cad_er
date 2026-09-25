@@ -1,8 +1,8 @@
 import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
-import { createSectionPdf } from "../../utils/sectionPdf";
+import { addGraphPage, capturePlotImage, createGraphPdf } from "../../utils/graphPdf";
 import SectionScaleInputs from "./components/SectionScaleInputs";
 import { profilePoints, profileLevel, chainageValue } from "../../utils/surveyGeometry";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { handleFormError } from "../../utils/handleFormError";
@@ -78,10 +78,29 @@ const LongitudinalSectionReport = () => {
   const [selectedCs, setSelectedCs] = useState(null);
   const [drawingScales, setDrawingScales] = useState({ horizontal: 2400, vertical: 300 });
 
+  const interactiveChartOptions = useMemo(() => ({
+    ...chartOptions,
+    config: {
+      ...chartOptions.config,
+      displayModeBar: true,
+      scrollZoom: true,
+      doubleClick: "reset",
+      modeBarButtonsToRemove: ["select2d", "lasso2d", "toggleSpikelines", "toImage"],
+    },
+    layout: {
+      ...chartOptions.layout,
+      dragmode: "pan",
+    },
+  }), [chartOptions]);
+
   const downloadPDF = async () => {
     if (!selectedCs) return;
     try {
-      createSectionPdf([selectedCs], drawingScales).save("longitudinal-section.pdf");
+      const plot = pdfRef.current?.querySelector(".js-plotly-plot");
+      const { image, width, height } = await capturePlotImage(plot);
+      const pdf = createGraphPdf();
+      addGraphPage(pdf, image, selectedCs, drawingScales, width, height, "LONGITUDINAL SECTION");
+      pdf.save("longitudinal-section.pdf");
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     }
@@ -399,7 +418,7 @@ const LongitudinalSectionReport = () => {
               <CrossSectionChart
               drawingScales={drawingScales}
                 selectedCs={selectedCs}
-                chartOptions={chartOptions}
+                chartOptions={interactiveChartOptions}
                 pdfRef={pdfRef}
               />
             </>

@@ -1443,6 +1443,15 @@ const RoadSurveyRowsForm = () => {
           setRowType("CP");
         } else {
           getNewChainage(purposeDoc);
+          if (purposeDoc.surveyId?.type === "Water Way") {
+            const waterLevelCount = purposeDoc.rows?.filter((row) => row.type === "Water Level").length || 0;
+            setRowType("Water Level");
+            setFormValues((prev) => ({
+              ...prev,
+              type: "Water Level",
+              remark: `WL - ${waterLevelCount + 1} (${formatDateTime()})`,
+            }));
+          }
         }
 
         setPurpose(purposeDoc);
@@ -2286,27 +2295,26 @@ const RoadSurveyRowsForm = () => {
                     bottom: { xs: 24, md: 32 },
                     left: "50%",
                     zIndex: 1000,
-                    width: "max-content",
-                    maxWidth: "90vw",
+                    width: { xs: "calc(100vw - 16px)", lg: "max-content" },
+                    maxWidth: "calc(100vw - 16px)",
                   }}
                 >
                   <Paper
                     elevation={0}
                     sx={{
-                      p: "8px",
+                      p: { xs: "6px", sm: "8px" },
                       borderRadius: "24px",
-                      display: "inline-flex",
+                      display: "flex",
                       alignItems: "center",
-                      gap: { xs: 1, md: 1.5 },
+                      gap: { xs: 0.5, md: 1.5 },
                       background: "rgba(99, 102, 241, 0.15)", // Transparent indigo
                       backdropFilter: "blur(12px)",
                       WebkitBackdropFilter: "blur(12px)",
                       border: "1px solid rgba(99, 102, 241, 0.3)",
                       boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
                       height: { xs: "50px", md: "60px" },
-                      maxWidth: "stretch",
-                      overflowX: "auto",
-                      "&::-webkit-scrollbar": { display: "none" },
+                      width: "100%",
+                      boxSizing: "border-box",
                     }}
                   >
                     {[
@@ -2353,7 +2361,7 @@ const RoadSurveyRowsForm = () => {
                     ].map(
                       (type, i) => {
                         const isDisabled = waterLevelLocked && type.label !== "NEXT";
-                        return rowType !== type.value && (
+                        return (
                           <Box
                             key={i}
                             sx={{
@@ -2361,13 +2369,13 @@ const RoadSurveyRowsForm = () => {
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              px: { xs: 2, md: 6 },
+                              px: { xs: 0.5, md: 1.5, lg: 6 },
                               height: "100%",
                               borderRadius: "16px",
                               cursor: isDisabled ? "not-allowed" : "pointer",
-                              minWidth: "70px",
+                              minWidth: 0,
                               whiteSpace: "nowrap",
-                              flexShrink: 0,
+                              flex: { xs: "1 1 0", lg: "0 0 auto" },
                               bgcolor: "white",
                               color: rowType === type.value ? "white" : "#6366f1",
                               opacity: isDisabled ? 0.35 : 1,
@@ -2407,7 +2415,7 @@ const RoadSurveyRowsForm = () => {
                                 display: "flex",
                                 alignItems: "center",
                                 flexDirection: { xs: "column", sm: "row" },
-                                gap: 1,
+                                gap: { xs: 0.25, sm: 1 },
                               }}
                             >
                               <Typography
@@ -2434,7 +2442,7 @@ const RoadSurveyRowsForm = () => {
                                   position: "relative",
                                   zIndex: 1,
                                   color: "inherit",
-                                  fontSize: { xs: "0.8rem", md: "1rem" },
+                                  fontSize: { xs: "0.7rem", sm: "0.8rem", md: "1rem" },
                                   transition: "color 0.3s ease",
                                 }}
                               >

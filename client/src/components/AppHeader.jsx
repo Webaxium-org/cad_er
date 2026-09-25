@@ -11,8 +11,6 @@ import {
   InputAdornment,
   IconButton,
   Menu,
-  MenuItem,
-  Badge,
   Divider,
   Container,
 } from "@mui/material";
@@ -82,12 +80,6 @@ const AppHeader = ({ sidebar = true, showSearch = true, showNotifications = true
   const [anchorEl, setAnchorEl] = useState(null);
   const handleNotifClick = (event) => setAnchorEl(event.currentTarget);
   const handleNotifClose = () => setAnchorEl(null);
-
-  const notifications = [
-    { title: "System maintenance scheduled", time: "10 min ago" },
-    { title: "New Survey Assigned: Sector 4", time: "1 hr ago" },
-    { title: "Weekly Report #42 ready", time: "3 hr ago" },
-  ];
 
   return (
     <>
@@ -198,9 +190,7 @@ const AppHeader = ({ sidebar = true, showSearch = true, showNotifications = true
                   p: { xs: 0.8, md: 1.2 },
                 }}
               >
-                <Badge color="error" variant="dot">
-                  <Icons.Notification />
-                </Badge>
+                <Icons.Notification />
               </IconButton>}
 
               {showNotifications && <Menu
@@ -220,18 +210,9 @@ const AppHeader = ({ sidebar = true, showSearch = true, showNotifications = true
                   Notifications
                 </Typography>
                 <Divider />
-                {notifications.map((notif, idx) => (
-                  <MenuItem key={idx} onClick={handleNotifClose} sx={{ mb: 1 }}>
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        {notif.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {notif.time}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
+                <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 3, textAlign: "center" }}>
+                  No notifications yet
+                </Typography>
               </Menu>}
 
               {sidebar && (

@@ -110,17 +110,19 @@ const drawPDFHeader = (doc, surveyInfo, reportDetails, tableData) => {
   doc.setFont("helvetica", "normal").setFontSize(12);
   doc.setTextColor(0, 0, 0);
   
+  const hasProjectDetails = surveyInfo?.projectType !== "None";
   const isGovt = surveyInfo?.projectType !== "Private" && surveyInfo?.projectType !== "private";
   const deptOrClient = isGovt ? (surveyInfo?.department || "IRRIGATION DEPARTMENT") : (surveyInfo?.client || "CLIENT DETAILS");
-  doc.text(deptOrClient.toUpperCase(), 105, 40, { align: "center" });
+  if (hasProjectDetails) doc.text(deptOrClient.toUpperCase(), 105, 40, { align: "center" });
 
   // 3. Instrument Model and Serial No.
   doc.setFontSize(10);
-  const instrumentModel = surveyInfo?.instrumentNo || "BOSCH GOL 32D Professional";
-  const serialNo = "122240174"; // Defaulting to the one in previous code if not in surveyInfo
-  
-  doc.text(`INSTRUMENT MODEL: ${instrumentModel}`, 15, 55);
-  doc.text(`SERIAL NO: ${serialNo}`, 195, 55, { align: "right" });
+  if (hasProjectDetails) {
+    const instrumentModel = surveyInfo?.instrumentNo || "BOSCH GOL 32D Professional";
+    const serialNo = "122240174"; // Defaulting to the one in previous code if not in surveyInfo
+    doc.text(`INSTRUMENT MODEL: ${instrumentModel}`, 15, 55);
+    doc.text(`SERIAL NO: ${serialNo}`, 195, 55, { align: "right" });
+  }
 
   // 4. Name of work
   doc.setFont("helvetica", "bold").setFontSize(14);
@@ -136,27 +138,31 @@ const drawPDFHeader = (doc, surveyInfo, reportDetails, tableData) => {
   doc.text("__________________________________________________", 65, currentY);
   currentY += 10;
   
-  doc.text("Agreement No:", 15, currentY);
-  const agreementText = surveyInfo?.agreementNo || "__________________________________________________";
-  doc.text(agreementText, 65, currentY);
-  currentY += 15;
+  if (hasProjectDetails) {
+    doc.text("Agreement No:", 15, currentY);
+    const agreementText = surveyInfo?.agreementNo || "__________________________________________________";
+    doc.text(agreementText, 65, currentY);
+    currentY += 15;
 
-  // 7. Client Management / Hierarchy node
-  doc.text("Division:", 15, currentY);
-  doc.text(surveyInfo?.division || "________________________________", 45, currentY);
-  currentY += 8;
-  
-  doc.text("Sub-Division:", 15, currentY);
-  doc.text(surveyInfo?.subDivision || "________________________________", 45, currentY);
-  currentY += 8;
-  
-  doc.text("Section:", 15, currentY);
-  doc.text(surveyInfo?.section || "________________________________", 45, currentY);
-  currentY += 8;
-  
-  doc.text("Contractor:", 15, currentY);
-  doc.text(surveyInfo?.contractor || "________________________________", 45, currentY);
-  currentY += 20;
+    // 7. Client Management / Hierarchy node
+    doc.text("Division:", 15, currentY);
+    doc.text(surveyInfo?.division || "________________________________", 45, currentY);
+    currentY += 8;
+
+    doc.text("Sub-Division:", 15, currentY);
+    doc.text(surveyInfo?.subDivision || "________________________________", 45, currentY);
+    currentY += 8;
+
+    doc.text("Section:", 15, currentY);
+    doc.text(surveyInfo?.section || "________________________________", 45, currentY);
+    currentY += 8;
+
+    doc.text("Contractor:", 15, currentY);
+    doc.text(surveyInfo?.contractor || "________________________________", 45, currentY);
+    currentY += 20;
+  } else {
+    currentY += 12;
+  }
 
   // 8. QUANTITY STATEMENT / ABSTRACT Table
   let quantityText = "-";
@@ -721,8 +727,9 @@ const exportPdf = async ({
       );
 
       const availableLeft = chartPageMargin;
-      const tableWidth = infoBoxHeight;
-      const availableRight = pageTotalWidth - chartPageMargin - tableWidth - chartGap;
+      const hasProjectDetails = surveyInfo?.projectType !== "None";
+      const tableWidth = hasProjectDetails ? infoBoxHeight : 0;
+      const availableRight = pageTotalWidth - chartPageMargin - tableWidth - (hasProjectDetails ? chartGap : 0);
       const availableWidth = availableRight - availableLeft;
 
       let imgWidth = availableWidth - 2;
@@ -748,7 +755,7 @@ const exportPdf = async ({
         "FAST",
       );
 
-      drawGraphInfoSection(availableTop, availableBottom);
+      if (hasProjectDetails) drawGraphInfoSection(availableTop, availableBottom);
 
       // Cleanup to free memory
       canvas.width = 0;
@@ -1482,7 +1489,7 @@ const PlottingAndQuantityReport = () => {
             {reportDetails?.current?.initialEntry || "INITIAL LEVEL"} - PROFILE, SECTIONS & QUANTITY
           </Typography>
 
-          <Typography
+          {survey?.projectType !== "None" && <Typography
             variant="subtitle1"
             sx={{
               fontWeight: 600,
@@ -1495,11 +1502,11 @@ const PlottingAndQuantityReport = () => {
             {survey?.projectType !== "Private" && survey?.projectType !== "private"
               ? (survey?.department || "IRRIGATION DEPARTMENT")
               : (survey?.client || "CLIENT DETAILS")}
-          </Typography>
+          </Typography>}
         </Box>
 
         {/* Instrument Details */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        {survey?.projectType !== "None" && <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={6}>
             <Typography variant="body2" sx={{ fontWeight: 700, color: "#475569" }}>
               INSTRUMENT MODEL: <span style={{ fontWeight: 400, color: "#334155" }}>{survey?.instrumentNo || "BOSCH GOL 32D Professional"}</span>
@@ -1510,7 +1517,7 @@ const PlottingAndQuantityReport = () => {
               SERIAL NO: <span style={{ fontWeight: 400, color: "#334155" }}>{survey?.serialNo || "122240174"}</span>
             </Typography>
           </Grid>
-        </Grid>
+        </Grid>}
 
         {/* Name of Work */}
         <Box sx={{ textAlign: "center", mb: 4 }}>
@@ -1537,18 +1544,18 @@ const PlottingAndQuantityReport = () => {
               <Typography variant="body2" sx={{ color: "#334155" }}>__________________________________________________</Typography>
             </Grid>
           </Grid>
-          <Grid container alignItems="center" spacing={1}>
+          {survey?.projectType !== "None" && <Grid container alignItems="center" spacing={1}>
             <Grid item xs={12} sm={3}>
               <Typography variant="body2" sx={{ fontWeight: 700, color: "#475569" }}>Agreement No:</Typography>
             </Grid>
             <Grid item xs={12} sm={9}>
               <Typography variant="body2" sx={{ color: "#334155" }}>{survey?.agreementNo || "__________________________________________________"}</Typography>
             </Grid>
-          </Grid>
+          </Grid>}
         </Stack>
 
         {/* Client Management / Hierarchy */}
-        <Stack spacing={2} sx={{ mb: 5 }}>
+        {survey?.projectType !== "None" && <Stack spacing={2} sx={{ mb: 5 }}>
           <Grid container alignItems="center" spacing={1}>
             <Grid item xs={12} sm={3}><Typography variant="body2" sx={{ fontWeight: 700, color: "#475569" }}>Division:</Typography></Grid>
             <Grid item xs={12} sm={9}><Typography variant="body2" sx={{ color: "#334155" }}>{survey?.division || "________________________________"}</Typography></Grid>
@@ -1565,7 +1572,7 @@ const PlottingAndQuantityReport = () => {
             <Grid item xs={12} sm={3}><Typography variant="body2" sx={{ fontWeight: 700, color: "#475569" }}>Contractor:</Typography></Grid>
             <Grid item xs={12} sm={9}><Typography variant="body2" sx={{ color: "#334155" }}>{survey?.contractor || "________________________________"}</Typography></Grid>
           </Grid>
-        </Stack>
+        </Stack>}
 
         {/* QUANTITY STATEMENT / ABSTRACT Table */}
         <Box sx={{ mb: 5 }}>

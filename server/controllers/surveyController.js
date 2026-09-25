@@ -109,6 +109,7 @@ const createSurvey = async (req, res, next) => {
       user: { userId },
       body: {
         project,
+        projectType,
         purpose,
         type,
         instrumentNo,
@@ -139,12 +140,12 @@ const createSurvey = async (req, res, next) => {
     if (
       !project ||
       !purpose ||
-      !instrumentNo ||
+      (projectType !== "None" && !instrumentNo) ||
       !reducedLevel ||
       !backSight ||
       !chainageMultiple ||
       !separator ||
-      !agreementNo
+      (projectType !== "None" && !agreementNo)
     ) {
       throw createHttpError(
         400,
@@ -174,7 +175,14 @@ const createSurvey = async (req, res, next) => {
       client !== null &&
       client !== "";
 
-    if (!isPublicProject && !isPrivateProject) {
+    if (projectType && !["Public", "Private", "None"].includes(projectType)) {
+      throw createHttpError(400, "Invalid project type");
+    }
+    if (projectType !== "None" && (
+      (projectType === "Public" && !isPublicProject) ||
+      (projectType === "Private" && !isPrivateProject) ||
+      (!projectType && !isPublicProject && !isPrivateProject)
+    )) {
       throw createHttpError(
         400,
         "Please provide either Administrative units or External parties",
@@ -186,9 +194,10 @@ const createSurvey = async (req, res, next) => {
       [
         {
           project,
+          projectType: projectType || (isPublicProject ? "Public" : "Private"),
           createdBy: userId,
           type: type || "Road Survey",
-          instrumentNo,
+          instrumentNo: projectType === "None" ? undefined : instrumentNo,
           chainageMultiple,
           separator,
           reducedLevel: Number(reducedLevel).toFixed(3),
@@ -196,16 +205,18 @@ const createSurvey = async (req, res, next) => {
           status: scheduledDate ? "Scheduled" : "Active",
           scheduledDate: scheduledDate || null,
           contractor,
-          ...(isPublicProject
+          ...(projectType !== "None" && isPublicProject
             ? { department, division, subDivision, section }
             : {}),
-          ...(isPrivateProject ? { consultant, client } : {}),
-          engineerSurveyor,
-          assistant1,
-          assistant2,
-          assistant3,
-          assistant4,
-          assistant5,
+          ...(projectType !== "None" && isPrivateProject ? { consultant, client } : {}),
+          ...(projectType === "None" ? {} : {
+            engineerSurveyor,
+            assistant1,
+            assistant2,
+            assistant3,
+            assistant4,
+            assistant5,
+          }),
         },
       ],
       { session },
@@ -296,6 +307,7 @@ const queueSurvey = async (req, res, next) => {
       user: { userId },
       body: {
         project,
+        projectType,
         purpose,
         type,
         department,
@@ -337,7 +349,14 @@ const queueSurvey = async (req, res, next) => {
     );
     const isPrivateProject = !!(consultant && client);
 
-    if (!isPublicProject && !isPrivateProject) {
+    if (projectType && !["Public", "Private", "None"].includes(projectType)) {
+      throw createHttpError(400, "Invalid project type");
+    }
+    if (projectType !== "None" && (
+      (projectType === "Public" && !isPublicProject) ||
+      (projectType === "Private" && !isPrivateProject) ||
+      (!projectType && !isPublicProject && !isPrivateProject)
+    )) {
       throw createHttpError(
         400,
         "Please provide either Administrative units or External parties",
@@ -346,19 +365,22 @@ const queueSurvey = async (req, res, next) => {
 
     const survey = await Survey.create({
       project,
+      projectType: projectType || (isPublicProject ? "Public" : "Private"),
       createdBy: userId,
       status: "Scheduled",
       type: type || "Road Survey",
-      ...(isPublicProject
+      ...(projectType !== "None" && isPublicProject
         ? { department, division, subDivision, section }
         : {}),
-      ...(isPrivateProject ? { consultant, client } : {}),
-      engineerSurveyor,
-      assistant1,
-      assistant2,
-      assistant3,
-      assistant4,
-      assistant5,
+      ...(projectType !== "None" && isPrivateProject ? { consultant, client } : {}),
+      ...(projectType === "None" ? {} : {
+        engineerSurveyor,
+        assistant1,
+        assistant2,
+        assistant3,
+        assistant4,
+        assistant5,
+      }),
       proposalScheduleDate,
       proposalDeadline,
       location,
@@ -402,9 +424,6 @@ const completeSurvey = async (req, res, next) => {
 
     if (
       !purpose ||
-      !agreementNo ||
-      !contractor ||
-      !instrumentNo ||
       !reducedLevel ||
       !backSight ||
       !chainageMultiple ||
@@ -427,10 +446,14 @@ const completeSurvey = async (req, res, next) => {
       );
     }
 
+    if (survey.projectType !== "None" && (!agreementNo || !instrumentNo)) {
+      throw createHttpError(400, "Agreement no and instrument number are required");
+    }
+
     // Update survey with technical fields and activate it
-    survey.agreementNo = agreementNo;
-    survey.contractor = contractor;
-    survey.instrumentNo = instrumentNo;
+    survey.agreementNo = agreementNo || undefined;
+    survey.contractor = contractor || undefined;
+    survey.instrumentNo = survey.projectType === "None" ? undefined : instrumentNo;
     survey.chainageMultiple = Number(chainageMultiple);
     survey.separator = separator;
     survey.reducedLevel = Number(reducedLevel).toFixed(3);
@@ -3290,6 +3313,7 @@ const createBranch = async (req, res, next) => {
       [
         {
           project: name,
+          projectType: parentSurvey.projectType,
           createdBy: userId,
           instrumentNo: parentSurvey.instrumentNo,
           chainageMultiple: parentSurvey.chainageMultiple,

@@ -5,6 +5,7 @@ const SurveySchema = new Schema(
   {
     type: { type: String, default: "Road Survey", index: true, trim: true },
     project: { type: String, required: true, trim: true },
+    projectType: { type: String, enum: ["Public", "Private", "None"] },
     agreementNo: { type: String, trim: true },
     contractor: { type: String, trim: true },
     department: { type: String, trim: true },

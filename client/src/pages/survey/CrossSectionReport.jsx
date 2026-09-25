@@ -1,5 +1,4 @@
 import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
-import { createSectionPdf } from "../../utils/sectionPdf";
 import SectionScaleInputs from "./components/SectionScaleInputs";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -30,6 +29,8 @@ import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
 import { showAlert } from "../../redux/alertSlice";
 import { DxfWriter, Units, point2d, point3d } from "@tarikjabiri/dxf";
 import { saveAs } from "file-saver";
+import Plotly from "plotly.js/dist/plotly";
+import { addGraphPage, capturePlotImage, createGraphPdf } from "../../utils/graphPdf";
 import ExportLoader from "../../components/ExportLoader";
 import SmallHeader from "../../components/SmallHeader";
 
@@ -119,6 +120,15 @@ const inputColors = {
   red: { borderColor: "#ff000085", color: "#FF0000" },
 };
 
+const scaledRange = (range, scale) => {
+  const start = Number(range?.[0]);
+  const end = Number(range?.[1]);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return range;
+  const center = (start + end) / 2;
+  const halfSpan = Math.max(Math.abs(end - start), 0.001) * Number(scale) / 150 / 2;
+  return [center - halfSpan, center + halfSpan];
+};
+
 const CrossSectionReport = () => {
   const navigate = useNavigate();
 
@@ -184,7 +194,12 @@ const CrossSectionReport = () => {
   const downloadPDF = async () => {
     if (!selectedCs) return;
     try {
-      createSectionPdf([selectedCs], drawingScales).save("cross-section.pdf");
+      const plot = pdfRef.current?.querySelector(".js-plotly-plot");
+      const { image, width, height } = await capturePlotImage(plot);
+      const pdf = createGraphPdf();
+      addGraphPage(pdf, image, selectedCs, drawingScales, width, height);
+
+      pdf.save("cross-section.pdf");
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     }
@@ -376,11 +391,79 @@ const CrossSectionReport = () => {
         ?.filter((row) => row.type === "Chainage")
         .map((row) => buildCsData(row))
         .filter(Boolean);
+      if (!allFormattedData.length) throw new Error("No cross-section graphs are available to export.");
 
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      createSectionPdf(allFormattedData, drawingScales).save(
-        "cross-sections.pdf",
-      );
+      const pdf = createGraphPdf();
+      const plotNode = document.createElement("div");
+      const graphWidth = Math.max(900, Math.round(pdfRef.current?.querySelector(".js-plotly-plot")?.getBoundingClientRect().width || 0));
+      const graphHeight = 250;
+      Object.assign(plotNode.style, {
+        position: "fixed",
+        left: "-10000px",
+        top: "0",
+        width: `${graphWidth}px`,
+        height: `${graphHeight}px`,
+        background: "white",
+      });
+      document.body.appendChild(plotNode);
+
+      let renderedCount = 0;
+      try {
+        for (let index = 0; index < allFormattedData.length; index++) {
+          const section = allFormattedData[index];
+          const xValues = section.offsets.map(Number).filter(Number.isFinite);
+          const yValues = section.allRl.map(Number).filter(Number.isFinite);
+          if (!xValues.length || !yValues.length) continue;
+          const minX = Math.min(...xValues);
+          const maxX = Math.max(...xValues);
+          const minY = Math.min(...yValues);
+          const maxY = Math.max(...yValues);
+          const pad = (maxY - minY) * 0.1;
+          const traces = section.series.map((series) => {
+            const points = [...(series.data || [])].sort((a, b) => Number(a.x) - Number(b.x));
+            return {
+              x: points.map((point) => Number(point.x)),
+              y: points.map((point) => point.y === null ? null : Number(point.y)),
+              type: "scatter",
+              mode: "lines",
+              name: series.name,
+              line: { shape: "linear", width: 1, color: series.color },
+            };
+          });
+          const layout = {
+            ...v1ChartOptions.layout,
+            width: graphWidth,
+            height: graphHeight,
+            xaxis: {
+              autorange: false,
+              range: scaledRange([minX, maxX], drawingScales.horizontal),
+              tickformat: ".3f",
+              dtick: (maxX - minX) / 4,
+              zeroline: false,
+              showline: false,
+              mirror: true,
+            },
+            yaxis: {
+              zeroline: false,
+              autorange: false,
+              range: scaledRange([minY - 2, maxY + pad], drawingScales.vertical),
+            },
+          };
+          await Plotly.newPlot(plotNode, traces, layout, { displayModeBar: false, staticPlot: true });
+          const image = await Plotly.toImage(plotNode, { format: "jpeg", width: graphWidth, height: graphHeight, scale: 2 });
+          if (renderedCount > 0) pdf.addPage();
+          addGraphPage(pdf, image, section, drawingScales, graphWidth, graphHeight);
+          renderedCount++;
+          setProgress({ percent: Math.round((index + 1) / allFormattedData.length * 100), message: `Rendering chainage ${index + 1} of ${allFormattedData.length}`, estimatedTimeLeft: null });
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+      } finally {
+        Plotly.purge(plotNode);
+        plotNode.remove();
+      }
+
+      if (!renderedCount) throw new Error("No valid cross-section graphs are available to export.");
+      pdf.save("cross-sections.pdf");
       setLoading(false);
       setProgress(null);
     } catch (err) {

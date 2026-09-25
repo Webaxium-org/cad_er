@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Stack,
-  styled,
   IconButton,
   TextField,
   Paper,
@@ -12,7 +11,7 @@ import {
 } from "@mui/material";
 import IOSegmentedTabs from "../../components/IOSegmentedTabs";
 import { useDispatch } from "react-redux";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { stopLoading } from "../../redux/loadingSlice";
 import { handleFormError } from "../../utils/handleFormError";
 import { deleteSurvey, getAllSurvey } from "../../services/surveyServices";
@@ -23,19 +22,186 @@ import BasicAccordion from "../../components/BasicAccordion";
 import { MdOutlineExpandMore, MdOutlineSearch } from "react-icons/md";
 import { MdSort } from "react-icons/md";
 import BasicCard from "../../components/BasicCard";
-import StatusChip from "../../components/StatusChip";
-import { IoIosArrowForward } from "react-icons/io";
 import { ProjectListCardSkeleton } from "./components/ProjectListCardSkeleton";
 import { highlightText } from "../../internals";
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import { showAlert } from "../../redux/alertSlice";
 import BasicButton from "../../components/BasicButton";
-import { MdDelete } from "react-icons/md";
 import SmallHeader from "../../components/SmallHeader";
-import BasicDivider from "../../components/BasicDevider";
 import { CgGoogleTasks } from "react-icons/cg";
 import { GoClock } from "react-icons/go";
-import { FiBookOpen, FiFileText, FiPlay, FiEdit3, FiFlag, FiTrash2 } from "react-icons/fi";
+import {
+  FiBookOpen,
+  FiFileText,
+  FiPlay,
+  FiEdit3,
+  FiFlag,
+  FiTrash2,
+  FiCalendar,
+  FiLayers,
+} from "react-icons/fi";
+import { SiGooglecalendar } from "react-icons/si";
+import { PiMicrosoftOutlookLogoFill } from "react-icons/pi";
+import { axiosInstance } from "../../utils/config";
+
+const WEATHER_CODES = {
+  0: "Clear sky",
+  1: "Mainly clear",
+  2: "Partly cloudy",
+  3: "Overcast",
+  45: "Fog",
+  48: "Freezing fog",
+  51: "Light drizzle",
+  53: "Drizzle",
+  55: "Dense drizzle",
+  61: "Light rain",
+  63: "Rain",
+  65: "Heavy rain",
+  71: "Light snow",
+  73: "Snow",
+  75: "Heavy snow",
+  80: "Rain showers",
+  81: "Rain showers",
+  82: "Heavy showers",
+  95: "Thunderstorm",
+};
+
+const forecastCache = new Map();
+
+const getForecast = async (location, date) => {
+  const key = `${location}|${date}`;
+  const cached = forecastCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.request;
+  const request = (async () => {
+    const geoUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
+    geoUrl.search = new URLSearchParams({ name: location, count: "1" });
+    let place;
+    try {
+      const geoResponse = await fetch(geoUrl);
+      if (geoResponse.ok) place = (await geoResponse.json()).results?.[0];
+    } catch {
+      // The fallback also handles a temporary location-service failure.
+    }
+    if (!place) {
+      const { data } = await axiosInstance.get("surveys/weather-location", {
+        params: { name: location },
+      });
+      place = data;
+    }
+    if (!place) throw new Error("Location not found");
+
+    const weatherUrl = new URL("https://api.open-meteo.com/v1/forecast");
+    weatherUrl.search = new URLSearchParams({
+      latitude: place.latitude,
+      longitude: place.longitude,
+      daily: "temperature_2m_max,uv_index_max,weather_code",
+      timezone: "auto",
+      forecast_days: "16",
+    });
+    const weatherResponse = await fetch(weatherUrl);
+    if (!weatherResponse.ok) throw new Error("Forecast unavailable");
+    const daily = (await weatherResponse.json()).daily;
+    const index = daily?.time?.indexOf(date) ?? -1;
+    if (index < 0) return null;
+    return {
+      temperature: daily.temperature_2m_max?.[index],
+      uv: daily.uv_index_max?.[index],
+      condition:
+        WEATHER_CODES[daily.weather_code?.[index]] || "Variable conditions",
+      locationSource: place.source,
+      locationName: place.displayName,
+    };
+  })();
+  forecastCache.set(key, { request, expiresAt: Date.now() + 30 * 60 * 1000 });
+  request.catch(() => forecastCache.delete(key));
+  return request;
+};
+
+const QueuedWeather = ({ location, scheduledDate }) => {
+  const [weather, setWeather] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const date = scheduledDate?.slice(0, 10);
+
+  useEffect(() => {
+    if (!date || !location) return;
+    const daysAway = Math.round(
+      (new Date(`${date}T12:00:00Z`) - new Date()) / 86400000,
+    );
+    if (daysAway < 0 || daysAway > 15) return;
+    let active = true;
+    getForecast(location, date)
+      .then((result) => {
+        if (!active) return;
+        setWeather(result);
+        setStatus(result ? "ready" : "unavailable");
+      })
+      .catch(() => {
+        if (active) setStatus("unavailable");
+      });
+    return () => {
+      active = false;
+    };
+  }, [location, date]);
+
+  if (!date || !location)
+    return (
+      <Typography variant="body2" color="text.secondary">
+        Add a date and location to see the forecast.
+      </Typography>
+    );
+  const daysAway = Math.round(
+    (new Date(`${date}T12:00:00Z`) - new Date()) / 86400000,
+  );
+  if (daysAway > 15)
+    return (
+      <Typography variant="body2" color="text.secondary">
+        Forecast available within 16 days of the scheduled date.
+      </Typography>
+    );
+  if (daysAway < 0)
+    return (
+      <Typography variant="body2" color="text.secondary">
+        Scheduled date has passed.
+      </Typography>
+    );
+  if (status === "unavailable")
+    return (
+      <Typography variant="body2" color="text.secondary">
+        Forecast unavailable for this location or date.
+      </Typography>
+    );
+  if (!weather)
+    return (
+      <Typography variant="body2" color="text.secondary">
+        Loading forecast…
+      </Typography>
+    );
+  return (
+    <Stack spacing={0.5}>
+      <Stack direction="row" flexWrap="wrap" gap={1}>
+        <Typography variant="body2">
+          Temperature:{" "}
+          <strong>
+            {weather.temperature == null
+              ? "N/A"
+              : `${Math.round(weather.temperature)}°C`}
+          </strong>
+        </Typography>
+        <Typography variant="body2">
+          UV index: <strong>{weather.uv?.toFixed(1) ?? "N/A"}</strong>
+        </Typography>
+        <Typography variant="body2">
+          Conditions: <strong>{weather.condition}</strong>
+        </Typography>
+      </Stack>
+      {weather.locationSource === "OpenStreetMap" && (
+        <Typography variant="caption" color="text.secondary">
+          Location: {weather.locationName} · © OpenStreetMap contributors
+        </Typography>
+      )}
+    </Stack>
+  );
+};
 
 const alertDetails = {
   title: "Field Book",
@@ -53,97 +219,308 @@ const deleteProjectAlertDetails = {
   submitButtonText: "Delete",
 };
 
-const colors = {
-  Initial: "green",
-  Proposed: "blue",
-  Final: "red",
-};
-
 const PRIMARY_BRAND = "#6366f1";
 const HEADER_GRADIENT_START = "#4f46e5";
 const HEADER_GRADIENT_END = "#6366f1";
 const BG_COLOR = "#f8fafc";
 const CARD_BORDER = "#e2e8f0";
+const PROJECT_CARD_SX = {
+  borderRadius: "24px",
+  border: "1px solid #dfe5ff",
+  bgcolor: "#fff",
+  boxShadow: "0 10px 28px rgba(38, 58, 110, 0.06)",
+  transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+  "&:hover": {
+    borderColor: "#c7d2fe",
+    boxShadow: "0 16px 32px rgba(38, 58, 110, 0.1)",
+  },
+};
+const PROJECT_ACCORDION_SX = {
+  boxShadow: "none",
+  bgcolor: "transparent",
+  "&:before": { display: "none" },
+  "& .MuiAccordionSummary-root": { minHeight: 0 },
+  "& .MuiAccordionSummary-content": { my: 0, py: 0.5 },
+  "& .MuiAccordionSummary-expandIconWrapper": { color: "#667795" },
+  "& .MuiAccordionDetails-root": { pt: 2 },
+};
+const PROJECT_ACTION_SX = {
+  minHeight: { xs: 50, sm: 48 },
+  minWidth: 0,
+  width: "100%",
+  px: { xs: 0.5, sm: 1.5 },
+  borderRadius: "11px",
+  borderColor: "#cfd8ff",
+  color: HEADER_GRADIENT_START,
+  bgcolor: "#f8faff",
+  fontSize: { xs: "0.75rem", sm: "0.8125rem" },
+  fontWeight: 700,
+  textTransform: "none",
+  justifyContent: "center",
+  whiteSpace: "nowrap",
+  "&:hover": { borderColor: PRIMARY_BRAND, bgcolor: "#eef2ff" },
+  "& .MuiButton-startIcon": { mr: { xs: 0.5, sm: 0.9 }, fontSize: { xs: 15, sm: 17 } },
+};
+const PROJECT_ACTION_GRID = {
+  Resume: { column: "1 / 4", row: 1 },
+  "Field Book": { column: "4 / 7", row: 1 },
+  "Reports / Library": { column: "1 / 4", row: 2 },
+  "Final Level": { column: "1 / 3", row: 3 },
+  "Proposed Level": { column: "3 / 5", row: 3 },
+  Delete: { column: "5 / 7", row: 3 },
+  "Branch Reports": { column: "1 / 4", row: 4 },
+};
 
-const formatProjectDate = (value) => value && !Number.isNaN(new Date(value).getTime())
-  ? new Date(value).toLocaleDateString("en-IN")
-  : "N/A";
+const ProjectCardHeader = ({ survey, search, status, progress }) => (
+  <Stack spacing={{ xs: 2, md: 1.5 }} width="100%" sx={{ minWidth: 0, py: 0.5 }}>
+    <Stack
+      direction="row"
+      spacing={{ xs: 1.25, sm: 2 }}
+      alignItems="center"
+      sx={{ minWidth: 0 }}
+    >
+      <Box
+        sx={{
+          flex: "0 0 auto",
+          width: { xs: 54, sm: 56 },
+          height: { xs: 54, sm: 56 },
+          display: "grid",
+          placeItems: "center",
+          bgcolor: "#f0f3ff",
+          borderRadius: "18px",
+        }}
+        title="Auto Level"
+      >
+        <Lottie
+          animationData={autoLevelIcon}
+          style={{ width: "82%", height: "82%" }}
+          aria-label="Auto Level"
+        />
+      </Box>
+      <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
+        <Stack
+          direction="row"
+          spacing={0.9}
+          alignItems="center"
+          sx={{ minWidth: 0 }}
+        >
+          <Typography
+            fontSize={{ xs: 12, sm: 13 }}
+            fontWeight={800}
+            color={HEADER_GRADIENT_START}
+            noWrap
+          >
+            {survey.type || "Survey"}
+          </Typography>
+          <Typography color="#94a3b8">•</Typography>
+          <Typography fontSize={{ xs: 11, sm: 12 }} color="#64748b" noWrap>
+            Edited {formatProjectDate(getLastEditedAt(survey))}
+          </Typography>
+        </Stack>
+        <Typography
+          fontSize={{ xs: 17, sm: 18 }}
+          fontWeight={800}
+          color="#17233d"
+          noWrap
+          title={survey.project}
+          sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
+        >
+          {highlightText(survey.project, search)}
+        </Typography>
+      </Stack>
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        sx={{ flexShrink: 0, alignSelf: "flex-start", pt: 0.5 }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0.85,
+            px: { xs: 1, sm: 1.75 },
+            py: 0.8,
+            borderRadius: 10,
+            bgcolor: status === "Queued" ? "#fff7e5" : "#eafaf2",
+            color: status === "Queued" ? "#946200" : "#176b47",
+          }}
+        >
+          <Box
+            sx={{
+              width: 9,
+              height: 9,
+              borderRadius: "50%",
+              bgcolor: status === "Queued" ? "#dfa400" : "#269a67",
+              ...(status === "Active"
+                ? {
+                    animation: "projectPulse 1.8s ease-in-out infinite",
+                    "@keyframes projectPulse": {
+                      "50%": { opacity: 0.35, boxShadow: "0 0 0 5px #b7eacf" },
+                    },
+                  }
+                : {}),
+            }}
+          />
+          <Typography fontSize={{ xs: 11, sm: 12 }} fontWeight={700}>
+            {status}
+          </Typography>
+        </Box>
+      </Stack>
+    </Stack>
+    {progress != null && (
+      <Stack
+        direction="row"
+        spacing={1.75}
+        alignItems="center"
+        sx={{ pr: { xs: 0, sm: 1 }, minHeight: 24 }}
+      >
+        <Typography
+          fontSize={{ xs: 18, sm: 19 }}
+          fontWeight={800}
+          color={HEADER_GRADIENT_START}
+          sx={{ width: 48, flexShrink: 0, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          {progress}%
+        </Typography>
+        <LinearProgress
+          variant="determinate"
+          value={progress}
+          aria-label="Project progress"
+          sx={{
+            flex: 1,
+            height: 11,
+            borderRadius: 10,
+            bgcolor: "#e7ecfc",
+            "& .MuiLinearProgress-bar": {
+              borderRadius: 10,
+              background: `linear-gradient(90deg, ${HEADER_GRADIENT_START}, ${PRIMARY_BRAND})`,
+            },
+          }}
+        />
+      </Stack>
+    )}
+  </Stack>
+);
+
+const ProjectDetail = ({ icon: Icon, label, children }) => (
+  <Stack direction="row" spacing={1.5} alignItems="flex-start">
+    <Box sx={{ color: "#50617f", pt: 0.3, flexShrink: 0 }}>
+      <Icon size={19} />
+    </Box>
+    <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+      <Typography fontSize={12} fontWeight={600} color="#64748b">
+        {label}
+      </Typography>
+      <Typography
+        fontSize={{ xs: 14, sm: 14 }}
+        fontWeight={700}
+        color="#1b2945"
+      >
+        {children}
+      </Typography>
+    </Stack>
+  </Stack>
+);
+
+const formatProjectDate = (value) =>
+  value && !Number.isNaN(new Date(value).getTime())
+    ? new Date(value).toLocaleDateString("en-IN")
+    : "N/A";
 
 const getLastEditedAt = (survey) => {
   const dates = [survey.updatedAt, survey.createdAt];
   for (const purpose of survey.purposes || []) {
     dates.push(purpose.updatedAt, purpose.purposeFinishDate);
-    for (const row of purpose.rows || []) dates.push(row.updatedAt, row.createdAt);
+    for (const row of purpose.rows || [])
+      dates.push(row.updatedAt, row.createdAt);
   }
-  return dates.filter(Boolean).reduce((latest, date) =>
-    new Date(date) > new Date(latest) ? date : latest, survey.createdAt);
+  return dates
+    .filter(Boolean)
+    .reduce(
+      (latest, date) => (new Date(date) > new Date(latest) ? date : latest),
+      survey.createdAt,
+    );
 };
 
 const getProjectProgress = (survey) => {
-  const finished = (survey.purposes || []).filter((purpose) => purpose.isPurposeFinish);
-  if (finished.some((purpose) => purpose.type === "Final Level" && purpose.phase === "Actual")) return 80;
-  if (finished.some((purpose) => purpose.phase === "Proposal" && purpose.type?.includes("Proposed"))) return 50;
-  if (finished.some((purpose) => purpose.type === "Initial Level" && purpose.phase === "Actual")) return 30;
+  const finished = (survey.purposes || []).filter(
+    (purpose) => purpose.isPurposeFinish,
+  );
+  if (
+    finished.some(
+      (purpose) => purpose.type === "Final Level" && purpose.phase === "Actual",
+    )
+  )
+    return 80;
+  if (
+    finished.some(
+      (purpose) =>
+        purpose.phase === "Proposal" && purpose.type?.includes("Proposed"),
+    )
+  )
+    return 50;
+  if (
+    finished.some(
+      (purpose) =>
+        purpose.type === "Initial Level" && purpose.phase === "Actual",
+    )
+  )
+    return 30;
   return 0;
 };
 
 const getCurrentPurpose = (survey) => {
   const purposes = survey.purposes || [];
-  const current = purposes.find((purpose) => !purpose.isPurposeFinish)
-    || [...purposes].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))[0];
-  return current ? `${current.type} · ${current.status || (current.isPurposeFinish ? "Finished" : "Active")}` : "Initial Level · Active";
+  const current =
+    purposes.find((purpose) => !purpose.isPurposeFinish) ||
+    [...purposes].sort(
+      (a, b) =>
+        new Date(b.updatedAt || b.createdAt) -
+        new Date(a.updatedAt || a.createdAt),
+    )[0];
+  return current
+    ? `${current.type} · ${current.status || (current.isPurposeFinish ? "Finished" : "Active")}`
+    : "Initial Level · Active";
 };
 
-const Item = styled(Box)(({ theme }) => ({
-  ...theme.typography.body2,
-  padding: theme.spacing(0.5),
-  marginBottom: 0,
-  color: "rgba(0, 0, 0, 0.74)",
-  fontSize: "14px",
-  display: "flex",
-  justifyContent: "space-between",
-}));
-
-const fieldsToMap = [
-  {
-    key: "Auto Level",
-    value: "Equipment",
-    type: "constant",
-  },
-  {
-    key: "type",
-    value: "Type",
-  },
-  {
-    key: "lastPurpose",
-    value: "Purpose",
-  },
-  {
-    key: "updatedAt",
-    value: "Last Edited",
-    type: "Date",
-  },
-  {
-    key: "scheduledDate",
-    value: "Scheduled Date",
-    type: "Date",
-  },
-  {
-    key: <IoIosArrowForward fontSize={20} color="rgba(0, 111, 253, 1)" />,
-    value: "Field Book",
-    type: "Icon",
-  },
-  {
-    key: <IoIosArrowForward fontSize={20} color="rgba(0, 111, 253, 1)" />,
-    value: "Propose Level",
-    type: "Icon",
-  },
-  {
-    key: <IoIosArrowForward fontSize={20} color="rgba(0, 111, 253, 1)" />,
-    value: "Reports",
-    type: "Icon",
-  },
-];
+const calendarEventUrl = (survey, provider) => {
+  const date = survey.proposalScheduleDate?.slice(0, 10);
+  if (!date) return null;
+  const nextDate = new Date(`${date}T12:00:00Z`);
+  nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+  const endDate = nextDate.toISOString().slice(0, 10);
+  const description = [
+    survey.type,
+    survey.engineerSurveyor && `Assignee: ${survey.engineerSurveyor}`,
+    survey.client && `Client: ${survey.client}`,
+    survey.proposalDeadline &&
+      `Deadline: ${formatProjectDate(survey.proposalDeadline)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  if (provider === "google") {
+    const url = new URL("https://calendar.google.com/calendar/r/eventedit");
+    url.search = new URLSearchParams({
+      action: "TEMPLATE",
+      text: survey.project,
+      dates: `${date.replaceAll("-", "")}/${endDate.replaceAll("-", "")}`,
+      details: description,
+      location: survey.location || "",
+    });
+    return url.toString();
+  }
+  const url = new URL("https://outlook.office.com/calendar/0/deeplink/compose");
+  url.search = new URLSearchParams({
+    subject: survey.project,
+    body: description,
+    location: survey.location || "",
+    startdt: `${date}T00:00:00`,
+    enddt: `${endDate}T00:00:00`,
+    isallday: "true",
+  });
+  return url.toString();
+};
 
 const getLink = (survey, target, type) => {
   if (target === "reports") {
@@ -203,7 +580,11 @@ export default function ProjectsList() {
   const [deleteId, setDeleteId] = useState("");
 
   const [pages, setPages] = useState({ queue: 1, in_progress: 1, wrapped: 1 });
-  const [totals, setTotals] = useState({ queue: 0, in_progress: 0, wrapped: 0 });
+  const [totals, setTotals] = useState({
+    queue: 0,
+    in_progress: 0,
+    wrapped: 0,
+  });
 
   const handleChange = (newValue) => {
     setTab(newValue);
@@ -235,16 +616,17 @@ export default function ProjectsList() {
 
       const { data } = await getAllSurvey(params);
       if (data.success) {
-        const fetched = data?.surveys?.map((survey) => {
-          const lastPurposeDoc = [...(survey?.purposes || [])]
-            .reverse()
-            .find((p) => p.phase === "Actual");
+        const fetched =
+          data?.surveys?.map((survey) => {
+            const lastPurposeDoc = [...(survey?.purposes || [])]
+              .reverse()
+              .find((p) => p.phase === "Actual");
 
-          return {
-            ...survey,
-            lastPurpose: lastPurposeDoc?.type || "N/A",
-          };
-        }) || [];
+            return {
+              ...survey,
+              lastPurpose: lastPurposeDoc?.type || "N/A",
+            };
+          }) || [];
 
         // Update list
         setList((prev) => {
@@ -264,7 +646,9 @@ export default function ProjectsList() {
         setSurveys((prev) => {
           if (isAppend) {
             const existingIds = new Set(prev.map((s) => String(s._id)));
-            const uniqueNew = fetched.filter((s) => !existingIds.has(String(s._id)));
+            const uniqueNew = fetched.filter(
+              (s) => !existingIds.has(String(s._id)),
+            );
             return [...prev, ...uniqueNew];
           } else {
             return fetched;
@@ -313,7 +697,10 @@ export default function ProjectsList() {
           value={
             <Stack direction="row" alignItems="center" spacing={1}>
               <span>Show {nextCount} more surveys</span>
-              <Typography variant="caption" sx={{ opacity: 0.7, fontWeight: 700 }}>
+              <Typography
+                variant="caption"
+                sx={{ opacity: 0.7, fontWeight: 700 }}
+              >
                 ({remaining} remaining)
               </Typography>
             </Stack>
@@ -337,7 +724,7 @@ export default function ProjectsList() {
             },
             "&:active": {
               transform: "translateY(1px)",
-            }
+            },
           }}
         />
       </Box>
@@ -375,7 +762,6 @@ export default function ProjectsList() {
       );
     }
   };
-
 
   const handleClose = () => {
     setLink("");
@@ -429,10 +815,14 @@ export default function ProjectsList() {
   };
 
   const handleFinalLevel = (survey) => {
-    const activeFinal = survey.purposes?.find((purpose) => purpose.type === "Final Level" && !purpose.isPurposeFinish);
-    navigate(activeFinal
-      ? `/survey/road-survey/${activeFinal._id}/rows`
-      : `/survey/road-survey/continue-survey/${survey._id}`);
+    const activeFinal = survey.purposes?.find(
+      (purpose) => purpose.type === "Final Level" && !purpose.isPurposeFinish,
+    );
+    navigate(
+      activeFinal
+        ? `/survey/road-survey/${activeFinal._id}/rows`
+        : `/survey/road-survey/continue-survey/${survey._id}`,
+    );
   };
 
   const handleClickFiledBook = (surveyId) => {
@@ -542,159 +932,193 @@ export default function ProjectsList() {
       <motion.div {...fadeSlide}>
         {list?.todo?.length ? (
           <Stack spacing={2}>
-            {list?.todo?.map((survey, idx) => (
+            {list?.todo?.map((survey) => (
               <BasicCard
-                key={idx}
+                key={survey._id}
+                contentSx={{
+                  p: { xs: "12px !important", sm: "21px !important" },
+                }}
                 content={
-                  <Box>
+                  <Box sx={{ minWidth: 0 }}>
                     <BasicAccordion
                       summary={
+                        <ProjectCardHeader
+                          survey={survey}
+                          search={search}
+                          status="Queued"
+                        />
+                      }
+                      details={
                         <Stack
-                          direction="row"
-                          spacing={2}
-                          alignItems="center"
-                          width="100%"
-                          pr={1}
-                          sx={{ minWidth: 0, overflow: "hidden" }}
+                          spacing={2.25}
+                          sx={{ borderTop: "1px solid #dce4ff" }}
                         >
-                          {/* Modern Avatar */}
-                          <Box
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleContinueSurvey(survey._id);
-                            }}
-                            sx={{
-                              minWidth: 50,
-                              height: 50,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              bgcolor: `${PRIMARY_BRAND}15`,
-                              borderRadius: "14px",
-                              color: PRIMARY_BRAND,
-                              fontWeight: 800,
-                              fontSize: "1.2rem",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {survey.project.slice(0, 1).toUpperCase()}
-                          </Box>
-
-                          {/* Main Info */}
                           <Stack
-                            spacing={0.5}
-                            sx={{ flexGrow: 1, minWidth: 0 }}
+                            direction={{ xs: "column", sm: "row" }}
+                            gap={{ xs: 1.5, sm: 4 }}
+                            pt={2}
                           >
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Typography
-                                variant="caption"
-                                fontWeight={800}
-                                sx={{
-                                  color: PRIMARY_BRAND,
-                                  letterSpacing: "0.05em",
-                                }}
-                              >
-                                {survey.type?.toUpperCase() || "SURVEY"}
-                              </Typography>
-                              <Box
-                                sx={{
-                                  width: 4,
-                                  height: 4,
-                                  borderRadius: "50%",
-                                  bgcolor: "#cbd5e1",
-                                }}
-                              />
-                              <Typography
-                                variant="caption"
-                                fontWeight={700}
-                                color="#94a3b8"
-                              >
-                                {new Date(survey.createdAt)?.toLocaleDateString(
-                                  "en-IN",
-                                )}
-                              </Typography>
-                            </Stack>
-
+                            <ProjectDetail icon={FiCalendar} label="Scheduled">
+                              {formatProjectDate(survey.proposalScheduleDate)}
+                            </ProjectDetail>
+                            <ProjectDetail icon={FiLayers} label="Location">
+                              {survey.location || "N/A"}
+                            </ProjectDetail>
+                          </Stack>
+                          <Box
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 2,
+                              bgcolor: "#f8fafc",
+                              border: `1px solid ${CARD_BORDER}`,
+                            }}
+                          >
                             <Typography
                               variant="body2"
                               fontWeight={800}
-                              fontSize="13px"
-                              color="#1e293b"
+                              mb={0.5}
+                            >
+                              Scheduled day forecast
+                            </Typography>
+                            <QueuedWeather
+                              location={survey.location}
+                              scheduledDate={survey.proposalScheduleDate}
+                            />
+                            <Typography
+                              component="a"
+                              href="https://open-meteo.com/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variant="caption"
                               sx={{
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                ".MuiAccordionSummary-root.Mui-expanded &": {
-                                  whiteSpace: "normal",
-                                  textOverflow: "clip",
-                                  overflowWrap: "anywhere",
-                                },
+                                display: "inline-block",
+                                mt: 0.75,
+                                color: PRIMARY_BRAND,
                               }}
                             >
-                              {highlightText(survey.project, search)}
+                              Weather data: Open-Meteo
                             </Typography>
-                          </Stack>
-
-                          {/* Status */}
-                          <Box onClick={(e) => e.stopPropagation()}>
-                            <StatusChip status={survey.status} />
                           </Box>
-                        </Stack>
-                      }
-                      details={
-                        <Stack>
-                          <Item>
-                            <Typography fontSize={14} fontWeight={600} color="rgba(0, 0, 0, 0.54)">
-                              Proposal Schedule Date
-                            </Typography>
-                            <Typography fontSize={14} fontWeight={700}>
-                              {survey.proposalScheduleDate
-                                ? new Date(survey.proposalScheduleDate).toLocaleDateString("en-IN")
-                                : "N/A"}
-                            </Typography>
-                          </Item>
-                          <Item>
-                            <Typography fontSize={14} fontWeight={600} color="rgba(0, 0, 0, 0.54)">
-                              Deadline
-                            </Typography>
-                            <Typography fontSize={14} fontWeight={700}>
-                              {survey.proposalDeadline
-                                ? new Date(survey.proposalDeadline).toLocaleDateString("en-IN")
-                                : "N/A"}
-                            </Typography>
-                          </Item>
-                          <Item>
-                            <Typography fontSize={14} fontWeight={600} color="rgba(0, 0, 0, 0.54)">
-                              Location
-                            </Typography>
-                            <Typography fontSize={14} fontWeight={700}>
-                              {survey.location || "N/A"}
-                            </Typography>
-                          </Item>
-                          {survey.finalScheduleDate && (
-                            <Item>
-                              <Typography fontSize={14} fontWeight={600} color="rgba(0, 0, 0, 0.54)">
-                                Final Schedule Date
+                          <Stack
+                            direction={{ xs: "column", sm: "row" }}
+                            flexWrap="wrap"
+                            gap={1}
+                          >
+                            {survey.engineerSurveyor && (
+                              <Typography variant="body2">
+                                <strong>Assignee:</strong>{" "}
+                                {survey.engineerSurveyor}
                               </Typography>
-                              <Typography fontSize={14} fontWeight={700}>
-                                {new Date(survey.finalScheduleDate).toLocaleDateString("en-IN")}
+                            )}
+                            {survey.client && (
+                              <Typography variant="body2">
+                                <strong>Client:</strong> {survey.client}
                               </Typography>
-                            </Item>
-                          )}
-                          {survey.finalDeadline && (
-                            <Item>
-                              <Typography fontSize={14} fontWeight={600} color="rgba(0, 0, 0, 0.54)">
-                                Final Deadline
+                            )}
+                            {survey.proposalDeadline && (
+                              <Typography variant="body2">
+                                <strong>Deadline:</strong>{" "}
+                                {formatProjectDate(survey.proposalDeadline)}
                               </Typography>
-                              <Typography fontSize={14} fontWeight={700}>
-                                {new Date(survey.finalDeadline).toLocaleDateString("en-IN")}
+                            )}
+                            {survey.finalScheduleDate && (
+                              <Typography variant="body2">
+                                <strong>Final schedule:</strong>{" "}
+                                {formatProjectDate(survey.finalScheduleDate)}
                               </Typography>
-                            </Item>
-                          )}
+                            )}
+                            {survey.finalDeadline && (
+                              <Typography variant="body2">
+                                <strong>Final deadline:</strong>{" "}
+                                {formatProjectDate(survey.finalDeadline)}
+                              </Typography>
+                            )}
+                          </Stack>
+                          <Box
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 2,
+                              bgcolor: "#fffbeb",
+                              border: "1px solid #fde68a",
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              fontWeight={800}
+                              mb={0.75}
+                            >
+                              ⚠️ Site & Environmental Factors
+                            </Typography>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2">
+                                <strong>Weather and visibility:</strong> Rain,
+                                fog, and wind can affect tripod stability and
+                                rod visibility.
+                              </Typography>
+                              <Typography variant="body2">
+                                <strong>Terrain and obstructions:</strong>{" "}
+                                Vegetation, embankments, and buildings may block
+                                sight lines and require more change points.
+                              </Typography>
+                              <Typography variant="body2">
+                                <strong>Ground stability:</strong> Soft ground
+                                can let the instrument settle between readings.
+                              </Typography>
+                            </Stack>
+                          </Box>
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: {
+                                xs: "repeat(3, minmax(0, 1fr))",
+                              },
+                              gap: { xs: 0.75, sm: 1.25 },
+                              borderTop: "1px solid #dce4ff",
+                              pt: 2,
+                            }}
+                          >
+                            <Button
+                              variant="contained"
+                              startIcon={<FiPlay />}
+                              onClick={() => handleContinueSurvey(survey._id)}
+                              sx={{
+                                ...PROJECT_ACTION_SX,
+                                bgcolor: PRIMARY_BRAND,
+                                color: "#fff",
+                                justifyContent: "center",
+                                "&:hover": { bgcolor: HEADER_GRADIENT_START },
+                              }}
+                            >
+                              Resume
+                            </Button>
+                            {[
+                              {
+                                provider: "google",
+                                label: "Google Calendar",
+                                icon: <SiGooglecalendar />,
+                              },
+                              {
+                                provider: "outlook",
+                                label: "Outlook Calendar",
+                                icon: <PiMicrosoftOutlookLogoFill />,
+                              },
+                            ].map(({ provider, label, icon }) => (
+                              <Button
+                                key={provider}
+                                component="a"
+                                href={calendarEventUrl(survey, provider)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                variant="outlined"
+                                startIcon={icon}
+                                aria-label={label}
+                                sx={PROJECT_ACTION_SX}
+                              >
+                                {provider === "google" ? "Google" : "Outlook"}
+                                <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>&nbsp;Calendar</Box>
+                              </Button>
+                            ))}
+                          </Box>
                         </Stack>
                       }
                       expandIcon={
@@ -703,26 +1127,16 @@ export default function ProjectsList() {
                           fontSize={28}
                         />
                       }
-                      sx={{ boxShadow: "none" }}
+                      sx={PROJECT_ACCORDION_SX}
                     />
-
-                    {/* Bottom row removed for modern look */}
                   </Box>
                 }
-                sx={{
-                  borderRadius: "20px",
-                  border: `1px solid ${CARD_BORDER}`,
-                  background: "#fff",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 12px 24px -10px rgba(99, 102, 241, 0.15)",
-                    borderColor: PRIMARY_BRAND,
-                  },
-                }}
+                sx={PROJECT_CARD_SX}
               />
             ))}
-            {renderLoadMoreButton(totals.queue, list?.todo?.length || 0, () => fetchSurveysForTab("queue", pages.queue + 1, true))}
+            {renderLoadMoreButton(totals.queue, list?.todo?.length || 0, () =>
+              fetchSurveysForTab("queue", pages.queue + 1, true),
+            )}
           </Stack>
         ) : (
           <Box textAlign="center" mt={6}>
@@ -743,85 +1157,147 @@ export default function ProjectsList() {
             {filteredSurveys?.map((survey) => (
               <BasicCard
                 key={survey._id}
-                contentSx={{ p: "16px !important" }}
+                contentSx={{
+                  p: { xs: "12px !important", sm: "21px !important" },
+                }}
                 content={
                   <Box sx={{ minWidth: 0 }}>
                     <BasicAccordion
                       summary={
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          alignItems="center"
-                          width="100%"
-                          sx={{ minWidth: 0, overflow: "hidden", pr: 0.5 }}
-                        >
-                          <Box
-                            sx={{
-                              flex: "0 0 48px",
-                              height: 48,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              bgcolor: "#eef2ff",
-                              borderRadius: "14px",
-                              color: PRIMARY_BRAND,
-                            }}
-                            title="Auto Level"
-                          >
-                            <Lottie animationData={autoLevelIcon} style={{ width: 40, height: 40 }} aria-label="Auto Level" />
-                          </Box>
-                          <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
-                            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
-                              <Typography variant="caption" fontWeight={800} color={PRIMARY_BRAND} noWrap>
-                                {survey.type || "Survey"}
-                              </Typography>
-                              <Typography variant="caption" color="#94a3b8">•</Typography>
-                              <Typography variant="caption" fontWeight={600} color="#64748b" noWrap>
-                                Edited {formatProjectDate(getLastEditedAt(survey))}
-                              </Typography>
-                            </Stack>
-                            <Typography
-                              variant="body2"
-                              fontWeight={800}
-                              fontSize="15px"
-                              color="#1e293b"
-                              sx={{
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                              title={survey.project}
-                            >
-                              {highlightText(survey.project, search)}
-                            </Typography>
-                          </Stack>
-                          <Stack alignItems="flex-end" spacing={0.5} sx={{ flexShrink: 0 }}>
-                            <Stack direction="row" alignItems="center" spacing={0.5}>
-                              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#16a34a", boxShadow: "0 0 0 3px #dcfce7", animation: "pulse 1.8s ease-in-out infinite", "@keyframes pulse": { "50%": { opacity: 0.45, boxShadow: "0 0 0 6px #dcfce7" } } }} />
-                              <Typography variant="caption" fontWeight={800} color="#15803d">Active</Typography>
-                            </Stack>
-                            <Typography variant="caption" fontWeight={800} color={PRIMARY_BRAND}>{getProjectProgress(survey)}%</Typography>
-                          </Stack>
-                        </Stack>
+                        <ProjectCardHeader
+                          survey={survey}
+                          search={search}
+                          status="Active"
+                          progress={getProjectProgress(survey)}
+                        />
                       }
                       details={
-                        <Stack spacing={2} sx={{ pt: 1.5 }}>
-                          <LinearProgress variant="determinate" value={getProjectProgress(survey)} aria-label="Project progress" sx={{ height: 8, borderRadius: 5, bgcolor: "#e0e7ff", "& .MuiLinearProgress-bar": { bgcolor: PRIMARY_BRAND, borderRadius: 5 } }} />
-                          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between">
-                            <Typography variant="body2"><strong>Iteration / status / purpose:</strong> {getCurrentPurpose(survey)}</Typography>
-                            <Typography variant="body2"><strong>Started:</strong> {formatProjectDate(survey.createdAt)}</Typography>
+                        <Stack
+                          spacing={2.25}
+                          sx={{ borderTop: "1px solid #dce4ff" }}
+                        >
+                          <Stack spacing={2} pt={2}>
+                            <ProjectDetail
+                              icon={FiLayers}
+                              label="Iteration / status / purpose"
+                            >
+                              {getCurrentPurpose(survey)}
+                            </ProjectDetail>
+                            <ProjectDetail icon={FiCalendar} label="Started">
+                              {formatProjectDate(survey.createdAt)}
+                            </ProjectDetail>
                           </Stack>
-                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, p: 1.5, borderRadius: 3, bgcolor: "#f8fafc", border: `1px solid ${CARD_BORDER}` }}>
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: {
+                                xs: "1fr",
+                                sm: "repeat(6, minmax(0, 1fr))",
+                              },
+                              "@media (min-width: 360px)": {
+                                gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+                              },
+                              gap: { xs: 1, sm: 1.25 },
+                              borderTop: "1px solid #dce4ff",
+                              pt: 2,
+                            }}
+                          >
                             {[
-                              { label: "Resume", icon: <FiPlay />, onClick: () => handleContinueSurvey(survey._id) },
-                              { label: "Field Book", icon: <FiBookOpen />, onClick: () => handleClickFiledBook(survey._id) },
-                              { label: "Reports / Library", icon: <FiFileText />, onClick: () => navigate(getLink(survey, "reports")) },
-                              { label: "Final Level", icon: <FiFlag />, onClick: () => handleFinalLevel(survey), disabled: getProjectProgress(survey) < 50 || getProjectProgress(survey) >= 80 || Boolean(survey.purposes?.some((purpose) => !purpose.isPurposeFinish && purpose.type !== "Final Level")) },
-                              { label: "Proposed Level", icon: <FiEdit3 />, onClick: () => navigate(getLink(survey, "Propose Level")) },
-                              { label: "Delete", icon: <FiTrash2 />, onClick: () => handleOpenDeleteProjectAlert(survey._id), color: "error" },
-                              ...(survey.branchDetails?.hasBranching ? [{ label: "Branch Reports", icon: <FiFileText />, onClick: () => navigate("/survey/report", { state: { getBranchReport: true, surveyId: survey._id } }) }] : []),
+                              {
+                                label: "Resume",
+                                icon: <FiPlay />,
+                                onClick: () => handleContinueSurvey(survey._id),
+                              },
+                              {
+                                label: "Field Book",
+                                icon: <FiBookOpen />,
+                                onClick: () => handleClickFiledBook(survey._id),
+                              },
+                              {
+                                label: "Reports / Library",
+                                icon: <FiFileText />,
+                                onClick: () =>
+                                  navigate(getLink(survey, "reports")),
+                              },
+                              {
+                                label: "Final Level",
+                                icon: <FiFlag />,
+                                onClick: () => handleFinalLevel(survey),
+                                disabled:
+                                  getProjectProgress(survey) < 50 ||
+                                  getProjectProgress(survey) >= 80 ||
+                                  Boolean(
+                                    survey.purposes?.some(
+                                      (purpose) =>
+                                        !purpose.isPurposeFinish &&
+                                        purpose.type !== "Final Level",
+                                    ),
+                                  ),
+                              },
+                              {
+                                label: "Proposed Level",
+                                icon: <FiEdit3 />,
+                                onClick: () =>
+                                  navigate(getLink(survey, "Propose Level")),
+                              },
+                              {
+                                label: "Delete",
+                                icon: <FiTrash2 />,
+                                onClick: () =>
+                                  handleOpenDeleteProjectAlert(survey._id),
+                                color: "error",
+                              },
+                              ...(survey.branchDetails?.hasBranching
+                                ? [
+                                    {
+                                      label: "Branch Reports",
+                                      icon: <FiFileText />,
+                                      onClick: () =>
+                                        navigate("/survey/report", {
+                                          state: {
+                                            getBranchReport: true,
+                                            surveyId: survey._id,
+                                          },
+                                        }),
+                                    },
+                                  ]
+                                : []),
                             ].map((action) => (
-                              <Button key={action.label} size="small" variant="outlined" color={action.color || "inherit"} startIcon={action.icon} onClick={action.onClick} disabled={action.disabled} sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700, whiteSpace: "nowrap", ...(action.color ? {} : { color: PRIMARY_BRAND, borderColor: PRIMARY_BRAND, "&:hover": { borderColor: HEADER_GRADIENT_START, bgcolor: `${PRIMARY_BRAND}0d` } }) }}>
+                              <Button
+                                key={action.label}
+                                variant={
+                                  action.label === "Resume"
+                                    ? "contained"
+                                    : "outlined"
+                                }
+                                color={action.color || "primary"}
+                                startIcon={action.icon}
+                                onClick={action.onClick}
+                                disabled={action.disabled}
+                                sx={{
+                                  ...PROJECT_ACTION_SX,
+                                  "@media (min-width: 360px)": {
+                                    gridColumn: PROJECT_ACTION_GRID[action.label].column,
+                                    gridRow: PROJECT_ACTION_GRID[action.label].row,
+                                  },
+                                  ...(action.label === "Resume"
+                                    ? {
+                                        bgcolor: PRIMARY_BRAND,
+                                        color: "#fff",
+                                        "&:hover": {
+                                          bgcolor: HEADER_GRADIENT_START,
+                                        },
+                                      }
+                                    : {}),
+                                  ...(action.color === "error"
+                                    ? {
+                                        color: "#c81e3a",
+                                        bgcolor: "#fff7f8",
+                                        borderColor: "#ffc6d0",
+                                      }
+                                    : {}),
+                                }}
+                              >
                                 {action.label}
                               </Button>
                             ))}
@@ -834,18 +1310,19 @@ export default function ProjectsList() {
                           fontSize={28}
                         />
                       }
-                      sx={{ boxShadow: "none", "&:before": { display: "none" } }}
+                      sx={PROJECT_ACCORDION_SX}
                     />
                   </Box>
                 }
-                sx={{
-                  borderRadius: "18px",
-                  border: `1px solid ${CARD_BORDER}`,
-                  boxShadow: "0 6px 20px -12px rgba(30, 41, 59, 0.28)",
-                }}
+                sx={PROJECT_CARD_SX}
               />
             ))}
-            {renderLoadMoreButton(totals.in_progress, filteredSurveys?.length || 0, () => fetchSurveysForTab("in_progress", pages.in_progress + 1, true))}
+            {renderLoadMoreButton(
+              totals.in_progress,
+              filteredSurveys?.length || 0,
+              () =>
+                fetchSurveysForTab("in_progress", pages.in_progress + 1, true),
+            )}
           </Stack>
         ) : (
           <Box textAlign="center" mt={6}>
@@ -863,169 +1340,116 @@ export default function ProjectsList() {
       <motion.div {...fadeSlide}>
         {list?.finished?.length ? (
           <Stack spacing={2}>
-            {list?.finished?.map((survey, idx) => (
+            {list?.finished?.map((survey) => (
               <BasicCard
-                key={idx}
+                key={survey._id}
+                contentSx={{
+                  p: { xs: "12px !important", sm: "21px !important" },
+                }}
                 content={
-                  <Box>
+                  <Box sx={{ minWidth: 0 }}>
                     <BasicAccordion
                       summary={
-                        <Stack
-                          direction="row"
-                          spacing={2}
-                          alignItems="center"
-                          width="100%"
-                          pr={1}
-                          sx={{ minWidth: 0, overflow: "hidden" }}
-                        >
-                          <Box
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleContinueSurvey(survey._id);
-                            }}
-                            sx={{
-                              minWidth: 50,
-                              height: 50,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              bgcolor: `${PRIMARY_BRAND}15`,
-                              borderRadius: "14px",
-                              color: PRIMARY_BRAND,
-                              fontWeight: 800,
-                              fontSize: "1.2rem",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {survey.project.slice(0, 1).toUpperCase()}
-                          </Box>
-                          <Stack
-                            spacing={0.5}
-                            sx={{ flexGrow: 1, minWidth: 0 }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Typography
-                                variant="caption"
-                                fontWeight={800}
-                                sx={{
-                                  color: PRIMARY_BRAND,
-                                  letterSpacing: "0.05em",
-                                }}
-                              >
-                                {survey.type?.toUpperCase() || "SURVEY"}
-                              </Typography>
-                              <Box
-                                sx={{
-                                  width: 4,
-                                  height: 4,
-                                  borderRadius: "50%",
-                                  bgcolor: "#cbd5e1",
-                                }}
-                              />
-                              <Typography
-                                variant="caption"
-                                fontWeight={700}
-                                color="#94a3b8"
-                              >
-                                {new Date(survey.createdAt)?.toLocaleDateString(
-                                  "en-IN",
-                                )}
-                              </Typography>
-                            </Stack>
-                            <Typography
-                              variant="body2"
-                              fontWeight={800}
-                              fontSize="13px"
-                              color="#1e293b"
-                              sx={{
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                ".MuiAccordionSummary-root.Mui-expanded &": {
-                                  whiteSpace: "normal",
-                                  textOverflow: "clip",
-                                  overflowWrap: "anywhere",
-                                },
-                              }}
-                            >
-                              {highlightText(survey.project, search)}
-                            </Typography>
-                          </Stack>
-                        </Stack>
+                        <ProjectCardHeader
+                          survey={survey}
+                          search={search}
+                          status="Wrapped"
+                        />
                       }
                       details={
-                        <Stack>
-                          {fieldsToMap
-                            ?.filter((item) => item.value !== "Scheduled Date")
-                            .map(({ key, value, type }, idx) => (
-                              <Item key={idx}>
-                                {value}
-
-                                {type === "Icon" ? (
-                                  value === "Field Book" ? (
-                                    <Box
-                                      onClick={() =>
-                                        handleClickFiledBook(survey._id)
-                                      }
-                                    >
-                                      {key}
-                                    </Box>
-                                  ) : (
-                                    <Link to={getLink(survey, value)}>
-                                      {key}
-                                    </Link>
-                                  )
-                                ) : (
-                                  <Typography
-                                    color={
-                                      key === "lastPurpose"
-                                        ? colors[
-                                            survey[key]?.includes("Initial")
-                                              ? "Initial"
-                                              : survey[key]?.includes("Final")
-                                                ? "Final"
-                                                : ""
-                                          ]
-                                        : ""
-                                    }
-                                    fontSize={14}
-                                    fontWeight={700}
-                                  >
-                                    {type === "Date"
-                                      ? new Date(
-                                          survey[key],
-                                        )?.toLocaleDateString("en-IN")
-                                      : type === "constant"
-                                        ? key
-                                        : survey[key]}
-                                  </Typography>
-                                )}
-                              </Item>
-                            ))}
-
-                          {survey?.branchDetails?.hasBranching && (
-                            <Item>
-                              Branch Reports
-                              <Typography fontSize={14} fontWeight={700}>
-                                <IoIosArrowForward
-                                  fontSize={20}
-                                  color="rgba(0, 111, 253, 1)"
-                                  onClick={() =>
-                                    navigate(`/survey/report`, {
-                                      state: {
-                                        getBranchReport: true,
-                                        surveyId: survey._id,
-                                      },
-                                    })
-                                  }
-                                />
-                              </Typography>
-                            </Item>
+                        <Stack
+                          spacing={2.25}
+                          sx={{ borderTop: "1px solid #dce4ff" }}
+                        >
+                          <Stack spacing={2} pt={2}>
+                            <ProjectDetail icon={FiLayers} label="Last purpose">
+                              {getCurrentPurpose(survey)}
+                            </ProjectDetail>
+                            <ProjectDetail icon={FiCalendar} label="Started">
+                              {formatProjectDate(survey.createdAt)}
+                            </ProjectDetail>
+                            <ProjectDetail icon={FiCalendar} label="Completed">
+                              {formatProjectDate(
+                                survey.surveyFinishDate || survey.updatedAt,
+                              )}
+                            </ProjectDetail>
+                          </Stack>
+                          {(survey.engineerSurveyor || survey.client) && (
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              gap={1}
+                            >
+                              {survey.engineerSurveyor && (
+                                <Typography variant="body2">
+                                  <strong>Engineer / Surveyor:</strong>{" "}
+                                  {survey.engineerSurveyor}
+                                </Typography>
+                              )}
+                              {survey.client && (
+                                <Typography variant="body2">
+                                  <strong>Client:</strong> {survey.client}
+                                </Typography>
+                              )}
+                            </Stack>
                           )}
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: {
+                                xs: survey.branchDetails?.hasBranching
+                                  ? "repeat(3, minmax(0, 1fr))"
+                                  : "repeat(2, minmax(0, 1fr))",
+                              },
+                              gap: { xs: 0.75, sm: 1.25 },
+                              borderTop: "1px solid #dce4ff",
+                              pt: 2,
+                            }}
+                          >
+                            {[
+                              {
+                                label: "Field Book",
+                                icon: <FiBookOpen />,
+                                onClick: () => handleClickFiledBook(survey._id),
+                              },
+                              {
+                                label: "Reports / Library",
+                                icon: <FiFileText />,
+                                onClick: () =>
+                                  navigate(getLink(survey, "reports")),
+                              },
+                              ...(survey.branchDetails?.hasBranching
+                                ? [
+                                    {
+                                      label: "Branch Reports",
+                                      icon: <FiFileText />,
+                                      onClick: () =>
+                                        navigate("/survey/report", {
+                                          state: {
+                                            getBranchReport: true,
+                                            surveyId: survey._id,
+                                          },
+                                        }),
+                                    },
+                                  ]
+                                : []),
+                            ].map((action) => (
+                              <Button
+                                key={action.label}
+                                variant="outlined"
+                                startIcon={action.icon}
+                                onClick={action.onClick}
+                                aria-label={action.label}
+                                sx={PROJECT_ACTION_SX}
+                              >
+                                <Box component="span" sx={{ display: { xs: survey.branchDetails?.hasBranching ? "inline" : "none", sm: "none" } }}>
+                                  {action.label === "Reports / Library" ? "Reports" : action.label === "Branch Reports" ? "Branch" : action.label}
+                                </Box>
+                                <Box component="span" sx={{ display: { xs: survey.branchDetails?.hasBranching ? "none" : "inline", sm: "inline" } }}>
+                                  {action.label}
+                                </Box>
+                              </Button>
+                            ))}
+                          </Box>
                         </Stack>
                       }
                       expandIcon={
@@ -1034,36 +1458,18 @@ export default function ProjectsList() {
                           fontSize={28}
                         />
                       }
-                      sx={{ boxShadow: "none" }}
+                      sx={PROJECT_ACCORDION_SX}
                     />
-
-                    <BasicDivider borderBottomWidth={0.5} color="#d9d9d9" />
-
-                    <Stack
-                      direction={"row"}
-                      justifyContent={"space-between"}
-                      alignItems={"center"}
-                      px={1}
-                    >
-                      <Typography
-                        fontWeight={600}
-                        fontSize="14px"
-                        color="rgba(0, 0, 0, 0.74)"
-                      >
-                        Status
-                      </Typography>
-
-                      <StatusChip status={survey.status} />
-                    </Stack>
                   </Box>
                 }
-                sx={{
-                  borderRadius: "12px",
-                  boxShadow: "0px 4px 8px 0px #1c252c2a",
-                }}
+                sx={PROJECT_CARD_SX}
               />
             ))}
-            {renderLoadMoreButton(totals.wrapped, list?.finished?.length || 0, () => fetchSurveysForTab("wrapped", pages.wrapped + 1, true))}
+            {renderLoadMoreButton(
+              totals.wrapped,
+              list?.finished?.length || 0,
+              () => fetchSurveysForTab("wrapped", pages.wrapped + 1, true),
+            )}
           </Stack>
         ) : (
           <Box textAlign="center" mt={6}>
@@ -1329,7 +1735,17 @@ export default function ProjectsList() {
       </Box>
 
       {/* Animate tab content */}
-      <Box px={2} pt={3} mb={"82px"}>
+      <Box
+        sx={{
+          width: "100%",
+          maxWidth: 980,
+          mx: "auto",
+          px: { xs: 1.25, sm: 3 },
+          pt: 3,
+          mb: "82px",
+          boxSizing: "border-box",
+        }}
+      >
         {loading ? (
           <Stack spacing={2}>
             {Array.from({ length: 7 }).map((_, idx) => (
