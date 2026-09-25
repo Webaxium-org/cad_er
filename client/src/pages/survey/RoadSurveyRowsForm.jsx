@@ -2314,27 +2314,27 @@ const RoadSurveyRowsForm = () => {
                   }}
                   sx={{
                     position: "fixed",
-                    bottom: { xs: 24, md: 32 },
+                    bottom: { xs: "calc(12px + env(safe-area-inset-bottom))", md: 32 },
                     left: "50%",
                     zIndex: 1000,
-                    width: { xs: "calc(100vw - 16px)", lg: "max-content" },
-                    maxWidth: "calc(100vw - 16px)",
+                    width: { xs: "calc(100vw - 24px)", sm: "max-content" },
+                    maxWidth: "calc(100vw - 24px)",
                   }}
                 >
                   <Paper
                     elevation={0}
                     sx={{
-                      p: { xs: "6px", sm: "8px" },
-                      borderRadius: "24px",
+                      p: { xs: "5px 8px", sm: "7px 10px" },
+                      borderRadius: "28px",
                       display: "flex",
                       alignItems: "center",
-                      gap: { xs: 0.5, md: 1.5 },
-                      background: "rgba(99, 102, 241, 0.15)", // Transparent indigo
+                      gap: { xs: 0.5, md: 1 },
+                      background: "rgba(99, 102, 241, 0.15)",
                       backdropFilter: "blur(12px)",
                       WebkitBackdropFilter: "blur(12px)",
                       border: "1px solid rgba(99, 102, 241, 0.3)",
                       boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
-                      height: { xs: "50px", md: "60px" },
+                      height: { xs: "64px", md: "68px" },
                       width: "100%",
                       boxSizing: "border-box",
                     }}
@@ -2391,13 +2391,13 @@ const RoadSurveyRowsForm = () => {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            px: { xs: 0.5, md: 1.5, lg: 6 },
+                            px: { xs: 0.5, md: 2 },
                             height: "100%",
-                            borderRadius: "16px",
+                            borderRadius: "22px",
                             cursor: isDisabled ? "not-allowed" : "pointer",
-                            minWidth: 0,
+                            minWidth: { xs: 0, sm: 76 },
                             whiteSpace: "nowrap",
-                            flex: { xs: "1 1 0", lg: "0 0 auto" },
+                            flex: { xs: "1 1 0", sm: "0 0 auto" },
                             bgcolor: "white",
                             color: rowType === type.value ? "white" : "#6366f1",
                             opacity: isDisabled ? 0.35 : 1,
@@ -2425,52 +2425,41 @@ const RoadSurveyRowsForm = () => {
                               sx={{
                                 position: "absolute",
                                 inset: 0,
-                                background: "#6366f1", // similar tone color for selected
-                                borderRadius: "16px",
+                                background: "#6366f1",
+                                borderRadius: "22px",
                                 zIndex: 0,
                                 boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                               }}
                             />
                           )}
-
                           <Box
                             sx={{
                               display: "flex",
                               alignItems: "center",
-                              flexDirection: { xs: "column", sm: "row" },
-                              gap: { xs: 0.25, sm: 1 },
+                              flexDirection: "column",
+                              gap: 0.25,
+                              position: "relative",
+                              zIndex: 1,
                             }}
                           >
                             <Typography
-                              variant="body2"
-                              fontWeight={900}
                               sx={{
-                                lineHeight: 1,
-                                position: "relative",
-                                zIndex: 1,
-                                color: "inherit",
                                 display: "flex",
                                 alignItems: "center",
-                                transition: "color 0.3s ease",
+                                justifyContent: "center",
+                                width: 32,
+                                height: 32,
+                                borderRadius: "50%",
                               }}
                             >
                               {type.icon}
                             </Typography>
                             <Typography
                               variant="body2"
-                              fontWeight={900}
-                              letterSpacing="0.05em"
+                              fontWeight={600}
                               sx={{
                                 lineHeight: 1,
-                                position: "relative",
-                                zIndex: 1,
-                                color: "inherit",
-                                fontSize: {
-                                  xs: "0.7rem",
-                                  sm: "0.8rem",
-                                  md: "1rem",
-                                },
-                                transition: "color 0.3s ease",
+                                fontSize: "0.7rem",
                               }}
                             >
                               {type.label}
