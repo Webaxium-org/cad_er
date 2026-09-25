@@ -1,10 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import { readFileSync } from "node:fs";
-
-// Read package.json to get the version reliably in production environments
-const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -16,19 +12,33 @@ export default defineConfig({
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
 
 
-      // 1. Force the service worker to check for updates more frequently
       devOptions: {
-        enabled: true,
+        enabled: false,
       },
       workbox: {
-        // Force the new SW to activate immediately without waiting
-        // These are baked directly into sw.js, independent of registerType
         skipWaiting: true,
         clientsClaim: true,
-        // Unique cacheId per build ensures sw.js content ALWAYS changes between deployments
-        cacheId: `cader-${Date.now()}`,
+        cacheId: "cader",
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/api/],
+        // A precached index.html keeps serving old bundles on repeat visits.
+        // Fetch navigations from the network and retain a cached offline copy.
+        globIgnores: ["**/index.html"],
+        navigateFallback: null,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) =>
+              request.mode === "navigate" &&
+              url.origin === self.location.origin &&
+              url.pathname !== "/api" &&
+              !url.pathname.startsWith("/api/"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "cader-pages",
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 20, maxAgeSeconds: 7 * 24 * 60 * 60 },
+            },
+          },
+        ],
         cleanupOutdatedCaches: true,
       },
 
@@ -87,8 +97,4 @@ export default defineConfig({
     allowedHosts: ["cader-8kvsl.ondigitalocean.app", "getcader.com"],
   },
 
-  define: {
-    __APP_VERSION__: JSON.stringify(packageJson.version),
-    __BUILD_TIME__: JSON.stringify(new Date().toLocaleString("EN-IN")),
-  },
 });

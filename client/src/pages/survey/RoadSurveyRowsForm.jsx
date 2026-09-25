@@ -178,7 +178,13 @@ const initialFormValues = {
 };
 
 const values = {
-  Chainage: ["chainage", "basis", "roadWidth", "spacing", "intermediateOffsets"],
+  Chainage: [
+    "chainage",
+    "basis",
+    "roadWidth",
+    "spacing",
+    "intermediateOffsets",
+  ],
   "Water Level": ["intermediateSight", "remark"],
   CP: ["foreSight", "backSight", "remark"],
   TBM: ["intermediateSight", "remark"],
@@ -239,10 +245,14 @@ const RoadSurveyRowsForm = () => {
     let fullHeight = viewport.height;
     const updateKeyboardPosition = () => {
       const focused = document.activeElement;
-      const isEditing = focused?.matches?.("input, textarea, [contenteditable='true']");
+      const isEditing = focused?.matches?.(
+        "input, textarea, [contenteditable='true']",
+      );
       if (!isEditing) fullHeight = Math.max(fullHeight, viewport.height);
       setKeyboardViewportTop(
-        isEditing && fullHeight - viewport.height > 120 ? viewport.offsetTop : null,
+        isEditing && fullHeight - viewport.height > 120
+          ? viewport.offsetTop
+          : null,
       );
     };
 
@@ -260,7 +270,11 @@ const RoadSurveyRowsForm = () => {
 
   useEffect(() => {
     if (!graphRef.current || !window.ResizeObserver) return undefined;
-    const observer = new ResizeObserver(([entry]) => setGraphHeight(entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height));
+    const observer = new ResizeObserver(([entry]) =>
+      setGraphHeight(
+        entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height,
+      ),
+    );
     observer.observe(graphRef.current);
     return () => observer.disconnect();
   }, [page, rowType, selectedCs]);
@@ -268,7 +282,8 @@ const RoadSurveyRowsForm = () => {
   const isWaterWay = purpose?.surveyId?.type === "Water Way";
   const isRoadSurvey = purpose?.surveyId?.type === "Road Survey";
   const showBasis = rowType === "Chainage" && !isRoadSurvey;
-  const waterLevelLocked = rowType === "Water Level" && !!formValues.intermediateSight;
+  const waterLevelLocked =
+    rowType === "Water Level" && !!formValues.intermediateSight;
 
   const schema = Yup.object().shape({
     type: Yup.string().required("Type is required"),
@@ -276,12 +291,12 @@ const RoadSurveyRowsForm = () => {
     chainage: Yup.string().when("type", {
       is: "Chainage",
       then: (schema) =>
-          schema
-            .required("Chainage is required")
-            .matches(
-              /^\d+(\/|\+|,)\d+(\.\d{1,3})?$/,
-              "Invalid chainage format. Use ####/###.### or '####+###.###' or '####,###.###'",
-            ),
+        schema
+          .required("Chainage is required")
+          .matches(
+            /^\d+(\/|\+|,)\d+(\.\d{1,3})?$/,
+            "Invalid chainage format. Use ####/###.### or '####+###.###' or '####,###.###'",
+          ),
       otherwise: (schema) => schema.nullable(),
     }),
 
@@ -300,14 +315,10 @@ const RoadSurveyRowsForm = () => {
         then: (schema) =>
           schema
             .typeError(
-              isWaterWay
-                ? "Water way width is required"
-                : "Width is required",
+              isWaterWay ? "Water way width is required" : "Width is required",
             )
             .required(
-              isWaterWay
-                ? "Water way width is required"
-                : "Width is required",
+              isWaterWay ? "Water way width is required" : "Width is required",
             ),
         otherwise: (schema) => schema.nullable(),
       }),
@@ -655,10 +666,12 @@ const RoadSurveyRowsForm = () => {
     if (type === "CP" || type === "TBM" || type === "Water Level") {
       const length = purpose?.rows?.filter((r) => r.type === type)?.length || 0;
       const remarkLabel = type === "Water Level" ? "WL" : type;
-      const remarkNumber = length + (type === "TBM" && purpose.type === "Initial Level" ? 2 : 1);
-      const remark = type === "Water Level"
-        ? `${remarkLabel} - ${remarkNumber} (${formatDateTime()})`
-        : `${remarkLabel} - ${remarkNumber}`;
+      const remarkNumber =
+        length + (type === "TBM" && purpose.type === "Initial Level" ? 2 : 1);
+      const remark =
+        type === "Water Level"
+          ? `${remarkLabel} - ${remarkNumber} (${formatDateTime()})`
+          : `${remarkLabel} - ${remarkNumber}`;
 
       setFormValues((prev) => ({ ...prev, remark }));
     }
@@ -728,12 +741,15 @@ const RoadSurveyRowsForm = () => {
     const { name, value } = event.target;
 
     if (name === "basis" && value === "Soundings") {
-      const hasWaterLevel = purpose?.rows?.some((r) => r.type === "Water Level");
+      const hasWaterLevel = purpose?.rows?.some(
+        (r) => r.type === "Water Level",
+      );
       if (!hasWaterLevel) {
         dispatch(
           showAlert({
             type: "error",
-            message: "Add a Water Level reading first before selecting Soundings",
+            message:
+              "Add a Water Level reading first before selecting Soundings",
           }),
         );
         return;
@@ -844,9 +860,7 @@ const RoadSurveyRowsForm = () => {
           const prevChainage = purpose?.rows?.at(-1)?.chainage;
 
           const filteredInitialSurvey =
-            initialSurvey?.rows?.filter(
-              (r) => r.type === "Chainage",
-            ) ?? [];
+            initialSurvey?.rows?.filter((r) => r.type === "Chainage") ?? [];
 
           const currentIndex = filteredInitialSurvey.findIndex(
             (r) => r.chainage === prevChainage,
@@ -888,9 +902,7 @@ const RoadSurveyRowsForm = () => {
         }
       } else {
         const isFirstChainage = purpose?.rows?.find(
-          (r) =>
-            r.type === "Chainage" ||
-            r.type === "Break",
+          (r) => r.type === "Chainage" || r.type === "Break",
         );
 
         if (!isFirstChainage) {
@@ -900,15 +912,13 @@ const RoadSurveyRowsForm = () => {
           }));
         } else {
           const lastChainage = purpose?.rows
-            ?.filter(
-              (r) =>
-                r.type === "Chainage" ||
-                r.type === "Break",
-            )
+            ?.filter((r) => r.type === "Chainage" || r.type === "Break")
             ?.at(-1);
 
           const lastChainageDigit =
-            lastChainage.type === "Chainage" ? lastChainage.chainage : lastChainage.to;
+            lastChainage.type === "Chainage"
+              ? lastChainage.chainage
+              : lastChainage.to;
 
           const chainageMultiple = purpose?.surveyId?.chainageMultiple;
           const lastDigit = Number(
@@ -1444,7 +1454,9 @@ const RoadSurveyRowsForm = () => {
         } else {
           getNewChainage(purposeDoc);
           if (purposeDoc.surveyId?.type === "Water Way") {
-            const waterLevelCount = purposeDoc.rows?.filter((row) => row.type === "Water Level").length || 0;
+            const waterLevelCount =
+              purposeDoc.rows?.filter((row) => row.type === "Water Level")
+                .length || 0;
             setRowType("Water Level");
             setFormValues((prev) => ({
               ...prev,
@@ -1500,104 +1512,113 @@ const RoadSurveyRowsForm = () => {
           page === 1 &&
           selectedCs &&
           selectedCs?.series && (
-            <Box sx={{ display: keyboardViewportTop !== null ? "block" : "contents", height: keyboardViewportTop !== null ? graphHeight : "auto" }}>
             <Box
-              ref={graphRef}
-              position={keyboardViewportTop !== null ? "fixed" : "sticky"}
-              top={keyboardViewportTop !== null ? `${keyboardViewportTop}px` : "68px"}
-              bgcolor={"white"}
-              zIndex={keyboardViewportTop !== null ? 1101 : 2}
               sx={{
-                ...(keyboardViewportTop !== null && {
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  width: "calc(100% - 32px)",
-                  maxWidth: "852px",
-                }),
-                p: "8px",
-                borderRadius: "0px 0px 20px 20px",
-                gap: { xs: 1, md: 2 },
-                bgcolor: "rgba(255, 255, 255, 0.6)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(255, 255, 255, 0.3)",
-                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
-                maxWidth: "100%",
-                overflowX: "auto",
-                "& .svg-container svg": {
-                  borderRadius: "20px",
-                  backgroundColor: "transparent !important",
-                },
+                display: keyboardViewportTop !== null ? "block" : "contents",
+                height: keyboardViewportTop !== null ? graphHeight : "auto",
               }}
             >
-              <Box display={"flex"} justifyContent={"end"} pr={2}>
-                <motion.div variants={fUp}>
-                  <Box
-                    sx={{
-                      display: "inline-flex",
-                      px: 2,
-                      py: 0.5,
-                      mb: 3,
-                      borderRadius: 10,
-                      bgcolor: "rgba(99, 102, 241, 0.1)",
-                      border: "1px solid rgba(99, 102, 241, 0.2)",
-                    }}
-                  >
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      width={"max-content"}
-                    >
-                      <PulseDot />
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          // Change: Pure white or very light indigo for readability
-                          color: "primary.main",
-                          fontWeight: 700,
-                          letterSpacing: 1,
-                        }}
-                      >
-                        live
-                      </Typography>
-                    </Box>
-                  </Box>
-                </motion.div>
-              </Box>
-
-              <Activity
-                mode={purpose.type === "Initial Level" ? "hidden" : "visible"}
+              <Box
+                ref={graphRef}
+                position={keyboardViewportTop !== null ? "fixed" : "sticky"}
+                top={
+                  keyboardViewportTop !== null
+                    ? `${keyboardViewportTop}px`
+                    : "68px"
+                }
+                bgcolor={"white"}
+                zIndex={keyboardViewportTop !== null ? 1101 : 2}
+                sx={{
+                  ...(keyboardViewportTop !== null && {
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "calc(100% - 32px)",
+                    maxWidth: "852px",
+                  }),
+                  p: "8px",
+                  borderRadius: "0px 0px 20px 20px",
+                  gap: { xs: 1, md: 2 },
+                  bgcolor: "rgba(255, 255, 255, 0.6)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
+                  maxWidth: "100%",
+                  overflowX: "auto",
+                  "& .svg-container svg": {
+                    borderRadius: "20px",
+                    backgroundColor: "transparent !important",
+                  },
+                }}
               >
-                <Box display={"flex"} justifyContent={"end"}>
-                  <BasicSelect
-                    label="Compare"
-                    options={purpose.surveyId?.purposes
-                      ?.filter((p) => p.type !== purpose.type)
-                      .map((p) => ({ label: p.type, value: p.type }))}
-                    value={compareData?.type || ""}
-                    onChange={(e) => handleChangeCompare(e.target.value)}
-                    sx={{
-                      width: "62px",
-                      "& .MuiOutlinedInput-root": { padding: "4px 14px" },
-                    }}
-                  />
+                <Box display={"flex"} justifyContent={"end"} pr={2}>
+                  <motion.div variants={fUp}>
+                    <Box
+                      sx={{
+                        display: "inline-flex",
+                        px: 2,
+                        py: 0.5,
+                        mb: 3,
+                        borderRadius: 10,
+                        bgcolor: "rgba(99, 102, 241, 0.1)",
+                        border: "1px solid rgba(99, 102, 241, 0.2)",
+                      }}
+                    >
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        width={"max-content"}
+                      >
+                        <PulseDot />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            // Change: Pure white or very light indigo for readability
+                            color: "primary.main",
+                            fontWeight: 700,
+                            letterSpacing: 1,
+                          }}
+                        >
+                          live
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </motion.div>
                 </Box>
-              </Activity>
 
-              <Plot
-                data={selectedCs?.series?.map((s) => ({
-                  x: s?.data?.map((p) => p.x),
-                  y: s?.data?.map((p) => p.y),
-                  type: "scatter",
-                  mode: "lines",
-                  name: s.name,
-                  line: { shape: "linear", width: 2, color: s.color },
-                }))}
-                config={chartOptions.config}
-                layout={chartOptions.layout}
-                style={{ width: "100%", height: 100 }}
-              />
-            </Box>
+                <Activity
+                  mode={purpose.type === "Initial Level" ? "hidden" : "visible"}
+                >
+                  <Box display={"flex"} justifyContent={"end"}>
+                    <BasicSelect
+                      label="Compare"
+                      options={purpose.surveyId?.purposes
+                        ?.filter((p) => p.type !== purpose.type)
+                        .map((p) => ({ label: p.type, value: p.type }))}
+                      value={compareData?.type || ""}
+                      onChange={(e) => handleChangeCompare(e.target.value)}
+                      sx={{
+                        width: "62px",
+                        "& .MuiOutlinedInput-root": { padding: "4px 14px" },
+                      }}
+                    />
+                  </Box>
+                </Activity>
+
+                <Plot
+                  data={selectedCs?.series?.map((s) => ({
+                    x: s?.data?.map((p) => p.x),
+                    y: s?.data?.map((p) => p.y),
+                    type: "scatter",
+                    mode: "lines",
+                    name: s.name,
+                    line: { shape: "linear", width: 2, color: s.color },
+                  }))}
+                  config={chartOptions.config}
+                  layout={chartOptions.layout}
+                  style={{ width: "100%", height: 100 }}
+                />
+              </Box>
             </Box>
           )}
 
@@ -1675,7 +1696,7 @@ const RoadSurveyRowsForm = () => {
                   >
                     {page === 1
                       ? "Enter Intermediate Sight"
-                      : `Enter ${rowType} Details`}
+                      : `Enter ${rowType === "TBM" ? "Baseline" : rowType} Details`}
                   </Typography>
                   <Typography
                     variant="body2"
@@ -1912,10 +1933,9 @@ const RoadSurveyRowsForm = () => {
                   ))}
 
                 {/* ✅ Dynamic Intermediate + Offset Rows */}
-                {page === 1 &&
-                  rowType === "Chainage" && (
-                    <Grid size={{ xs: 12 }}>
-                      {/* <Stack direction={'row'} alignItems={'center'}>
+                {page === 1 && rowType === "Chainage" && (
+                  <Grid size={{ xs: 12 }}>
+                    {/* <Stack direction={'row'} alignItems={'center'}>
                   <BasicCheckbox
                     checked={autoOffset}
                     onChange={(e) => handleChangeAutoOffset(e)}
@@ -1925,46 +1945,52 @@ const RoadSurveyRowsForm = () => {
                   </Typography>
                 </Stack> */}
 
-                      <Stack
-                        direction={"row"}
-                        justifyContent={"space-between"}
-                        alignItems={"center"}
+                    <Stack
+                      direction={"row"}
+                      justifyContent={"space-between"}
+                      alignItems={"center"}
+                    >
+                      <Typography
+                        fontSize={"16px"}
+                        fontWeight={600}
+                        color="black"
+                        mb={1}
                       >
-                        <Typography
-                          fontSize={"16px"}
-                          fontWeight={600}
-                          color="black"
-                          mb={1}
-                        >
-                          Chainage: {formValues.chainage}
-                        </Typography>
+                        Chainage: {formValues.chainage}
+                      </Typography>
 
-                        <Box sx={addButtonSx} onClick={handleAddRow}>
-                          <IoAdd size={18} />
-                          Add Row
-                        </Box>
-                      </Stack>
+                      <Box sx={addButtonSx} onClick={handleAddRow}>
+                        <IoAdd size={18} />
+                        Add Row
+                      </Box>
+                    </Stack>
 
-                      {/* ── Column headers ── */}
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: {
-                            xs: showBasis ? "1fr 32px 70px 1fr 28px" : "1fr 70px 1fr 28px",
-                            sm: showBasis ? "90px 32px 90px 1fr 32px" : "90px 90px 1fr 32px",
-                          },
-                          gap: { xs: "4px", sm: "6px" },
-                          px: 1,
-                          pb: 0.5,
-                        }}
-                      >
-                        {[
-                          purpose.phase === "Proposal" ? "RL*" : "IS*",
-                          showBasis ? "Basis" : null,
-                          "Offset*",
-                          "Remark*",
-                          "",
-                        ].filter(Boolean).map((h, i) => (
+                    {/* ── Column headers ── */}
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                          xs: showBasis
+                            ? "1fr 32px 70px 1fr 28px"
+                            : "1fr 70px 1fr 28px",
+                          sm: showBasis
+                            ? "90px 32px 90px 1fr 32px"
+                            : "90px 90px 1fr 32px",
+                        },
+                        gap: { xs: "4px", sm: "6px" },
+                        px: 1,
+                        pb: 0.5,
+                      }}
+                    >
+                      {[
+                        purpose.phase === "Proposal" ? "RL*" : "IS*",
+                        showBasis ? "Basis" : null,
+                        "Offset*",
+                        "Remark*",
+                        "",
+                      ]
+                        .filter(Boolean)
+                        .map((h, i) => (
                           <Typography
                             key={i}
                             variant="caption"
@@ -1979,289 +2005,285 @@ const RoadSurveyRowsForm = () => {
                             {h}
                           </Typography>
                         ))}
-                      </Box>
+                    </Box>
 
-                      <Stack spacing={0.75}>
-                        {formValues.intermediateOffsets.map((row, idx) => (
-                          <Box key={idx}>
-                            <Box
-                              sx={{
-                                display: "grid",
-                                gridTemplateColumns: {
-                                  xs: showBasis ? "1fr 32px 70px 1fr 28px" : "1fr 70px 1fr 28px",
-                                  sm: showBasis ? "90px 32px 90px 1fr 32px" : "90px 90px 1fr 32px",
-                                },
-                                gap: { xs: "4px", sm: "6px" },
-                                alignItems: "center",
-                                px: 1,
-                                py: 0.75,
-                                borderRadius: 2,
-                                bgcolor: idx % 2 === 0 ? "#f8f9ff" : "#fff",
-                                border: "1px solid",
-                                borderColor: "rgba(99,102,241,0.1)",
-                                transition: "box-shadow 0.2s",
-                                "&:hover": {
-                                  boxShadow: "0 2px 8px rgba(99,102,241,0.12)",
-                                },
-                              }}
-                            >
-                              {/* IS / RL input */}
-                              {purpose.phase === "Proposal" ? (
-                                <BasicInput
-                                  type="number"
-                                  name="intermediateOffsets"
-                                  value={row.reducedLevel || ""}
-                                  error={
-                                    formErrors &&
-                                    formErrors[
-                                      `intermediateOffsets[${idx}].reducedLevel`
-                                    ]
-                                  }
-                                  sx={{
-                                    padding: "8px 0px",
-                                    "& input": {
-                                      px: 1,
-                                      py: 0.75,
-                                      fontSize: 13,
-                                    },
-                                  }}
-                                  onChange={(e) =>
-                                    handleInputChange(e, idx, "reducedLevel")
-                                  }
-                                />
-                              ) : (
-                                <BasicInput
-                                  type="number"
-                                  name="intermediateOffsets"
-                                  value={row.intermediateSight || ""}
-                                  error={
-                                    formErrors &&
-                                    formErrors[
-                                      `intermediateOffsets[${idx}].intermediateSight`
-                                    ]
-                                  }
-                                  warning={
-                                    formWarnings &&
-                                    formWarnings[
-                                      `intermediateOffsets[${idx}].intermediateSight`
-                                    ] &&
-                                    "disable-label"
-                                  }
-                                  sx={{
-                                    padding: "8px 0px",
-                                    "& input": {
-                                      px: 1,
-                                      py: 0.75,
-                                      fontSize: 13,
-                                    },
-                                  }}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      e,
-                                      idx,
-                                      "intermediateSight",
-                                    )
-                                  }
-                                />
-                              )}
-
-                              {/* S / R segmented switch — vertical */}
-                              {showBasis && (
-                                <Box
-                                  onClick={() => {
-                                    const updated = [
-                                      ...formValues.intermediateOffsets,
-                                    ];
-                                    updated[idx] = {
-                                      ...updated[idx],
-                                      mode: updated[idx].mode === "S" ? "R" : "S",
-                                    };
-                                    setFormValues((prev) => ({
-                                      ...prev,
-                                      intermediateOffsets: updated,
-                                    }));
-                                  }}
-                                  sx={{
-                                    position: "relative",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    width: 28,
-                                    height: 44,
-                                    borderRadius: "14px",
-                                    bgcolor: "#e8e9f3",
-                                    cursor: "pointer",
-                                    userSelect: "none",
-                                    border: "1.5px solid",
-                                    borderColor:
-                                      row.mode === "R"
-                                        ? "rgba(139,90,43,0.18)"
-                                        : "rgba(2,132,199,0.18)",
-                                    transition: "border-color 0.2s",
-                                    "&:hover": {
-                                      borderColor:
-                                        row.mode === "R"
-                                          ? "rgba(139,90,43,0.4)"
-                                          : "rgba(2,132,199,0.4)",
-                                    },
-                                  }}
-                                >
-                                  {/* Sliding thumb — moves top/bottom */}
-                                  <Box
-                                    sx={{
-                                      position: "absolute",
-                                      left: 2,
-                                      top:
-                                        row.mode === "R" ? 2 : "calc(50% - 1px)",
-                                      width: "calc(100% - 4px)",
-                                      height: "calc(50% - 1px)",
-                                      borderRadius: "11px",
-                                      bgcolor:
-                                        row.mode === "R" ? "#8b5a2b" : "#0284c7", // R = brown (ground/land), S = blue (water)
-                                      boxShadow:
-                                        row.mode === "R"
-                                          ? "0 2px 6px rgba(139,90,43,0.45)"
-                                          : "0 2px 6px rgba(2,132,199,0.45)",
-                                      transition:
-                                        "top 0.22s cubic-bezier(.4,0,.2,1), background 0.22s",
-                                    }}
-                                  />
-                                  <Typography
-                                    sx={{
-                                      position: "relative",
-                                      zIndex: 1,
-                                      flex: 1,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      width: "100%",
-                                      fontSize: 10,
-                                      fontWeight: 800,
-                                      letterSpacing: 0.5,
-                                      color:
-                                        row.mode === "R"
-                                          ? "#fff"
-                                          : "rgba(80,80,120,0.55)",
-                                      transition: "color 0.2s",
-                                    }}
-                                  >
-                                    R
-                                  </Typography>
-                                  <Typography
-                                    sx={{
-                                      position: "relative",
-                                      zIndex: 1,
-                                      flex: 1,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      width: "100%",
-                                      fontSize: 10,
-                                      fontWeight: 800,
-                                      letterSpacing: 0.5,
-                                      color:
-                                        row.mode === "S"
-                                          ? "#fff"
-                                          : "rgba(80,80,120,0.55)",
-                                      transition: "color 0.2s",
-                                    }}
-                                  >
-                                    S
-                                  </Typography>
-                                </Box>
-                              )}
-
-                              {/* Offset input */}
+                    <Stack spacing={0.75}>
+                      {formValues.intermediateOffsets.map((row, idx) => (
+                        <Box key={idx}>
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: {
+                                xs: showBasis
+                                  ? "1fr 32px 70px 1fr 28px"
+                                  : "1fr 70px 1fr 28px",
+                                sm: showBasis
+                                  ? "90px 32px 90px 1fr 32px"
+                                  : "90px 90px 1fr 32px",
+                              },
+                              gap: { xs: "4px", sm: "6px" },
+                              alignItems: "center",
+                              px: 1,
+                              py: 0.75,
+                              borderRadius: 2,
+                              bgcolor: idx % 2 === 0 ? "#f8f9ff" : "#fff",
+                              border: "1px solid",
+                              borderColor: "rgba(99,102,241,0.1)",
+                              transition: "box-shadow 0.2s",
+                              "&:hover": {
+                                boxShadow: "0 2px 8px rgba(99,102,241,0.12)",
+                              },
+                            }}
+                          >
+                            {/* IS / RL input */}
+                            {purpose.phase === "Proposal" ? (
                               <BasicInput
                                 type="number"
                                 name="intermediateOffsets"
-                                value={row.offset}
-                                onChange={(e) =>
-                                  handleInputChange(e, idx, "offset")
-                                }
+                                value={row.reducedLevel || ""}
                                 error={
                                   formErrors &&
                                   formErrors[
-                                    `intermediateOffsets[${idx}].offset`
+                                    `intermediateOffsets[${idx}].reducedLevel`
                                   ]
                                 }
                                 sx={{
                                   padding: "8px 0px",
-                                  "& input": { px: 1, py: 0.75, fontSize: 13 },
+                                  "& input": {
+                                    px: 1,
+                                    py: 0.75,
+                                    fontSize: 13,
+                                  },
                                 }}
+                                onChange={(e) =>
+                                  handleInputChange(e, idx, "reducedLevel")
+                                }
                               />
-
-                              {/* Remark input */}
+                            ) : (
                               <BasicInput
-                                type="text"
+                                type="number"
                                 name="intermediateOffsets"
-                                value={row.remark}
-                                onChange={(e) =>
-                                  handleInputChange(e, idx, "remark")
-                                }
+                                value={row.intermediateSight || ""}
                                 error={
                                   formErrors &&
                                   formErrors[
-                                    `intermediateOffsets[${idx}].remark`
+                                    `intermediateOffsets[${idx}].intermediateSight`
                                   ]
+                                }
+                                warning={
+                                  formWarnings &&
+                                  formWarnings[
+                                    `intermediateOffsets[${idx}].intermediateSight`
+                                  ] &&
+                                  "disable-label"
                                 }
                                 sx={{
                                   padding: "8px 0px",
-                                  "& input": { px: 1, py: 0.75, fontSize: 13 },
+                                  "& input": {
+                                    px: 1,
+                                    py: 0.75,
+                                    fontSize: 13,
+                                  },
                                 }}
+                                onChange={(e) =>
+                                  handleInputChange(e, idx, "intermediateSight")
+                                }
                               />
+                            )}
 
-                              {/* Delete button */}
+                            {/* S / R segmented switch — vertical */}
+                            {showBasis && (
                               <Box
-                                onClick={() => handleRemoveRow(idx)}
+                                onClick={() => {
+                                  const updated = [
+                                    ...formValues.intermediateOffsets,
+                                  ];
+                                  updated[idx] = {
+                                    ...updated[idx],
+                                    mode: updated[idx].mode === "S" ? "R" : "S",
+                                  };
+                                  setFormValues((prev) => ({
+                                    ...prev,
+                                    intermediateOffsets: updated,
+                                  }));
+                                }}
                                 sx={{
+                                  position: "relative",
                                   display: "flex",
+                                  flexDirection: "column",
                                   alignItems: "center",
-                                  justifyContent: "center",
                                   width: 28,
-                                  height: 28,
-                                  borderRadius: "50%",
-                                  cursor:
-                                    formValues.intermediateOffsets.length <= 1
-                                      ? "not-allowed"
-                                      : "pointer",
-                                  opacity:
-                                    formValues.intermediateOffsets.length <= 1
-                                      ? 0.3
-                                      : 1,
-                                  color: "#ef4444",
-                                  transition: "background 0.15s",
-                                  "&:hover":
-                                    formValues.intermediateOffsets.length > 1
-                                      ? { bgcolor: "rgba(239,68,68,0.1)" }
-                                      : {},
+                                  height: 44,
+                                  borderRadius: "14px",
+                                  bgcolor: "#e8e9f3",
+                                  cursor: "pointer",
+                                  userSelect: "none",
+                                  border: "1.5px solid",
+                                  borderColor:
+                                    row.mode === "R"
+                                      ? "rgba(139,90,43,0.18)"
+                                      : "rgba(2,132,199,0.18)",
+                                  transition: "border-color 0.2s",
+                                  "&:hover": {
+                                    borderColor:
+                                      row.mode === "R"
+                                        ? "rgba(139,90,43,0.4)"
+                                        : "rgba(2,132,199,0.4)",
+                                  },
                                 }}
                               >
-                                <IoIosRemove fontSize={"20px"} />
-                              </Box>
-                            </Box>
-
-                            {/* Inline warning */}
-                            {formWarnings &&
-                              formWarnings[
-                                `intermediateOffsets[${idx}].intermediateSight`
-                              ] && (
+                                {/* Sliding thumb — moves top/bottom */}
+                                <Box
+                                  sx={{
+                                    position: "absolute",
+                                    left: 2,
+                                    top:
+                                      row.mode === "R" ? 2 : "calc(50% - 1px)",
+                                    width: "calc(100% - 4px)",
+                                    height: "calc(50% - 1px)",
+                                    borderRadius: "11px",
+                                    bgcolor:
+                                      row.mode === "R" ? "#8b5a2b" : "#0284c7", // R = brown (ground/land), S = blue (water)
+                                    boxShadow:
+                                      row.mode === "R"
+                                        ? "0 2px 6px rgba(139,90,43,0.45)"
+                                        : "0 2px 6px rgba(2,132,199,0.45)",
+                                    transition:
+                                      "top 0.22s cubic-bezier(.4,0,.2,1), background 0.22s",
+                                  }}
+                                />
                                 <Typography
-                                  variant="caption"
-                                  sx={{ ml: 1, color: "warning.main" }}
+                                  sx={{
+                                    position: "relative",
+                                    zIndex: 1,
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: "100%",
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    letterSpacing: 0.5,
+                                    color:
+                                      row.mode === "R"
+                                        ? "#fff"
+                                        : "rgba(80,80,120,0.55)",
+                                    transition: "color 0.2s",
+                                  }}
                                 >
-                                  {
-                                    formWarnings[
-                                      `intermediateOffsets[${idx}].intermediateSight`
-                                    ]
-                                  }
+                                  R
                                 </Typography>
-                              )}
+                                <Typography
+                                  sx={{
+                                    position: "relative",
+                                    zIndex: 1,
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: "100%",
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    letterSpacing: 0.5,
+                                    color:
+                                      row.mode === "S"
+                                        ? "#fff"
+                                        : "rgba(80,80,120,0.55)",
+                                    transition: "color 0.2s",
+                                  }}
+                                >
+                                  S
+                                </Typography>
+                              </Box>
+                            )}
+
+                            {/* Offset input */}
+                            <BasicInput
+                              type="number"
+                              name="intermediateOffsets"
+                              value={row.offset}
+                              onChange={(e) =>
+                                handleInputChange(e, idx, "offset")
+                              }
+                              error={
+                                formErrors &&
+                                formErrors[`intermediateOffsets[${idx}].offset`]
+                              }
+                              sx={{
+                                padding: "8px 0px",
+                                "& input": { px: 1, py: 0.75, fontSize: 13 },
+                              }}
+                            />
+
+                            {/* Remark input */}
+                            <BasicInput
+                              type="text"
+                              name="intermediateOffsets"
+                              value={row.remark}
+                              onChange={(e) =>
+                                handleInputChange(e, idx, "remark")
+                              }
+                              error={
+                                formErrors &&
+                                formErrors[`intermediateOffsets[${idx}].remark`]
+                              }
+                              sx={{
+                                padding: "8px 0px",
+                                "& input": { px: 1, py: 0.75, fontSize: 13 },
+                              }}
+                            />
+
+                            {/* Delete button */}
+                            <Box
+                              onClick={() => handleRemoveRow(idx)}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 28,
+                                height: 28,
+                                borderRadius: "50%",
+                                cursor:
+                                  formValues.intermediateOffsets.length <= 1
+                                    ? "not-allowed"
+                                    : "pointer",
+                                opacity:
+                                  formValues.intermediateOffsets.length <= 1
+                                    ? 0.3
+                                    : 1,
+                                color: "#ef4444",
+                                transition: "background 0.15s",
+                                "&:hover":
+                                  formValues.intermediateOffsets.length > 1
+                                    ? { bgcolor: "rgba(239,68,68,0.1)" }
+                                    : {},
+                              }}
+                            >
+                              <IoIosRemove fontSize={"20px"} />
+                            </Box>
                           </Box>
-                        ))}
-                      </Stack>
-                    </Grid>
-                  )}
+
+                          {/* Inline warning */}
+                          {formWarnings &&
+                            formWarnings[
+                              `intermediateOffsets[${idx}].intermediateSight`
+                            ] && (
+                              <Typography
+                                variant="caption"
+                                sx={{ ml: 1, color: "warning.main" }}
+                              >
+                                {
+                                  formWarnings[
+                                    `intermediateOffsets[${idx}].intermediateSight`
+                                  ]
+                                }
+                              </Typography>
+                            )}
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Grid>
+                )}
                 {((page === 0 && rowType !== "Chainage") || page === 1) && (
                   <Grid width={"100%"}>
                     <ObservationNotes
@@ -2358,101 +2380,105 @@ const RoadSurveyRowsForm = () => {
                       //   icon: <GrSafariOption fontSize="20px" />,
                       //   onClick: () => console.log("hi"),
                       // },
-                    ].map(
-                      (type, i) => {
-                        const isDisabled = waterLevelLocked && type.label !== "NEXT";
-                        return (
+                    ].map((type, i) => {
+                      const isDisabled =
+                        waterLevelLocked && type.label !== "NEXT";
+                      return (
+                        <Box
+                          key={i}
+                          sx={{
+                            position: "relative",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            px: { xs: 0.5, md: 1.5, lg: 6 },
+                            height: "100%",
+                            borderRadius: "16px",
+                            cursor: isDisabled ? "not-allowed" : "pointer",
+                            minWidth: 0,
+                            whiteSpace: "nowrap",
+                            flex: { xs: "1 1 0", lg: "0 0 auto" },
+                            bgcolor: "white",
+                            color: rowType === type.value ? "white" : "#6366f1",
+                            opacity: isDisabled ? 0.35 : 1,
+                            transition: "all 0.3s ease",
+                            "&:hover": {
+                              bgcolor: isDisabled
+                                ? "white"
+                                : rowType === type.value
+                                  ? "white"
+                                  : "#f8fafc",
+                            },
+                          }}
+                          onClick={isDisabled ? undefined : type.onClick}
+                        >
+                          {rowType === type.value && (
+                            <Box
+                              component={motion.div}
+                              layoutId="activeReportType"
+                              initial={false}
+                              transition={{
+                                type: "spring",
+                                stiffness: 350,
+                                damping: 25,
+                              }}
+                              sx={{
+                                position: "absolute",
+                                inset: 0,
+                                background: "#6366f1", // similar tone color for selected
+                                borderRadius: "16px",
+                                zIndex: 0,
+                                boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
+                              }}
+                            />
+                          )}
+
                           <Box
-                            key={i}
                             sx={{
-                              position: "relative",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              px: { xs: 0.5, md: 1.5, lg: 6 },
-                              height: "100%",
-                              borderRadius: "16px",
-                              cursor: isDisabled ? "not-allowed" : "pointer",
-                              minWidth: 0,
-                              whiteSpace: "nowrap",
-                              flex: { xs: "1 1 0", lg: "0 0 auto" },
-                              bgcolor: "white",
-                              color: rowType === type.value ? "white" : "#6366f1",
-                              opacity: isDisabled ? 0.35 : 1,
-                              transition: "all 0.3s ease",
-                              "&:hover": {
-                                bgcolor: isDisabled
-                                  ? "white"
-                                  : rowType === type.value ? "white" : "#f8fafc",
-                              },
+                              flexDirection: { xs: "column", sm: "row" },
+                              gap: { xs: 0.25, sm: 1 },
                             }}
-                            onClick={isDisabled ? undefined : type.onClick}
                           >
-                            {rowType === type.value && (
-                              <Box
-                                component={motion.div}
-                                layoutId="activeReportType"
-                                initial={false}
-                                transition={{
-                                  type: "spring",
-                                  stiffness: 350,
-                                  damping: 25,
-                                }}
-                                sx={{
-                                  position: "absolute",
-                                  inset: 0,
-                                  background: "#6366f1", // similar tone color for selected
-                                  borderRadius: "16px",
-                                  zIndex: 0,
-                                  boxShadow:
-                                    "0 4px 15px rgba(99, 102, 241, 0.3)",
-                                }}
-                              />
-                            )}
-
-                            <Box
+                            <Typography
+                              variant="body2"
+                              fontWeight={900}
                               sx={{
+                                lineHeight: 1,
+                                position: "relative",
+                                zIndex: 1,
+                                color: "inherit",
                                 display: "flex",
                                 alignItems: "center",
-                                flexDirection: { xs: "column", sm: "row" },
-                                gap: { xs: 0.25, sm: 1 },
+                                transition: "color 0.3s ease",
                               }}
                             >
-                              <Typography
-                                variant="body2"
-                                fontWeight={900}
-                                sx={{
-                                  lineHeight: 1,
-                                  position: "relative",
-                                  zIndex: 1,
-                                  color: "inherit",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  transition: "color 0.3s ease",
-                                }}
-                              >
-                                {type.icon}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                fontWeight={900}
-                                letterSpacing="0.05em"
-                                sx={{
-                                  lineHeight: 1,
-                                  position: "relative",
-                                  zIndex: 1,
-                                  color: "inherit",
-                                  fontSize: { xs: "0.7rem", sm: "0.8rem", md: "1rem" },
-                                  transition: "color 0.3s ease",
-                                }}
-                              >
-                                {type.label}
-                              </Typography>
-                            </Box>
+                              {type.icon}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              fontWeight={900}
+                              letterSpacing="0.05em"
+                              sx={{
+                                lineHeight: 1,
+                                position: "relative",
+                                zIndex: 1,
+                                color: "inherit",
+                                fontSize: {
+                                  xs: "0.7rem",
+                                  sm: "0.8rem",
+                                  md: "1rem",
+                                },
+                                transition: "color 0.3s ease",
+                              }}
+                            >
+                              {type.label}
+                            </Typography>
                           </Box>
-                        );
-                      }
-                    )}
+                        </Box>
+                      );
+                    })}
                   </Paper>
                 </Box>
               )}

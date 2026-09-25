@@ -6,40 +6,24 @@ import { Provider } from "react-redux";
 import { store, persistor } from "./redux/store.js";
 import { PersistGate } from "redux-persist/integration/react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-// Manual registration to bypass DigitalOcean CDN cache using the build time.
-// updateViaCache: "none" forces the browser to send Cache-Control: no-cache
-// when fetching sw.js, which bypasses DigitalOcean's CDN edge cache.
+// Keep the service worker URL stable so every installed app checks the same script.
 if ("serviceWorker" in navigator) {
-  const buildTime = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : Date.now();
-  const swUrl = `/sw.js?v=${encodeURIComponent(buildTime)}`;
-
   navigator.serviceWorker
-    .register(swUrl, {
-      // Forces browser to always bypass HTTP cache AND CDN cache when fetching sw.js
+    .register("/sw.js", {
       updateViaCache: "none",
     })
     .then((reg) => {
-      console.log("Service Worker registered:", reg.scope);
-
-      // If there's already a new SW waiting (stuck from previous "prompt" mode),
-      // send it SKIP_WAITING immediately to unblock it
       if (reg.waiting) {
         reg.waiting.postMessage({ type: "SKIP_WAITING" });
       }
 
-      // Immediately trigger an update check on every page load
-      // (don't wait for browser's built-in 24h update check interval)
-      reg.update();
-
-      // Check for updates every 1 hour
-      setInterval(() => reg.update(), 60 * 60 * 1000);
-
-      // Check for updates when the user switches back to the tab
+      const checkForUpdate = () => reg.update().catch(() => {});
+      checkForUpdate();
+      setInterval(checkForUpdate, 60 * 60 * 1000);
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") reg.update();
+        if (document.visibilityState === "visible") checkForUpdate();
       });
 
-      // Also handle if a new SW becomes waiting AFTER page load
       reg.addEventListener("updatefound", () => {
         const newWorker = reg.installing;
         if (newWorker) {
@@ -55,9 +39,7 @@ if ("serviceWorker" in navigator) {
       console.error("Service Worker registration failed:", err);
     });
 
-  // Reload page once the new service worker takes control.
-  // registerType: "autoUpdate" makes the new SW call skipWaiting() automatically,
-  // so this event fires as soon as the new SW is installed.
+  // Load the new HTML and bundle after an updated worker takes control.
   let refreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!refreshing) {
