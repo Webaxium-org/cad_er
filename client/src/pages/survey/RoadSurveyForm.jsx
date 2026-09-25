@@ -11,6 +11,7 @@ import {
   Step,
   StepLabel,
   Divider,
+  Checkbox,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -21,7 +22,6 @@ import { useDispatch } from "react-redux";
 import { handleFormError } from "../../utils/handleFormError";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import BasicSelect from "../../components/BasicSelect";
-import BasicCheckbox from "../../components/BasicCheckbox";
 import BasicInput from "../../components/BasicInput";
 import {
   createSurvey,
@@ -54,7 +54,9 @@ const commissioningFields = {
 const commissioningOptionFields = Object.fromEntries(
   Object.entries(commissioningFields).map(([category, fields]) => [
     category,
-    Object.fromEntries(Object.entries(fields).map(([label, name]) => [name, label])),
+    Object.fromEntries(
+      Object.entries(fields).map(([label, name]) => [name, label]),
+    ),
   ]),
 );
 
@@ -90,7 +92,7 @@ const step1Fields = [
     options: [{ label: "Initial Level", value: "Initial Level" }],
   },
   {
-    label: "Category",
+    label: "Select Commissioning Entity",
     name: "category",
     mode: "checkbox",
     hidden: false,
@@ -358,27 +360,37 @@ const RoadSurveyForm = () => {
         const settings = data.settings || {};
         setStaffDefaults(settings.staff || {});
         setInstrumentOptions(
-          [...new Set((settings.instruments || [])
-            .map((instrument) => instrument?.serial?.trim())
-            .filter(Boolean))].map((serial) => ({ label: serial, value: serial })),
+          [
+            ...new Set(
+              (settings.instruments || [])
+                .map((instrument) => instrument?.serial?.trim())
+                .filter(Boolean),
+            ),
+          ].map((serial) => ({ label: serial, value: serial })),
         );
         const saved = settings.commissioning || {};
-        const commissioning = saved.Government || saved["Corporate / Private"]
-          ? saved
-          : { [settings.commissioningType || "Government"]: saved };
+        const commissioning =
+          saved.Government || saved["Corporate / Private"]
+            ? saved
+            : { [settings.commissioningType || "Government"]: saved };
         setCommissioningDefaults(commissioning);
       })
       .catch(() => {
         // Survey creation remains available when settings cannot be loaded.
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [existingSurveyId]);
 
   useEffect(() => {
     if (!staffDefaults || existingSurveyId) return;
     setFormValues((current) => {
       if (!current.engineerSurveyor) return current;
-      const assistants = assistantsForRole(staffDefaults, current.engineerSurveyor);
+      const assistants = assistantsForRole(
+        staffDefaults,
+        current.engineerSurveyor,
+      );
       return {
         ...current,
         ...Object.fromEntries(
@@ -410,7 +422,17 @@ const RoadSurveyForm = () => {
     if (f.name === "agreementNo") {
       return { ...f, hidden: category === "noneProject" };
     }
-    if (["instrumentNo", "engineerSurveyor", "assistant1", "assistant2", "assistant3", "assistant4", "assistant5"].includes(f.name)) {
+    if (
+      [
+        "instrumentNo",
+        "engineerSurveyor",
+        "assistant1",
+        "assistant2",
+        "assistant3",
+        "assistant4",
+        "assistant5",
+      ].includes(f.name)
+    ) {
       return { ...f, hidden: category === "noneProject" };
     }
     return f;
@@ -426,7 +448,11 @@ const RoadSurveyForm = () => {
     }
     setFormValues((prev) =>
       name === "engineerSurveyor"
-        ? { ...prev, engineerSurveyor: value, ...assistantsForRole(staffDefaults, value) }
+        ? {
+            ...prev,
+            engineerSurveyor: value,
+            ...assistantsForRole(staffDefaults, value),
+          }
         : { ...prev, [name]: value },
     );
     setFormErrors((prev) => ({ ...prev, [name]: null }));
@@ -594,19 +620,26 @@ const RoadSurveyForm = () => {
         if (!s) return;
 
         // Detect which category was used when the survey was queued
-        const loadedCategory = s.projectType === "None"
-          ? "noneProject"
-          : s.projectType === "Private" || s.consultant || s.client
-            ? "privateProject"
-            : s.department || s.division || s.section
-              ? "publicProject"
-              : "noneProject";
+        const loadedCategory =
+          s.projectType === "None"
+            ? "noneProject"
+            : s.projectType === "Private" || s.consultant || s.client
+              ? "privateProject"
+              : s.department || s.division || s.section
+                ? "publicProject"
+                : "noneProject";
         setCategory(loadedCategory);
 
         setFormValues((prev) => ({
           ...prev,
           project: s.project || "",
-          projectType: s.projectType || (loadedCategory === "privateProject" ? "Private" : loadedCategory === "publicProject" ? "Public" : "None"),
+          projectType:
+            s.projectType ||
+            (loadedCategory === "privateProject"
+              ? "Private"
+              : loadedCategory === "publicProject"
+                ? "Public"
+                : "None"),
           type: s.type || "Road Survey",
           purpose: s.purposes?.[0]?.type || "Initial Level",
           department: s.department || "",
@@ -636,16 +669,23 @@ const RoadSurveyForm = () => {
   const renderField = (field, index) => {
     const { hidden, mode, size, ...input } = field;
     if (hidden) return null;
-    const savedFields = commissioningDefaults?.[
-      category === "publicProject" ? "Government" : "Corporate / Private"
-    ] || {};
-    const settingsField = commissioningOptionFields[category]?.[input.name]
-      || (input.name === "agreementNo" ? "Agreement No." : null);
+    const savedFields =
+      commissioningDefaults?.[
+        category === "publicProject" ? "Government" : "Corporate / Private"
+      ] || {};
+    const settingsField =
+      commissioningOptionFields[category]?.[input.name] ||
+      (input.name === "agreementNo" ? "Agreement No." : null);
     const savedOption = settingsField && savedFields[settingsField]?.trim();
-    const options = input.name === "instrumentNo"
-      ? instrumentOptions
-      : savedOption ? [{ label: savedOption, value: savedOption }] : [];
-    const isTypedSelect = Boolean(settingsField || input.name === "instrumentNo");
+    const options =
+      input.name === "instrumentNo"
+        ? instrumentOptions
+        : savedOption
+          ? [{ label: savedOption, value: savedOption }]
+          : [];
+    const isTypedSelect = Boolean(
+      settingsField || input.name === "instrumentNo",
+    );
     return (
       <Grid size={{ xs: size || 12 }} key={index}>
         {mode === "select" ? (
@@ -667,24 +707,35 @@ const RoadSurveyForm = () => {
           />
         ) : mode === "checkbox" ? (
           <Box>
-            <Stack direction="row">
+            <Typography variant="body2" fontWeight={700} mb={0.25}>
+              {input.label}
+            </Typography>
+            <Stack direction="row" alignItems="center" flexWrap="wrap" columnGap={2} rowGap={0.5}>
               {input.options?.map((option, idx) => (
-                <Box display="flex" alignItems="center" key={idx}>
+                <Box component="label" display="flex" alignItems="center" gap={0.5} key={idx} sx={{ cursor: "pointer" }}>
                   <Typography
                     variant="body2"
-                    fontSize="16px"
+                    fontSize="14px"
                     fontWeight={600}
                     color="black"
                   >
                     {option.label}
                   </Typography>
-                  <BasicCheckbox
+                  <Checkbox
+                    size="small"
+                    sx={{ p: 0.25 }}
+                    inputProps={{ "aria-label": option.label }}
                     checked={category === option.name}
                     onChange={() => {
                       setCategory(option.name);
                       setFormValues((current) => ({
                         ...current,
-                        projectType: option.name === "noneProject" ? "None" : option.name === "publicProject" ? "Public" : "Private",
+                        projectType:
+                          option.name === "noneProject"
+                            ? "None"
+                            : option.name === "publicProject"
+                              ? "Public"
+                              : "Private",
                         department: "",
                         division: "",
                         subDivision: "",
@@ -693,13 +744,34 @@ const RoadSurveyForm = () => {
                         client: "",
                         contractor: "",
                         agreementNo: "",
-                        instrumentNo: option.name === "noneProject" ? "" : current.instrumentNo,
-                        engineerSurveyor: option.name === "noneProject" ? "" : current.engineerSurveyor,
-                        assistant1: option.name === "noneProject" ? "" : current.assistant1,
-                        assistant2: option.name === "noneProject" ? "" : current.assistant2,
-                        assistant3: option.name === "noneProject" ? "" : current.assistant3,
-                        assistant4: option.name === "noneProject" ? "" : current.assistant4,
-                        assistant5: option.name === "noneProject" ? "" : current.assistant5,
+                        instrumentNo:
+                          option.name === "noneProject"
+                            ? ""
+                            : current.instrumentNo,
+                        engineerSurveyor:
+                          option.name === "noneProject"
+                            ? ""
+                            : current.engineerSurveyor,
+                        assistant1:
+                          option.name === "noneProject"
+                            ? ""
+                            : current.assistant1,
+                        assistant2:
+                          option.name === "noneProject"
+                            ? ""
+                            : current.assistant2,
+                        assistant3:
+                          option.name === "noneProject"
+                            ? ""
+                            : current.assistant3,
+                        assistant4:
+                          option.name === "noneProject"
+                            ? ""
+                            : current.assistant4,
+                        assistant5:
+                          option.name === "noneProject"
+                            ? ""
+                            : current.assistant5,
                       }));
                       setFormErrors((prev) => ({ ...prev, category: null }));
                     }}
@@ -906,9 +978,7 @@ const RoadSurveyForm = () => {
           </Stepper>
 
           {/* Animated form body */}
-          <Box
-            sx={{ overflow: "hidden", position: "relative", minHeight: 300 }}
-          >
+          <Box sx={{ overflow: "hidden", position: "relative" }}>
             <AnimatePresence mode="wait" custom={direction}>
               {step === 1 ? (
                 <motion.div
@@ -1056,11 +1126,7 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
       minWidth: "70px",
       whiteSpace: "nowrap",
       flexShrink: 0,
-      bgcolor: muted
-        ? "rgba(255,255,255,0.6)"
-        : queue
-          ? "white"
-          : "white",
+      bgcolor: muted ? "rgba(255,255,255,0.6)" : queue ? "white" : "white",
       color: muted ? "#64748b" : queue ? "#ea580c" : "#6366f1",
       transition: "all 0.3s ease",
       "&:hover": {

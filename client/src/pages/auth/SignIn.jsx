@@ -362,10 +362,15 @@ const SignIn = () => {
           </Box>
 
           <Grid container spacing={6} maxWidth={1100}>
-            <Grid size={{ xs: 12, md: 6 }} width={500}>
+            <Grid
+              size={{ xs: 12, md: 6 }}
+              width={500}
+              sx={{ display: "flex", alignItems: "center" }}
+            >
               {/* LEFT SIDE */}
               <Box
                 component="form"
+                sx={{ width: "100%" }}
                 noValidate
                 autoComplete="off"
                 onSubmit={(e) => {
