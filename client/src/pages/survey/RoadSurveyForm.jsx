@@ -1405,7 +1405,7 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
       minWidth: "70px",
       whiteSpace: "nowrap",
       flexShrink: 0,
-      bgcolor: muted ? "rgba(255,255,255,0.6)" : queue ? "white" : "white",
+      bgcolor: muted ? "rgba(255,255,255,0.6)" : "white",
       color: muted ? "#64748b" : queue ? "#ea580c" : "#6366f1",
       transition: "all 0.3s ease",
       "&:hover": {

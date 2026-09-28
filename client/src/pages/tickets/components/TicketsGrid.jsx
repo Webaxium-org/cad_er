@@ -119,12 +119,13 @@ const TicketsGrid = ({ tickets }) => {
             color={filter === s.value ? s.color : "default"}
             variant={filter === s.value ? "filled" : "outlined"}
             onClick={() => setFilter(s.value)}
+            sx={{ borderRadius: "10px", fontWeight: 700, px: 0.5 }}
           />
         ))}
       </Box>
 
       {/* ---------------- DATA GRID ---------------- */}
-      <div style={{ height: 600, width: "100%" }}>
+      <Box sx={{ height: 600, width: "100%", border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden" }}>
         <DataGrid
           rows={filteredTickets}
           columns={columns}
@@ -136,8 +137,9 @@ const TicketsGrid = ({ tickets }) => {
             },
           }}
           disableRowSelectionOnClick
+          sx={{ border: 0, color: "#334155", "& .MuiDataGrid-columnHeaders": { bgcolor: "#f8fafc", color: "#1e293b", fontWeight: 800 }, "& .MuiDataGrid-cell": { borderColor: "#eef2f7" }, "& .MuiDataGrid-row:hover": { bgcolor: "#f8f9ff" } }}
         />
-      </div>
+      </Box>
     </>
   );
 };

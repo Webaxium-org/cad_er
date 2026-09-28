@@ -1661,10 +1661,11 @@ export default function ProjectsList() {
                 whiteSpace: "nowrap",
                 flexShrink: 0,
                 bgcolor: "white",
-                color: tab === type.value ? "white" : "#6366f1",
+                color: tab === type.value ? "white" : type.value === "queue" ? "#ea580c" : "#6366f1",
                 transition: "all 0.3s ease",
                 "&:hover": {
-                  bgcolor: tab === type.value ? "white" : "#f8fafc",
+                  bgcolor: tab === type.value ? "white" : type.value === "queue" ? "#ea580c" : "#f8fafc",
+                  color: type.value === "queue" ? "white" : undefined,
                 },
               }}
               onClick={type.onClick}
@@ -1682,10 +1683,12 @@ export default function ProjectsList() {
                   sx={{
                     position: "absolute",
                     inset: 0,
-                    background: "#6366f1", // similar tone color for selected
+                    background: type.value === "queue" ? "#ea580c" : "#6366f1",
                     borderRadius: "16px",
                     zIndex: 0,
-                    boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
+                    boxShadow: type.value === "queue"
+                      ? "0 4px 15px rgba(234, 88, 12, 0.3)"
+                      : "0 4px 15px rgba(99, 102, 241, 0.3)",
                   }}
                 />
               )}

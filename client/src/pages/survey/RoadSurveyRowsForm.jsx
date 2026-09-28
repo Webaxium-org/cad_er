@@ -282,8 +282,14 @@ const RoadSurveyRowsForm = () => {
   const isWaterWay = purpose?.surveyId?.type === "Water Way";
   const isRoadSurvey = purpose?.surveyId?.type === "Road Survey";
   const showBasis = rowType === "Chainage" && !isRoadSurvey;
-  const waterLevelLocked =
-    rowType === "Water Level" && !!formValues.intermediateSight;
+  const hasValue = (value) => value != null && String(value).trim() !== "";
+  const rowTypeLocked =
+    (rowType === "Chainage" &&
+      (hasValue(formValues.roadWidth) || hasValue(formValues.spacing))) ||
+    ((rowType === "Water Level" || rowType === "TBM") &&
+      hasValue(formValues.intermediateSight)) ||
+    (rowType === "CP" &&
+      (hasValue(formValues.foreSight) || hasValue(formValues.backSight)));
 
   const schema = Yup.object().shape({
     type: Yup.string().required("Type is required"),
@@ -1027,7 +1033,7 @@ const RoadSurveyRowsForm = () => {
               purpose.phase === "Proposal" ? String(r.reducedLevel || "") : "",
             offset: String(r.offset || ""),
             remark: String(r.remark || ""),
-            mode: r.mode || "S",
+            mode: r.mode || "R",
           })),
         };
       } else {
@@ -1241,7 +1247,7 @@ const RoadSurveyRowsForm = () => {
           rl: v.reducedLevel || "",
           offset: v.offset || "",
           remark: v.remark || "",
-          mode: v.mode || "S",
+          mode: v.mode || "R",
         })),
       };
       const calculatedData = getLastRlAndHi(
@@ -2104,6 +2110,21 @@ const RoadSurveyRowsForm = () => {
                             {showBasis && (
                               <Box
                                 onClick={() => {
+                                  if (
+                                    row.mode !== "S" &&
+                                    !purpose?.rows?.some(
+                                      (reading) => reading.type === "Water Level",
+                                    )
+                                  ) {
+                                    dispatch(
+                                      showAlert({
+                                        type: "error",
+                                        message:
+                                          "Add a Water Level reading first before selecting Soundings",
+                                      }),
+                                    );
+                                    return;
+                                  }
                                   const updated = [
                                     ...formValues.intermediateOffsets,
                                   ];
@@ -2115,6 +2136,7 @@ const RoadSurveyRowsForm = () => {
                                     ...prev,
                                     intermediateOffsets: updated,
                                   }));
+                                  handleChangeReducedLevel(updated);
                                 }}
                                 sx={{
                                   position: "relative",
@@ -2130,14 +2152,14 @@ const RoadSurveyRowsForm = () => {
                                   border: "1.5px solid",
                                   borderColor:
                                     row.mode === "R"
-                                      ? "rgba(139,90,43,0.18)"
-                                      : "rgba(2,132,199,0.18)",
+                                      ? "rgba(124,58,237,0.25)"
+                                      : "rgba(234,88,12,0.25)",
                                   transition: "border-color 0.2s",
                                   "&:hover": {
                                     borderColor:
                                       row.mode === "R"
-                                        ? "rgba(139,90,43,0.4)"
-                                        : "rgba(2,132,199,0.4)",
+                                        ? "rgba(124,58,237,0.5)"
+                                        : "rgba(234,88,12,0.5)",
                                   },
                                 }}
                               >
@@ -2152,11 +2174,11 @@ const RoadSurveyRowsForm = () => {
                                     height: "calc(50% - 1px)",
                                     borderRadius: "11px",
                                     bgcolor:
-                                      row.mode === "R" ? "#8b5a2b" : "#0284c7", // R = brown (ground/land), S = blue (water)
+                                      row.mode === "R" ? "#7c3aed" : "#ea580c",
                                     boxShadow:
                                       row.mode === "R"
-                                        ? "0 2px 6px rgba(139,90,43,0.45)"
-                                        : "0 2px 6px rgba(2,132,199,0.45)",
+                                        ? "0 2px 6px rgba(124,58,237,0.45)"
+                                        : "0 2px 6px rgba(234,88,12,0.45)",
                                     transition:
                                       "top 0.22s cubic-bezier(.4,0,.2,1), background 0.22s",
                                   }}
@@ -2391,7 +2413,7 @@ const RoadSurveyRowsForm = () => {
                       // },
                     ].map((type, i) => {
                       const isDisabled =
-                        (waterLevelLocked && type.label !== "NEXT") ||
+                        (rowTypeLocked && type.label !== "NEXT") ||
                         (purpose.status === "Paused" &&
                           type.label !== "CP" &&
                           type.label !== "NEXT");

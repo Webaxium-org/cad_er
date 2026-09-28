@@ -89,6 +89,7 @@ const CrossSectionChart = ({
         mt: 0,
         bgcolor: "transparent",
         overflowX: "auto",
+        boxShadow: "none",
       }}
       ref={pdfRef}
     >
@@ -274,6 +275,7 @@ const CrossSectionChart = ({
           width: "100%",
           bgcolor: "transparent",
           overflowX: "auto",
+          boxShadow: "none",
         }}
       >
         <Table size="small" sx={{ tableLayout: "fixed" }}>

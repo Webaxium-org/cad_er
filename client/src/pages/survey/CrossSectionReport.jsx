@@ -890,7 +890,7 @@ const CrossSectionReport = () => {
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 3, md: 5 },
+            p: { xs: 2, sm: 3, md: 4 },
             borderRadius: "28px",
             bgcolor: "#ffffff",
             boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)",
@@ -919,10 +919,11 @@ const CrossSectionReport = () => {
           />
 
           <Stack
-            direction={"row"}
+            direction={{ xs: "column", sm: "row" }}
             justifyContent={"space-between"}
-            alignItems={"center"}
+            alignItems={{ xs: "stretch", sm: "center" }}
             spacing={2}
+            sx={{ mb: 3 }}
           >
             <Stack direction="row" alignItems="center" spacing={1}>
               <BasicButton
@@ -941,22 +942,25 @@ const CrossSectionReport = () => {
                 onClick={() => navigate(-1)}
                 value={<MdArrowBackIosNew fontSize={18} />}
               />
-              <Typography
-                variant="h6"
-                fontSize={20}
-                fontWeight={800}
-                color="#1e293b"
-              >
-                CS AT CH {selectedCs?.chainage}
-              </Typography>
+              <Box>
+                <Typography variant="overline" sx={{ color: "#6366f1", fontWeight: 800, letterSpacing: "0.12em" }}>
+                  SURVEY REPORT
+                </Typography>
+                <Typography variant="h5" sx={{ color: "#1e293b", fontWeight: 800, lineHeight: 1.2 }}>
+                  Cross Section Report
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {selectedCs?.chainage ? `Chainage ${selectedCs.chainage}` : "Select a chainage below"}
+                </Typography>
+              </Box>
             </Stack>
 
-            <Box textAlign={"end"}>
+            <Box textAlign={{ xs: "start", sm: "end" }}>
               <BasicMenu
                 label={<BsThreeDots />}
                 items={menuItems}
                 onSelect={handleMenuSelect}
-                sx={{ minWidth: "fit-content", p: 1 }}
+              sx={{ minWidth: "fit-content", p: 1, borderRadius: "12px" }}
               />
             </Box>
           </Stack>
@@ -967,49 +971,50 @@ const CrossSectionReport = () => {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              position: "sticky",
-              top: 0,
-              zIndex: 3,
+              gap: 2,
             }}
           >
-            <WaterWayProposalNotice purposes={tableData} />
-            <SectionScaleInputs
-              scales={drawingScales}
-              onChange={setDrawingScales}
-            />
-            {selectedCs && selectedCs?.series && interactiveChartOptions && (
-              <CrossSectionChart
-                drawingScales={drawingScales}
-                selectedCs={selectedCs}
-                chartOptions={interactiveChartOptions}
-                pdfRef={pdfRef}
-              />
-            )}
+            <Box sx={{ width: "100%", p: { xs: 2, md: 3 }, border: "1px solid #e2e8f0", borderRadius: "20px", bgcolor: "#fff" }}>
+              <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
+                <Box textAlign="left">
+                  <Typography variant="h6" sx={{ color: "#1e293b", fontWeight: 800 }}>Cross section profile</Typography>
+                  <Typography variant="body2" color="text.secondary">View and adjust the drawing scale</Typography>
+                </Box>
+                <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
+              </Stack>
+              <WaterWayProposalNotice purposes={tableData} />
+              {selectedCs && selectedCs?.series && interactiveChartOptions && (
+                <CrossSectionChart
+                  drawingScales={drawingScales}
+                  selectedCs={selectedCs}
+                  chartOptions={interactiveChartOptions}
+                  pdfRef={pdfRef}
+                />
+              )}
+            </Box>
 
             <Box
               sx={{
-                height: 56, // MUI table header height
+                minHeight: 56,
                 display: "flex",
                 alignItems: "center",
 
                 px: 2,
-                mt: 2,
                 width: "100%",
                 fontWeight: 700,
                 fontSize: "0.875rem",
-                color: "rgba(0, 0, 0, 0.87)",
+                color: "#1e293b",
 
-                backgroundColor: "#f4f6f8",
-                borderBottom: "1px solid #e0e0e0",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
 
-                borderTopLeftRadius: 4,
-                borderTopRightRadius: 4,
+                borderRadius: "16px 16px 0 0",
 
                 // Optional: match table cell look
                 boxSizing: "border-box",
               }}
             >
-              CH
+              Chainage details
             </Box>
 
             <TableContainer
@@ -1017,8 +1022,11 @@ const CrossSectionReport = () => {
               sx={{
                 maxHeight: 440,
                 overflowX: "auto",
-                borderRadius: 0,
+                borderRadius: "0 0 16px 16px",
                 position: "relative",
+                boxShadow: "none",
+                border: "1px solid #e2e8f0",
+                borderTop: 0,
               }}
             >
               <Table stickyHeader sx={{ tableLayout: "fixed" }}>
@@ -1027,14 +1035,15 @@ const CrossSectionReport = () => {
                     (row, index) =>
                       row.type === "Chainage" && (
                         <Fragment key={index}>
-                          <TableRow>
+                          <TableRow sx={{ "&:hover": { bgcolor: "#f8f9ff" } }}>
                             <TableCell
                               sx={{
                                 position: "sticky",
                                 left: 0,
-                                zIndex: 3, // higher than table body cells
-                                backgroundColor: "#fff", // IMPORTANT to avoid overlap transparency
-                                borderBottom: 0,
+                                zIndex: 3,
+                                backgroundColor: "transparent",
+                                borderBottom: "1px solid #e2e8f0",
+                                py: 1,
                               }}
                             >
                               <BasicButton
@@ -1044,11 +1053,14 @@ const CrossSectionReport = () => {
                                   py: 1,
                                   px: 2,
                                   cursor: "pointer",
-                                  border: "1px solid #6366f1",
-                                  color: "#6366f1",
+                                  border: "1px solid #c7d2fe",
+                                  borderRadius: "10px",
+                                  bgcolor: openRowId === row._id ? "#eef2ff" : "#fff",
+                                  color: "#4f46e5",
+                                  fontWeight: 700,
                                   "&:hover": {
-                                    bgcolor: "#f8fafc",
-                                    color: "#6366f1",
+                                    bgcolor: "#eef2ff",
+                                    color: "#4f46e5",
                                   },
                                 }}
                                 onClick={() => handleTableToggle(row._id)}
@@ -1061,14 +1073,14 @@ const CrossSectionReport = () => {
                                 paddingBottom: 0,
                                 paddingTop: 0,
                               }}
-                              colSpan={6}
+                              colSpan={1}
                             >
                               <Collapse
                                 in={openRowId === row._id}
                                 timeout="auto"
                                 unmountOnExit
                               >
-                                <Table size="small" aria-label="purchases">
+                                <Table size="small" aria-label="Chainage levels" sx={{ "& th, & td": { borderColor: "#e2e8f0" } }}>
                                   <TableBody>
                                     <TableRow>
                                       <TableCell
@@ -1076,9 +1088,9 @@ const CrossSectionReport = () => {
                                           position: "sticky",
                                           left: 0,
                                           zIndex: 3,
-                                          backgroundColor: "#fff",
+                                          backgroundColor: "#f8fafc",
                                           fontWeight: 600,
-                                          borderRight: "1px solid #e0e0e0",
+                                          borderRight: "1px solid #e2e8f0",
                                         }}
                                       >
                                         Offset
@@ -1106,7 +1118,7 @@ const CrossSectionReport = () => {
                                             left: 0,
                                             zIndex: 2,
                                             backgroundColor: "#fff",
-                                            borderRight: "1px solid #e0e0e0",
+                                            borderRight: "1px solid #e2e8f0",
                                           }}
                                         >
                                           {Number(offset).toFixed(3)}

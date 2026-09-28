@@ -13,7 +13,8 @@ import CrossSectionChart from "./components/CrossSectionChart";
 import { v1ChartOptions, v2ChartOptions } from "../../constants";
 import BasicMenu from "../../components/BasicMenu";
 import { BsThreeDots } from "react-icons/bs";
-import { MdDownload } from "react-icons/md";
+import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import BasicButton from "../../components/BasicButton";
 import SmallHeader from "../../components/SmallHeader";
 
 const LEVEL_ORDER = [
@@ -358,7 +359,7 @@ const LongitudinalSectionReport = () => {
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 3, md: 5 },
+            p: { xs: 2, sm: 3, md: 4 },
             borderRadius: "28px",
             bgcolor: "#ffffff",
             boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)",
@@ -380,26 +381,37 @@ const LongitudinalSectionReport = () => {
           />
 
           <Stack
-            direction={"row"}
+            direction={{ xs: "column", sm: "row" }}
             justifyContent={"space-between"}
-            alignItems={"center"}
+            alignItems={{ xs: "stretch", sm: "center" }}
             spacing={2}
-            mb={4}
+            sx={{ mb: 3 }}
           >
-            <Typography
-              variant="h6"
-              fontSize={20}
-              fontWeight={800}
-              color="#1e293b"
-            >
-              LONGITUDINAL SECTION
-            </Typography>
-            <Box textAlign={"end"}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <BasicButton
+                variant="text"
+                sx={{ height: 40, width: 40, minWidth: 40, borderRadius: "12px", color: "#334155", bgcolor: "#f1f5f9", border: "none", boxShadow: "none", "&:hover": { bgcolor: "#e2e8f0", color: "#1e293b" } }}
+                onClick={() => navigate(-1)}
+                value={<MdArrowBackIosNew fontSize={18} />}
+              />
+              <Box>
+                <Typography variant="overline" sx={{ color: "#6366f1", fontWeight: 800, letterSpacing: "0.12em" }}>
+                  SURVEY REPORT
+                </Typography>
+                <Typography variant="h5" sx={{ color: "#1e293b", fontWeight: 800, lineHeight: 1.2 }}>
+                  Longitudinal Section Report
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  View the survey profile along the chainage
+                </Typography>
+              </Box>
+            </Stack>
+            <Box textAlign={{ xs: "start", sm: "end" }}>
               <BasicMenu
                 label={<BsThreeDots />}
                 items={menuItems}
                 onSelect={handleMenuSelect}
-                sx={{ minWidth: "fit-content", p: 1 }}
+                sx={{ minWidth: "fit-content", p: 1, borderRadius: "12px" }}
               />
             </Box>
           </Stack>
@@ -411,26 +423,32 @@ const LongitudinalSectionReport = () => {
               alignItems: "center",
             }}
           >
-            {selectedCs && selectedCs?.series?.length && (
-              <>
+            <Box sx={{ width: "100%", p: { xs: 2, md: 3 }, border: "1px solid #e2e8f0", borderRadius: "20px", bgcolor: "#fff" }}>
+              <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
+                <Box textAlign="left">
+                  <Typography variant="h6" sx={{ color: "#1e293b", fontWeight: 800 }}>Longitudinal profile</Typography>
+                  <Typography variant="body2" color="text.secondary">View and adjust the drawing scale</Typography>
+                </Box>
+                <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
+              </Stack>
               <WaterWayProposalNotice purposes={tableData} />
-              <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
-              <CrossSectionChart
-              drawingScales={drawingScales}
-                selectedCs={selectedCs}
-                chartOptions={interactiveChartOptions}
-                pdfRef={pdfRef}
-              />
-            </>
-            )}
+              {selectedCs && selectedCs?.series?.length && (
+                <CrossSectionChart
+                  drawingScales={drawingScales}
+                  selectedCs={selectedCs}
+                  chartOptions={interactiveChartOptions}
+                  pdfRef={pdfRef}
+                />
+              )}
 
             {/* Footer */}
             <Typography
               variant="caption"
-              sx={{ mt: 1, fontStyle: "italic", color: "text.secondary" }}
+              sx={{ display: "block", mt: 2, color: "text.secondary" }}
             >
               [Hor Scale 1:{drawingScales.horizontal} : Ver Scale 1:{drawingScales.vertical}]
             </Typography>
+            </Box>
           </Box>
         </Paper>
       </Box>

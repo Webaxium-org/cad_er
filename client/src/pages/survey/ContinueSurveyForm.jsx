@@ -871,7 +871,7 @@ const ContinueSurveyForm = () => {
             spacing={4}
             className="input-wrapper"
           >
-            {/* Proposal toggle */}
+            {/* Proposal toggle
             <Box
               display={"flex"}
               alignItems={"center"}
@@ -890,6 +890,7 @@ const ContinueSurveyForm = () => {
                 onChange={() => setType(!type)}
               />
             </Box>
+            */}
 
             <Grid container spacing={3} columns={12} alignItems={"end"}>
               {inputData.map(
