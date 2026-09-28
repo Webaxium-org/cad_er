@@ -921,18 +921,20 @@ const RoadSurveyRowsForm = () => {
               : lastChainage.to;
 
           const chainageMultiple = purpose?.surveyId?.chainageMultiple;
-          const lastDigit = Number(
-            lastChainageDigit.split(purpose?.surveyId?.separator || "/")[1],
-          );
+          const separator = purpose?.surveyId?.separator || "/";
+          const [kilometres, metres] = lastChainageDigit
+            .split(separator)
+            .map(Number);
+          const lastDistance = kilometres * 1000 + metres;
 
-          const remainder = lastDigit % chainageMultiple;
+          const remainder = lastDistance % chainageMultiple;
           const nextNumber =
             remainder === 0
-              ? lastDigit + chainageMultiple
-              : lastDigit + (chainageMultiple - remainder);
+              ? lastDistance + chainageMultiple
+              : lastDistance + (chainageMultiple - remainder);
 
-          const nextChainage = `0${purpose?.surveyId?.separator || "/"}${String(
-            nextNumber,
+          const nextChainage = `${Math.floor(nextNumber / 1000)}${separator}${String(
+            nextNumber % 1000,
           ).padStart(3, "0")}`;
 
           setFormValues((prev) => ({
@@ -1041,14 +1043,21 @@ const RoadSurveyRowsForm = () => {
         }
 
         const purposeDoc = data.purpose;
+        const resumingWaterWay =
+          purpose.status === "Paused" &&
+          purpose?.surveyId?.type === "Water Way";
+        const waterLevelCount = resumingWaterWay
+          ? purposeDoc.rows.filter((r) => r.type === "Water Level").length
+          : 0;
 
         setFormValues({
           ...initialFormValues,
           intermediateOffsets: [
             { intermediateSight: "", offset: "", remark: "", mode: "R" },
           ],
-          remark:
-            rowType === "CP"
+          remark: resumingWaterWay
+            ? `WL - ${waterLevelCount + 1} (${formatDateTime()})`
+            : rowType === "CP" && purpose.status !== "Paused"
               ? `${rowType} - ${purposeDoc.rows.filter((r) => r.type === rowType)?.length + 1}`
               : "",
         });
@@ -2299,7 +2308,7 @@ const RoadSurveyRowsForm = () => {
 
             {/* Select Report Type Island */}
             {purpose &&
-              purpose?.status === "Active" &&
+              (purpose?.status === "Active" || purpose?.status === "Paused") &&
               purpose?.phase === "Actual" &&
               page === 0 && (
                 <Box
@@ -2382,7 +2391,10 @@ const RoadSurveyRowsForm = () => {
                       // },
                     ].map((type, i) => {
                       const isDisabled =
-                        waterLevelLocked && type.label !== "NEXT";
+                        (waterLevelLocked && type.label !== "NEXT") ||
+                        (purpose.status === "Paused" &&
+                          type.label !== "CP" &&
+                          type.label !== "NEXT");
                       return (
                         <Box
                           key={i}

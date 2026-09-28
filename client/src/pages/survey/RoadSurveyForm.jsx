@@ -14,6 +14,7 @@ import {
   Checkbox,
   Button,
   TextField,
+  MenuItem,
   Alert,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
@@ -352,6 +353,7 @@ const RoadSurveyForm = () => {
   const [instrumentRecords, setInstrumentRecords] = useState([]);
   const [editingInstrument, setEditingInstrument] = useState(false);
   const [editedInstrument, setEditedInstrument] = useState(null);
+  const [instrumentToEditSerial, setInstrumentToEditSerial] = useState("");
   const [instrumentEditError, setInstrumentEditError] = useState("");
   const [savingInstrument, setSavingInstrument] = useState(false);
   const [settingsEdit, setSettingsEdit] = useState(null);
@@ -481,7 +483,7 @@ const RoadSurveyForm = () => {
   };
 
   const handleSaveInstrument = async () => {
-    const previousSerial = formValues.instrumentNo;
+    const previousSerial = instrumentToEditSerial;
     const serial = editedInstrument?.serial?.trim();
     const model = editedInstrument?.model?.trim();
     if (!serial || !model) {
@@ -500,6 +502,7 @@ const RoadSurveyForm = () => {
       setFormValues((current) => ({ ...current, instrumentNo: serial, instrumentModel: model }));
       setEditingInstrument(false);
       setEditedInstrument(null);
+      setInstrumentToEditSerial("");
     } catch (error) {
       setInstrumentEditError(error.response?.data?.message || "Could not update the saved instrument.");
     } finally {
@@ -806,9 +809,16 @@ const RoadSurveyForm = () => {
               sx={{ width: "100%" }}
               onChange={handleInputChange}
             />
-            {instrumentOptions.some((option) => option.value === formValues.instrumentNo) && (
+            {instrumentRecords.some((item) =>
+              (formValues.instrumentNo && item.serial?.trim() === formValues.instrumentNo) ||
+              (formValues.instrumentModel && item.model?.trim() === formValues.instrumentModel),
+            ) && (
               <Button size="small" sx={{ alignSelf: "flex-start" }} onClick={() => {
-                setEditedInstrument({ ...instrumentRecords.find((item) => item.serial?.trim() === formValues.instrumentNo) });
+                const selected = instrumentRecords.find((item) => item.serial?.trim() === formValues.instrumentNo);
+                const modelMatches = instrumentRecords.filter((item) => item.model?.trim() === formValues.instrumentModel);
+                const instrument = selected || (modelMatches.length === 1 ? modelMatches[0] : null);
+                setEditedInstrument(instrument ? { ...instrument } : null);
+                setInstrumentToEditSerial(instrument?.serial?.trim() || "");
                 setInstrumentEditError("");
                 setEditingInstrument(true);
               }}>
@@ -1046,6 +1056,23 @@ const RoadSurveyForm = () => {
             >
               Saving changes will update this instrument in Settings and affect future projects.
             </Alert>
+            {!editedInstrument && (
+              <TextField
+                select fullWidth size="small" label="Select instrument number"
+                value={instrumentToEditSerial}
+                onChange={(event) => {
+                  const instrument = instrumentRecords.find((item) => item.serial?.trim() === event.target.value);
+                  setInstrumentToEditSerial(event.target.value);
+                  setEditedInstrument(instrument ? { ...instrument } : null);
+                }}
+              >
+                {instrumentRecords
+                  .filter((item) => item.model?.trim() === formValues.instrumentModel)
+                  .map((item) => (
+                    <MenuItem key={item.serial} value={item.serial?.trim()}>{item.serial}</MenuItem>
+                  ))}
+              </TextField>
+            )}
             <TextField fullWidth size="small" label="Instrument type" value={editedInstrument?.type || "Auto Level Readings (Degree)"} disabled />
             <TextField
               fullWidth size="small" autoFocus label="Instrument model*"
@@ -1080,11 +1107,12 @@ const RoadSurveyForm = () => {
         }
         cancelButtonText="Cancel"
         submitButtonText={savingInstrument ? "Saving..." : "Save to Settings"}
-        submitDisabled={savingInstrument}
+        submitDisabled={savingInstrument || !instrumentToEditSerial}
         open={editingInstrument}
         onCancel={() => {
           setEditingInstrument(false);
           setEditedInstrument(null);
+          setInstrumentToEditSerial("");
           setInstrumentEditError("");
         }}
         onSubmit={handleSaveInstrument}

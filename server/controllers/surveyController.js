@@ -823,7 +823,8 @@ const createSurveyRow = async (req, res, next) => {
           foreSight: foreSight ? Number(foreSight).toFixed(3) : undefined,
           reducedLevels: newReading.reducedLevels,
           heightOfInstrument: newReading.heightOfInstrument,
-          remarks,
+          remark,
+          observation: observation || "",
         },
         { new: true, session },
       );
@@ -862,7 +863,11 @@ const createSurveyRow = async (req, res, next) => {
       row: newRow,
       purpose: {
         ...plainPurpose,
-        rows: [...plainPurpose.rows, newRow],
+        rows: isSurveyPaused
+          ? plainPurpose.rows.map((row) =>
+              String(row._id) === String(newRow._id) ? newRow : row,
+            )
+          : [...plainPurpose.rows, newRow],
       },
     });
   } catch (err) {
