@@ -33,8 +33,10 @@ export default function AlertDialogSlide({
         onClose={onCancel}
         aria-describedby="alert-dialog-slide-description"
         sx={{
-          "& .MuiDialog-container , .MuiPaper-elevation": {
-            width: "100%",
+          "& .MuiDialog-paper": {
+            width: "calc(100% - 32px)",
+            maxWidth: "600px",
+            boxSizing: "border-box",
           },
         }}
       >

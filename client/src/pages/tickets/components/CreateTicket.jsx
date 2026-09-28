@@ -15,7 +15,9 @@ const initialFormValues = {
 };
 
 const schema = Yup.object().shape({
-  feedbackType: Yup.string().required("Feedback type is required"),
+  feedbackType: Yup.string()
+    .oneOf(["Idea", "Glitch", "Evolution", "SOS", "Review"])
+    .required("Feedback type is required"),
   description: Yup.string().required("Message is required"),
 });
 
@@ -98,7 +100,7 @@ const CreateTicket = ({ onClose }) => {
 
       <Stack direction={"row"} spacing={2} justifyContent="flex-end">
         {!isLoading && (
-          <Button onClick={onClose} sx={{ p: 0 }}>
+          <Button onClick={() => onClose()} sx={{ p: 0 }}>
             Cancel
           </Button>
         )}

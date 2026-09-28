@@ -12,6 +12,9 @@ import {
   StepLabel,
   Divider,
   Checkbox,
+  Button,
+  TextField,
+  Alert,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -32,7 +35,7 @@ import {
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import AdvancedAutoComplete from "../../components/AdvancedAutoComplete";
 import SmallHeader from "../../components/SmallHeader";
-import { getSettings } from "../../services/settingsServices";
+import { getSettings, updateInstrument, updateSettingsFields } from "../../services/settingsServices";
 import { CgGoogleTasks } from "react-icons/cg";
 import { FaLocationArrow } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
@@ -59,6 +62,12 @@ const commissioningOptionFields = Object.fromEntries(
     ),
   ]),
 );
+
+const editableCommissioningFields = {
+  Government: ["Department", "Agreement No.", "Division", "Sub-Division", "Section", "Contractor"],
+  "Corporate / Private": ["Client", "Agreement No.", "Contractor", "Consultant", "Additional field 1", "Additional field 2"],
+};
+const editableStaffFields = [1, 2, 3, 4, 5, 6].map((number) => `Staff ${number}`);
 
 const surveyorRoles = [
   { label: "Engineer", value: "Engineer" },
@@ -151,19 +160,22 @@ const step1Fields = [
     hidden: true,
   },
   { label: "Agreement no*", name: "agreementNo", type: "text" },
+  { label: "Select equipment", name: "hasEquipment", mode: "toggle" },
+  { label: "Instrument model*", name: "instrumentModel", type: "text", size: 6 },
   { label: "Instrument number*", name: "instrumentNo", type: "text", size: 6 },
+  { label: "Technical lead", name: "hasTechnicalLead", mode: "toggle" },
   {
-    label: "Engineer / Surveyor",
+    label: "Engineer / Surveyor*",
     name: "engineerSurveyor",
     mode: "select",
     options: surveyorRoles,
     size: 6,
   },
-  { label: "Assistant 1", name: "assistant1", type: "text", size: 6 },
-  { label: "Assistant 2", name: "assistant2", type: "text", size: 6 },
-  { label: "Assistant 3", name: "assistant3", type: "text", size: 6 },
-  { label: "Assistant 4", name: "assistant4", type: "text", size: 6 },
-  { label: "Assistant 5", name: "assistant5", type: "text", size: 6 },
+  { label: "Assistant 1*", name: "assistant1", type: "text", size: 6 },
+  { label: "Assistant 2*", name: "assistant2", type: "text", size: 6 },
+  { label: "Assistant 3*", name: "assistant3", type: "text", size: 6 },
+  { label: "Assistant 4*", name: "assistant4", type: "text", size: 6 },
+  { label: "Assistant 5*", name: "assistant5", type: "text", size: 6 },
 ];
 
 // ─── Step 2 Fields ────────────────────────────────────────────────────────────
@@ -198,6 +210,9 @@ const initialFormValues = {
   section: "",
   consultant: "",
   client: "",
+  hasEquipment: false,
+  instrumentModel: "",
+  hasTechnicalLead: false,
   engineerSurveyor: "",
   assistant1: "",
   assistant2: "",
@@ -224,7 +239,7 @@ const initialQueueValues = {
 };
 
 // ─── Yup schemas ──────────────────────────────────────────────────────────────
-const buildStep1Schema = (category) =>
+const buildStep1Schema = (category, hasEquipment, hasTechnicalLead) =>
   Yup.object().shape({
     project: Yup.string().required("Project name is required"),
     purpose: Yup.string().required("Purpose is required"),
@@ -260,16 +275,13 @@ const buildStep1Schema = (category) =>
       category === "noneProject"
         ? Yup.string().nullable()
         : Yup.string().required("Agreement no is required"),
-    instrumentNo:
-      category === "noneProject"
-        ? Yup.string().nullable()
-        : Yup.string().required("Instrument number is required"),
-    engineerSurveyor: Yup.string().nullable(),
-    assistant1: Yup.string().nullable(),
-    assistant2: Yup.string().nullable(),
-    assistant3: Yup.string().nullable(),
-    assistant4: Yup.string().nullable(),
-    assistant5: Yup.string().nullable(),
+    instrumentModel: hasEquipment ? Yup.string().trim().required("Instrument model is required") : Yup.string().nullable(),
+    instrumentNo: hasEquipment ? Yup.string().trim().required("Instrument number is required") : Yup.string().nullable(),
+    engineerSurveyor: hasTechnicalLead ? Yup.string().required("Engineer / Surveyor is required") : Yup.string().nullable(),
+    ...Object.fromEntries([1, 2, 3, 4, 5].map((number) => [
+      `assistant${number}`,
+      hasTechnicalLead ? Yup.string().trim().required(`Assistant ${number} is required`) : Yup.string().nullable(),
+    ])),
   });
 
 const step2Schema = Yup.object().shape({
@@ -337,6 +349,14 @@ const RoadSurveyForm = () => {
   const [category, setCategory] = useState("noneProject");
   const [commissioningDefaults, setCommissioningDefaults] = useState(null);
   const [instrumentOptions, setInstrumentOptions] = useState([]);
+  const [instrumentRecords, setInstrumentRecords] = useState([]);
+  const [editingInstrument, setEditingInstrument] = useState(false);
+  const [editedInstrument, setEditedInstrument] = useState(null);
+  const [instrumentEditError, setInstrumentEditError] = useState("");
+  const [savingInstrument, setSavingInstrument] = useState(false);
+  const [settingsEdit, setSettingsEdit] = useState(null);
+  const [settingsEditError, setSettingsEditError] = useState("");
+  const [savingSettingsEdit, setSavingSettingsEdit] = useState(false);
   const [staffDefaults, setStaffDefaults] = useState(null);
   const agreementByCategory = useRef({});
   const [formValues, setFormValues] = useState(() => ({
@@ -359,6 +379,7 @@ const RoadSurveyForm = () => {
         if (!active) return;
         const settings = data.settings || {};
         setStaffDefaults(settings.staff || {});
+        setInstrumentRecords(settings.instruments || []);
         setInstrumentOptions(
           [
             ...new Set(
@@ -411,8 +432,14 @@ const RoadSurveyForm = () => {
     }));
   }, [category, existingSurveyId]);
 
-  // Derive visible step-1 fields based on category
+  // Derive visible step-1 fields based on category and selected surveyor role
   const visibleStep1Fields = step1Fields.map((f) => {
+    if (["instrumentModel", "instrumentNo"].includes(f.name)) {
+      return { ...f, hidden: !formValues.hasEquipment };
+    }
+    if (f.name === "engineerSurveyor" || /^assistant[1-5]$/.test(f.name)) {
+      return { ...f, hidden: !formValues.hasTechnicalLead };
+    }
     if (["department", "division", "subDivision", "section"].includes(f.name)) {
       return { ...f, hidden: category !== "publicProject" };
     }
@@ -420,19 +447,6 @@ const RoadSurveyForm = () => {
       return { ...f, hidden: category !== "privateProject" };
     }
     if (f.name === "agreementNo") {
-      return { ...f, hidden: category === "noneProject" };
-    }
-    if (
-      [
-        "instrumentNo",
-        "engineerSurveyor",
-        "assistant1",
-        "assistant2",
-        "assistant3",
-        "assistant4",
-        "assistant5",
-      ].includes(f.name)
-    ) {
       return { ...f, hidden: category === "noneProject" };
     }
     return f;
@@ -453,9 +467,104 @@ const RoadSurveyForm = () => {
             engineerSurveyor: value,
             ...assistantsForRole(staffDefaults, value),
           }
-        : { ...prev, [name]: value },
+        : name === "instrumentNo"
+          ? {
+              ...prev,
+              instrumentNo: value,
+              instrumentModel: instrumentRecords.find((item) => item.serial?.trim() === value)?.model?.trim() || prev.instrumentModel,
+            }
+          : name === "instrumentModel"
+            ? { ...prev, instrumentModel: value, instrumentNo: "" }
+            : { ...prev, [name]: value },
     );
     setFormErrors((prev) => ({ ...prev, [name]: null }));
+  };
+
+  const handleSaveInstrument = async () => {
+    const previousSerial = formValues.instrumentNo;
+    const serial = editedInstrument?.serial?.trim();
+    const model = editedInstrument?.model?.trim();
+    if (!serial || !model) {
+      setInstrumentEditError("Instrument model and number are required");
+      return;
+    }
+    setSavingInstrument(true);
+    setInstrumentEditError("");
+    try {
+      const { data } = await updateInstrument(previousSerial, editedInstrument);
+      setInstrumentRecords(data.instruments);
+      setInstrumentOptions(
+        [...new Set(data.instruments.map((instrument) => instrument?.serial?.trim()).filter(Boolean))]
+          .map((value) => ({ label: value, value })),
+      );
+      setFormValues((current) => ({ ...current, instrumentNo: serial, instrumentModel: model }));
+      setEditingInstrument(false);
+      setEditedInstrument(null);
+    } catch (error) {
+      setInstrumentEditError(error.response?.data?.message || "Could not update the saved instrument.");
+    } finally {
+      setSavingInstrument(false);
+    }
+  };
+
+  const openSettingsEdit = (section, group) => {
+    const fields = section === "staff" ? editableStaffFields : editableCommissioningFields[group];
+    const saved = section === "staff" ? staffDefaults?.[group] || {} : commissioningDefaults?.[group] || {};
+    const legacy = ["Name", "Phone", "Email", "Field 4", "Field 5", "Field 6"];
+    setSettingsEdit({
+      section,
+      group,
+      values: Object.fromEntries(fields.map((field, index) => [
+        field,
+        saved[field] ?? (section === "staff" ? saved[legacy[index]] : "") ?? "",
+      ])),
+    });
+    setSettingsEditError("");
+  };
+
+  const handleSaveSettingsEdit = async () => {
+    if (!settingsEdit) return;
+    const { section, group, values } = settingsEdit;
+    setSavingSettingsEdit(true);
+    setSettingsEditError("");
+    try {
+      const { data } = await updateSettingsFields(section, group, values);
+      if (section === "staff") {
+        const oldAssistants = assistantsForRole(staffDefaults, formValues.engineerSurveyor);
+        const updatedStaff = { ...staffDefaults, [group]: data.values };
+        const newAssistants = assistantsForRole(updatedStaff, formValues.engineerSurveyor);
+        setStaffDefaults(updatedStaff);
+        if (group === (formValues.engineerSurveyor === "Engineer" ? "Engineer / Site In-Charge" : formValues.engineerSurveyor)) {
+          setFormValues((current) => ({
+            ...current,
+            ...Object.fromEntries(Object.keys(newAssistants)
+              .filter((key) => current[key] === oldAssistants[key])
+              .map((key) => [key, newAssistants[key]])),
+          }));
+        }
+      } else {
+        const previous = commissioningDefaults?.[group] || {};
+        setCommissioningDefaults((current) => ({ ...current, [group]: data.values }));
+        const activeGroup = category === "publicProject" ? "Government" : category === "privateProject" ? "Corporate / Private" : null;
+        if (group === activeGroup) {
+          const names = { ...commissioningFields[category], "Agreement No.": "agreementNo" };
+          setFormValues((current) => ({
+            ...current,
+            ...Object.fromEntries(Object.entries(names)
+              .filter(([field, name]) => current[name] === (previous[field] || ""))
+              .map(([field, name]) => [name, data.values[field] || ""])),
+          }));
+          if (agreementByCategory.current[category] === (previous["Agreement No."] || "")) {
+            agreementByCategory.current[category] = data.values["Agreement No."] || "";
+          }
+        }
+      }
+      setSettingsEdit(null);
+    } catch (error) {
+      setSettingsEditError(error.response?.data?.message || "Could not save Settings.");
+    } finally {
+      setSavingSettingsEdit(false);
+    }
   };
 
   const handleQueueChange = (event) => {
@@ -466,7 +575,7 @@ const RoadSurveyForm = () => {
 
   // ─── Step navigation ────────────────────────────────────────────────────────
   const handleNext = async () => {
-    const schema = buildStep1Schema(category);
+    const schema = buildStep1Schema(category, formValues.hasEquipment, formValues.hasTechnicalLead);
     try {
       await schema.validate(formValues, { abortEarly: false });
       setFormErrors(null);
@@ -495,7 +604,7 @@ const RoadSurveyForm = () => {
 
   // ─── Open Queue modal (validates step 1 first) ──────────────────────────────
   const handleOpenQueue = async () => {
-    const schema = buildStep1Schema(category);
+    const schema = buildStep1Schema(category, formValues.hasEquipment, formValues.hasTechnicalLead);
     try {
       await schema.validate(formValues, { abortEarly: false });
       setFormErrors(null);
@@ -574,6 +683,7 @@ const RoadSurveyForm = () => {
           agreementNo: formValues.agreementNo,
           contractor: formValues.contractor,
           instrumentNo: formValues.instrumentNo,
+          instrumentModel: formValues.instrumentModel,
           reducedLevel: formValues.reducedLevel,
           backSight: formValues.backSight,
           remark: formValues.remark,
@@ -648,6 +758,10 @@ const RoadSurveyForm = () => {
           section: s.section || "",
           consultant: s.consultant || "",
           client: s.client || "",
+          hasEquipment: s.hasEquipment ?? Boolean(s.instrumentNo || s.instrumentModel),
+          instrumentModel: s.instrumentModel || "",
+          instrumentNo: s.instrumentNo || "",
+          hasTechnicalLead: s.hasTechnicalLead ?? Boolean(s.engineerSurveyor),
           engineerSurveyor: s.engineerSurveyor || "",
           assistant1: s.assistant1 || "",
           assistant2: s.assistant2 || "",
@@ -677,25 +791,92 @@ const RoadSurveyForm = () => {
       commissioningOptionFields[category]?.[input.name] ||
       (input.name === "agreementNo" ? "Agreement No." : null);
     const savedOption = settingsField && savedFields[settingsField]?.trim();
-    const options =
-      input.name === "instrumentNo"
-        ? instrumentOptions
-        : savedOption
-          ? [{ label: savedOption, value: savedOption }]
-          : [];
-    const isTypedSelect = Boolean(
-      settingsField || input.name === "instrumentNo",
-    );
+    const options = savedOption ? [{ label: savedOption, value: savedOption }] : [];
+    const isTypedSelect = Boolean(settingsField);
     return (
       <Grid size={{ xs: size || 12 }} key={index}>
-        {mode === "select" ? (
-          <BasicSelect
+        {input.name === "instrumentModel" ? (
+          <Stack spacing={1}>
+            <AdvancedAutoComplete
+              {...input}
+              options={[...new Set(instrumentRecords.map((item) => item?.model?.trim()).filter(Boolean))]
+                .map((model) => ({ label: model, value: model }))}
+              value={formValues.instrumentModel || ""}
+              error={(formErrors && formErrors.instrumentModel) || ""}
+              sx={{ width: "100%" }}
+              onChange={handleInputChange}
+            />
+            {instrumentOptions.some((option) => option.value === formValues.instrumentNo) && (
+              <Button size="small" sx={{ alignSelf: "flex-start" }} onClick={() => {
+                setEditedInstrument({ ...instrumentRecords.find((item) => item.serial?.trim() === formValues.instrumentNo) });
+                setInstrumentEditError("");
+                setEditingInstrument(true);
+              }}>
+                Edit saved instrument
+              </Button>
+            )}
+          </Stack>
+        ) : input.name === "instrumentNo" ? (
+          <AdvancedAutoComplete
             {...input}
-            value={formValues[input.name] || ""}
-            error={(formErrors && formErrors[input.name]) || ""}
+            options={instrumentOptions.filter((option) =>
+              !formValues.instrumentModel || instrumentRecords.some((item) =>
+                item.serial?.trim() === option.value && item.model?.trim() === formValues.instrumentModel,
+              ),
+            )}
+            value={formValues.instrumentNo || ""}
+            error={(formErrors && formErrors.instrumentNo) || ""}
             sx={{ width: "100%" }}
             onChange={handleInputChange}
           />
+        ) : mode === "toggle" ? (
+          <Box
+            component="label"
+            display="inline-flex"
+            alignItems="center"
+            gap={0.5}
+            sx={{ cursor: "pointer", alignSelf: "flex-start" }}
+          >
+            <Typography variant="body2" fontSize="14px" fontWeight={600} color="black">
+              {input.label}
+            </Typography>
+            <Checkbox
+              size="small"
+              sx={{ p: 0.25 }}
+              checked={Boolean(formValues[input.name])}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setFormValues((current) => ({
+                  ...current,
+                  [input.name]: checked,
+                  ...(input.name === "hasEquipment" && !checked ? { instrumentModel: "", instrumentNo: "" } : {}),
+                  ...(input.name === "hasTechnicalLead" && !checked ? {
+                    engineerSurveyor: "",
+                    assistant1: "", assistant2: "", assistant3: "", assistant4: "", assistant5: "",
+                  } : {}),
+                }));
+                setFormErrors(null);
+              }}
+              inputProps={{ "aria-label": input.label }}
+            />
+          </Box>
+        ) : mode === "select" ? (
+          <Stack spacing={1}>
+            <BasicSelect
+              {...input}
+              value={formValues[input.name] || ""}
+              error={(formErrors && formErrors[input.name]) || ""}
+              sx={{ width: "100%" }}
+              onChange={handleInputChange}
+            />
+            {input.name === "engineerSurveyor" && formValues.engineerSurveyor && staffDefaults && (
+              <Button size="small" sx={{ alignSelf: "flex-start" }} onClick={() =>
+                openSettingsEdit("staff", formValues.engineerSurveyor === "Engineer" ? "Engineer / Site In-Charge" : formValues.engineerSurveyor)
+              }>
+                Edit saved staff for this role
+              </Button>
+            )}
+          </Stack>
         ) : mode === "solo-create" || isTypedSelect ? (
           <AdvancedAutoComplete
             {...input}
@@ -744,34 +925,6 @@ const RoadSurveyForm = () => {
                         client: "",
                         contractor: "",
                         agreementNo: "",
-                        instrumentNo:
-                          option.name === "noneProject"
-                            ? ""
-                            : current.instrumentNo,
-                        engineerSurveyor:
-                          option.name === "noneProject"
-                            ? ""
-                            : current.engineerSurveyor,
-                        assistant1:
-                          option.name === "noneProject"
-                            ? ""
-                            : current.assistant1,
-                        assistant2:
-                          option.name === "noneProject"
-                            ? ""
-                            : current.assistant2,
-                        assistant3:
-                          option.name === "noneProject"
-                            ? ""
-                            : current.assistant3,
-                        assistant4:
-                          option.name === "noneProject"
-                            ? ""
-                            : current.assistant4,
-                        assistant5:
-                          option.name === "noneProject"
-                            ? ""
-                            : current.assistant5,
                       }));
                       setFormErrors((prev) => ({ ...prev, category: null }));
                     }}
@@ -779,6 +932,14 @@ const RoadSurveyForm = () => {
                 </Box>
               ))}
             </Stack>
+            {category !== "noneProject" && commissioningDefaults && (
+              <Button size="small" onClick={() => openSettingsEdit(
+                "commissioning",
+                category === "publicProject" ? "Government" : "Corporate / Private",
+              )}>
+                Edit saved {category === "publicProject" ? "public" : "private"} project details
+              </Button>
+            )}
             {formErrors?.category && (
               <Typography variant="caption" color="error" mt={0.5}>
                 {formErrors.category}
@@ -872,6 +1033,96 @@ const RoadSurveyForm = () => {
         open={Boolean(noneWarningAction)}
         onCancel={() => setNoneWarningAction(null)}
         onSubmit={handleConfirmNone}
+      />
+
+      <AlertDialogSlide
+        title="Edit saved instrument"
+        content={
+          <Stack spacing={2} mt={1}>
+            <Alert
+              severity="warning"
+              variant="outlined"
+              sx={{ borderRadius: 2, minWidth: 0, maxWidth: "100%", boxSizing: "border-box", "& .MuiAlert-message": { minWidth: 0, overflowWrap: "anywhere" } }}
+            >
+              Saving changes will update this instrument in Settings and affect future projects.
+            </Alert>
+            <TextField fullWidth size="small" label="Instrument type" value={editedInstrument?.type || "Auto Level Readings (Degree)"} disabled />
+            <TextField
+              fullWidth size="small" autoFocus label="Instrument model*"
+              value={editedInstrument?.model || ""}
+              onChange={(event) => {
+                setEditedInstrument((current) => ({ ...current, model: event.target.value }));
+                setInstrumentEditError("");
+              }}
+            />
+            <TextField
+              fullWidth size="small" label="Instrument number*"
+              value={editedInstrument?.serial || ""}
+              onChange={(event) => {
+                setEditedInstrument((current) => ({ ...current, serial: event.target.value }));
+                setInstrumentEditError("");
+              }}
+            />
+            <TextField
+              fullWidth size="small" type="date" label="Date of purchase"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={editedInstrument?.purchaseDate || ""}
+              onChange={(event) => setEditedInstrument((current) => ({ ...current, purchaseDate: event.target.value }))}
+            />
+            <TextField
+              fullWidth size="small" type="date" label="Last calibration date"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={editedInstrument?.calibrationDate || ""}
+              onChange={(event) => setEditedInstrument((current) => ({ ...current, calibrationDate: event.target.value }))}
+            />
+            {instrumentEditError && <Typography variant="body2" color="error">{instrumentEditError}</Typography>}
+          </Stack>
+        }
+        cancelButtonText="Cancel"
+        submitButtonText={savingInstrument ? "Saving..." : "Save to Settings"}
+        submitDisabled={savingInstrument}
+        open={editingInstrument}
+        onCancel={() => {
+          setEditingInstrument(false);
+          setEditedInstrument(null);
+          setInstrumentEditError("");
+        }}
+        onSubmit={handleSaveInstrument}
+      />
+
+      <AlertDialogSlide
+        title={settingsEdit?.section === "staff" ? `Edit ${settingsEdit.group} staff` : `Edit ${settingsEdit?.group || ""} project details`}
+        description="Warning: Saving these changes will replace the saved values in Settings. The updated values will appear in future projects."
+        content={settingsEdit && (
+          <Stack spacing={2} mt={2}>
+            {Object.entries(settingsEdit.values).map(([field, value]) => (
+              <TextField
+                key={field}
+                fullWidth
+                size="small"
+                label={field}
+                value={value}
+                onChange={(event) => {
+                  setSettingsEdit((current) => ({
+                    ...current,
+                    values: { ...current.values, [field]: event.target.value },
+                  }));
+                  setSettingsEditError("");
+                }}
+              />
+            ))}
+            {settingsEditError && <Typography variant="body2" color="error">{settingsEditError}</Typography>}
+          </Stack>
+        )}
+        cancelButtonText="Cancel"
+        submitButtonText={savingSettingsEdit ? "Saving..." : "Save to Settings"}
+        submitDisabled={savingSettingsEdit}
+        open={Boolean(settingsEdit)}
+        onCancel={() => {
+          setSettingsEdit(null);
+          setSettingsEditError("");
+        }}
+        onSubmit={handleSaveSettingsEdit}
       />
 
       {/* Queue Modal */}
@@ -989,7 +1240,7 @@ const RoadSurveyForm = () => {
                   animate="center"
                   exit="exit"
                 >
-                  <Grid container spacing={3} columns={12} alignItems="end">
+                  <Grid container rowSpacing={2} columnSpacing={3} columns={12} alignItems="start">
                     {visibleStep1Fields.map((field, idx) =>
                       renderField(field, idx),
                     )}

@@ -19,7 +19,7 @@ const ticketSchema = new mongoose.Schema(
     feedbackType: {
       type: String,
       required: true,
-      enum: ["Complaints", "Suggestions"],
+      enum: ["Idea", "Glitch", "Evolution", "SOS", "Review", "Complaints", "Suggestions"],
     },
 
     description: {

@@ -113,6 +113,9 @@ const createSurvey = async (req, res, next) => {
         purpose,
         type,
         instrumentNo,
+        instrumentModel,
+        hasEquipment,
+        hasTechnicalLead,
         reducedLevel,
         backSight,
         remark,
@@ -140,7 +143,8 @@ const createSurvey = async (req, res, next) => {
     if (
       !project ||
       !purpose ||
-      (projectType !== "None" && !instrumentNo) ||
+      (hasEquipment && (!instrumentModel || !instrumentNo)) ||
+      (hasTechnicalLead && (!engineerSurveyor || !assistant1 || !assistant2 || !assistant3 || !assistant4 || !assistant5)) ||
       !reducedLevel ||
       !backSight ||
       !chainageMultiple ||
@@ -197,7 +201,10 @@ const createSurvey = async (req, res, next) => {
           projectType: projectType || (isPublicProject ? "Public" : "Private"),
           createdBy: userId,
           type: type || "Road Survey",
-          instrumentNo: projectType === "None" ? undefined : instrumentNo,
+          instrumentNo,
+          instrumentModel,
+          hasEquipment: Boolean(hasEquipment),
+          hasTechnicalLead: Boolean(hasTechnicalLead),
           chainageMultiple,
           separator,
           reducedLevel: Number(reducedLevel).toFixed(3),
@@ -209,14 +216,12 @@ const createSurvey = async (req, res, next) => {
             ? { department, division, subDivision, section }
             : {}),
           ...(projectType !== "None" && isPrivateProject ? { consultant, client } : {}),
-          ...(projectType === "None" ? {} : {
-            engineerSurveyor,
-            assistant1,
-            assistant2,
-            assistant3,
-            assistant4,
-            assistant5,
-          }),
+          engineerSurveyor,
+          assistant1,
+          assistant2,
+          assistant3,
+          assistant4,
+          assistant5,
         },
       ],
       { session },
@@ -316,6 +321,10 @@ const queueSurvey = async (req, res, next) => {
         section,
         consultant,
         client,
+        instrumentNo,
+        instrumentModel,
+        hasEquipment,
+        hasTechnicalLead,
         engineerSurveyor,
         assistant1,
         assistant2,
@@ -352,6 +361,12 @@ const queueSurvey = async (req, res, next) => {
     if (projectType && !["Public", "Private", "None"].includes(projectType)) {
       throw createHttpError(400, "Invalid project type");
     }
+    if (hasEquipment && (!instrumentModel || !instrumentNo)) {
+      throw createHttpError(400, "Instrument model and number are required");
+    }
+    if (hasTechnicalLead && (!engineerSurveyor || !assistant1 || !assistant2 || !assistant3 || !assistant4 || !assistant5)) {
+      throw createHttpError(400, "Technical lead and all assistants are required");
+    }
     if (projectType !== "None" && (
       (projectType === "Public" && !isPublicProject) ||
       (projectType === "Private" && !isPrivateProject) ||
@@ -369,18 +384,20 @@ const queueSurvey = async (req, res, next) => {
       createdBy: userId,
       status: "Scheduled",
       type: type || "Road Survey",
+      hasEquipment: Boolean(hasEquipment),
+      instrumentModel,
+      instrumentNo,
+      hasTechnicalLead: Boolean(hasTechnicalLead),
       ...(projectType !== "None" && isPublicProject
         ? { department, division, subDivision, section }
         : {}),
       ...(projectType !== "None" && isPrivateProject ? { consultant, client } : {}),
-      ...(projectType === "None" ? {} : {
-        engineerSurveyor,
-        assistant1,
-        assistant2,
-        assistant3,
-        assistant4,
-        assistant5,
-      }),
+      engineerSurveyor,
+      assistant1,
+      assistant2,
+      assistant3,
+      assistant4,
+      assistant5,
       proposalScheduleDate,
       proposalDeadline,
       location,
@@ -446,14 +463,14 @@ const completeSurvey = async (req, res, next) => {
       );
     }
 
-    if (survey.projectType !== "None" && (!agreementNo || !instrumentNo)) {
-      throw createHttpError(400, "Agreement no and instrument number are required");
+    if ((survey.projectType !== "None" && !agreementNo) || (survey.hasEquipment && (!survey.instrumentModel || !instrumentNo))) {
+      throw createHttpError(400, "Required project or equipment details are missing");
     }
 
     // Update survey with technical fields and activate it
     survey.agreementNo = agreementNo || undefined;
     survey.contractor = contractor || undefined;
-    survey.instrumentNo = survey.projectType === "None" ? undefined : instrumentNo;
+    survey.instrumentNo = instrumentNo;
     survey.chainageMultiple = Number(chainageMultiple);
     survey.separator = separator;
     survey.reducedLevel = Number(reducedLevel).toFixed(3);
@@ -3316,6 +3333,15 @@ const createBranch = async (req, res, next) => {
           projectType: parentSurvey.projectType,
           createdBy: userId,
           instrumentNo: parentSurvey.instrumentNo,
+          instrumentModel: parentSurvey.instrumentModel,
+          hasEquipment: parentSurvey.hasEquipment,
+          hasTechnicalLead: parentSurvey.hasTechnicalLead,
+          engineerSurveyor: parentSurvey.engineerSurveyor,
+          assistant1: parentSurvey.assistant1,
+          assistant2: parentSurvey.assistant2,
+          assistant3: parentSurvey.assistant3,
+          assistant4: parentSurvey.assistant4,
+          assistant5: parentSurvey.assistant5,
           chainageMultiple: parentSurvey.chainageMultiple,
           separator: parentSurvey.separator,
           reducedLevel: Number(reducedLevel).toFixed(3),

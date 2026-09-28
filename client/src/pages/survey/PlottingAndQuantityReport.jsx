@@ -118,7 +118,7 @@ const drawPDFHeader = (doc, surveyInfo, reportDetails, tableData) => {
   // 3. Instrument Model and Serial No.
   doc.setFontSize(10);
   if (hasProjectDetails) {
-    const instrumentModel = surveyInfo?.instrumentNo || "BOSCH GOL 32D Professional";
+    const instrumentModel = surveyInfo?.instrumentModel || surveyInfo?.instrumentNo || "—";
     const serialNo = "122240174"; // Defaulting to the one in previous code if not in surveyInfo
     doc.text(`INSTRUMENT MODEL: ${instrumentModel}`, 15, 55);
     doc.text(`SERIAL NO: ${serialNo}`, 195, 55, { align: "right" });
@@ -1509,7 +1509,7 @@ const PlottingAndQuantityReport = () => {
         {survey?.projectType !== "None" && <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={6}>
             <Typography variant="body2" sx={{ fontWeight: 700, color: "#475569" }}>
-              INSTRUMENT MODEL: <span style={{ fontWeight: 400, color: "#334155" }}>{survey?.instrumentNo || "BOSCH GOL 32D Professional"}</span>
+              INSTRUMENT MODEL: <span style={{ fontWeight: 400, color: "#334155" }}>{survey?.instrumentModel || survey?.instrumentNo || "—"}</span>
             </Typography>
           </Grid>
           <Grid item xs={6} sx={{ textAlign: "right" }}>
