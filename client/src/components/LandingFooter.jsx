@@ -13,6 +13,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import { useState } from "react";
 import { MdOutlineExpandLess, MdOutlineExpandMore } from "react-icons/md";
+import logo from "../assets/logo/cader_logo.png";
 
 const StyledLink = styled(RouterLink)(({ theme }) => ({
   fontSize: 13,
@@ -91,16 +92,7 @@ const LandingFooter = () => {
         <Grid container spacing={{ xs: 4, md: 8 }}>
           {/* Logo + Description */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Typography
-              variant="h6"
-              color="#000"
-              sx={{ fontWeight: 900, mb: 1 }}
-            >
-              CAD
-              <Box component="span" sx={{ color: "#6366f1" }}>
-                ER.
-              </Box>
-            </Typography>
+            <Box component="img" src={logo} alt="Cader" sx={{ width: 56, height: 56, objectFit: "contain", mb: 1 }} />
             <Typography
               variant="body2"
               color="text.secondary"

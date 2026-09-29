@@ -24,6 +24,8 @@ import { setUser } from "../../redux/userSlice";
 import BasicButtons from "../../components/BasicButton";
 import BasicInput from "../../components/BasicInput";
 import { useTheme } from "@mui/material/styles";
+import lightLogo from "../../assets/logo/cader_logo.png";
+import darkLogo from "../../assets/logo/cader_logo_2.png";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
@@ -265,6 +267,7 @@ const SignIn = () => {
               maskImage:
                 "radial-gradient(circle at center, black 30%, transparent 80%)",
               zIndex: 0,
+              pointerEvents: "none",
             }}
           />
 
@@ -276,6 +279,7 @@ const SignIn = () => {
               background:
                 "radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(30, 64, 175, 0.2) 0%, transparent 50%)",
               zIndex: 1,
+              pointerEvents: "none",
             }}
           />
 
@@ -391,6 +395,8 @@ const SignIn = () => {
                   <Card variant="outlined" sx={{ zIndex: 1 }}>
                     <Stack spacing={1}>
                       <Typography
+                        component={RouterLink}
+                        to="/"
                         variant="h6"
                         color="black"
                         mb={0}
@@ -399,9 +405,15 @@ const SignIn = () => {
                           fontSize: "1.4rem",
                           cursor: "pointer",
                           display: { xs: "block", md: "none" },
+                          textDecoration: "none",
                         }}
                       >
-                        CAD<span style={{ color: "#6366f1" }}>er.</span>
+                        <Box
+                          component="img"
+                          src={lightLogo}
+                          alt="Cader"
+                          sx={{ width: 52, height: 52, objectFit: "contain" }}
+                        />
                       </Typography>
                       <Typography
                         component="h1"
@@ -566,17 +578,26 @@ const SignIn = () => {
                   transition={{ duration: 1, ease: "easeOut" }}
                 >
                   <Typography
+                    component={RouterLink}
+                    to="/"
                     variant="h6"
                     color="white"
                     sx={{
                       fontWeight: 900,
                       fontSize: "1.4rem",
                       cursor: "pointer",
-                      mb: 4,
+                      display: "inline-flex",
+                      position: "relative",
+                      zIndex: 11,
+                      textDecoration: "none",
                     }}
-                    onClick={() => navigate("/")}
                   >
-                    CAD<span style={{ color: "#6366f1" }}>er.</span>
+                    <Box
+                      component="img"
+                      src={darkLogo}
+                      alt="Cader"
+                      sx={{ width: 60, height: 60, objectFit: "contain" }}
+                    />
                   </Typography>
 
                   <Typography
@@ -692,6 +713,7 @@ const SignIn = () => {
                 border: "1px dashed rgba(255,255,255,0.08)",
                 borderRadius: "50%",
                 zIndex: 2,
+                pointerEvents: "none",
               }}
             >
               <Box
@@ -723,6 +745,7 @@ const SignIn = () => {
                 "linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.4), transparent)",
               boxShadow: "0 0 20px 2px rgba(96, 165, 250, 0.2)",
               zIndex: 5,
+              pointerEvents: "none",
             }}
           />
         </Box>

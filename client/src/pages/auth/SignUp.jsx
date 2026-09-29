@@ -26,6 +26,8 @@ import { googleLogin, registerUser } from "../../services/indexServices";
 import BasicButtons from "../../components/BasicButton";
 import BasicInput from "../../components/BasicInput";
 import { setUser } from "../../redux/userSlice";
+import lightLogo from "../../assets/logo/cader_logo.png";
+import darkLogo from "../../assets/logo/cader_logo_2.png";
 
 /* =========================
    Styled Components
@@ -392,8 +394,9 @@ export default function SignUp() {
                           cursor: "pointer",
                           display: { xs: "block", md: "none" },
                         }}
+                        onClick={() => navigate("/")}
                       >
-                        CAD<span style={{ color: "#6366f1" }}>er.</span>
+                        <Box component="img" src={lightLogo} alt="Cader" sx={{ width: 52, height: 52, objectFit: "contain" }} />
                       </Typography>
                       <Typography
                         component="h1"
@@ -564,7 +567,7 @@ export default function SignUp() {
                     }}
                     onClick={() => navigate("/")}
                   >
-                    CAD<span style={{ color: "#6366f1" }}>er.</span>
+                    <Box component="img" src={darkLogo} alt="Cader" sx={{ width: 60, height: 60, objectFit: "contain" }} />
                   </Typography>
 
                   <Typography

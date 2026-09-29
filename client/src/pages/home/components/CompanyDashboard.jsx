@@ -18,7 +18,7 @@ import { MdCalendarToday } from "react-icons/md";
 import Sidebar from "../../../components/Sidebar";
 import ImageAvatars from "../../../components/ImageAvatar";
 import BackgroundImage from "../../../assets/background-img.png";
-import logo from "../../../assets/logo/CADer logo-main.png";
+import logo from "../../../assets/logo/cader_logo.png";
 import { motion } from "framer-motion";
 import AddNewOpening from "./AddNewOpening";
 import AlertDialogSlide from "../../../components/AlertDialogSlide";

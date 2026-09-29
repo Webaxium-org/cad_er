@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Box, LinearProgress, Typography } from "@mui/material";
+import logo from "../../../assets/logo/cader_logo_2.png";
 
 const Preloader = ({ onLoadingComplete }) => {
   const [progress, setProgress] = useState(0);
@@ -46,52 +47,19 @@ const Preloader = ({ onLoadingComplete }) => {
     >
       <Box sx={{ position: "relative", mb: 4 }}>
         {/* Animated Logo */}
-        <Typography
-          variant="h6"
-          component={motion.div}
+        <Box
+          component={motion.img}
+          src={logo}
+          alt="Cader"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           sx={{
-            fontWeight: 900,
-            fontSize: { xs: "2.5rem", md: "3.5rem" },
-            letterSpacing: "-0.02em",
-            color: "white",
+            width: { xs: 100, md: 140 },
+            height: { xs: 100, md: 140 },
+            objectFit: "contain",
             position: "relative",
           }}
-        >
-          CAD
-          <Box
-            component="span"
-            sx={{
-              color: "#6366f1",
-              position: "relative",
-              display: "inline-block",
-            }}
-          >
-            ER
-            {/* Shimmer Effect */}
-            <Box
-              component={motion.div}
-              animate={{
-                left: ["-100%", "200%"],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              sx={{
-                position: "absolute",
-                top: 0,
-                width: "50%",
-                height: "100%",
-                background:
-                  "linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent)",
-                zIndex: 1,
-              }}
-            />
-          </Box>
-        </Typography>
+        />
 
         {/* Floating Glow Behind Logo */}
         <Box

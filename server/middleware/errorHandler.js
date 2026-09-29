@@ -2,7 +2,8 @@
 const errorHandler = (err, req, res, next) => {
   console.error(err.stack); // Log error for debugging
 
-  let statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || err.status || 500;
+  if (err.name === "MulterError") statusCode = 400;
   let message = err.message || "Internal Server Error";
   let errors = null;
 

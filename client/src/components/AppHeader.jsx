@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Stack,
   Box,
   Typography,
-  Avatar,
   TextField,
   InputAdornment,
   IconButton,
@@ -16,9 +14,7 @@ import {
 } from "@mui/material";
 import TemporaryDrawer from "./TemporaryDrawer";
 import DrawerList from "./DrawerList";
-import profileImage from "../assets/blank-profile-picture.webp";
-
-const PRIMARY_BRAND = "#6366f1";
+import logo from "../assets/logo/cader_logo.png";
 
 const Icons = {
   Search: () => (
@@ -69,7 +65,11 @@ const Icons = {
   ),
 };
 
-const AppHeader = ({ sidebar = true, showSearch = true, showNotifications = true }) => {
+const AppHeader = ({
+  sidebar = true,
+  showSearch = true,
+  showNotifications = true,
+}) => {
   const [search, setSearch] = useState("");
   const { user } = useSelector((state) => state.user || { user: null });
   const navigate = useNavigate();
@@ -112,19 +112,36 @@ const AppHeader = ({ sidebar = true, showSearch = true, showNotifications = true
             alignItems="center"
           >
             <Stack direction="row" spacing={2} alignItems="center">
-              <motion.div whileHover={{ scale: 1.05 }}>
-                <Avatar
-                  src={profileImage}
-                  onClick={() => navigate("/")}
+              <Box
+                component="button"
+                type="button"
+                aria-label="Cader home"
+                onClick={() => navigate("/")}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  width: { xs: 40, md: 48 },
+                  height: { xs: 40, md: 48 },
+                  p: 0,
+                  border: 0,
+                  bgcolor: "transparent",
+                  cursor: "pointer",
+                }}
+              >
+                <Box
+                  component="img"
+                  src={logo}
+                  alt=""
                   sx={{
-                    width: { xs: 40, md: 48 },
-                    height: { xs: 40, md: 48 },
-                    border: "2px solid rgba(255,255,255,0.3)",
-                    bgcolor: PRIMARY_BRAND,
-                    cursor: "pointer",
+                    display: "block",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
                   }}
                 />
-              </motion.div>
+              </Box>
               <Box>
                 <Typography
                   variant="subtitle2"
@@ -147,73 +164,83 @@ const AppHeader = ({ sidebar = true, showSearch = true, showNotifications = true
             </Stack>
 
             <Stack direction="row" spacing={1.5} alignItems="center">
-              {showSearch && <TextField
-                size="small"
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    navigate("/survey", { state: { search: search } });
-                  }
-                }}
-                sx={{
-                  display: { xs: "none", sm: "flex" },
-                  width: { sm: 220, md: 300 },
-                  "& .MuiOutlinedInput-root": {
-                    bgcolor: "rgba(255,255,255,0.15)",
-                    borderRadius: "16px",
+              {showSearch && (
+                <TextField
+                  size="small"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      navigate("/survey", { state: { search: search } });
+                    }
+                  }}
+                  sx={{
+                    display: { xs: "none", sm: "flex" },
+                    width: { sm: 220, md: 300 },
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: "rgba(255,255,255,0.15)",
+                      borderRadius: "16px",
+                      color: "white",
+                      fontSize: "0.85rem",
+                      "& fieldset": { border: "none" },
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.22)" },
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment
+                        position="start"
+                        sx={{ color: "rgba(255,255,255,0.6)" }}
+                      >
+                        <Icons.Search />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              )}
+
+              {showNotifications && (
+                <IconButton
+                  onClick={handleNotifClick}
+                  sx={{
                     color: "white",
-                    fontSize: "0.85rem",
-                    "& fieldset": { border: "none" },
-                    "&:hover": { bgcolor: "rgba(255,255,255,0.22)" },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment
-                      position="start"
-                      sx={{ color: "rgba(255,255,255,0.6)" }}
-                    >
-                      <Icons.Search />
-                    </InputAdornment>
-                  ),
-                }}
-              />}
-
-              {showNotifications && <IconButton
-                onClick={handleNotifClick}
-                sx={{
-                  color: "white",
-                  bgcolor: "rgba(255,255,255,0.15)",
-                  borderRadius: "14px",
-                  p: { xs: 0.8, md: 1.2 },
-                }}
-              >
-                <Icons.Notification />
-              </IconButton>}
-
-              {showNotifications && <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleNotifClose}
-                disableScrollLock={true}
-                PaperProps={{
-                  sx: { width: 300, mt: 1.5, borderRadius: "12px" },
-                }}
-              >
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={700}
-                  sx={{ px: 2, py: 1 }}
+                    bgcolor: "rgba(255,255,255,0.15)",
+                    borderRadius: "14px",
+                    p: { xs: 0.8, md: 1.2 },
+                  }}
                 >
-                  Notifications
-                </Typography>
-                <Divider />
-                <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 3, textAlign: "center" }}>
-                  No notifications yet
-                </Typography>
-              </Menu>}
+                  <Icons.Notification />
+                </IconButton>
+              )}
+
+              {showNotifications && (
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleNotifClose}
+                  disableScrollLock={true}
+                  PaperProps={{
+                    sx: { width: 300, mt: 1.5, borderRadius: "12px" },
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    sx={{ px: 2, py: 1 }}
+                  >
+                    Notifications
+                  </Typography>
+                  <Divider />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ px: 2, py: 3, textAlign: "center" }}
+                  >
+                    No notifications yet
+                  </Typography>
+                </Menu>
+              )}
 
               {sidebar && (
                 <IconButton

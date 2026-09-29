@@ -1,11 +1,17 @@
 import Ticket from "../models/tickets.js";
 import { EMAIL_TEMPLATES } from "../utils/emails/templates.js";
 import { send_mail } from "../utils/mailer.js";
+import { deleteTicketImages, getTicketImageUrl, uploadTicketImages } from "../utils/ticketImages.js";
 
 export const createTicket = async (req, res, next) => {
+  let images = [];
+  let saved = false;
   try {
+    images = await uploadTicketImages(req.files || [], req.user.userId);
     let ticket = await Ticket.create({
-      ...req.body,
+      feedbackType: req.body.feedbackType,
+      description: req.body.description,
+      images,
       createdBy: req.user.userId,
       followups: [
         {
@@ -15,6 +21,7 @@ export const createTicket = async (req, res, next) => {
         },
       ],
     });
+    saved = true;
 
     ticket = await ticket.populate("createdBy", "name email");
 
@@ -32,7 +39,21 @@ export const createTicket = async (req, res, next) => {
 
     res.status(201).json({ success: true, ticket });
   } catch (err) {
+    if (!saved && images.length) await deleteTicketImages(images);
     next(err);
+  }
+};
+
+export const getTicketImage = async (req, res, next) => {
+  try {
+    const filter = { _id: req.params.id };
+    if (req.user.role !== "Super Admin") filter.createdBy = req.user.userId;
+    const ticket = await Ticket.findOne(filter).select("images");
+    const image = ticket?.images.id(req.params.imageId);
+    if (!image) return res.status(404).json({ message: "Image not found" });
+    res.json({ url: await getTicketImageUrl(image.key) });
+  } catch (error) {
+    next(error);
   }
 };
 

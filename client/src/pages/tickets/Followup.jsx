@@ -13,6 +13,7 @@ import { stopLoading } from "../../redux/loadingSlice";
 import { useDispatch } from "react-redux";
 import {
   getTicketById,
+  getTicketImageUrl,
   updateTicketStatus,
 } from "../../services/ticketServices";
 import SmallHeader from "../../components/SmallHeader";
@@ -85,6 +86,20 @@ const Followup = () => {
     fetchTicket();
   }, [id]);
 
+  const openImage = async (imageId) => {
+    const tab = window.open("", "_blank");
+    try {
+      const { data } = await getTicketImageUrl(id, imageId);
+      if (tab) {
+        tab.opener = null;
+        tab.location.href = data.url;
+      }
+    } catch (error) {
+      tab?.close();
+      handleFormError(error, null, dispatch, navigate);
+    }
+  };
+
   if (!ticket) return <Typography>Loading...</Typography>;
 
   return (
@@ -109,6 +124,15 @@ const Followup = () => {
             <Chip label={`Status: ${ticket.status}`} color="primary" sx={{ fontWeight: 700 }} />
             <Chip label={`Priority: ${ticket.priority}`} color="warning" sx={{ fontWeight: 700 }} />
           </Stack>
+          {ticket.images?.length > 0 && (
+            <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 2 }}>
+              {ticket.images.map((image, index) => (
+                <Button key={image._id} variant="outlined" onClick={() => openImage(image._id)}>
+                  {image.name || `Image ${index + 1}`}
+                </Button>
+              ))}
+            </Stack>
+          )}
         </Paper>
 
         {/* Add Followup Section */}

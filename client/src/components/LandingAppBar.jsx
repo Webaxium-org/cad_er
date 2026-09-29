@@ -15,14 +15,13 @@ import {
   Stack,
   ThemeProvider,
   Toolbar,
-  Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import logo from "../assets/logo/Cader_New_logo.png";
+import logo from "../assets/logo/cader_logo_2.png";
 // --- Theme Configuration ---
 const theme = createTheme({
   palette: {
@@ -130,26 +129,43 @@ const LandingAppBar = () => {
           }}
         >
           <Container maxWidth="lg">
-            <Toolbar disableGutters sx={{ justifyContent: "space-between" }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography
-                  variant="h6"
-                  color="secondary"
+            <Toolbar
+              disableGutters
+              sx={{
+                justifyContent: "space-between",
+                minHeight: { xs: 64, md: 72 },
+              }}
+            >
+              <Box
+                component="button"
+                type="button"
+                aria-label="Cader home"
+                onClick={() => navigate("/")}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  width: { xs: 52, md: 60 },
+                  height: { xs: 52, md: 60 },
+                  p: 0,
+                  border: 0,
+                  bgcolor: "transparent",
+                  cursor: "pointer",
+                }}
+              >
+                <Box
+                  component="img"
+                  src={logo}
+                  alt=""
                   sx={{
-                    fontWeight: 900,
-                    fontSize: "1.4rem",
-                    cursor: "pointer",
+                    display: "block",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
                   }}
-                  onClick={() => navigate("/")}
-                >
-                  {/* CAD<span style={{ color: "#6366f1" }}>er.</span> */}
-                  <img
-                    src={logo}
-                    alt="CADer"
-                    style={{ width: "125px", paddingTop: "10px" }}
-                  />
-                </Typography>
-              </Stack>
+                />
+              </Box>
 
               {/* Desktop Menu */}
               {!isMdDown && (

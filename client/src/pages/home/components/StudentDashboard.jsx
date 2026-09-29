@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box, Stack, Typography, Grid } from "@mui/material";
 import BackgroundImage from "../../../assets/background-img.png";
-import logo from "../../../assets/logo/CADer logo-main.png";
+import logo from "../../../assets/logo/cader_logo.png";
 import Sidebar from "../../../components/Sidebar";
 import ImageAvatars from "../../../components/ImageAvatar";
 import UnlockCourseBanner from "./UnlockCourseBanner";

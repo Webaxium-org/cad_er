@@ -26,6 +26,7 @@ const ticketSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    images: [{ key: String, name: String, contentType: String }],
 
     status: {
       type: String,
