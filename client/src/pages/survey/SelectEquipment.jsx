@@ -11,8 +11,9 @@ import Lottie from "lottie-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { stopLoading } from "../../redux/loadingSlice";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BasicButton from "../../components/BasicButton";
+import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import { GoAlert } from "react-icons/go";
 import { IoCheckmarkCircle } from "react-icons/io5";
 import autoLevelIcon from "../../assets/icons/compass.json";
@@ -21,6 +22,7 @@ import DGPSIcon from "../../assets/icons/GPS Navigation.json";
 import DroneIcon from "../../assets/icons/Drone Camera.json";
 import BathymetryIcon from "../../assets/icons/Boat-Looking-For-Land.json";
 import { FaLocationArrow } from "react-icons/fa";
+import { FiCompass } from "react-icons/fi";
 import SmallHeader from "../../components/SmallHeader";
 import { showAlert } from "../../redux/alertSlice";
 
@@ -51,7 +53,7 @@ const equipmentList = [
     color: "#8b5cf6",
   },
   {
-    label: "Bathymetry",
+    label: "Sonar",
     icon: BathymetryIcon,
     link: "#",
     color: "#14b8a6",
@@ -65,6 +67,22 @@ const SelectEquipment = () => {
   const { global } = useSelector((state) => state.loading || { global: false });
 
   const [active, setActive] = useState(0);
+  const heroRef = useRef(null);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    const updateCompactHeader = () => {
+      const halfway = (heroRef.current?.offsetHeight || 0) / 2;
+      setCompactHeaderVisible(window.scrollY >= halfway && halfway > 0);
+    };
+    updateCompactHeader();
+    window.addEventListener("scroll", updateCompactHeader, { passive: true });
+    window.addEventListener("resize", updateCompactHeader);
+    return () => {
+      window.removeEventListener("scroll", updateCompactHeader);
+      window.removeEventListener("resize", updateCompactHeader);
+    };
+  }, []);
 
   const above290 = useMediaQuery("(min-width:290px)");
 
@@ -94,26 +112,74 @@ const SelectEquipment = () => {
       sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 20, md: 24 } }}
     >
       <SmallHeader />
-
-      <Container maxWidth="sm" sx={{ pt: { xs: 4, md: 6 } }}>
-        <Box textAlign="center" mb={6}>
-          <Typography
-            variant="h4"
-            fontWeight={900}
-            color="#1e293b"
-            mb={1}
+      <AnimatePresence>
+        {compactHeaderVisible && (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             sx={{
-              letterSpacing: "-0.02em",
-              fontSize: { xs: "1.8rem", md: "2.25rem" },
+              position: "fixed",
+              top: { xs: 49, md: 65 },
+              left: 0,
+              right: 0,
+              zIndex: 1099,
+              p: 2,
+              color: "white",
+              background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+              borderRadius: "0 0 20px 20px",
+              boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
             }}
           >
-            Select Equipment
-          </Typography>
-          <Typography variant="body1" color="text.secondary" fontWeight={600}>
-            Choose the primary instrument for your survey
-          </Typography>
-        </Box>
+            <Container maxWidth="lg">
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <FiCompass size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px">
+                  Select <span style={{ color: "#c7d2fe" }}>Equipment</span>
+                </Typography>
+              </Stack>
+            </Container>
+          </Box>
+        )}
+      </AnimatePresence>
+      <Box
+        ref={heroRef}
+        sx={{
+          background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+          pt: 10,
+          pb: 10,
+          color: "white",
+          borderRadius: "0 0 20px 20px",
+          boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.4)",
+          position: "relative",
+          mb: 6,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              opacity: compactHeaderVisible ? 0 : 1,
+              transform: compactHeaderVisible ? "translateY(-12px) scale(0.96)" : "none",
+              transformOrigin: "left center",
+              transition: "opacity 0.3s ease, transform 0.3s ease",
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={2} mb={1}>
+              <FiCompass size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+              <Typography variant="h3" sx={heroTitleSx} fontWeight={900} letterSpacing="-0.02em">
+                Select <span style={{ color: "#c7d2fe" }}>Equipment</span>
+              </Typography>
+            </Stack>
+            <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 500, fontWeight: 500 }}>
+              Choose the primary instrument for your survey.
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
 
+      <Container maxWidth="sm" sx={{ mt: -8, position: "relative" }}>
         <Stack spacing={3}>
           {equipmentList.map((equipment, idx) => {
             const isActive = idx === active;

@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
-import { Dialog, Box, Typography, Stack, TextField, IconButton } from '@mui/material';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, TextField, Typography } from '@mui/material';
 import { IoClose } from 'react-icons/io5';
-import BasicButton from '../../../components/BasicButton';
+import { SlTarget } from 'react-icons/sl';
 import { useDispatch } from 'react-redux';
 import { showAlert } from '../../../redux/alertSlice';
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "12px",
+    bgcolor: "#f8fafc",
+    "& fieldset": { borderColor: "#e2e8f0" },
+    "&:hover fieldset": { borderColor: "#6366f1" },
+    "&.Mui-focused fieldset": { borderColor: "#6366f1" },
+  },
+  "& .MuiInputLabel-root": { fontWeight: 600, color: "#64748b" },
+};
 
 const CalibrationModal = ({ open, onClose }) => {
   const dispatch = useDispatch();
@@ -64,123 +75,66 @@ const CalibrationModal = ({ open, onClose }) => {
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          borderRadius: '28px',
-          width: '100%',
-          maxWidth: '420px',
-          bgcolor: '#ffffff',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          overflow: 'hidden'
-        }
-      }}
-    >
-      <Box sx={{ bgcolor: '#006FFD', p: 3.5, color: 'white', position: 'relative' }}>
-        <Typography variant="h5" fontWeight={900} letterSpacing="-0.02em">
-          Auto Level Calibration
-        </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5, fontWeight: 500 }}>
-          Enter Two-Peg Test readings to verify instrument collimation error.
-        </Typography>
-        
-        <IconButton 
-          onClick={onClose}
-          sx={{ position: 'absolute', top: 12, right: 12, color: 'white' }}
-        >
-          <IoClose size={26} />
-        </IconButton>
-      </Box>
-
-      <Box sx={{ p: 3.5 }}>
-        <Stack spacing={3.5}>
-          <Box>
-            <Typography variant="subtitle2" color="rgb(0, 111, 253)" fontWeight={800} mb={1.5} letterSpacing="0.05em">
-              SETUP 1 (MIDPOINT)
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="calibration-dialog-title">
+      <DialogTitle sx={{ px: { xs: 3, sm: 4 }, pt: 4, pb: 2 }}>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: "12px",
+              bgcolor: "#6366f115",
+              color: "#6366f1",
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            <SlTarget size={22} />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography id="calibration-dialog-title" variant="h6" fontWeight={800} color="#1e293b">
+              Auto Level Calibration
             </Typography>
-            <Stack direction="row" spacing={2.5}>
-              <TextField 
-                label="Peg A1 (m)" 
-                variant="outlined" 
-                fullWidth 
-                name="a1"
-                type="number"
-                value={readings.a1}
-                onChange={handleChange}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '16px' } }}
-              />
-              <TextField 
-                label="Peg B1 (m)" 
-                variant="outlined" 
-                fullWidth 
-                name="b1"
-                type="number"
-                value={readings.b1}
-                onChange={handleChange}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '16px' } }}
-              />
+            <Typography variant="body2" color="text.secondary">
+              Enter Two-Peg Test readings to check instrument error.
+            </Typography>
+          </Box>
+          <IconButton onClick={onClose} aria-label="Close calibration" size="small" sx={{ color: "#64748b" }}>
+            <IoClose size={22} />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent sx={{ px: { xs: 3, sm: 4 }, pb: 1 }}>
+        <Stack spacing={3}>
+          <Box>
+            <Typography variant="subtitle2" color="#6366f1" fontWeight={800} mb={1.5} letterSpacing="0.05em">
+              SETUP 1 · MIDPOINT
+            </Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField fullWidth label="Peg A1 (m)" name="a1" type="number" value={readings.a1} onChange={handleChange} sx={fieldSx} />
+              <TextField fullWidth label="Peg B1 (m)" name="b1" type="number" value={readings.b1} onChange={handleChange} sx={fieldSx} />
             </Stack>
           </Box>
-
           <Box>
-            <Typography variant="subtitle2" color="rgb(0, 111, 253)" fontWeight={800} mb={1.5} letterSpacing="0.05em">
-              SETUP 2 (NEAR PEG A)
+            <Typography variant="subtitle2" color="#6366f1" fontWeight={800} mb={1.5} letterSpacing="0.05em">
+              SETUP 2 · NEAR PEG A
             </Typography>
-            <Stack direction="row" spacing={2.5}>
-              <TextField 
-                label="Peg A2 (m)" 
-                variant="outlined" 
-                fullWidth 
-                name="a2"
-                type="number"
-                value={readings.a2}
-                onChange={handleChange}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '16px' } }}
-              />
-              <TextField 
-                label="Peg B2 (m)" 
-                variant="outlined" 
-                fullWidth 
-                name="b2"
-                type="number"
-                value={readings.b2}
-                onChange={handleChange}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '16px' } }}
-              />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField fullWidth label="Peg A2 (m)" name="a2" type="number" value={readings.a2} onChange={handleChange} sx={fieldSx} />
+              <TextField fullWidth label="Peg B2 (m)" name="b2" type="number" value={readings.b2} onChange={handleChange} sx={fieldSx} />
             </Stack>
-          </Box>
-
-          <Box pt={1}>
-            <BasicButton
-              value="CALCULATE ERROR"
-              fullWidth={true}
-              onClick={calculateError}
-              sx={{
-                background: "linear-gradient(135deg, #006FFD 0%, #005ed6 100%)",
-                color: "white",
-                height: "60px",
-                borderRadius: "20px",
-                border: "none",
-                fontWeight: 800,
-                fontSize: "1.05rem",
-                letterSpacing: "0.05em",
-                boxShadow: "0 8px 20px -5px rgba(0, 111, 253, 0.4)",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  background: "linear-gradient(135deg, #005ed6 0%, #004bbb 100%)",
-                  boxShadow: "0 12px 25px -5px rgba(0, 111, 253, 0.5)",
-                  transform: "translateY(-2px)"
-                },
-                "&:active": {
-                  transform: "translateY(0)"
-                }
-              }}
-            />
           </Box>
         </Stack>
-      </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: { xs: 3, sm: 4 }, pb: 4, pt: 2, gap: 1 }}>
+        <Button onClick={onClose} variant="outlined" sx={{ borderRadius: "12px", borderColor: "#cbd5e1", color: "#475569", fontWeight: 700, textTransform: "none", px: 3 }}>
+          Cancel
+        </Button>
+        <Button onClick={calculateError} variant="contained" sx={{ borderRadius: "12px", bgcolor: "#6366f1", fontWeight: 800, textTransform: "none", px: 3, "&:hover": { bgcolor: "#4f46e5" } }}>
+          Calculate error
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 };

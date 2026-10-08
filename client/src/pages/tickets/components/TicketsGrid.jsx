@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Chip, Button, Box, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import TicketBadge from "./TicketBadge";
 
 const STATUS_CONFIG = [
   { label: "All", value: "ALL", color: "default" },
@@ -52,22 +53,14 @@ const TicketsGrid = ({ tickets }) => {
       headerName: "Status",
       flex: 1,
       minWidth: 140,
-      renderCell: (params) => {
-        const config = STATUS_CONFIG.find((s) => s.value === params.value);
-        return (
-          <Chip
-            label={config?.label || params.value}
-            size="small"
-            color={config?.color || "default"}
-          />
-        );
-      },
+      renderCell: (params) => <TicketBadge value={params.value} />,
     },
     {
       field: "priority",
       headerName: "Priority",
       flex: 1,
-      minWidth: 100,
+      minWidth: 150,
+      renderCell: (params) => <TicketBadge value={params.value} kind="priority" />,
     },
     {
       field: "createdBy",
@@ -92,6 +85,7 @@ const TicketsGrid = ({ tickets }) => {
           variant="contained"
           onClick={() => navigate(`/tickets/${params.row._id}/followup`)}
           disabled={params.row?.status === "RESOLVED"}
+          sx={{ borderRadius: "10px", bgcolor: "#6366f1", fontWeight: 700, textTransform: "none", boxShadow: "none", "&:hover": { bgcolor: "#4f46e5", boxShadow: "none" } }}
         >
           Followups
         </Button>
@@ -116,10 +110,17 @@ const TicketsGrid = ({ tickets }) => {
             key={s.value}
             label={`${s.label} (${statusCounts[s.value] || 0})`}
             clickable
-            color={filter === s.value ? s.color : "default"}
             variant={filter === s.value ? "filled" : "outlined"}
             onClick={() => setFilter(s.value)}
-            sx={{ borderRadius: "10px", fontWeight: 700, px: 0.5 }}
+            sx={{
+              borderRadius: "10px",
+              fontWeight: 800,
+              px: 0.5,
+              bgcolor: filter === s.value ? "#6366f1" : "#fff",
+              color: filter === s.value ? "#fff" : "#475569",
+              borderColor: filter === s.value ? "#6366f1" : "#cbd5e1",
+              "&:hover": { bgcolor: filter === s.value ? "#4f46e5" : "#f8fafc" },
+            }}
           />
         ))}
       </Box>

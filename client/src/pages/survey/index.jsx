@@ -1,10 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Box, Stack, Typography, Paper, Container } from "@mui/material";
+import { Box, Stack, Typography, Paper, Container, Button } from "@mui/material";
 import BasicButton from "../../components/BasicButton";
+import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import { FaRoad } from "react-icons/fa6";
 import { FaWater } from "react-icons/fa";
 import { SiLevelsdotfyi } from "react-icons/si";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { stopLoading } from "../../redux/loadingSlice";
 import { showAlert as showGlobalAlert } from "../../redux/alertSlice";
@@ -17,6 +18,7 @@ import SimpleAlert from "../../components/SimpleAlert";
 import { GoAlert } from "react-icons/go";
 import CalibrationModal from "./components/CalibrationModal";
 import { FaLocationArrow } from "react-icons/fa";
+import { FiLayers } from "react-icons/fi";
 
 const alertData = {
   icon: <GoAlert fontSize="inherit" />,
@@ -43,6 +45,12 @@ const cardData = [
     title: "Fly Level",
     color: "#10b981", // Emerald
   },
+  {
+    id: 3,
+    icon: <FiLayers size={32} />,
+    title: "Block Level",
+    color: "#f59e0b",
+  },
 ];
 
 const Index = () => {
@@ -51,6 +59,22 @@ const Index = () => {
 
   const [active, setActive] = useState(0);
   const [isCalibrationOpen, setCalibrationOpen] = useState(false);
+  const heroRef = useRef(null);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    const updateCompactHeader = () => {
+      const halfway = (heroRef.current?.offsetHeight || 0) / 2;
+      setCompactHeaderVisible(window.scrollY >= halfway && halfway > 0);
+    };
+    updateCompactHeader();
+    window.addEventListener("scroll", updateCompactHeader, { passive: true });
+    window.addEventListener("resize", updateCompactHeader);
+    return () => {
+      window.removeEventListener("scroll", updateCompactHeader);
+      window.removeEventListener("resize", updateCompactHeader);
+    };
+  }, []);
 
   const handleChangeActive = (value) => setActive(value);
 
@@ -73,80 +97,120 @@ const Index = () => {
     dispatch(stopLoading());
   }, [dispatch]);
 
+  const renderCalibrationButton = () => (
+    <Button
+      type="button"
+      aria-label="Open Auto Level Calibration"
+      onClick={() => setCalibrationOpen(true)}
+      sx={{
+        color: "white",
+        border: "1px solid rgba(255, 255, 255, 0.4)",
+        bgcolor: "rgba(255, 255, 255, 0.12)",
+        borderRadius: "12px",
+        minWidth: 44,
+        px: { xs: 1.5, sm: 2 },
+        py: 1,
+        textTransform: "none",
+        fontWeight: 800,
+        flexShrink: 0,
+        "&:hover": { bgcolor: "rgba(255, 255, 255, 0.25)", borderColor: "white" },
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <SlTarget size={18} />
+        <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+          Calibration
+        </Box>
+      </Stack>
+    </Button>
+  );
+
   return (
     <Box
       sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 20, md: 24 } }}
     >
       <BigHeader />
+      <AnimatePresence>
+        {compactHeaderVisible && (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            sx={{
+              position: "fixed",
+              top: { xs: 49, md: 65 },
+              left: 0,
+              right: 0,
+              zIndex: 1099,
+              p: 2,
+              color: "white",
+              background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+              borderRadius: "0 0 20px 20px",
+              boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
+            }}
+          >
+            <Container maxWidth="lg">
+              <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0 }}>
+                  <FiLayers size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                  <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px" noWrap>
+                    Select <span style={{ color: "#c7d2fe" }}>Survey Type</span>
+                  </Typography>
+                </Stack>
+                {renderCalibrationButton()}
+              </Stack>
+            </Container>
+          </Box>
+        )}
+      </AnimatePresence>
+      <Box
+        ref={heroRef}
+        sx={{
+          background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+          pt: 10,
+          pb: 10,
+          color: "white",
+          borderRadius: "0 0 20px 20px",
+          boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.4)",
+          position: "relative",
+          mb: 6,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              opacity: compactHeaderVisible ? 0 : 1,
+              transform: compactHeaderVisible ? "translateY(-12px) scale(0.96)" : "none",
+              transformOrigin: "left center",
+              transition: "opacity 0.3s ease, transform 0.3s ease",
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+              <Box sx={{ minWidth: 0 }}>
+                <Stack direction="row" alignItems="center" spacing={2} mb={1}>
+                  <FiLayers size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                  <Typography variant="h3" sx={heroTitleSx} fontWeight={900} letterSpacing="-0.02em">
+                    Select <span style={{ color: "#c7d2fe" }}>Survey Type</span>
+                  </Typography>
+                </Stack>
+                <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 500, fontWeight: 500 }}>
+                  What type of survey do you want to perform using Auto Level?
+                </Typography>
+              </Box>
+              {renderCalibrationButton()}
+            </Stack>
+          </Box>
+        </Container>
+      </Box>
 
       <CalibrationModal
         open={isCalibrationOpen}
         onClose={() => setCalibrationOpen(false)}
       />
 
-      <Container maxWidth="sm" sx={{ pt: { xs: 4, md: 6 } }}>
-        {/* Top Calibration Card */}
-        <motion.div
-          onClick={() => setCalibrationOpen(true)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Paper
-            elevation={0}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              p: { xs: 2, md: 3 },
-              mb: 6,
-              borderRadius: "24px",
-              cursor: "pointer",
-              bgcolor: "#006FFD",
-              color: "white",
-              boxShadow: "0 12px 24px -10px rgba(0, 111, 253, 0.5)",
-              transition: "all 0.3s ease",
-              "&:hover": {
-                boxShadow: "0 16px 32px -10px rgba(0, 111, 253, 0.7)",
-                bgcolor: "#005ed6",
-              },
-            }}
-          >
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Typography
-                fontSize={{ xs: "1.1rem", md: "1.25rem" }}
-                fontWeight={800}
-                letterSpacing="0.05em"
-              >
-                CALIBRATION
-              </Typography>
-              <SlTarget strokeWidth="50px" fontSize="26px" fontWeight={900} />
-            </Stack>
-          </Paper>
-        </motion.div>
-
-        <Box textAlign="center" mb={6}>
-          <Typography
-            variant="h4"
-            fontWeight={900}
-            color="#1e293b"
-            mb={1}
-            sx={{
-              letterSpacing: "-0.02em",
-              fontSize: { xs: "1.8rem", md: "2.25rem" },
-            }}
-          >
-            Select Survey Type
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            fontWeight={600}
-            sx={{ maxWidth: "80%", mx: "auto" }}
-          >
-            What type of survey do you want to perform using Auto Level?
-          </Typography>
-        </Box>
-
+      <Container maxWidth="sm" sx={{ mt: -8, position: "relative" }}>
         <Stack spacing={3}>
           {cardData.map((data, idx) => {
             const isActive = idx === active;

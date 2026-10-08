@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
   Box,
   Grid,
@@ -22,6 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useNavigate, useLocation } from "react-router-dom";
 import BasicButtons from "../../components/BasicButton";
+import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import { useDispatch } from "react-redux";
 import { handleFormError } from "../../utils/handleFormError";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
@@ -40,6 +42,7 @@ import { getSettings, updateInstrument, updateSettingsFields } from "../../servi
 import { CgGoogleTasks } from "react-icons/cg";
 import { FaLocationArrow } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
+import { FiFilePlus } from "react-icons/fi";
 
 const commissioningFields = {
   publicProject: {
@@ -345,6 +348,22 @@ const RoadSurveyForm = () => {
   const existingSurveyId = locationState?.surveyId || null;
 
   const [step, setStep] = useState(locationState?.step === 2 ? 2 : 1);
+  const heroRef = useRef(null);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    const updateCompactHeader = () => {
+      const halfway = (heroRef.current?.offsetHeight || 0) / 2;
+      setCompactHeaderVisible(window.scrollY >= halfway && halfway > 0);
+    };
+    updateCompactHeader();
+    window.addEventListener("scroll", updateCompactHeader, { passive: true });
+    window.addEventListener("resize", updateCompactHeader);
+    return () => {
+      window.removeEventListener("scroll", updateCompactHeader);
+      window.removeEventListener("resize", updateCompactHeader);
+    };
+  }, []);
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
 
   const [category, setCategory] = useState("noneProject");
@@ -1034,6 +1053,72 @@ const RoadSurveyForm = () => {
       sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 10, md: 14 } }}
     >
       <SmallHeader />
+      <AnimatePresence>
+        {compactHeaderVisible && (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            sx={{
+              position: "fixed",
+              top: { xs: 49, md: 65 },
+              left: 0,
+              right: 0,
+              zIndex: 1099,
+              p: 2,
+              color: "white",
+              background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+              borderRadius: "0 0 20px 20px",
+              boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
+            }}
+          >
+            <Container maxWidth="lg">
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <FiFilePlus size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px">
+                  {existingSurveyId ? "Complete Your Project" : "Create New Project"}
+                </Typography>
+              </Stack>
+            </Container>
+          </Box>
+        )}
+      </AnimatePresence>
+      <Box
+        ref={heroRef}
+        sx={{
+          background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+          pt: 10,
+          pb: 10,
+          color: "white",
+          borderRadius: "0 0 20px 20px",
+          boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.4)",
+          position: "relative",
+          mb: 6,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              opacity: compactHeaderVisible ? 0 : 1,
+              transform: compactHeaderVisible ? "translateY(-12px) scale(0.96)" : "none",
+              transformOrigin: "left center",
+              transition: "opacity 0.3s ease, transform 0.3s ease",
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={2} mb={1}>
+              <FiFilePlus size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+              <Typography variant="h3" sx={heroTitleSx} fontWeight={900} letterSpacing="-0.02em">
+                {existingSurveyId ? "Complete Your Project" : "Create New Project"}
+              </Typography>
+            </Stack>
+            <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 500, fontWeight: 500 }}>
+              {step === 1 ? "Step 1 of 2 — Project details & team" : "Step 2 of 2 — Technical parameters"}
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
 
       <AlertDialogSlide
         title="Continue without project details?"
@@ -1165,7 +1250,7 @@ const RoadSurveyForm = () => {
         onSubmit={handleQueueSubmit}
       />
 
-      <Container maxWidth="md" sx={{ pt: { xs: 3, md: 5 } }}>
+      <Container maxWidth="md" sx={{ mt: -8, position: "relative" }}>
         <Paper
           elevation={0}
           sx={{
@@ -1174,33 +1259,24 @@ const RoadSurveyForm = () => {
             bgcolor: "#ffffff",
             boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)",
             border: "1px solid rgba(226, 232, 240, 0.8)",
+            borderLeftColor: "#6366f1",
             position: "relative",
             overflow: "hidden",
           }}
         >
-          {/* Gradient top bar */}
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "6px",
-              background: "linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%)",
-            }}
-          />
+          {/* Indigo left accent */}
+          <Box sx={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", bgcolor: "#6366f1" }} />
 
-          {/* Header */}
-          <Stack direction="row" alignItems="center" mb={4} mt={1}>
+          <Stack direction="row" alignItems="center" mb={4} mt={1} spacing={2}>
             <IconButton
               onClick={handleGoBack}
+              aria-label="Go back"
               sx={{
                 bgcolor: "#f1f5f9",
                 color: "#475569",
                 borderRadius: "16px",
                 width: 48,
                 height: 48,
-                mr: 3,
                 transition: "all 0.2s ease",
                 "&:hover": {
                   bgcolor: "#e2e8f0",
@@ -1211,31 +1287,9 @@ const RoadSurveyForm = () => {
             >
               <MdArrowBackIosNew size={22} />
             </IconButton>
-            <Box>
-              <Typography
-                variant="h4"
-                fontWeight={900}
-                color="#1e293b"
-                sx={{
-                  letterSpacing: "-0.02em",
-                  fontSize: { xs: "1.5rem", md: "2rem" },
-                }}
-              >
-                {existingSurveyId
-                  ? "Complete Your Project"
-                  : "Create New Project"}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontWeight={600}
-                mt={0.5}
-              >
-                {step === 1
-                  ? "Step 1 of 2 — Project details & team"
-                  : "Step 2 of 2 — Technical parameters"}
-              </Typography>
-            </Box>
+            <Typography variant="h6" fontWeight={800} color="#1e293b">
+              {step === 1 ? "Project details & team" : "Technical parameters"}
+            </Typography>
           </Stack>
 
           {/* Stepper */}
@@ -1304,36 +1358,27 @@ const RoadSurveyForm = () => {
             }}
             sx={{
               position: "fixed",
-              bottom: { xs: 24, md: 32 },
               left: "50%",
               zIndex: 1000,
-              width: "max-content",
-              maxWidth: "90vw",
+              ...capsuleWrapperSx(2),
             }}
           >
             <Paper
               elevation={0}
               sx={{
-                p: "8px",
-                borderRadius: "24px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: { xs: 1, md: 1.5 },
                 background: "rgba(99, 102, 241, 0.15)",
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
                 border: "1px solid rgba(99, 102, 241, 0.3)",
                 boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
-                height: { xs: "50px", md: "60px" },
-                overflowX: "auto",
-                "&::-webkit-scrollbar": { display: "none" },
+                ...capsuleShellSx,
               }}
             >
               <AnimatePresence mode="wait">
                 {step === 1 ? (
                   <motion.div
                     key="btns-step1"
-                    style={{ display: "flex", gap: 8, height: "100%" }}
+                    style={{ display: "flex", gap: "clamp(4px, 1vw, 6px)", height: "100%", width: "100%" }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -1358,7 +1403,7 @@ const RoadSurveyForm = () => {
                 ) : (
                   <motion.div
                     key="btns-step2"
-                    style={{ display: "flex", gap: 8, height: "100%" }}
+                    style={{ display: "flex", gap: "clamp(4px, 1vw, 6px)", height: "100%", width: "100%" }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -1398,13 +1443,13 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      px: { xs: 2, md: 6 },
+      px: { xs: 0.5, md: 2 },
       height: "100%",
-      borderRadius: "16px",
+      borderRadius: "999px",
       cursor: "pointer",
-      minWidth: "70px",
+      minWidth: 0,
       whiteSpace: "nowrap",
-      flexShrink: 0,
+      flex: "1 1 0",
       bgcolor: muted ? "rgba(255,255,255,0.6)" : "white",
       color: muted ? "#64748b" : queue ? "#ea580c" : "#6366f1",
       transition: "all 0.3s ease",
@@ -1419,7 +1464,7 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
         display: "flex",
         flexDirection: { xs: "column", sm: "row" },
         alignItems: "center",
-        gap: 1,
+        gap: 0,
       }}
     >
       <Typography
@@ -1442,7 +1487,7 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
         sx={{
           lineHeight: 1,
           color: "inherit",
-          fontSize: { xs: "0.8rem", md: "1rem" },
+          fontSize: { xs: "0.625rem", sm: "0.7rem" },
           transition: "color 0.3s ease",
         }}
       >

@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
   Avatar,
   Box,
@@ -15,11 +16,13 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { stopLoading } from "../../redux/loadingSlice";
 import BigHeader from "../../components/BigHeader";
+import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import {
   FiUser,
   FiBriefcase,
   FiTool,
   FiSave,
+  FiTrash2,
   FiUploadCloud,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -135,16 +138,109 @@ const CustomTextField = (props) => (
 const Profile = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
+  const heroRef = useRef(null);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    const updateCompactHeader = () => {
+      const halfway = (heroRef.current?.offsetHeight || 0) / 2;
+      setCompactHeaderVisible(window.scrollY >= halfway && halfway > 0);
+    };
+    updateCompactHeader();
+    window.addEventListener("scroll", updateCompactHeader, { passive: true });
+    window.addEventListener("resize", updateCompactHeader);
+    return () => {
+      window.removeEventListener("scroll", updateCompactHeader);
+      window.removeEventListener("resize", updateCompactHeader);
+    };
+  }, []);
 
   useEffect(() => {
     dispatch(stopLoading());
   }, []);
 
   return (
-    <Box sx={{ bgcolor: BG_COLOR, minHeight: "100vh", pb: 8 }}>
+    <Box sx={{ bgcolor: BG_COLOR, minHeight: "100vh", pb: { xs: 20, md: 24 } }}>
       <BigHeader />
+      <AnimatePresence>
+        {compactHeaderVisible && (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            sx={{
+              position: "fixed",
+              top: { xs: 49, md: 65 },
+              left: 0,
+              right: 0,
+              zIndex: 1099,
+              p: 2,
+              color: "white",
+              background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+              borderRadius: "0 0 20px 20px",
+              boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
+            }}
+          >
+            <Container maxWidth="lg">
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <FiUser size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                <Typography
+                  fontWeight={900}
+                  sx={compactTitleSx}
+                  letterSpacing="-0.5px"
+                >
+                  My <span style={{ color: "#c7d2fe" }}>Profile</span>
+                </Typography>
+              </Stack>
+            </Container>
+          </Box>
+        )}
+      </AnimatePresence>
+      <Box
+        ref={heroRef}
+        sx={{
+          background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+          pt: 10,
+          pb: 10,
+          color: "white",
+          borderRadius: "0 0 20px 20px",
+          boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.4)",
+          position: "relative",
+          mb: 6,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              opacity: compactHeaderVisible ? 0 : 1,
+              transform: compactHeaderVisible ? "translateY(-12px) scale(0.96)" : "none",
+              transformOrigin: "left center",
+              transition: "opacity 0.3s ease, transform 0.3s ease",
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={2} mb={1}>
+              <FiUser size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+              <Typography
+                variant="h3" sx={heroTitleSx}
+                fontWeight={900}
+                letterSpacing="-0.02em"
+              >
+                My <span style={{ color: "#c7d2fe" }}>Profile</span>
+              </Typography>
+            </Stack>
+            <Typography
+              variant="body1"
+              sx={{ opacity: 0.85, maxWidth: 500, fontWeight: 500 }}
+            >
+              Manage your personal information, work details, and project preferences.
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
 
-      <Container maxWidth="lg" sx={{ mt: 8 }}>
+      <Container maxWidth="lg" sx={{ mt: -8, position: "relative" }}>
         <motion.div
           variants={staggerContainer}
           initial="hidden"
@@ -210,45 +306,7 @@ const Profile = () => {
                     {user?.email || "user@example.com"}
                   </Typography>
 
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<FiSave />}
-                    sx={{
-                      bgcolor: PRIMARY_BRAND,
-                      color: "white",
-                      fontWeight: 800,
-                      borderRadius: "12px",
-                      py: 1.5,
-                      boxShadow: "0 8px 20px rgba(99, 102, 241, 0.2)",
-                    }}
-                  >
-                    Save Changes
-                  </Button>
 
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    sx={{
-                      mt: 2,
-                      color: "#ef4444",
-                      borderColor: "#fca5a5",
-                      fontWeight: 700,
-                      borderRadius: "12px",
-                      py: 1.5,
-                      "&:hover": {
-                        bgcolor: "#fef2f2",
-                        borderColor: "#ef4444",
-                      },
-                    }}
-                    onClick={() =>
-                      alert(
-                        "Delete account feature — please contact support to proceed.",
-                      )
-                    }
-                  >
-                    Delete Account
-                  </Button>
                 </Paper>
               </motion.div>
             </Grid>
@@ -416,6 +474,85 @@ const Profile = () => {
           </Grid>
         </motion.div>
       </Container>
+
+      <Box
+        component={motion.div}
+        initial={{ y: 100, opacity: 0, x: "-50%" }}
+        animate={{ y: 0, opacity: 1, x: "-50%" }}
+        transition={{ type: "spring", damping: 20, stiffness: 100, delay: 0.2 }}
+        sx={{
+          position: "fixed",
+          left: "50%",
+          zIndex: 1000,
+          ...capsuleWrapperSx(2),
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            background: "rgba(99, 102, 241, 0.15)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(99, 102, 241, 0.3)",
+            boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
+            ...capsuleShellSx,
+          }}
+        >
+          {[
+            { label: "SAVE CHANGES", icon: <FiSave size={20} /> },
+            {
+              label: "DELETE ACCOUNT",
+              icon: <FiTrash2 size={20} />,
+              danger: true,
+              onClick: () =>
+                alert("Delete account feature — please contact support to proceed."),
+            },
+          ].map((action) => (
+            <Button
+              key={action.label}
+              onClick={action.onClick}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                px: { xs: 0.5, md: 2 },
+                height: "100%",
+                borderRadius: "999px",
+                minWidth: 0,
+                whiteSpace: "nowrap",
+                flex: "1 1 0",
+                bgcolor: "white",
+                color: action.danger ? "#dc2626" : "#6366f1",
+                textTransform: "none",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: action.danger ? "#dc2626" : "#6366f1",
+                  color: "white",
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: "center",
+                  gap: 0,
+                }}
+              >
+                {action.icon}
+                <Typography
+                  variant="body2"
+                  fontWeight={900}
+                  letterSpacing="0.05em"
+                  sx={{ lineHeight: 1, fontSize: { xs: "0.8rem", md: "1rem" } }}
+                >
+                  {action.label}
+                </Typography>
+              </Box>
+            </Button>
+          ))}
+        </Paper>
+      </Box>
     </Box>
   );
 };

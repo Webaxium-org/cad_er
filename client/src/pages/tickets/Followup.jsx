@@ -108,8 +108,8 @@ const Followup = () => {
 
       <Box sx={{ maxWidth: "1200px", mx: "auto", p: { xs: 2, md: 4 } }}>
         {/* Ticket Header */}
-        <Paper elevation={0} sx={{ p: { xs: 2, sm: 3, md: 4 }, mb: 2, borderRadius: "28px", border: "1px solid #e2e8f0", position: "relative", overflow: "hidden" }}>
-          <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, height: 6, background: "linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%)" }} />
+        <Paper elevation={0} sx={{ p: { xs: 2, sm: 3, md: 4 }, mb: 2, borderRadius: "28px", border: "1px solid #e2e8f0", borderLeftColor: "#6366f1", position: "relative", overflow: "hidden" }}>
+          <Box sx={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", bgcolor: "#6366f1" }} />
           <Stack direction="row" alignItems="flex-start" spacing={1.5}>
             <Button onClick={() => navigate(-1)} sx={{ minWidth: 40, width: 40, height: 40, p: 0, borderRadius: "12px", bgcolor: "#f1f5f9", color: "#334155", "&:hover": { bgcolor: "#e2e8f0" } }} aria-label="Back to tickets">
               <MdArrowBackIosNew fontSize={18} />

@@ -29,7 +29,7 @@ const getAllSurvey = async (req, res, next) => {
   try {
     const {
       user: { userId },
-      query: { status, project, purpose, type, rootBranch, page, limit },
+      query: { status, project, purpose, type, rootBranch, stage, page, limit },
     } = req;
 
     const filter = {
@@ -53,6 +53,62 @@ const getAllSurvey = async (req, res, next) => {
       filter.project = { $regex: project, $options: "i" };
     }
     if (type) filter.type = type;
+    if (stage) {
+      const validStages = [
+        "initial_level",
+        "proposed_underway",
+        "proposed_wrapped",
+        "final_underway",
+      ];
+      if (!validStages.includes(stage)) {
+        throw createHttpError(400, "Invalid survey stage");
+      }
+
+      const purposeFilter = { createdBy: userId, deleted: false };
+      let surveyIds;
+      if (stage === "initial_level") {
+        surveyIds = await SurveyPurpose.distinct("surveyId", {
+          ...purposeFilter,
+          phase: "Actual",
+          type: "Initial Level",
+          isPurposeFinish: false,
+        });
+      } else if (stage === "proposed_underway") {
+        surveyIds = await SurveyPurpose.distinct("surveyId", {
+          ...purposeFilter,
+          phase: "Proposal",
+          type: "Proposed Level",
+          isPurposeFinish: false,
+        });
+      } else if (stage === "final_underway") {
+        surveyIds = await SurveyPurpose.distinct("surveyId", {
+          ...purposeFilter,
+          phase: "Actual",
+          type: "Final Level",
+          isPurposeFinish: false,
+        });
+      } else {
+        const [wrappedIds, underwayIds] = await Promise.all([
+          SurveyPurpose.distinct("surveyId", {
+            ...purposeFilter,
+            phase: "Proposal",
+            type: "Proposed Level",
+            isPurposeFinish: true,
+          }),
+          SurveyPurpose.distinct("surveyId", {
+            ...purposeFilter,
+            isPurposeFinish: false,
+            $or: [
+              { phase: "Proposal", type: "Proposed Level" },
+              { phase: "Actual", type: "Final Level" },
+            ],
+          }),
+        ]);
+        const underway = new Set(underwayIds.map(String));
+        surveyIds = wrappedIds.filter((id) => !underway.has(String(id)));
+      }
+      filter._id = { $in: surveyIds };
+    }
     if (rootBranch) {
       filter["branchDetails.isBranch"] = true;
       filter["branchDetails.rootBranch"] = rootBranch;

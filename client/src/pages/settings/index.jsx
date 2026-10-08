@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Alert,
   Box,
@@ -35,6 +35,8 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import BigHeader from "../../components/BigHeader";
+import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
+import BasicButton from "../../components/BasicButton";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import { getSettings, saveSettings } from "../../services/settingsServices";
 
@@ -173,17 +175,25 @@ function Select({ label, value, onChange, options, ...props }) {
 }
 const toggleSx = {
   flexWrap: "wrap",
+  gap: 1,
   "& .MuiToggleButton-root": {
+    marginLeft: "0 !important",
     borderRadius: "10px !important",
     px: 2,
     fontWeight: 700,
     fontSize: "0.8rem",
     color: "#64748b",
-    borderColor: "#e2e8f0",
+    border: "1px solid #cbd5e1 !important",
+    "&.Mui-disabled": {
+      opacity: 1,
+      color: "#64748b",
+      bgcolor: "#f8fafc",
+      border: "1px solid #cbd5e1 !important",
+    },
     "&.Mui-selected": {
       bgcolor: "#6366f1",
       color: "white",
-      borderColor: "#6366f1",
+      border: "1px solid #6366f1 !important",
       "&:hover": { bgcolor: "#4f46e5" },
     },
   },
@@ -197,6 +207,22 @@ export default function Settings() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [message, setMessage] = useState(null);
   const [expandedStaffRole, setExpandedStaffRole] = useState(staffRoles[0]);
+  const heroRef = useRef(null);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    const updateCompactHeader = () => {
+      const halfway = (heroRef.current?.offsetHeight || 0) / 2;
+      setCompactHeaderVisible(window.scrollY >= halfway && halfway > 0);
+    };
+    updateCompactHeader();
+    window.addEventListener("scroll", updateCompactHeader, { passive: true });
+    window.addEventListener("resize", updateCompactHeader);
+    return () => {
+      window.removeEventListener("scroll", updateCompactHeader);
+      window.removeEventListener("resize", updateCompactHeader);
+    };
+  }, []);
   useEffect(() => {
     let active = true;
     dispatch(startLoading());
@@ -297,15 +323,52 @@ export default function Settings() {
       ? governmentFields
       : privateFields;
   return (
-    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 8 }}>
+    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 16 }}>
       <BigHeader />
+      <AnimatePresence>
+        {compactHeaderVisible && (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            sx={{
+              position: "fixed",
+              top: { xs: 49, md: 65 },
+              left: 0,
+              right: 0,
+              zIndex: 1099,
+              p: 2,
+              color: "white",
+              background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+              borderRadius: "0 0 20px 20px",
+              boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
+            }}
+          >
+            <Container maxWidth="lg">
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <FiSettings size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                <Typography
+                  fontWeight={900}
+                  sx={compactTitleSx}
+                  letterSpacing="-0.5px"
+                >
+                  System <span style={{ color: "#c7d2fe" }}>Settings</span>
+                </Typography>
+              </Stack>
+            </Container>
+          </Box>
+        )}
+      </AnimatePresence>
       <Box
+        ref={heroRef}
         sx={{
           background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
-          pt: { xs: 10, md: 12 },
-          pb: { xs: 8, md: 10 },
+          pt: 10,
+          pb: 10,
           color: "white",
-          borderRadius: "0 0 40px 40px",
+          borderRadius: "0 0 20px 20px",
           boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.4)",
           position: "relative",
           mb: 6,
@@ -319,11 +382,18 @@ export default function Settings() {
             flexWrap="wrap"
             gap={2}
           >
-            <Box>
+            <Box
+              sx={{
+                opacity: compactHeaderVisible ? 0 : 1,
+                transform: compactHeaderVisible ? "translateY(-12px) scale(0.96)" : "none",
+                transformOrigin: "left center",
+                transition: "opacity 0.3s ease, transform 0.3s ease",
+              }}
+            >
               <Stack direction="row" alignItems="center" spacing={2} mb={1}>
-                <FiSettings size={32} opacity={0.9} />
+                <FiSettings size={32} opacity={0.9} style={{ flexShrink: 0 }} />
                 <Typography
-                  variant="h3"
+                  variant="h3" sx={heroTitleSx}
                   fontWeight={900}
                   letterSpacing="-0.02em"
                 >
@@ -338,31 +408,7 @@ export default function Settings() {
                 details, and project reporting.
               </Typography>
             </Box>
-            <Button
-              type="submit"
-              form="settings-form"
-              variant="contained"
-              startIcon={
-                saving ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : (
-                  <FiSave />
-                )
-              }
-              disabled={saving || loading || loadFailed}
-              sx={{
-                bgcolor: "white",
-                color: "#6366f1",
-                fontWeight: 800,
-                borderRadius: "12px",
-                px: 3,
-                py: 1.5,
-                boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
-                "&:hover": { bgcolor: "#f1f5f9" },
-              }}
-            >
-              Save Configuration
-            </Button>
+
           </Stack>
         </Container>
       </Box>
@@ -929,6 +975,68 @@ export default function Settings() {
           </>
         )}
       </Container>
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: { xs: 24, md: 32 },
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          pointerEvents: "none",
+          zIndex: 1000,
+        }}
+      >
+        <Container maxWidth="sm" sx={{ pointerEvents: "none" }}>
+          <motion.div
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            style={{ width: "100%", pointerEvents: "auto" }}
+          >
+            <BasicButton
+              type="submit"
+              form="settings-form"
+              value={
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  {saving ? (
+                    <CircularProgress size={22} color="inherit" />
+                  ) : (
+                    <FiSave fontSize="22px" />
+                  )}
+                  <Typography
+                    fontSize="1.1rem"
+                    fontWeight={900}
+                    letterSpacing="0.05em"
+                  >
+                    SAVE CONFIGURATION
+                  </Typography>
+                </Stack>
+              }
+              sx={{
+                background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+                color: "white",
+                height: { xs: "64px", md: "72px" },
+                borderRadius: "24px",
+                border: "none",
+                boxShadow: "0 15px 35px -5px rgba(99, 102, 241, 0.5)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #4338ca 0%, #4f46e5 100%)",
+                  boxShadow: "0 20px 40px -5px rgba(99, 102, 241, 0.6)",
+                },
+              }}
+              fullWidth={true}
+              disabled={saving || loading || loadFailed}
+            />
+          </motion.div>
+        </Container>
+      </Box>
     </Box>
   );
 }

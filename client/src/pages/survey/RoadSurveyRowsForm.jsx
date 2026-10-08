@@ -14,6 +14,8 @@ import {
   Paper,
   Container,
   IconButton,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import BasicButtons from "../../components/BasicButton";
@@ -22,7 +24,7 @@ import { IoIosAddCircleOutline, IoIosArrowForward } from "react-icons/io";
 import { IoIosRemove } from "react-icons/io";
 import BasicCheckbox from "../../components/BasicCheckbox";
 import { showAlert } from "../../redux/alertSlice";
-import { MdArrowBackIosNew } from "react-icons/md";
+import { MdArrowBackIosNew, MdOutlineTableRows } from "react-icons/md";
 import { FaRegEdit } from "react-icons/fa";
 import { AiFillDelete } from "react-icons/ai";
 import {
@@ -39,12 +41,13 @@ import AlertDialogSlide from "../../components/AlertDialogSlide";
 import BasicInput from "../../components/BasicInput";
 import { getLastRlAndHi, v2ChartOptions } from "../../constants";
 import { MdDone } from "react-icons/md";
-import BasicSpeedDial from "../../components/BasicSpeedDial";
 import BasicSelect from "../../components/BasicSelect";
 import BasicCard from "../../components/BasicCard";
 import BasicDivider from "../../components/BasicDevider";
 import EditPreviousReading from "./components/EditPreviousReading";
 import SmallHeader from "../../components/SmallHeader";
+import PageHeroHeader from "../../components/PageHeroHeader";
+import { capsuleWrapperSx } from "../../components/bottomIslandStyles";
 import useHardBackLock from "../../hooks/useHardBackLock";
 import AddBranch from "./components/AddBranch";
 import EnterBranch from "./components/EnterBranch";
@@ -233,6 +236,7 @@ const RoadSurveyRowsForm = () => {
   const [openAddBranch, setOpenAddBranch] = useState(false);
   const [openAddBreak, setOpenAddBreak] = useState(false);
   const [openEnterBranch, setOpenEnterBranch] = useState(false);
+  const [optionsAnchor, setOptionsAnchor] = useState(null);
   const [upcomingBranches, setUpcomingBranches] = useState([]);
   const graphRef = useRef(null);
   const [graphHeight, setGraphHeight] = useState(0);
@@ -1494,6 +1498,7 @@ const RoadSurveyRowsForm = () => {
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 8, md: 12 } }}>
       <SmallHeader />
+      <PageHeroHeader icon={MdOutlineTableRows} title="Survey Data Entry" subtitle="Record levels and manage survey observations." />
 
       {/* Internal Modals */}
       <AlertDialogSlide {...alertData} open={open} onCancel={handleClose} />
@@ -1522,7 +1527,13 @@ const RoadSurveyRowsForm = () => {
       />
 
       {/* Main Form Layout Container */}
-      <Container maxWidth="md">
+      <Container
+        maxWidth="md"
+        sx={{
+          mt: rowType === "Chainage" && page === 1 && selectedCs?.series ? -6 : -8,
+          position: "relative",
+        }}
+      >
         {rowType === "Chainage" &&
           page === 1 &&
           selectedCs &&
@@ -1539,7 +1550,7 @@ const RoadSurveyRowsForm = () => {
                 top={
                   keyboardViewportTop !== null
                     ? `${keyboardViewportTop}px`
-                    : "68px"
+                    : { xs: "105px", md: "130px" }
                 }
                 bgcolor={"white"}
                 zIndex={keyboardViewportTop !== null ? 1101 : 2}
@@ -1573,7 +1584,7 @@ const RoadSurveyRowsForm = () => {
                         display: "inline-flex",
                         px: 2,
                         py: 0.5,
-                        mb: 3,
+                        mb: 0,
                         borderRadius: 10,
                         bgcolor: "rgba(99, 102, 241, 0.1)",
                         border: "1px solid rgba(99, 102, 241, 0.2)",
@@ -1641,29 +1652,14 @@ const RoadSurveyRowsForm = () => {
           elevation={0}
           sx={{
             p: { xs: 3, md: 5 },
-            borderRadius: "28px",
-            bgcolor: "#ffffff",
+            borderRadius: "20px",
+            background: "linear-gradient(to right, #6366f1 0 6px, #ffffff 6px)",
             boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)",
             border: "1px solid rgba(226, 232, 240, 0.8)",
             position: "relative",
             mt: 2,
-            // overflow: "hidden" removed to allow SpeedDial overflow
           }}
         >
-          {/* Subtle Decorative Gradient Header */}
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "6px",
-              background: "linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%)",
-              borderTopLeftRadius: "28px",
-              borderTopRightRadius: "28px",
-            }}
-          />
-
           <Stack spacing={2} sx={{ position: "relative" }}>
             <Stack
               direction={{ xs: "column", sm: "row" }}
@@ -1695,10 +1691,12 @@ const RoadSurveyRowsForm = () => {
               <Stack
                 direction={"row"}
                 justifyContent={"space-between"}
-                alignItems={"start"}
-                width={"100%"}
+                alignItems="flex-start"
+                gap={1.5}
+                width="100%"
+                minWidth={0}
               >
-                <Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
                     variant="h4"
                     fontWeight={900}
@@ -1707,7 +1705,6 @@ const RoadSurveyRowsForm = () => {
                       letterSpacing: "-0.02em",
                       fontSize: { xs: "1.4rem", md: "1.8rem" },
                     }}
-                    width={"max-content"}
                   >
                     {page === 1
                       ? "Enter Intermediate Sight"
@@ -1724,26 +1721,81 @@ const RoadSurveyRowsForm = () => {
                 </Box>
 
                 {page === 0 && (
-                  <Stack
-                    direction={"row"}
-                    justifyContent={"end"}
-                    width={"100%"}
-                  >
-                    <Box width={"40px"} zIndex={1050} position={"relative"}>
-                      <BasicSpeedDial
-                        actions={speedDialActions?.filter((a) => a.show)}
-                        direction={"down"}
-                        sx={{
-                          top: 0,
-                          right: 0,
-                          "& button": {
-                            width: "40px",
-                            height: "40px",
+                  <>
+                    <IconButton
+                      aria-label="Survey options"
+                      aria-controls={optionsAnchor ? "survey-options-menu" : undefined}
+                      aria-haspopup="menu"
+                      aria-expanded={Boolean(optionsAnchor)}
+                      onClick={(event) => setOptionsAnchor(event.currentTarget)}
+                      sx={{
+                        flexShrink: 0,
+                        width: 42,
+                        height: 42,
+                        borderRadius: "12px",
+                        bgcolor: "#f1f2ff",
+                        color: "#4f46e5",
+                        border: "1px solid #dce4ff",
+                        "&:hover": { bgcolor: "#e8eaff" },
+                      }}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <circle cx="12" cy="4" r="1.8" />
+                        <circle cx="12" cy="9.3" r="1.8" />
+                        <circle cx="12" cy="14.7" r="1.8" />
+                        <circle cx="12" cy="20" r="1.8" />
+                      </svg>
+                    </IconButton>
+                    <Menu
+                      id="survey-options-menu"
+                      anchorEl={optionsAnchor}
+                      open={Boolean(optionsAnchor)}
+                      onClose={() => setOptionsAnchor(null)}
+                      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                      transformOrigin={{ vertical: "top", horizontal: "right" }}
+                      slotProps={{
+                        paper: {
+                          sx: {
+                            mt: 1,
+                            minWidth: 210,
+                            p: 1,
+                            border: "1px solid #e2e8f0",
+                            borderLeft: "6px solid #6366f1",
+                            borderRadius: "20px",
+                            boxShadow: "0 18px 40px rgba(30, 41, 59, 0.16)",
+                            bgcolor: "#fff",
                           },
-                        }}
-                      />
-                    </Box>
-                  </Stack>
+                        },
+                        list: { sx: { p: 0 } },
+                      }}
+                    >
+                      <Typography sx={{ px: 1.5, py: 1, color: "#64748b", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em" }}>
+                        SURVEY OPTIONS
+                      </Typography>
+                      {speedDialActions.filter((action) => action.show).map((action) => (
+                        <MenuItem
+                          key={action.name}
+                          onClick={() => {
+                            setOptionsAnchor(null);
+                            action.onClick();
+                          }}
+                          sx={{
+                            gap: 1.5,
+                            px: 1.5,
+                            py: 1.25,
+                            borderRadius: "10px",
+                            color: "#1e293b",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            "&:hover": { bgcolor: "#f1f2ff", color: "#4f46e5" },
+                          }}
+                        >
+                          <Box sx={{ display: "flex", color: "#6366f1", fontSize: 19 }}>{action.icon}</Box>
+                          {action.name.charAt(0) + action.name.slice(1).toLowerCase()}
+                        </MenuItem>
+                      ))}
+                    </Menu>
+                  </>
                 )}
               </Stack>
             </Stack>
@@ -2345,27 +2397,25 @@ const RoadSurveyRowsForm = () => {
                   }}
                   sx={{
                     position: "fixed",
-                    bottom: { xs: "calc(12px + env(safe-area-inset-bottom))", md: 32 },
                     left: "50%",
                     zIndex: 1000,
-                    width: { xs: "calc(100vw - 24px)", sm: "max-content" },
-                    maxWidth: "calc(100vw - 24px)",
+                    ...capsuleWrapperSx(isWaterWay ? 5 : 4),
                   }}
                 >
                   <Paper
                     elevation={0}
                     sx={{
-                      p: { xs: "5px 8px", sm: "7px 10px" },
-                      borderRadius: "28px",
+                      p: { xs: "4px", sm: "6px" },
+                      borderRadius: "999px",
                       display: "flex",
                       alignItems: "center",
-                      gap: { xs: 0.5, md: 1 },
+                      gap: { xs: 0.5, sm: 0.75 },
                       background: "rgba(99, 102, 241, 0.15)",
                       backdropFilter: "blur(12px)",
                       WebkitBackdropFilter: "blur(12px)",
                       border: "1px solid rgba(99, 102, 241, 0.3)",
                       boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
-                      height: { xs: "64px", md: "68px" },
+                      height: "clamp(44px, 10vw, 56px)",
                       width: "100%",
                       boxSizing: "border-box",
                     }}
@@ -2427,11 +2477,11 @@ const RoadSurveyRowsForm = () => {
                             justifyContent: "center",
                             px: { xs: 0.5, md: 2 },
                             height: "100%",
-                            borderRadius: "22px",
+                            borderRadius: "999px",
                             cursor: isDisabled ? "not-allowed" : "pointer",
-                            minWidth: { xs: 0, sm: 76 },
+                            minWidth: 0,
                             whiteSpace: "nowrap",
-                            flex: { xs: "1 1 0", sm: "0 0 auto" },
+                            flex: "1 1 0",
                             bgcolor: "white",
                             color: rowType === type.value ? "white" : "#6366f1",
                             opacity: isDisabled ? 0.35 : 1,
@@ -2460,7 +2510,7 @@ const RoadSurveyRowsForm = () => {
                                 position: "absolute",
                                 inset: 0,
                                 background: "#6366f1",
-                                borderRadius: "22px",
+                                borderRadius: "999px",
                                 zIndex: 0,
                                 boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                               }}
@@ -2471,7 +2521,7 @@ const RoadSurveyRowsForm = () => {
                               display: "flex",
                               alignItems: "center",
                               flexDirection: "column",
-                              gap: 0.25,
+                              gap: 0,
                               position: "relative",
                               zIndex: 1,
                             }}
@@ -2481,8 +2531,8 @@ const RoadSurveyRowsForm = () => {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                width: 32,
-                                height: 32,
+                                width: { xs: 24, sm: 30 },
+                                height: { xs: 24, sm: 30 },
                                 borderRadius: "50%",
                               }}
                             >
@@ -2493,7 +2543,7 @@ const RoadSurveyRowsForm = () => {
                               fontWeight={600}
                               sx={{
                                 lineHeight: 1,
-                                fontSize: "0.7rem",
+                                fontSize: { xs: "0.625rem", sm: "0.7rem" },
                               }}
                             >
                               {type.label}

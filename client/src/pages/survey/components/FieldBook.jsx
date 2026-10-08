@@ -12,7 +12,7 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import BasicButtons from "../../../components/BasicButton";
-import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import { MdArrowBackIosNew, MdDownload, MdOutlineTableRows } from "react-icons/md";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import {
   Box,
@@ -31,6 +31,7 @@ import { TbReportSearch } from "react-icons/tb";
 import { MdOutlineModeEdit } from "react-icons/md";
 import { BiSave } from "react-icons/bi";
 import SmallHeader from "../../../components/SmallHeader";
+import PageHeroHeader from "../../../components/PageHeroHeader";
 
 const menuItems = [
   {
@@ -558,8 +559,9 @@ export default function FieldBook() {
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 4 }}>
       <SmallHeader />
+      <PageHeroHeader icon={MdOutlineTableRows} title="Field Observations" subtitle="Review and manage your field book readings." />
 
-      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2 }}>
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2, mt: -8, position: "relative", bgcolor: "white", mx: { xs: 1, sm: 2 }, border: "1px solid #e2e8f0", borderRadius: "20px", background: "linear-gradient(to right, #6366f1 0 6px, #ffffff 6px)" }}>
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -588,22 +590,6 @@ export default function FieldBook() {
             value={<MdArrowBackIosNew fontSize={18} />}
           />
 
-          <Typography
-            variant="h5"
-            fontWeight={800}
-            color="#1e293b"
-            sx={{
-              flex: 1,
-              minWidth: 0,
-              fontSize: { xs: "0.76rem", sm: "1.1rem", md: "1.5rem" },
-              letterSpacing: "-0.01em",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            Field Observations!
-          </Typography>
 
           <Stack direction="row" alignItems="center" gap={{ xs: 0.5, sm: 1 }} flexShrink={0}>
             <BasicButtons

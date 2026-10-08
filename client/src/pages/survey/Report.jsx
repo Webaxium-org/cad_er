@@ -1,4 +1,5 @@
 import { Activity, useEffect, useState } from "react";
+import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -34,6 +35,7 @@ import { MdDelete } from "react-icons/md";
 import BasicAutocomplete from "../../components/BasicAutocomplete";
 import BasicButton from "../../components/BasicButton";
 import SmallHeader from "../../components/SmallHeader";
+import PageHeroHeader from "../../components/PageHeroHeader";
 import DeductionContent from "./components/DeductionContent";
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import StyledTextLink from "../../components/StyledTextLink";
@@ -64,7 +66,7 @@ const Report = () => {
 
   const [selectedPurposes, setSelectedPurposes] = useState([]);
 
-  const [reportType, setReportType] = useState(null);
+  const [reportType, setReportType] = useState("cross");
 
   const [open, setOpen] = useState(null);
 
@@ -279,32 +281,9 @@ const Report = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }}>
       <SmallHeader />
+      <PageHeroHeader icon={HiOutlineDocumentReport} title="Explore your library!" subtitle="Choose a report category from the footer navigation." />
       <AlertDialogSlide {...deleteAlertData} open={deleteAlertOpen} />
       <AlertDialogSlide {...alertData} open={open} />
-
-      <Box pt={{ xs: 3, md: 5 }} pb={2}>
-        <Typography
-          variant="h4"
-          fontWeight={900}
-          align="center"
-          color="#1e293b"
-          sx={{
-            letterSpacing: "-0.02em",
-            fontSize: { xs: "1.5rem", md: "2rem" },
-          }}
-        >
-          Explore your library!
-        </Typography>
-        <Typography
-          variant="body2"
-          align="center"
-          color="text.secondary"
-          fontWeight={600}
-          mt={1}
-        >
-          Hey, designate a category from the footer navigation island to advance.
-        </Typography>
-      </Box>
 
       {/* Select Report Type Island */}
       <Box
@@ -314,30 +293,20 @@ const Report = () => {
         transition={{ type: "spring", damping: 20, stiffness: 100, delay: 0.2 }}
         sx={{
           position: "fixed",
-          bottom: { xs: 24, md: 32 },
           left: "50%",
           zIndex: 1000,
-          width: "max-content",
-          maxWidth: "90vw",
+          ...capsuleWrapperSx(5),
         }}
       >
         <Paper
           elevation={0}
           sx={{
-            p: "8px",
-            borderRadius: "24px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: { xs: 1, md: 1.5 },
             background: "rgba(99, 102, 241, 0.15)", // Transparent indigo
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
             border: "1px solid rgba(99, 102, 241, 0.3)",
             boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
-            height: { xs: "50px", md: "60px" },
-            maxWidth: "stretch",
-            overflowX: "auto",
-            "&::-webkit-scrollbar": { display: "none" },
+            ...capsuleShellSx,
           }}
         >
           {[
@@ -374,13 +343,13 @@ const Report = () => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                px: { xs: 2, md: 6 },
+                px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "16px",
+                borderRadius: "999px",
                 cursor: "pointer",
-                minWidth: "70px",
+                minWidth: 0,
                 whiteSpace: "nowrap",
-                flexShrink: 0,
+                flex: "1 1 0",
                 bgcolor: "white",
                 color: reportType === type.value ? "white" : "#6366f1",
                 transition: "all 0.3s ease",
@@ -400,7 +369,7 @@ const Report = () => {
                     position: "absolute",
                     inset: 0,
                     background: "#6366f1", // similar tone color for selected
-                    borderRadius: "16px",
+                    borderRadius: "999px",
                     zIndex: 0,
                     boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                   }}
@@ -410,9 +379,9 @@ const Report = () => {
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
+                  flexDirection: "column",
                   alignItems: "center",
-                  gap: 1,
+                  gap: 0,
                 }}
               >
                 <Typography
@@ -439,7 +408,7 @@ const Report = () => {
                     position: "relative",
                     zIndex: 1,
                     color: "inherit",
-                    fontSize: { xs: "0.8rem", md: "1rem" },
+                    fontSize: { xs: "0.625rem", sm: "0.7rem" },
                     transition: "color 0.3s ease",
                   }}
                 >
@@ -476,23 +445,14 @@ const Report = () => {
                 bgcolor: "#ffffff",
                 boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)",
                 border: "1px solid rgba(226, 232, 240, 0.8)",
+                borderLeftColor: "#6366f1",
                 position: "relative",
                 overflow: "hidden",
                 mt: 3,
               }}
             >
-              {/* Decorative Header Line */}
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: "6px",
-                  background:
-                    "linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%)",
-                }}
-              />
+              {/* Indigo left accent */}
+              <Box sx={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", bgcolor: "#6366f1" }} />
 
               <Stack spacing={4}>
                 {!id ? (

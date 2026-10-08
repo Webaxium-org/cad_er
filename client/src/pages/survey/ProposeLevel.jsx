@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
   Box,
   Container,
@@ -24,6 +25,7 @@ import BasicCheckbox from "../../components/BasicCheckbox";
 import BasicInput from "../../components/BasicInput";
 import BasicSelect from "../../components/BasicSelect";
 import SmallHeader from "../../components/SmallHeader";
+import PageHeroHeader from "../../components/PageHeroHeader";
 import { proposalLevels } from "../../constants";
 import {
   generateSurveyPurpose,
@@ -657,6 +659,7 @@ export default function ProposeLevel() {
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 12, md: 14 } }}>
       <SmallHeader />
+      <PageHeroHeader icon={MdOutlineGridView} title="Propose Level" subtitle="Please fill in the required details accurately" />
 
       <AlertDialogSlide
         {...alertData}
@@ -673,7 +676,7 @@ export default function ProposeLevel() {
         onSubmit={() => setOpenInterpolationSetup(false)}
       />
 
-      <Container maxWidth="md" sx={{ pt: { xs: 3, md: 5 } }}>
+      <Container maxWidth="md" sx={{ mt: -8, position: "relative" }}>
         <Paper
           elevation={0}
           sx={{
@@ -682,20 +685,12 @@ export default function ProposeLevel() {
             bgcolor: "#ffffff",
             boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)",
             border: "1px solid rgba(226, 232, 240, 0.8)",
+            borderLeftColor: "#6366f1",
             position: "relative",
             overflow: "hidden",
           }}
         >
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "6px",
-              background: "linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%)",
-            }}
-          />
+          <Box sx={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", bgcolor: "#6366f1" }} />
 
           <Stack direction="row" alignItems="center" mb={5} mt={1}>
             <IconButton
@@ -880,30 +875,20 @@ export default function ProposeLevel() {
         }}
         sx={{
           position: "fixed",
-          bottom: { xs: 24, md: 32 },
           left: "50%",
           zIndex: 1000,
-          width: "max-content",
-          maxWidth: "90vw",
+          ...capsuleWrapperSx(3),
         }}
       >
         <Paper
           elevation={0}
           sx={{
-            p: "8px",
-            borderRadius: "24px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: { xs: 1, md: 1.5 },
             background: "rgba(99, 102, 241, 0.15)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
             border: "1px solid rgba(99, 102, 241, 0.3)",
             boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
-            height: { xs: "50px", md: "60px" },
-            maxWidth: "stretch",
-            overflowX: "auto",
-            "&::-webkit-scrollbar": { display: "none" },
+            ...capsuleShellSx,
           }}
         >
           {islandOptions.map((option) => (
@@ -914,13 +899,13 @@ export default function ProposeLevel() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                px: { xs: 2, md: 6 },
+                px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "16px",
+                borderRadius: "999px",
                 cursor: "pointer",
-                minWidth: "70px",
+                minWidth: 0,
                 whiteSpace: "nowrap",
-                flexShrink: 0,
+                flex: "1 1 0",
                 bgcolor: "white",
                 color: activeIsland === option.value ? "white" : "#6366f1",
                 transition: "all 0.3s ease",
@@ -944,7 +929,7 @@ export default function ProposeLevel() {
                     position: "absolute",
                     inset: 0,
                     background: "#6366f1",
-                    borderRadius: "16px",
+                    borderRadius: "999px",
                     zIndex: 0,
                     boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                   }}
@@ -956,7 +941,7 @@ export default function ProposeLevel() {
                   display: "flex",
                   flexDirection: { xs: "column", sm: "row" },
                   alignItems: "center",
-                  gap: 1,
+                  gap: 0,
                 }}
               >
                 <Typography
@@ -983,7 +968,7 @@ export default function ProposeLevel() {
                     position: "relative",
                     zIndex: 1,
                     color: "inherit",
-                    fontSize: { xs: "0.8rem", md: "1rem" },
+                    fontSize: { xs: "0.625rem", sm: "0.7rem" },
                     transition: "color 0.3s ease",
                   }}
                 >

@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
   Box,
   Typography,
   Stack,
-  IconButton,
   TextField,
   Paper,
   Button,
   LinearProgress,
+  Container,
+  Menu,
+  MenuItem,
 } from "@mui/material";
-import IOSegmentedTabs from "../../components/IOSegmentedTabs";
 import { useDispatch } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { stopLoading } from "../../redux/loadingSlice";
@@ -19,8 +21,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import autoLevelIcon from "../../assets/icons/compass.json";
 import BasicAccordion from "../../components/BasicAccordion";
-import { MdOutlineExpandMore, MdOutlineSearch } from "react-icons/md";
-import { MdSort } from "react-icons/md";
+import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
+import { MdOutlineExpandMore } from "react-icons/md";
 import BasicCard from "../../components/BasicCard";
 import { ProjectListCardSkeleton } from "./components/ProjectListCardSkeleton";
 import { highlightText } from "../../internals";
@@ -39,6 +41,8 @@ import {
   FiTrash2,
   FiCalendar,
   FiLayers,
+  FiFilter,
+  FiCheck,
 } from "react-icons/fi";
 import { SiGooglecalendar } from "react-icons/si";
 import { PiMicrosoftOutlookLogoFill } from "react-icons/pi";
@@ -222,6 +226,13 @@ const deleteProjectAlertDetails = {
 const PRIMARY_BRAND = "#6366f1";
 const HEADER_GRADIENT_START = "#4f46e5";
 const HEADER_GRADIENT_END = "#6366f1";
+const STAGE_FILTERS = [
+  { label: "All projects", value: "" },
+  { label: "Initial level", value: "initial_level" },
+  { label: "Proposed level underway", value: "proposed_underway" },
+  { label: "Proposed level wrapped", value: "proposed_wrapped" },
+  { label: "Final level underway", value: "final_underway" },
+];
 const BG_COLOR = "#f8fafc";
 const CARD_BORDER = "#e2e8f0";
 const PROJECT_CARD_SX = {
@@ -268,7 +279,7 @@ const PROJECT_ACTION_GRID = {
   "Final Level": { column: "1 / 3", row: 3 },
   "Proposed Level": { column: "3 / 5", row: 3 },
   Delete: { column: "5 / 7", row: 3 },
-  "Branch Reports": { column: "1 / 4", row: 4 },
+  "Branch Reports": { column: "4 / 7", row: 2 },
 };
 
 const ProjectCardHeader = ({ survey, search, status, progress }) => (
@@ -546,6 +557,75 @@ const getLink = (survey, target, type) => {
   }
 };
 
+function ProjectsEmptyState({ title, description, filterLabel, actionLabel, onAction }) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        maxWidth: 660,
+        mx: "auto",
+        p: { xs: 3, sm: 5 },
+        borderRadius: "24px",
+        border: "1px solid #e2e8f0",
+        bgcolor: "#fff",
+        boxShadow: "0 20px 40px -24px rgba(79, 70, 229, 0.24)",
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: 6,
+          height: "100%",
+          bgcolor: "#6366f1",
+        },
+      }}
+    >
+      <Stack alignItems="center" textAlign="center" spacing={2}>
+        <Box
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: "18px",
+            bgcolor: "#eef2ff",
+            color: "#6366f1",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          {filterLabel ? <FiFilter size={28} /> : <FiLayers size={28} />}
+        </Box>
+        {filterLabel && (
+          <Typography
+            variant="caption"
+            sx={{ px: 1.5, py: 0.5, borderRadius: "999px", bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 800 }}
+          >
+            {filterLabel}
+          </Typography>
+        )}
+        <Box>
+          <Typography variant="h5" fontWeight={900} color="#1e293b">
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 440, mt: 1, mx: "auto" }}>
+            {description}
+          </Typography>
+        </Box>
+        {actionLabel && (
+          <Button
+            variant="contained"
+            onClick={onAction}
+            sx={{ mt: 1, borderRadius: "12px", bgcolor: "#6366f1", px: 3, py: 1.2, fontWeight: 800, textTransform: "none", boxShadow: "none", "&:hover": { bgcolor: "#4f46e5", boxShadow: "none" } }}
+          >
+            {actionLabel}
+          </Button>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
 export default function ProjectsList() {
   const navigate = useNavigate();
 
@@ -554,6 +634,24 @@ export default function ProjectsList() {
   const { state } = useLocation();
 
   const [tab, setTab] = useState("in_progress");
+  const heroRef = useRef(null);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+  const [stageFilter, setStageFilter] = useState("");
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+
+  useEffect(() => {
+    const updateCompactHeader = () => {
+      const halfway = (heroRef.current?.offsetHeight || 0) / 2;
+      setCompactHeaderVisible(window.scrollY >= halfway && halfway > 0);
+    };
+    updateCompactHeader();
+    window.addEventListener("scroll", updateCompactHeader, { passive: true });
+    window.addEventListener("resize", updateCompactHeader);
+    return () => {
+      window.removeEventListener("scroll", updateCompactHeader);
+      window.removeEventListener("resize", updateCompactHeader);
+    };
+  }, []);
 
   const [loading, setLoading] = useState(true);
 
@@ -587,7 +685,14 @@ export default function ProjectsList() {
   });
 
   const handleChange = (newValue) => {
+    if (newValue !== "in_progress") setStageFilter("");
     setTab(newValue);
+  };
+
+  const selectStageFilter = (value) => {
+    setFilterAnchorEl(null);
+    setStageFilter(value);
+    setTab("in_progress");
   };
 
   const filteredSurveys = list?.in_progress;
@@ -612,6 +717,9 @@ export default function ProjectsList() {
 
       if (search && tabName === "in_progress") {
         params.project = search;
+      }
+      if (stageFilter && tabName === "in_progress") {
+        params.stage = stageFilter;
       }
 
       const { data } = await getAllSurvey(params);
@@ -918,7 +1026,7 @@ export default function ProjectsList() {
 
   useEffect(() => {
     fetchSurveysForTab(tab, 1, false);
-  }, [tab, search]);
+  }, [tab, search, stageFilter]);
 
   // 🔥 Reusable motion variants
   const fadeSlide = {
@@ -1139,14 +1247,10 @@ export default function ProjectsList() {
             )}
           </Stack>
         ) : (
-          <Box textAlign="center" mt={6}>
-            <Typography fontSize="20px" fontWeight={600}>
-              Todo Items
-            </Typography>
-            <Typography fontSize="14px" color="gray" mt={1}>
-              Your scheduled projects will appear here.
-            </Typography>
-          </Box>
+          <ProjectsEmptyState
+            title="No queued projects yet"
+            description="Scheduled projects will appear here when they are added."
+          />
         )}
       </motion.div>
     ),
@@ -1325,14 +1429,17 @@ export default function ProjectsList() {
             )}
           </Stack>
         ) : (
-          <Box textAlign="center" mt={6}>
-            <Typography fontSize="20px" fontWeight={600}>
-              In Progress
-            </Typography>
-            <Typography fontSize="14px" color="gray" mt={1}>
-              Your ongoing projects will appear here.
-            </Typography>
-          </Box>
+          <ProjectsEmptyState
+            title={stageFilter ? "No projects match this filter" : search ? "No projects match your search" : "No underway projects yet"}
+            description={stageFilter ? "There are no underway projects in the selected level stage. Try another filter or show all underway projects." : search ? "Try a different project name or show all underway projects." : "Your ongoing survey projects will appear here."}
+            filterLabel={stageFilter ? STAGE_FILTERS.find((option) => option.value === stageFilter)?.label : undefined}
+            actionLabel={stageFilter || search ? "Show all underway projects" : undefined}
+            onAction={() => {
+              setStageFilter("");
+              setSearch("");
+              setSearchMode(false);
+            }}
+          />
         )}
       </motion.div>
     ),
@@ -1472,23 +1579,47 @@ export default function ProjectsList() {
             )}
           </Stack>
         ) : (
-          <Box textAlign="center" mt={6}>
-            <Typography fontSize="20px" fontWeight={600}>
-              Finished Projects
-            </Typography>
-            <Typography fontSize="14px" color="gray" mt={1}>
-              Your finished projects will appear here.
-            </Typography>
-          </Box>
+          <ProjectsEmptyState
+            title="No wrapped projects yet"
+            description="Completed projects will appear here when they are wrapped up."
+          />
         )}
       </motion.div>
     ),
   };
 
+  const renderFilterButton = () => (
+    <Button
+      type="button"
+      aria-label={stageFilter ? "Filter projects: " + STAGE_FILTERS.find((option) => option.value === stageFilter)?.label : "Filter projects"}
+      aria-haspopup="menu"
+      aria-expanded={Boolean(filterAnchorEl)}
+      onClick={(event) => setFilterAnchorEl(event.currentTarget)}
+      sx={{
+        color: "white",
+        border: "1px solid rgba(255, 255, 255, 0.4)",
+        bgcolor: stageFilter ? "rgba(255, 255, 255, 0.24)" : "rgba(255, 255, 255, 0.12)",
+        borderRadius: "12px",
+        minWidth: 44,
+        px: { xs: 1.5, sm: 2 },
+        py: 1,
+        textTransform: "none",
+        fontWeight: 800,
+        flexShrink: 0,
+        "&:hover": { bgcolor: "rgba(255, 255, 255, 0.25)", borderColor: "white" },
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <FiFilter size={18} />
+        <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+          Filter
+        </Box>
+      </Stack>
+    </Button>
+  );
+
   return (
-    <Box
-      overflow={"hidden"}
-      sx={{ bgcolor: BG_COLOR, minHeight: "100vh", pb: 5 }}
+    <Box sx={{ bgcolor: BG_COLOR, minHeight: "100vh", pb: 5, overflowX: "clip" }}
     >
       <SmallHeader />
 
@@ -1506,73 +1637,99 @@ export default function ProjectsList() {
         onSubmit={handleDeleteProject}
       />
 
+      <AnimatePresence>
+        {compactHeaderVisible && (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            sx={{
+              position: "fixed",
+              top: { xs: 49, md: 65 },
+              left: 0,
+              right: 0,
+              zIndex: 1099,
+              p: 2,
+              color: "white",
+              background: `linear-gradient(135deg, ${HEADER_GRADIENT_START} 0%, ${HEADER_GRADIENT_END} 100%)`,
+              borderRadius: "0 0 20px 20px",
+              boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
+            }}
+          >
+            <Container maxWidth="lg">
+              <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0 }}>
+                  <FiLayers size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                  <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px" noWrap>
+                    Explore your <span style={{ color: "#c7d2fe" }}>projects!</span>
+                  </Typography>
+                </Stack>
+                {renderFilterButton()}
+              </Stack>
+            </Container>
+          </Box>
+        )}
+      </AnimatePresence>
       <Box
-        className="overlapping-header"
-        position={"sticky"}
-        p={2}
-        top={0}
-        zIndex={10}
+        ref={heroRef}
         sx={{
           background: `linear-gradient(135deg, ${HEADER_GRADIENT_START} 0%, ${HEADER_GRADIENT_END} 100%)`,
+          pt: 10,
+          pb: 10,
           color: "white",
           borderRadius: "0 0 20px 20px",
-          boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
+          boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.4)",
+          position: "relative",
+          mb: 6,
         }}
       >
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          {/* 🔍 Left Icon */}
-          {/* <IconButton
-            onClick={() => setSearchMode(true)}
-            sx={{ color: "white" }}
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              opacity: compactHeaderVisible ? 0 : 1,
+              transform: compactHeaderVisible ? "translateY(-12px) scale(0.96)" : "none",
+              transformOrigin: "left center",
+              transition: "opacity 0.3s ease, transform 0.3s ease",
+            }}
           >
-            <MdOutlineSearch size={26} />
-          </IconButton> */}
-
-          <div></div>
-
-          <motion.div
-            key="title"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.25 }}
-          >
-            <Typography
-              fontWeight={900}
-              fontSize="24px"
-              letterSpacing="-0.5px"
-              mb={0}
-            >
-              Explore your projects!
-            </Typography>
-          </motion.div>
-
-          {/* ↕ Sort Icon */}
-          <IconButton sx={{ color: "white" }}>
-            <MdSort size={26} />
-          </IconButton>
-        </Box>
-
-        {/* iOS Tabs display: 'flex', justifyContent: 'center', */}
-        {/* <Box>
-          <IOSegmentedTabs
-            value={tab}
-            onChange={handleChange}
-            tabs={[
-              { label: "To do", value: "todo" },
-              { label: "In progress", value: "in_progress" },
-              { label: "Finished", value: "finished" },
-            ]}
-          />
-        </Box> */}
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+              <Box sx={{ minWidth: 0 }}>
+                <Stack direction="row" alignItems="center" spacing={2} mb={1}>
+                  <FiLayers size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                  <Typography variant="h3" sx={heroTitleSx} fontWeight={900} letterSpacing="-0.02em">
+                    Explore your <span style={{ color: "#c7d2fe" }}>projects!</span>
+                  </Typography>
+                </Stack>
+                <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 500, fontWeight: 500 }}>
+                  Find and manage your survey projects in one place.
+                </Typography>
+              </Box>
+              {renderFilterButton()}
+            </Stack>
+          </Box>
+        </Container>
       </Box>
+
+      <Menu
+        anchorEl={filterAnchorEl}
+        open={Boolean(filterAnchorEl)}
+        onClose={() => setFilterAnchorEl(null)}
+        slotProps={{ paper: { sx: { mt: 1, minWidth: 260, borderRadius: "14px", border: "1px solid #e2e8f0", boxShadow: "0 16px 40px rgba(15, 23, 42, 0.16)" } } }}
+      >
+        {STAGE_FILTERS.map((option) => (
+          <MenuItem
+            key={option.value || "all"}
+            selected={stageFilter === option.value}
+            onClick={() => selectStageFilter(option.value)}
+            sx={{ gap: 2, py: 1.25, fontWeight: stageFilter === option.value ? 800 : 600, color: "#334155", "&.Mui-selected": { bgcolor: "#eef2ff", color: "#4f46e5" }, "&.Mui-selected:hover": { bgcolor: "#e0e7ff" } }}
+          >
+            <Box sx={{ flex: 1 }}>{option.label}</Box>
+            {stageFilter === option.value && <FiCheck size={16} />}
+          </MenuItem>
+        ))}
+      </Menu>
 
       <Box
         component={motion.div}
@@ -1586,30 +1743,20 @@ export default function ProjectsList() {
         }}
         sx={{
           position: "fixed",
-          bottom: { xs: 24, md: 32 },
           left: "50%",
           zIndex: 1000,
-          width: "max-content",
-          maxWidth: "90vw",
+          ...capsuleWrapperSx(3),
         }}
       >
         <Paper
           elevation={0}
           sx={{
-            p: "8px",
-            borderRadius: "24px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: { xs: 1, md: 1.5 },
             background: "rgba(99, 102, 241, 0.15)", // Transparent indigo
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
             border: "1px solid rgba(99, 102, 241, 0.3)",
             boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
-            height: { xs: "50px", md: "60px" },
-            maxWidth: "stretch",
-            overflowX: "auto",
-            "&::-webkit-scrollbar": { display: "none" },
+            ...capsuleShellSx,
           }}
         >
           {[
@@ -1653,13 +1800,13 @@ export default function ProjectsList() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                px: { xs: 2, md: 6 },
+                px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "16px",
+                borderRadius: "999px",
                 cursor: "pointer",
-                minWidth: "70px",
+                minWidth: 0,
                 whiteSpace: "nowrap",
-                flexShrink: 0,
+                flex: "1 1 0",
                 bgcolor: "white",
                 color: tab === type.value ? "white" : type.value === "queue" ? "#ea580c" : "#6366f1",
                 transition: "all 0.3s ease",
@@ -1684,7 +1831,7 @@ export default function ProjectsList() {
                     position: "absolute",
                     inset: 0,
                     background: type.value === "queue" ? "#ea580c" : "#6366f1",
-                    borderRadius: "16px",
+                    borderRadius: "999px",
                     zIndex: 0,
                     boxShadow: type.value === "queue"
                       ? "0 4px 15px rgba(234, 88, 12, 0.3)"
@@ -1698,7 +1845,7 @@ export default function ProjectsList() {
                   display: "flex",
                   flexDirection: { xs: "column", sm: "row" },
                   alignItems: "center",
-                  gap: 1,
+                  gap: 0,
                 }}
               >
                 <Typography
@@ -1725,7 +1872,7 @@ export default function ProjectsList() {
                     position: "relative",
                     zIndex: 1,
                     color: "inherit",
-                    fontSize: { xs: "0.8rem", md: "1rem" },
+                    fontSize: { xs: "0.625rem", sm: "0.7rem" },
                     transition: "color 0.3s ease",
                   }}
                 >
@@ -1744,7 +1891,9 @@ export default function ProjectsList() {
           maxWidth: 980,
           mx: "auto",
           px: { xs: 1.25, sm: 3 },
-          pt: 3,
+          mt: -8,
+          pt: 0,
+          position: "relative",
           mb: "82px",
           boxSizing: "border-box",
         }}

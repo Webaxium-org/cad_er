@@ -364,21 +364,13 @@ const LongitudinalSectionReport = () => {
             bgcolor: "#ffffff",
             boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)",
             border: "1px solid rgba(226, 232, 240, 0.8)",
+            borderLeftColor: "#6366f1",
             position: "relative",
             overflow: "hidden",
           }}
         >
-          {/* Decorative Header Line */}
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "6px",
-              background: "linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%)",
-            }}
-          />
+          {/* Indigo left accent */}
+          <Box sx={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", bgcolor: "#6366f1" }} />
 
           <Stack
             direction={{ xs: "column", sm: "row" }}

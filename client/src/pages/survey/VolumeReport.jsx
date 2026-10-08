@@ -1458,26 +1458,6 @@ const VolumeReport = () => {
         </Table>
       </TableContainer>
 
-      {/* 🚧 DEV ONLY — Remove before production */}
-      <Typography
-        sx={{
-          mt: 2,
-          px: 1.5,
-          py: 0.75,
-          display: "inline-block",
-          fontSize: 12,
-          fontFamily: "monospace",
-          bgcolor: "#fff8e1",
-          border: "1px dashed #f9a825",
-          borderRadius: 1,
-          color: "#e65100",
-        }}
-      >
-        🚧 DEV ONLY &nbsp;|&nbsp; Quantity:{" "}
-        <strong>
-          {JSON.stringify(reportDetails.current.secondaryEntryQuantity)}
-        </strong>
-      </Typography>
     </Box>
     </>
   );
