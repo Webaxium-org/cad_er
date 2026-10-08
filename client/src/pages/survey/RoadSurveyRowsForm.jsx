@@ -2415,9 +2415,10 @@ const RoadSurveyRowsForm = () => {
                       WebkitBackdropFilter: "blur(12px)",
                       border: "1px solid rgba(99, 102, 241, 0.3)",
                       boxShadow: "0 20px 40px -10px rgba(99, 102, 241, 0.2)",
-                      height: "clamp(44px, 10vw, 56px)",
+                      height: "clamp(52px, 12vw, 64px)",
                       width: "100%",
                       boxSizing: "border-box",
+                      "& svg": { width: { xs: 24, sm: 22 }, height: { xs: 24, sm: 22 } },
                     }}
                   >
                     {[
@@ -2543,7 +2544,7 @@ const RoadSurveyRowsForm = () => {
                               fontWeight={600}
                               sx={{
                                 lineHeight: 1,
-                                fontSize: { xs: "0.625rem", sm: "0.7rem" },
+                                fontSize: { xs: "0.75rem", sm: "0.75rem" },
                               }}
                             >
                               {type.label}

@@ -10,8 +10,9 @@ export const capsuleShellSx = {
   display: "flex",
   alignItems: "center",
   gap: { xs: 0.5, sm: 0.75 },
-  height: "clamp(44px, 10vw, 56px)",
+  height: "clamp(52px, 12vw, 64px)",
   width: "100%",
   boxSizing: "border-box",
+  "& svg": { width: { xs: 24, sm: 22 }, height: { xs: 24, sm: 22 } },
 };
 

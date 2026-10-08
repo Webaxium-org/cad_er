@@ -408,7 +408,7 @@ const Report = () => {
                     position: "relative",
                     zIndex: 1,
                     color: "inherit",
-                    fontSize: { xs: "0.625rem", sm: "0.7rem" },
+                    fontSize: { xs: "0.75rem", sm: "0.75rem" },
                     transition: "color 0.3s ease",
                   }}
                 >
