@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { stopLoading } from "../../redux/loadingSlice";
 import { useEffect, useRef, useState } from "react";
 import BasicButton from "../../components/BasicButton";
+import { capsuleShellSx } from "../../components/bottomIslandStyles";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import { GoAlert } from "react-icons/go";
 import { IoCheckmarkCircle } from "react-icons/io5";
@@ -389,7 +390,7 @@ const SelectEquipment = () => {
               sx={{
                 background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
                 color: "white",
-                height: "64px",
+                height: capsuleShellSx.height,
                 borderRadius: "24px",
                 border: "none",
                 boxShadow: "0 15px 35px -5px rgba(99, 102, 241, 0.5)",
