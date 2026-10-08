@@ -507,7 +507,7 @@ export default function ProfessionalDashboard() {
                               letterSpacing: 1,
                             }}
                           >
-                            v0.1.0 is live
+                            v0.1.1 is live
                           </Typography>
                         </Box>
                       </Box>
@@ -554,7 +554,7 @@ export default function ProfessionalDashboard() {
                             letterSpacing: 1,
                           }}
                         >
-                          v0.1.0 is live
+                          v0.1.1 is live
                         </Typography>
                       </Box>
                     </Box>
