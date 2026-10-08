@@ -345,7 +345,7 @@ const Report = () => {
                 justifyContent: "center",
                 px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "999px",
+                borderRadius: "14px",
                 cursor: "pointer",
                 minWidth: 0,
                 whiteSpace: "nowrap",
@@ -369,7 +369,7 @@ const Report = () => {
                     position: "absolute",
                     inset: 0,
                     background: "#6366f1", // similar tone color for selected
-                    borderRadius: "999px",
+                    borderRadius: "14px",
                     zIndex: 0,
                     boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                   }}

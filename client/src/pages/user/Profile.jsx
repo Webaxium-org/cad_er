@@ -517,7 +517,7 @@ const Profile = () => {
                 justifyContent: "center",
                 px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "999px",
+                borderRadius: "14px",
                 minWidth: 0,
                 whiteSpace: "nowrap",
                 flex: "1 1 0",

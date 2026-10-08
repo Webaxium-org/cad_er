@@ -1020,7 +1020,7 @@ export default function Settings() {
               sx={{
                 background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
                 color: "white",
-                height: { xs: "64px", md: "72px" },
+                height: "64px",
                 borderRadius: "24px",
                 border: "none",
                 boxShadow: "0 15px 35px -5px rgba(99, 102, 241, 0.5)",

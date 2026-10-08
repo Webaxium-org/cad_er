@@ -6,7 +6,7 @@ export const capsuleWrapperSx = (buttonCount) => ({
 
 export const capsuleShellSx = {
   p: { xs: "4px", sm: "6px" },
-  borderRadius: "999px",
+  borderRadius: "18px",
   display: "flex",
   alignItems: "center",
   gap: { xs: 0.5, sm: 0.75 },

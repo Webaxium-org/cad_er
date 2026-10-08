@@ -1802,7 +1802,7 @@ export default function ProjectsList() {
                 justifyContent: "center",
                 px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "999px",
+                borderRadius: "14px",
                 cursor: "pointer",
                 minWidth: 0,
                 whiteSpace: "nowrap",
@@ -1831,7 +1831,7 @@ export default function ProjectsList() {
                     position: "absolute",
                     inset: 0,
                     background: type.value === "queue" ? "#ea580c" : "#6366f1",
-                    borderRadius: "999px",
+                    borderRadius: "14px",
                     zIndex: 0,
                     boxShadow: type.value === "queue"
                       ? "0 4px 15px rgba(234, 88, 12, 0.3)"

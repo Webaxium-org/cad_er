@@ -2406,7 +2406,7 @@ const RoadSurveyRowsForm = () => {
                     elevation={0}
                     sx={{
                       p: { xs: "4px", sm: "6px" },
-                      borderRadius: "999px",
+                      borderRadius: "18px",
                       display: "flex",
                       alignItems: "center",
                       gap: { xs: 0.5, sm: 0.75 },
@@ -2478,7 +2478,7 @@ const RoadSurveyRowsForm = () => {
                             justifyContent: "center",
                             px: { xs: 0.5, md: 2 },
                             height: "100%",
-                            borderRadius: "999px",
+                            borderRadius: "14px",
                             cursor: isDisabled ? "not-allowed" : "pointer",
                             minWidth: 0,
                             whiteSpace: "nowrap",
@@ -2511,7 +2511,7 @@ const RoadSurveyRowsForm = () => {
                                 position: "absolute",
                                 inset: 0,
                                 background: "#6366f1",
-                                borderRadius: "999px",
+                                borderRadius: "14px",
                                 zIndex: 0,
                                 boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                               }}
