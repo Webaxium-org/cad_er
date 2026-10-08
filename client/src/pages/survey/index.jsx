@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Box, Stack, Typography, Paper, Container, Button } from "@mui/material";
 import BasicButton from "../../components/BasicButton";
+import { capsuleShellSx } from "../../components/bottomIslandStyles";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import { FaRoad } from "react-icons/fa6";
 import { FaWater } from "react-icons/fa";
@@ -412,7 +413,7 @@ const Index = () => {
               sx={{
                 background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
                 color: "white",
-                height: "64px",
+                 height: capsuleShellSx.height,
                 borderRadius: "24px",
                 border: "none",
                 boxShadow: "0 15px 35px -5px rgba(99, 102, 241, 0.5)",

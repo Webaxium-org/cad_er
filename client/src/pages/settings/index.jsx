@@ -37,6 +37,7 @@ import {
 import BigHeader from "../../components/BigHeader";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import BasicButton from "../../components/BasicButton";
+import { capsuleShellSx } from "../../components/bottomIslandStyles";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import { getSettings, saveSettings } from "../../services/settingsServices";
 
@@ -1020,7 +1021,7 @@ export default function Settings() {
               sx={{
                 background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
                 color: "white",
-                height: "64px",
+                 height: capsuleShellSx.height,
                 borderRadius: "24px",
                 border: "none",
                 boxShadow: "0 15px 35px -5px rgba(99, 102, 241, 0.5)",

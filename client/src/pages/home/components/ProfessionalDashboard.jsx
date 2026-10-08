@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import AlertDialogSlide from "../../../components/AlertDialogSlide";
 import UniversalConverter from "../../../components/UniversalConverter";
 import CreateTicket from "../../tickets/components/CreateTicket";
 import AppHeader from "../../../components/AppHeader";
+import { getAllSurvey } from "../../../services/surveyServices";
 import {
   Stack,
   Box,
@@ -399,6 +400,33 @@ export default function ProfessionalDashboard() {
 
   const [open, setOpen] = useState(false);
   const [openUnitConverter, setOpenUnitConverter] = useState(false);
+  const [projectCounts, setProjectCounts] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.all(
+      [undefined, "Scheduled", "Active", "Completed"].map((status) =>
+        getAllSurvey({ ...(status && { status }), page: 1, limit: 1 }),
+      ),
+    )
+      .then(([all, scheduled, ongoing, completed]) => {
+        if (!active) return;
+        setProjectCounts({
+          total: all.data.total,
+          pending: scheduled.data.total,
+          ongoing: ongoing.data.total,
+          wrapped: completed.data.total,
+        });
+      })
+      .catch(() => {
+        if (active) setProjectCounts(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleOpen = (action) => {
     setOpen(action === "help & support");
@@ -571,7 +599,7 @@ export default function ProfessionalDashboard() {
                         fontWeight={900}
                         textAlign={"end"}
                       >
-                        12
+                        {projectCounts?.total ?? "—"}
                       </Typography>
                       <Typography
                         variant="caption"
@@ -595,7 +623,7 @@ export default function ProfessionalDashboard() {
                         fontWeight={900}
                         textAlign={"end"}
                       >
-                        0
+                        {projectCounts?.pending ?? "—"}
                       </Typography>
                       <Typography
                         variant="caption"
@@ -620,7 +648,7 @@ export default function ProfessionalDashboard() {
                         color={SUCCESS_COLOR}
                         textAlign={"end"}
                       >
-                        0
+                        {projectCounts?.wrapped ?? "—"}
                       </Typography>
                       <Typography
                         variant="caption"
@@ -676,7 +704,7 @@ export default function ProfessionalDashboard() {
                   {
                     label: "Projects",
                     icon: <Icons.Files />,
-                    count: "12 Total",
+                    count: projectCounts ? `${projectCounts.total} Total` : "—",
                   },
                   {
                     label: "Pending",
