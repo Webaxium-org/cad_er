@@ -260,7 +260,7 @@ export default function SignUp() {
           sx={{
             flexGrow: 1,
             position: "relative",
-            bgcolor: "#000b2e",
+            background: "radial-gradient(circle at 18% 20%, rgba(165, 180, 252, 0.28) 0%, transparent 42%), radial-gradient(circle at 82% 85%, rgba(99, 102, 241, 0.42) 0%, transparent 48%), linear-gradient(135deg, #1e1b4b 0%, #312e81 42%, #4f46e5 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
