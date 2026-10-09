@@ -12,7 +12,7 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import BasicButtons from "../../../components/BasicButton";
-import { MdArrowBackIosNew, MdDownload, MdOutlineTableRows } from "react-icons/md";
+import { MdDownload, MdOutlineTableRows } from "react-icons/md";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import {
   Box,
@@ -556,147 +556,136 @@ export default function FieldBook() {
     saveAs(blob, `Survey_${purpose?.type || "Report"}.xlsx`);
   }, [purpose, tableData, survey]);
 
+  const headerActions = (
+    <Stack
+      direction="row"
+      justifyContent="flex-end"
+      alignItems="center"
+      gap={{ xs: 0.75, sm: 2 }}
+      flexWrap="wrap"
+    >
+      <Stack direction="row" alignItems="center" gap={{ xs: 0.5, sm: 1 }} flexShrink={0}>
+        <BasicButtons
+          variant="contained"
+          sx={{
+            py: { xs: 0.5, sm: 1 },
+            px: { xs: 0.75, sm: 2 },
+            fontSize: { xs: 10, sm: 12 },
+            height: { xs: 34, sm: 40 },
+            borderRadius: { xs: "10px", sm: "14px" },
+            bgcolor: "#ffffff",
+            color: "#4338ca",
+            boxShadow: "0 10px 24px -12px rgba(99, 102, 241, 0.8)",
+            "&:hover": { bgcolor: "#eef2ff" },
+          }}
+          onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
+          value={
+            isEditing ? (
+              <Stack direction="row" gap={0.5} alignItems="center">
+                <BiSave fontSize={16} />
+                {saving ? "Saving..." : "Save"}
+              </Stack>
+            ) : (
+              <Stack direction="row" gap={0.5} alignItems="center">
+                <MdOutlineModeEdit fontSize={16} />
+                Edit
+              </Stack>
+            )
+          }
+          loading={saving}
+          loadingIndicator="..."
+        />
+        <BasicButtons
+          variant="outlined"
+          sx={{
+            py: { xs: 0.5, sm: 1 },
+            px: { xs: 0.75, sm: 2 },
+            fontSize: { xs: 10, sm: 12 },
+            height: { xs: 34, sm: 40 },
+            minWidth: { xs: 0, sm: "76px" },
+            borderRadius: { xs: "10px", sm: "14px" },
+            borderColor: "rgba(255, 255, 255, 0.45)",
+            color: "white",
+            bgcolor: "rgba(255, 255, 255, 0.16)",
+            fontWeight: 800,
+            boxShadow: "0 8px 20px -14px rgba(79, 70, 229, 0.55)",
+            "&:hover": {
+              bgcolor: "rgba(255, 255, 255, 0.26)",
+              borderColor: "white",
+            },
+          }}
+          onClick={() =>
+            navigate(
+              `/survey/road-survey/continue-survey/${
+                purpose?.surveyId?._id || purpose?.surveyId || survey?._id
+              }`,
+              { state: { fromPL: true } },
+            )
+          }
+          value={
+            <Stack direction="row" gap={0.5} alignItems="center">
+              <IoIosAddCircleOutline fontSize={16} />
+              PL
+            </Stack>
+          }
+        />
+
+        <Box textAlign={"end"}>
+          <BasicMenu
+            label={<BsThreeDots />}
+            items={menuItems}
+            onSelect={handleMenuSelect}
+            sx={{
+              minWidth: { xs: "32px", sm: "40px" },
+              width: { xs: "32px", sm: "40px" },
+              height: { xs: 34, sm: 40 },
+              p: { xs: 0.5, sm: 1 },
+              borderRadius: { xs: "10px", sm: "14px" },
+              border: "1px solid rgba(255, 255, 255, 0.45)",
+              color: "white",
+              bgcolor: "rgba(255, 255, 255, 0.16)",
+              boxShadow: "0 8px 20px -14px rgba(79, 70, 229, 0.55)",
+              "&:hover": { bgcolor: "rgba(255, 255, 255, 0.26)" },
+            }}
+            menuSx={{
+              minWidth: 150,
+              py: 0.75,
+              "&::before": {
+                bgcolor: "#ffffff",
+                borderLeft: "1px solid rgba(226, 232, 240, 0.9)",
+                borderTop: "1px solid rgba(226, 232, 240, 0.9)",
+              },
+            }}
+            itemSx={{
+              mx: 0.75,
+              my: 0.25,
+              borderRadius: "10px",
+            }}
+          />
+        </Box>
+      </Stack>
+    </Stack>
+  );
+
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 4 }}>
       <SmallHeader />
-      <PageHeroHeader icon={MdOutlineTableRows} title="Field Observations" subtitle="Review and manage your field book readings." />
+      <PageHeroHeader
+        icon={MdOutlineTableRows}
+        title="Field Observations"
+        subtitle="Review and manage your field book readings."
+        action={headerActions}
+      />
 
       <Box sx={{ px: { xs: 1, sm: 2 }, py: 2, mt: -8, position: "relative", bgcolor: "white", mx: { xs: 1, sm: 2 }, border: "1px solid #e2e8f0", borderRadius: "20px", background: "linear-gradient(to right, #6366f1 0 6px, #ffffff 6px)" }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          gap={{ xs: 0.75, sm: 2 }}
-          flexWrap="nowrap"
-          mb={2}
-        >
-          <BasicButtons
-            variant="text"
-            sx={{
-              height: { xs: 34, sm: 48 },
-              width: { xs: 34, sm: 48 },
-              minWidth: { xs: 34, sm: 48 },
-              borderRadius: { xs: "10px", sm: "14px" },
-              color: "#334155",
-              bgcolor: "#f1f5f9",
-              border: "none",
-              boxShadow: "none",
-              "&:hover": {
-                bgcolor: "#e2e8f0",
-                color: "#1e293b",
-              },
-            }}
-            onClick={() => navigate(-1)}
-            value={<MdArrowBackIosNew fontSize={18} />}
-          />
-
-
-          <Stack direction="row" alignItems="center" gap={{ xs: 0.5, sm: 1 }} flexShrink={0}>
-            <BasicButtons
-              variant="contained"
-              sx={{
-                py: { xs: 0.5, sm: 1 },
-                px: { xs: 0.75, sm: 2 },
-                fontSize: { xs: 10, sm: 12 },
-                height: { xs: 34, sm: 40 },
-                borderRadius: { xs: "10px", sm: "14px" },
-                bgcolor: "#6366f1",
-                color: "#ffffff",
-                boxShadow: "0 10px 24px -12px rgba(99, 102, 241, 0.8)",
-                "&:hover": { bgcolor: "#4f46e5" },
-              }}
-              onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              value={
-                isEditing ? (
-                  <Stack direction="row" gap={0.5} alignItems="center">
-                    <BiSave fontSize={16} />
-                    {saving ? "Saving..." : "Save"}
-                  </Stack>
-                ) : (
-                  <Stack direction="row" gap={0.5} alignItems="center">
-                    <MdOutlineModeEdit fontSize={16} />
-                    Edit
-                  </Stack>
-                )
-              }
-              loading={saving}
-              loadingIndicator="..."
-            />
-            <BasicButtons
-              variant="outlined"
-              sx={{
-                py: { xs: 0.5, sm: 1 },
-                px: { xs: 0.75, sm: 2 },
-                fontSize: { xs: 10, sm: 12 },
-                height: { xs: 34, sm: 40 },
-                minWidth: { xs: 0, sm: "76px" },
-                borderRadius: { xs: "10px", sm: "14px" },
-                borderColor: "rgba(99, 102, 241, 0.28)",
-                color: "#4f46e5",
-                bgcolor: "#ffffff",
-                fontWeight: 800,
-                boxShadow: "0 8px 20px -14px rgba(79, 70, 229, 0.55)",
-                "&:hover": {
-                  bgcolor: "rgba(99, 102, 241, 0.08)",
-                  borderColor: "#6366f1",
-                },
-              }}
-              onClick={() =>
-                navigate(
-                  `/survey/road-survey/continue-survey/${
-                    purpose?.surveyId?._id || purpose?.surveyId || survey?._id
-                  }`,
-                  { state: { fromPL: true } },
-                )
-              }
-              value={
-                <Stack direction="row" gap={0.5} alignItems="center">
-                  <IoIosAddCircleOutline fontSize={16} />
-                  PL
-                </Stack>
-              }
-            />
-
-            <Box textAlign={"end"}>
-              <BasicMenu
-                label={<BsThreeDots />}
-                items={menuItems}
-                onSelect={handleMenuSelect}
-                sx={{
-                  minWidth: { xs: "32px", sm: "40px" },
-                  width: { xs: "32px", sm: "40px" },
-                  height: { xs: 34, sm: 40 },
-                  p: { xs: 0.5, sm: 1 },
-                  borderRadius: { xs: "10px", sm: "14px" },
-                  border: "1px solid rgba(99, 102, 241, 0.28)",
-                  color: "#4f46e5",
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 8px 20px -14px rgba(79, 70, 229, 0.55)",
-                  "&:hover": { bgcolor: "rgba(99, 102, 241, 0.08)" },
-                }}
-                menuSx={{
-                  minWidth: 150,
-                  py: 0.75,
-                  "&::before": {
-                    bgcolor: "#ffffff",
-                    borderLeft: "1px solid rgba(226, 232, 240, 0.9)",
-                    borderTop: "1px solid rgba(226, 232, 240, 0.9)",
-                  },
-                }}
-                itemSx={{
-                  mx: 0.75,
-                  my: 0.25,
-                  borderRadius: "10px",
-                }}
-              />
-            </Box>
-          </Stack>
-        </Stack>
-
         <TableContainer
           sx={{
             maxHeight: "calc(100dvh - 200px)",
             overflow: "auto",
+            border: "1px solid #e2e8f0",
+            borderRadius: "14px 14px 0 0",
+            boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)",
+            bgcolor: "white",
           }}
         >
           <FieldBookTable
@@ -704,8 +693,21 @@ export default function FieldBook() {
             isEditing={isEditing}
             onFieldChange={handleFieldChange}
             onRLChange={handleRLChange}
+            themed
           />
         </TableContainer>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          justifyContent="space-between"
+          spacing={1}
+          sx={{ px: 2, py: 1.75, bgcolor: "white", border: "1px solid #e2e8f0", borderTop: 0, borderRadius: "0 0 14px 14px", color: "#687594" }}
+        >
+          <Typography variant="body2">
+            Showing {tableData.filter((row) => row.rowType === "Chainage" && row.CH !== "" && row.CH != null).length} sections · {tableData.length} readings
+          </Typography>
+          <Typography variant="body2">{survey?.project || "Field book"}</Typography>
+        </Stack>
       </Box>
     </Box>
   );

@@ -7,6 +7,7 @@ import { getSurvey } from "../../services/surveyServices";
 import { handleFormError } from "../../utils/handleFormError";
 import {
   Box,
+  Container,
   Paper,
   Stack,
   Table,
@@ -17,8 +18,9 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import { MdDownload, MdKeyboardArrowDown, MdOutlineAssessment } from "react-icons/md";
 import SmallHeader from "../../components/SmallHeader";
+import PageHeroHeader from "../../components/PageHeroHeader";
 
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -247,6 +249,16 @@ const AreaReport = () => {
   const [calculationMode, setCalculationMode] = useState(false);
 
   const [showArea, setShowArea] = useState({ cutting: false, filling: false });
+  const [collapsedSections, setCollapsedSections] = useState(() => new Set());
+
+  const toggleSection = (index) => {
+    setCollapsedSections((previous) => {
+      const next = new Set(previous);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
   const handleMenuSelect = (item) => {
     if (item.value === "excel download") {
@@ -449,6 +461,17 @@ const AreaReport = () => {
 
     return rows;
   }, [survey]);
+
+  const reportTotals = useMemo(() => tableData.reduce(
+    (totals, section) => {
+      if (section.type === "Break") return totals;
+      totals.sections += 1;
+      totals.cutting += Number(section.totalCuttingAreaSqMtr || 0);
+      totals.filling += Number(section.totalFillingAreaSqMtr || 0);
+      return totals;
+    },
+    { sections: 0, cutting: 0, filling: 0 },
+  ), [tableData]);
 
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
@@ -939,66 +962,112 @@ const AreaReport = () => {
   }, []);
 
   return (
-    <>
-    <SmallHeader />
-    <Box p={2}>
-      <Stack
-        direction={"row"}
-        justifyContent={"space-between"}
-        spacing={2}
-        mb={2}
-      >
-        <Box
-          sx={{
-            border: "1px solid #EFEFEF",
-            borderRadius: "9px",
-            width: "40px",
-            height: "40px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
-            mb: "24px",
-          }}
-          onClick={() => navigate(-1)}
-        >
-          <MdArrowBackIosNew />
-        </Box>
-
-        <Box textAlign={"end"}>
+    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 8 }}>
+      <SmallHeader />
+      <PageHeroHeader
+        icon={MdOutlineAssessment}
+        title="Area Report"
+        subtitle="Review section measurements and area calculations."
+        action={
           <BasicMenu
             label={<BsThreeDots />}
             items={menuItems}
             onSelect={handleMenuSelect}
-            sx={{ minWidth: "fit-content", p: 1 }}
+            sx={{
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              p: 1,
+              color: "white",
+              borderColor: "rgba(255, 255, 255, 0.45)",
+              bgcolor: "rgba(255, 255, 255, 0.16)",
+              "&:hover": { bgcolor: "rgba(255, 255, 255, 0.26)", borderColor: "white" },
+            }}
           />
-        </Box>
-      </Stack>
-
-      <Box id="area-report">
+        }
+      />
+      <Container maxWidth={false} sx={{ mt: -8, position: "relative" }}>
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2, bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "20px", background: "linear-gradient(to right, #6366f1 0 6px, #ffffff 6px)" }}>
+      <Box id="area-report" sx={{ bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "20px", boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)", overflow: "hidden" }}>
         <Typography
           variant="h6"
-          fontSize={18}
-          fontWeight={700}
-          align="center"
-          mb={2}
+          sx={{ px: { xs: 2, sm: 3 }, py: 2.5, fontWeight: 800, color: "#1e293b", borderBottom: "1px solid #e2e8f0" }}
         >
-          Area Report Between {reportDetails.current.initialEntry} and
+          Area Report Between {reportDetails.current.initialEntry} and{" "}
           {reportDetails.current.secondaryEntry}
         </Typography>
 
         {tableData?.length > 0 ? (
-          <TableContainer component={Paper} sx={{ maxHeight: "90vh" }}>
-            <Table sx={{ minWidth: 650 }} size="small">
+          <>
+          <TableContainer
+            component={Paper}
+            elevation={0}
+            sx={{ maxHeight: "min(75vh, 760px)", borderRadius: 0, overflowX: "auto", px: 0.5 }}
+          >
+            <Table
+              size="small"
+              sx={{
+                minWidth: showArea?.cutting && showArea?.filling ? 1180 : 800,
+                borderCollapse: "separate",
+                borderSpacing: 0,
+                "& .MuiTableCell-root": {
+                  px: 1.5,
+                  py: 0.95,
+                  borderBottom: "1px solid #e5eaf3",
+                  fontVariantNumeric: "tabular-nums",
+                  whiteSpace: "nowrap",
+                },
+                "& .area-data-row:hover": { bgcolor: "#f5f6ff" },
+                "& .area-data-row .MuiTableCell-root": { color: "#34436b", fontWeight: 500 },
+                "& .area-section-row .MuiTableCell-root": {
+                  bgcolor: "#eff0ff",
+                  color: "#211bb5",
+                  fontWeight: 800,
+                  borderTop: "10px solid white",
+                  borderBottom: 0,
+                  borderRadius: "5px",
+                  py: 1.05,
+                },
+                "& .area-total-row .MuiTableCell-root": {
+                  bgcolor: "#eff0ff",
+                  color: "#211bb5",
+                  fontWeight: 800,
+                  borderTop: "1px solid #d6ddf4",
+                  borderBottom: 0,
+                  py: 1.15,
+                },
+                "& .area-total-row .area-total-value": { bgcolor: "#dfdfff", textAlign: "right", fontWeight: 900 },
+              }}
+            >
               <TableHead
                 sx={{
-                  backgroundColor: "#f4f6f8",
-                  "& .MuiTableCell-root": {
-                    border: "1px solid rgba(224, 224, 224, 1)",
-                    fontWeight: 700,
-                  },
                   position: "sticky",
                   top: 0,
+                  zIndex: 2,
+                  "& .MuiTableCell-root": {
+                    borderBottom: "1px solid #dce2f0",
+                    borderRight: "1px solid #e4e8f2",
+                    bgcolor: "#f0f2fa",
+                    color: "#34436b",
+                    fontWeight: 800,
+                    fontSize: "0.78rem",
+                    lineHeight: 1.35,
+                    whiteSpace: "normal",
+                    minWidth: 92,
+                    py: 1.35,
+                  },
+                  "& tr:first-of-type .MuiTableCell-root[colspan]": {
+                    bgcolor: "#dedfff",
+                    color: "#211bb5",
+                  },
+                  "& tr:nth-of-type(2) .MuiTableCell-root": {
+                    bgcolor: "#f0f1ff",
+                    color: "#34436b",
+                    borderRight: "1px solid #dce2f0",
+                    borderBottom: "1px solid #dce2f0",
+                    fontWeight: 700,
+                    fontSize: "0.73rem",
+                  },
                 }}
               >
                 <TableRow>
@@ -1007,28 +1076,28 @@ const AreaReport = () => {
                     rowSpan={2}
                     align="center"
                   >
-                    Sl.No.
+                    No.
                   </TableCell>
                   <TableCell
                     sx={{ fontWeight: 700 }}
                     rowSpan={2}
                     align="center"
                   >
-                    Distance Meters
+                    Distance (m)
                   </TableCell>
                   <TableCell
                     sx={{ fontWeight: 700 }}
                     rowSpan={2}
                     align="center"
                   >
-                    {reportDetails?.current?.initialEntry || ""} Meters
+                    {reportDetails?.current?.initialEntry || "Initial level"} (m)
                   </TableCell>
                   <TableCell
                     sx={{ fontWeight: 700 }}
                     rowSpan={2}
                     align="center"
                   >
-                    {reportDetails?.current?.secondaryEntry || ""} Meters
+                    {reportDetails?.current?.secondaryEntry || "Proposed level"} (m)
                   </TableCell>
                   {showArea?.cutting && (
                     <TableCell
@@ -1036,7 +1105,7 @@ const AreaReport = () => {
                       colSpan={4}
                       align="center"
                     >
-                      Cutting Area
+                      Cutting area
                     </TableCell>
                   )}
                   {showArea?.filling && (
@@ -1045,7 +1114,7 @@ const AreaReport = () => {
                       colSpan={4}
                       align="center"
                     >
-                      Filling Area
+                      Filling area
                     </TableCell>
                   )}
                 </TableRow>
@@ -1053,16 +1122,16 @@ const AreaReport = () => {
                   {showArea?.cutting && (
                     <>
                       <TableCell sx={{ fontWeight: 700 }} align="center">
-                        Cutting Meters
+                        Cut depth (m)
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="center">
-                        Avg Meters
+                        Average (m)
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="center">
-                        Width Meters
+                        Width (m)
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="center">
-                        Area Sq. Mtrs
+                        Area (m²)
                       </TableCell>
                     </>
                   )}
@@ -1070,16 +1139,16 @@ const AreaReport = () => {
                   {showArea?.filling && (
                     <>
                       <TableCell sx={{ fontWeight: 700 }} align="center">
-                        Filling Meters
+                        Fill depth (m)
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="center">
-                        Avg Meters
+                        Average (m)
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="center">
-                        Width Meters
+                        Width (m)
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="center">
-                        Area Sq. Mtrs
+                        Area (m²)
                       </TableCell>
                     </>
                   )}
@@ -1089,17 +1158,47 @@ const AreaReport = () => {
               <TableBody>
                 {tableData.map((row, index) => (
                   <Fragment key={index}>
-                    <TableRow>
-                      <TableCell colSpan={12} sx={{ fontWeight: "bold" }}>
-                        Section: {row.section}
+                    <TableRow className="area-section-row">
+                      <TableCell colSpan={4 + (showArea?.cutting ? 4 : 0) + (showArea?.filling ? 4 : 0)}>
+                        <Stack
+                          component="button"
+                          type="button"
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          onClick={() => toggleSection(index)}
+                          aria-expanded={!collapsedSections.has(index)}
+                          aria-label={`Section ${row.section}`}
+                          sx={{
+                            width: "100%",
+                            p: 0,
+                            border: 0,
+                            bgcolor: "transparent",
+                            color: "inherit",
+                            cursor: "pointer",
+                            font: "inherit",
+                            textAlign: "left",
+                          }}
+                        >
+                          <Stack direction="row" alignItems="center" spacing={1.5}>
+                            <MdKeyboardArrowDown
+                              size={20}
+                              style={{ transform: collapsedSections.has(index) ? "rotate(-90deg)" : "none", transition: "transform 0.2s" }}
+                            />
+                            <Box component="span">Section {row.section}</Box>
+                          </Stack>
+                          <Typography variant="caption" sx={{ color: "#687594", fontWeight: 500 }}>
+                            {row?.data?.length || 0} measurements
+                          </Typography>
+                        </Stack>
                       </TableCell>
                     </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={12} sx={{ py: 1.8 }}></TableCell>
-                    </TableRow>
 
-                    {row?.data?.map((entry, idx) => (
-                      <TableRow key={`${index}-${idx}`}>
+                    {!collapsedSections.has(index) && row?.data?.map((entry, idx) => (
+                      <TableRow
+                        className="area-data-row"
+                        key={`${index}-${idx}`}
+                      >
                         <TableCell align="center">{idx + 1}</TableCell>
                         <TableCell align="center">{entry.offset}</TableCell>
                         <TableCell align="center">
@@ -1145,18 +1244,15 @@ const AreaReport = () => {
                       </TableRow>
                     ))}
 
-                    {row.type !== "Break" && (
-                      <TableRow>
-                        <TableCell colSpan={4}></TableCell>
-                        <TableCell sx={{ fontWeight: "bold" }} align="center">
-                          Total
+                    {!collapsedSections.has(index) && row.type !== "Break" && (
+                      <TableRow className="area-total-row">
+                        <TableCell colSpan={showArea?.cutting ? 7 : 4}>
+                          Section total
                         </TableCell>
                         {showArea?.cutting && (
                           <>
-                            <TableCell colSpan={2}></TableCell>
                             <TableCell
-                              sx={{ fontWeight: "bold" }}
-                              align="center"
+                              className="area-total-value"
                             >
                               {Number(row?.totalCuttingAreaSqMtr)?.toFixed(3)}
                             </TableCell>
@@ -1164,12 +1260,9 @@ const AreaReport = () => {
                         )}
                         {showArea?.filling && (
                           <>
+                            <TableCell colSpan={3}></TableCell>
                             <TableCell
-                              colSpan={showArea?.cutting ? 3 : 2}
-                            ></TableCell>
-                            <TableCell
-                              sx={{ fontWeight: "bold" }}
-                              align="center"
+                              className="area-total-value"
                             >
                               {Number(row?.totalFillingAreaSqMtr)?.toFixed(3)}
                             </TableCell>
@@ -1182,12 +1275,43 @@ const AreaReport = () => {
               </TableBody>
             </Table>
           </TableContainer>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            justifyContent="space-between"
+            spacing={2}
+            sx={{ px: { xs: 2, sm: 3 }, py: 2.25, borderTop: "1px solid #dce2f0" }}
+          >
+            <Typography variant="body2" sx={{ color: "#687594" }}>
+              Showing {reportTotals.sections} sections
+            </Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              {showArea?.cutting && (
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Typography variant="body2" fontWeight={800} color="#34436b">Total cutting area</Typography>
+                  <Box sx={{ px: 2, py: 0.75, borderRadius: "5px", bgcolor: "#eff0ff", color: "#211bb5", fontWeight: 900 }}>
+                    {reportTotals.cutting.toFixed(3)} m²
+                  </Box>
+                </Stack>
+              )}
+              {showArea?.filling && (
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Typography variant="body2" fontWeight={800} color="#34436b">Total filling area</Typography>
+                  <Box sx={{ px: 2, py: 0.75, borderRadius: "5px", bgcolor: "#eff0ff", color: "#211bb5", fontWeight: 900 }}>
+                    {reportTotals.filling.toFixed(3)} m²
+                  </Box>
+                </Stack>
+              )}
+            </Stack>
+          </Stack>
+          </>
         ) : (
-          <Typography>Loading ...</Typography>
+          <Typography sx={{ p: 3, color: "#64748b" }}>Loading ...</Typography>
         )}
       </Box>
+      </Box>
+      </Container>
     </Box>
-    </>
   );
 };
 

@@ -89,14 +89,7 @@ export function FacebookIcon() {
 
 export function GoogleIcon() {
   return (
-    <SvgIcon>
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+    <SvgIcon viewBox="0 0 16 16" sx={{ fontSize: 20, flexShrink: 0 }}>
         <path
           d="M15.68 8.18182C15.68 7.61455 15.6291 7.06909 15.5345 6.54545H8V9.64364H12.3055C12.1164 10.64 11.5491 11.4836 10.6982 12.0509V14.0655H13.2945C14.8073 12.6691 15.68 10.6182 15.68 8.18182Z"
           fill="#4285F4"
@@ -113,7 +106,6 @@ export function GoogleIcon() {
           d="M8 3.18545C9.17818 3.18545 10.2255 3.59273 11.0618 4.37818L13.3527 2.08727C11.9636 0.792727 10.16 0 8 0C4.87273 0 2.17455 1.79636 0.858182 4.41455L3.52 6.48C4.15273 4.58909 5.92 3.18545 8 3.18545Z"
           fill="#EA4335"
         />
-      </svg>
     </SvgIcon>
   );
 }

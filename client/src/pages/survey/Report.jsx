@@ -433,6 +433,9 @@ const Report = () => {
               // width: "100%",
               maxWidth: "900px",
               margin: "0 auto",
+              marginTop: "-64px",
+              position: "relative",
+              zIndex: 1,
               padding: "0 16px",
               paddingBottom: "100px",
             }}
@@ -448,7 +451,6 @@ const Report = () => {
                 borderLeftColor: "#6366f1",
                 position: "relative",
                 overflow: "hidden",
-                mt: 3,
               }}
             >
               {/* Indigo left accent */}

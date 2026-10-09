@@ -25,7 +25,7 @@ import { BsThreeDots } from "react-icons/bs";
 import BasicMenu from "../../components/BasicMenu";
 import BasicInput from "../../components/BasicInput";
 import BasicButton from "../../components/BasicButton";
-import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import { MdDownload, MdOutlineAssessment } from "react-icons/md";
 import { showAlert } from "../../redux/alertSlice";
 import { DxfWriter, Units, point2d, point3d } from "@tarikjabiri/dxf";
 import { saveAs } from "file-saver";
@@ -33,6 +33,7 @@ import Plotly from "plotly.js/dist/plotly";
 import { addGraphPage, capturePlotImage, createGraphPdf } from "../../utils/graphPdf";
 import ExportLoader from "../../components/ExportLoader";
 import SmallHeader from "../../components/SmallHeader";
+import PageHeroHeader from "../../components/PageHeroHeader";
 
 const LEVEL_ORDER = [
   "Initial Level",
@@ -886,7 +887,29 @@ const CrossSectionReport = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }}>
       <SmallHeader />
-      <Box sx={{ maxWidth: "1200px", margin: "0 auto", p: { xs: 2, md: 4 } }}>
+      <PageHeroHeader
+        icon={MdOutlineAssessment}
+        title="Cross Section Report"
+        subtitle={selectedCs?.chainage ? `Chainage ${selectedCs.chainage}` : "Select a chainage below"}
+        action={
+          <BasicMenu
+            label={<BsThreeDots />}
+            items={menuItems}
+            onSelect={handleMenuSelect}
+            sx={{
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              p: 1,
+              color: "white",
+              borderColor: "rgba(255, 255, 255, 0.45)",
+              bgcolor: "rgba(255, 255, 255, 0.16)",
+              "&:hover": { bgcolor: "rgba(255, 255, 255, 0.26)", borderColor: "white" },
+            }}
+          />
+        }
+      />
+      <Box sx={{ maxWidth: "1200px", margin: "0 auto", p: { xs: 2, md: 4 }, pt: 0, mt: -12, position: "relative", zIndex: 1 }}>
         <Paper
           elevation={0}
           sx={{
@@ -909,53 +932,6 @@ const CrossSectionReport = () => {
             progressMessage={progress?.message}
             estimatedTimeLeft={progress?.estimatedTimeLeft}
           />
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent={"space-between"}
-            alignItems={{ xs: "stretch", sm: "center" }}
-            spacing={2}
-            sx={{ mb: 3 }}
-          >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <BasicButton
-                variant="text"
-                sx={{
-                  height: 40,
-                  width: 40,
-                  minWidth: 40,
-                  borderRadius: "12px",
-                  color: "#334155",
-                  bgcolor: "#f1f5f9",
-                  border: "none",
-                  boxShadow: "none",
-                  "&:hover": { bgcolor: "#e2e8f0", color: "#1e293b" },
-                }}
-                onClick={() => navigate(-1)}
-                value={<MdArrowBackIosNew fontSize={18} />}
-              />
-              <Box>
-                <Typography variant="overline" sx={{ color: "#6366f1", fontWeight: 800, letterSpacing: "0.12em" }}>
-                  SURVEY REPORT
-                </Typography>
-                <Typography variant="h5" sx={{ color: "#1e293b", fontWeight: 800, lineHeight: 1.2 }}>
-                  Cross Section Report
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {selectedCs?.chainage ? `Chainage ${selectedCs.chainage}` : "Select a chainage below"}
-                </Typography>
-              </Box>
-            </Stack>
-
-            <Box textAlign={{ xs: "start", sm: "end" }}>
-              <BasicMenu
-                label={<BsThreeDots />}
-                items={menuItems}
-                onSelect={handleMenuSelect}
-              sx={{ minWidth: "fit-content", p: 1, borderRadius: "12px" }}
-              />
-            </Box>
-          </Stack>
 
           <Box
             sx={{

@@ -47,6 +47,7 @@ const StyledInput = styled(Input)(({ theme }) => ({
 const BasicInput = ({
   label,
   labelColor = "",
+  errorTextColor = "",
   error = "",
   warning = "",
   helperText = "",
@@ -62,7 +63,7 @@ const BasicInput = ({
             mb: 0.5,
             fontWeight: 600,
             color: error
-              ? "error.main"
+              ? errorTextColor || "error.main"
               : warning
                 ? "warning.main"
                 : labelColor
@@ -99,8 +100,13 @@ const BasicInput = ({
       {helperText || error || (warning && warning !== "disable-label") ? (
         <Typography
           variant="caption"
-          color={error ? "error" : warning ? "warning" : "text.secondary"}
-          sx={{ mt: 0.5, ml: 1, display: "block" }}
+          color={error ? errorTextColor || "error" : warning ? "warning" : "text.secondary"}
+          sx={{
+            mt: 0.5,
+            ml: 1,
+            display: "block",
+            ...(error && errorTextColor ? { fontSize: "0.82rem", fontWeight: 600 } : {}),
+          }}
         >
           {error || warning || helperText}
         </Typography>

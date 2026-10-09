@@ -863,15 +863,23 @@ const RoadSurveyForm = () => {
             component="label"
             display="inline-flex"
             alignItems="center"
-            gap={0.5}
-            sx={{ cursor: "pointer", alignSelf: "flex-start" }}
+            gap={1}
+            sx={{
+              cursor: "pointer",
+              alignSelf: "flex-start",
+              px: 1.5,
+              py: 0.75,
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: formValues[input.name] ? "#818cf8" : "#dbe2ea",
+              bgcolor: formValues[input.name] ? "#eef2ff" : "#f8fafc",
+              transition: "background-color 0.2s, border-color 0.2s",
+              "&:hover": { borderColor: "#818cf8", bgcolor: "#eef2ff" },
+            }}
           >
-            <Typography variant="body2" fontSize="14px" fontWeight={600} color="black">
-              {input.label}
-            </Typography>
             <Checkbox
               size="small"
-              sx={{ p: 0.25 }}
+              sx={{ p: 0, color: "#94a3b8", "&.Mui-checked": { color: "#4f46e5" } }}
               checked={Boolean(formValues[input.name])}
               onChange={(event) => {
                 const checked = event.target.checked;
@@ -888,6 +896,9 @@ const RoadSurveyForm = () => {
               }}
               inputProps={{ "aria-label": input.label }}
             />
+            <Typography variant="body2" fontSize="14px" fontWeight={700} color="#1e293b">
+              {input.label}
+            </Typography>
           </Box>
         ) : mode === "select" ? (
           <Stack spacing={1}>
@@ -920,20 +931,29 @@ const RoadSurveyForm = () => {
             <Typography variant="body2" fontWeight={700} mb={0.25}>
               {input.label}
             </Typography>
-            <Stack direction="row" alignItems="center" flexWrap="wrap" columnGap={2} rowGap={0.5}>
-              {input.options?.map((option, idx) => (
-                <Box component="label" display="flex" alignItems="center" gap={0.5} key={idx} sx={{ cursor: "pointer" }}>
-                  <Typography
-                    variant="body2"
-                    fontSize="14px"
-                    fontWeight={600}
-                    color="black"
-                  >
-                    {option.label}
-                  </Typography>
+            <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1}>
+              {input.options?.map((option) => (
+                <Box
+                  component="label"
+                  display="inline-flex"
+                  alignItems="center"
+                  gap={1}
+                  key={option.name}
+                  sx={{
+                    cursor: "pointer",
+                    px: 1.5,
+                    py: 0.75,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: category === option.name ? "#818cf8" : "#dbe2ea",
+                    bgcolor: category === option.name ? "#eef2ff" : "#f8fafc",
+                    transition: "background-color 0.2s, border-color 0.2s",
+                    "&:hover": { borderColor: "#818cf8", bgcolor: "#eef2ff" },
+                  }}
+                >
                   <Checkbox
                     size="small"
-                    sx={{ p: 0.25 }}
+                    sx={{ p: 0, color: "#94a3b8", "&.Mui-checked": { color: "#4f46e5" } }}
                     inputProps={{ "aria-label": option.label }}
                     checked={category === option.name}
                     onChange={() => {
@@ -958,6 +978,9 @@ const RoadSurveyForm = () => {
                       setFormErrors((prev) => ({ ...prev, category: null }));
                     }}
                   />
+                  <Typography variant="body2" fontSize="14px" fontWeight={700} color="#1e293b">
+                    {option.label}
+                  </Typography>
                 </Box>
               ))}
             </Stack>

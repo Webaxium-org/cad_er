@@ -11,13 +11,14 @@ const mailTransporter = nodemailer.createTransport({
   },
 });
 
-const send_mail = async (emails, subject, htmlContent) => {
+const send_mail = async (emails, subject, htmlContent, options = {}) => {
   try {
     const mailDetails = {
       from: process.env.GMAIL_USER,
       to: emails,
       subject,
       html: htmlContent,
+      ...options,
     };
 
     await mailTransporter.sendMail(mailDetails);

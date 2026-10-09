@@ -28,6 +28,23 @@ import BasicInput from "../../components/BasicInput";
 import { setUser } from "../../redux/userSlice";
 import lightLogo from "../../assets/logo/cader_logo.png";
 import darkLogo from "../../assets/logo/cader_logo_2.png";
+import ContourLines from "./components/ContourLines";
+
+const glassInputSx = {
+  color: "#ffffff",
+  backgroundColor: "rgba(255, 255, 255, 0.12)",
+  borderColor: "rgba(255, 255, 255, 0.55)",
+  "&:hover, &.Mui-focused": {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "#ffffff",
+  },
+  "& input::placeholder": { color: "rgba(255, 255, 255, 0.75)", opacity: 1 },
+  "& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus": {
+    WebkitBoxShadow: "0 0 0 100px #56618c inset",
+    WebkitTextFillColor: "#ffffff",
+    caretColor: "#ffffff",
+  },
+};
 
 /* =========================
    Styled Components
@@ -36,16 +53,23 @@ const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   alignSelf: "center",
-  width: "100%",
+  width: "min(480px, calc(100vw - 32px))",
   padding: theme.spacing(5),
   gap: theme.spacing(3),
   margin: "auto",
   borderRadius: "24px",
-  border: "1px solid rgba(0, 0, 0, 0.08)",
-  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.08)",
-  [theme.breakpoints.up("sm")]: {
-    maxWidth: "480px",
+  color: "#ffffff",
+  background: "linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08))",
+  backdropFilter: "blur(24px) saturate(140%)",
+  WebkitBackdropFilter: "blur(24px) saturate(140%)",
+  border: "1px solid rgba(255, 255, 255, 0.5)",
+  boxShadow: "0 24px 64px rgba(30, 27, 75, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+  "& .MuiDivider-root": {
+    color: "#ffffff",
+    "&::before, &::after": { borderColor: "rgba(255, 255, 255, 0.65)" },
   },
+  "& a": { color: "#e0e7ff" },
+  "& a:hover": { color: "#ffffff" },
 }));
 
 const StyledLink = styled(RouterLink)(({ theme }) => ({
@@ -236,36 +260,15 @@ export default function SignUp() {
           sx={{
             flexGrow: 1,
             position: "relative",
-            bgcolor: "#000b2e", // Slightly deeper navy for "midnight" surveying feel
+            bgcolor: "#000b2e",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             overflow: "hidden",
           }}
         >
-          {/* 1. Topographical Contour Lines (Replaces Blueprint Grid) */}
-          <Box
-            component={motion.div}
-            animate={{
-              scale: [1, 1.05, 1],
-              rotate: [0, 1, 0],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            sx={{
-              position: "absolute",
-              inset: -100, // Oversized to allow for rotation/scale animation
-              opacity: 0.15,
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='800' height='800' viewBox='0 0 800 800' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='white' stroke-width='1'%3E%3Cpath d='M-100 100 Q 100 50 300 100 T 700 100 T 1100 100'/%3E%3Cpath d='M-100 200 Q 50 250 250 200 T 650 200 T 1050 200'/%3E%3Cpath d='M-100 300 Q 200 280 400 320 T 800 300 T 1200 300'/%3E%3Cpath d='M-100 400 Q 150 350 350 400 T 750 400 T 1150 400'/%3E%3Cpath d='M-100 500 Q 350 550 550 500 T 950 500 T 1350 500'/%3E%3Cpath d='M-100 600 Q 100 650 300 600 T 700 600 T 1100 600'/%3E%3Cpath d='M-100 700 Q 450 750 650 700 T 1050 700'/%3E%3Cpath d='M200 -100 Q 250 100 200 300 T 200 700'/%3E%3Cpath d='M400 -100 Q 350 150 400 400 T 400 900'/%3E%3Cpath d='M600 -100 Q 650 100 600 300 T 600 700'/%3E%3C/g%3E%3C/svg%3E")`,
-              backgroundSize: "1000px 1000px",
-              maskImage:
-                "radial-gradient(circle at center, black 30%, transparent 80%)",
-              zIndex: 0,
-            }}
-          />
+          {/* Terrain contour lines */}
+          <ContourLines />
 
           {/* 2. Abstract Background Orbs */}
           <Box
@@ -273,7 +276,7 @@ export default function SignUp() {
               position: "absolute",
               inset: 0,
               background:
-                "radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(30, 64, 175, 0.2) 0%, transparent 50%)",
+                "radial-gradient(circle at 20% 20%, rgba(129, 140, 248, 0.32) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(79, 70, 229, 0.55) 0%, transparent 50%)",
               zIndex: 1,
             }}
           />
@@ -361,10 +364,15 @@ export default function SignUp() {
           </Box>
 
           <Grid container spacing={6} maxWidth={1100}>
-            <Grid size={{ xs: 12, md: 6 }} width={500}>
+            <Grid
+              size={{ xs: 12, md: 6 }}
+              width={500}
+              sx={{ display: "flex", alignItems: "center" }}
+            >
               {/* LEFT SIDE */}
               <Box
                 component="form"
+                sx={{ width: "100%" }}
                 noValidate
                 autoComplete="off"
                 onSubmit={(e) => {
@@ -414,6 +422,9 @@ export default function SignUp() {
                     <Stack spacing={2}>
                       <BasicInput
                         label="Full Name"
+                        labelColor="white"
+                        errorTextColor="#fecdd3"
+                        sx={glassInputSx}
                         name="name"
                         value={formValues.name}
                         error={formErrors.name}
@@ -424,6 +435,9 @@ export default function SignUp() {
 
                       <BasicInput
                         label="Email"
+                        labelColor="white"
+                        errorTextColor="#fecdd3"
+                        sx={glassInputSx}
                         name="email"
                         value={formValues.email}
                         error={formErrors.email}
@@ -436,6 +450,9 @@ export default function SignUp() {
                       <Box position="relative">
                         <BasicInput
                           label="Password"
+                          labelColor="white"
+                          errorTextColor="#fecdd3"
+                          sx={glassInputSx}
                           name="password"
                           type={showPassword ? "text" : "password"}
                           value={formValues.password}
@@ -446,7 +463,7 @@ export default function SignUp() {
                         />
                         <IconButton
                           onClick={() => setShowPassword((p) => !p)}
-                          sx={{ position: "absolute", top: 25, right: 8 }}
+                          sx={{ position: "absolute", top: 25, right: 8, color: "white" }}
                         >
                           {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </IconButton>
@@ -456,6 +473,9 @@ export default function SignUp() {
                       <Box position="relative">
                         <BasicInput
                           label="Confirm Password"
+                          labelColor="white"
+                          errorTextColor="#fecdd3"
+                          sx={glassInputSx}
                           name="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
                           value={formValues.confirmPassword}
@@ -466,7 +486,7 @@ export default function SignUp() {
                         />
                         <IconButton
                           onClick={() => setShowConfirmPassword((p) => !p)}
-                          sx={{ position: "absolute", top: 25, right: 8 }}
+                          sx={{ position: "absolute", top: 25, right: 8, color: "white" }}
                         >
                           {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                         </IconButton>
@@ -479,17 +499,14 @@ export default function SignUp() {
                         sx={{
                           textTransform: "none",
                           height: "2.5rem",
-                          color: "white",
-                          backgroundColor: "hsl(220, 35%, 3%)",
-                          backgroundImage:
-                            "linear-gradient(to bottom, hsl(220, 20%, 25%), hsl(220, 30%, 6%))",
-                          boxShadow:
-                            "inset 0 1px 0 hsl(220, 20%, 35%), inset 0 -1px 0 1px hsl(220, 0%, 0%)",
-                          border: "1px solid hsl(220, 20%, 25%)",
+                          color: "#3730a3",
+                          backgroundColor: "#ffffff",
+                          backgroundImage: "linear-gradient(90deg, #ffffff, #e0e7ff)",
+                          boxShadow: "0 8px 24px rgba(49, 46, 129, 0.2)",
+                          border: "1px solid rgba(255, 255, 255, 0.8)",
                           "&:hover": {
-                            backgroundImage: "none",
-                            backgroundColor: "rgb(51, 60, 77)",
-                            boxShadow: "none",
+                            backgroundImage: "linear-gradient(90deg, #eef2ff, #c7d2fe)",
+                            boxShadow: "0 10px 28px rgba(49, 46, 129, 0.28)",
                           },
                         }}
                         type="submit"
@@ -507,16 +524,21 @@ export default function SignUp() {
                         sx={{
                           textTransform: "none",
                           height: "2.5rem",
-                          color: "black",
-                          backgroundColor: "#f5f6fa4d",
+                          color: "#ffffff",
+                          backgroundColor: "rgba(255, 255, 255, 0.12)",
                           boxShadow: "none",
                           transition:
                             "background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
-                          border: "1px solid hsl(220, 20%, 88%)",
+                          border: "1px solid rgba(255, 255, 255, 0.55)",
+                          "& .MuiButton-startIcon": {
+                            bgcolor: "#ffffff",
+                            borderRadius: "50%",
+                            p: 0.4,
+                            mr: 1,
+                          },
                           "&:hover": {
-                            backgroundImage: "none",
-                            backgroundColor: "hsl(220, 30%, 94%)",
-                            borderColor: "hsl(220, 20%, 80%)",
+                            backgroundColor: "rgba(255, 255, 255, 0.2)",
+                            borderColor: "#ffffff",
                           },
                         }}
                       />
@@ -581,7 +603,7 @@ export default function SignUp() {
                     }}
                   >
                     Engineering the{" "}
-                    <span style={{ color: "#60A5FA", position: "relative" }}>
+                    <span style={{ color: "#c7d2fe", position: "relative" }}>
                       Future
                       <svg
                         style={{
@@ -598,7 +620,7 @@ export default function SignUp() {
                           transition={{ duration: 1.5, delay: 0.5 }}
                           d="M0 5 Q 25 0, 50 5 T 100 5"
                           fill="transparent"
-                          stroke="#60A5FA"
+                          stroke="#c7d2fe"
                           strokeWidth="2"
                         />
                       </svg>
@@ -653,9 +675,9 @@ export default function SignUp() {
                   left: -4,
                   width: 8,
                   height: 8,
-                  bgcolor: "#60A5FA",
+                  bgcolor: "#a5b4fc",
                   borderRadius: "50%",
-                  boxShadow: "0 0 15px #60A5FA",
+                  boxShadow: "0 0 15px #a5b4fc",
                 }}
               />
             </Box>
@@ -672,8 +694,8 @@ export default function SignUp() {
               right: 0,
               height: "1px",
               background:
-                "linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.4), transparent)",
-              boxShadow: "0 0 20px 2px rgba(96, 165, 250, 0.2)",
+                "linear-gradient(90deg, transparent, rgba(165, 180, 252, 0.4), transparent)",
+              boxShadow: "0 0 20px 2px rgba(165, 180, 252, 0.2)",
               zIndex: 5,
             }}
           />

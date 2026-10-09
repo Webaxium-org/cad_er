@@ -13,9 +13,9 @@ import CrossSectionChart from "./components/CrossSectionChart";
 import { v1ChartOptions, v2ChartOptions } from "../../constants";
 import BasicMenu from "../../components/BasicMenu";
 import { BsThreeDots } from "react-icons/bs";
-import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
-import BasicButton from "../../components/BasicButton";
+import { MdDownload, MdOutlineAssessment } from "react-icons/md";
 import SmallHeader from "../../components/SmallHeader";
+import PageHeroHeader from "../../components/PageHeroHeader";
 
 const LEVEL_ORDER = [
   "Initial Level",
@@ -355,7 +355,29 @@ const LongitudinalSectionReport = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }}>
       <SmallHeader />
-      <Box sx={{ maxWidth: "1200px", margin: "0 auto", p: { xs: 2, md: 4 } }}>
+      <PageHeroHeader
+        icon={MdOutlineAssessment}
+        title="Longitudinal Section Report"
+        subtitle="View the survey profile along the chainage."
+        action={
+          <BasicMenu
+            label={<BsThreeDots />}
+            items={menuItems}
+            onSelect={handleMenuSelect}
+            sx={{
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              p: 1,
+              color: "white",
+              borderColor: "rgba(255, 255, 255, 0.45)",
+              bgcolor: "rgba(255, 255, 255, 0.16)",
+              "&:hover": { bgcolor: "rgba(255, 255, 255, 0.26)", borderColor: "white" },
+            }}
+          />
+        }
+      />
+      <Box sx={{ maxWidth: "1200px", margin: "0 auto", p: { xs: 2, md: 4 }, pt: 0, mt: -12, position: "relative", zIndex: 1 }}>
         <Paper
           elevation={0}
           sx={{
@@ -372,41 +394,6 @@ const LongitudinalSectionReport = () => {
           {/* Indigo left accent */}
           <Box sx={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", bgcolor: "#6366f1" }} />
 
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent={"space-between"}
-            alignItems={{ xs: "stretch", sm: "center" }}
-            spacing={2}
-            sx={{ mb: 3 }}
-          >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <BasicButton
-                variant="text"
-                sx={{ height: 40, width: 40, minWidth: 40, borderRadius: "12px", color: "#334155", bgcolor: "#f1f5f9", border: "none", boxShadow: "none", "&:hover": { bgcolor: "#e2e8f0", color: "#1e293b" } }}
-                onClick={() => navigate(-1)}
-                value={<MdArrowBackIosNew fontSize={18} />}
-              />
-              <Box>
-                <Typography variant="overline" sx={{ color: "#6366f1", fontWeight: 800, letterSpacing: "0.12em" }}>
-                  SURVEY REPORT
-                </Typography>
-                <Typography variant="h5" sx={{ color: "#1e293b", fontWeight: 800, lineHeight: 1.2 }}>
-                  Longitudinal Section Report
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  View the survey profile along the chainage
-                </Typography>
-              </Box>
-            </Stack>
-            <Box textAlign={{ xs: "start", sm: "end" }}>
-              <BasicMenu
-                label={<BsThreeDots />}
-                items={menuItems}
-                onSelect={handleMenuSelect}
-                sx={{ minWidth: "fit-content", p: 1, borderRadius: "12px" }}
-              />
-            </Box>
-          </Stack>
           <Box
             sx={{
               textAlign: "center",

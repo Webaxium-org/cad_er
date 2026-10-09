@@ -7,6 +7,7 @@ import { getSurvey } from "../../services/surveyServices";
 import { handleFormError } from "../../utils/handleFormError";
 import {
   Box,
+  Container,
   Paper,
   Stack,
   Table,
@@ -17,8 +18,9 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import { MdDownload, MdOutlineAssessment } from "react-icons/md";
 import SmallHeader from "../../components/SmallHeader";
+import PageHeroHeader from "../../components/PageHeroHeader";
 import BasicButtons from "../../components/BasicButton";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -1191,96 +1193,100 @@ const VolumeReport = () => {
   }, []);
 
   return (
-    <>
-    <SmallHeader />
-    <Box p={2}>
-      {tableData?.missingSections?.length > 0 && <Typography color="error" sx={{ mb: 2 }}>
-        Quantity is incomplete: matching valid ground and proposal profiles are missing at chainage(s) {tableData.missingSections.join(", ")}.
-        The figures below cover valid sections only. Export is disabled until these sections are resolved.
-      </Typography>}
-      <Stack
-        direction={"row"}
-        justifyContent={"space-between"}
-        spacing={2}
-        mb={2}
-      >
-        <Box
-          sx={{
-            border: "1px solid #EFEFEF",
-            borderRadius: "9px",
-            width: "40px",
-            height: "40px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
-            mb: "24px",
-          }}
-          onClick={() => navigate(-1)}
-        >
-          <MdArrowBackIosNew />
-        </Box>
-
-        <Box textAlign={"end"}>
+    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 8 }}>
+      <SmallHeader />
+      <PageHeroHeader
+        icon={MdOutlineAssessment}
+        title="Volume Report"
+        subtitle="Review section quantities and volume calculations."
+        action={
           <BasicMenu
             label={<BsThreeDots />}
             items={menuItems}
             onSelect={handleMenuSelect}
-            sx={{ minWidth: "fit-content", p: 1 }}
+            sx={{
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              p: 1,
+              color: "white",
+              borderColor: "rgba(255, 255, 255, 0.45)",
+              bgcolor: "rgba(255, 255, 255, 0.16)",
+              "&:hover": { bgcolor: "rgba(255, 255, 255, 0.26)", borderColor: "white" },
+            }}
           />
-        </Box>
-      </Stack>
-
-      <Typography
-        variant="h6"
-        fontSize={18}
-        fontWeight={700}
-        align="center"
-        mb={2}
-      >
+        }
+      />
+      <Container maxWidth={false} sx={{ mt: -8, position: "relative" }}>
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2, bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "20px", background: "linear-gradient(to right, #6366f1 0 6px, #ffffff 6px)" }}>
+      {tableData?.missingSections?.length > 0 && <Typography color="error" sx={{ mb: 3, p: 2, bgcolor: "#fef2f2", border: "1px solid #fecaca", borderRadius: "12px" }}>
+        Quantity is incomplete: matching valid ground and proposal profiles are missing at chainage(s) {tableData.missingSections.join(", ")}.
+        The figures below cover valid sections only. Export is disabled until these sections are resolved.
+      </Typography>}
+      <Box sx={{ bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "20px", boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)", overflow: "hidden" }}>
+      <Typography variant="h6" sx={{ px: { xs: 2, sm: 3 }, py: 2.5, fontWeight: 800, color: "#1e293b", borderBottom: "1px solid #e2e8f0" }}>
         Volume Report Between {reportDetails.current.initialEntry} and{" "}
         {reportDetails.current.secondaryEntry}
       </Typography>
-      {console.log(survey)}
-      <TableContainer component={Paper} sx={{ maxHeight: "90vh" }}>
-        <Table sx={{ minWidth: 650 }} size="small">
+      <TableContainer component={Paper} elevation={0} sx={{ maxHeight: "min(75vh, 760px)", borderRadius: 0, overflowX: "auto", px: 0.5 }}>
+        <Table size="small" sx={{
+          minWidth: showArea?.cutting && showArea?.filling ? 1250 : 860,
+          borderCollapse: "separate",
+          borderSpacing: 0,
+          "& .MuiTableCell-root": { px: 1.5, py: 1.05, borderBottom: "1px solid #e5eaf3", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" },
+          "& .volume-data-row .MuiTableCell-root": { color: "#34436b", fontWeight: 500 },
+          "& .volume-data-row:hover": { bgcolor: "#f5f6ff" },
+          "& .volume-message-row .MuiTableCell-root": { bgcolor: "#eff0ff", color: "#211bb5", fontWeight: 700, borderTop: "8px solid white" },
+          "& .volume-total-row .MuiTableCell-root": { bgcolor: "#eff0ff", color: "#211bb5", fontWeight: 800, borderTop: "1px solid #d6ddf4", borderBottom: 0, py: 1.25 },
+          "& .volume-total-row .volume-total-value": { bgcolor: "#dfdfff", textAlign: "right", fontWeight: 900 },
+        }}>
           <TableHead
             sx={{
-              backgroundColor: "#f4f6f8",
-              "& .MuiTableCell-root": {
-                border: "1px solid rgba(224, 224, 224, 1)",
-                fontWeight: 700,
-              },
               position: "sticky",
               top: 0,
+              zIndex: 2,
+              "& .MuiTableCell-root": {
+                borderBottom: "1px solid #dce2f0",
+                borderRight: "1px solid #e4e8f2",
+                bgcolor: "#f0f2fa",
+                color: "#34436b",
+                fontWeight: 800,
+                fontSize: "0.78rem",
+                lineHeight: 1.35,
+                whiteSpace: "normal",
+                minWidth: 92,
+                py: 1.35,
+              },
+              "& tr:first-of-type .MuiTableCell-root[colspan]": { bgcolor: "#dedfff", color: "#211bb5" },
+              "& tr:nth-of-type(2) .MuiTableCell-root": { bgcolor: "#f0f1ff", color: "#34436b", borderRight: "1px solid #dce2f0", fontWeight: 700, fontSize: "0.73rem" },
             }}
           >
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2} align="center">
-                Sl.No.
+                No.
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2} align="center">
-                Section From
+                Section from
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2} align="center">
-                Previous Section
+                Previous section
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2} align="center">
-                Difference
+                Difference (m)
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2} align="center">
-                Width
+                Width (m)
               </TableCell>
 
               {showArea?.cutting && (
                 <TableCell sx={{ fontWeight: 700 }} colSpan={4} align="center">
-                  Cutting Volume
+                  Cutting volume
                 </TableCell>
               )}
 
               {showArea?.filling && (
                 <TableCell sx={{ fontWeight: 700 }} colSpan={4} align="center">
-                  Filling Volume
+                  Filling volume
                 </TableCell>
               )}
             </TableRow>
@@ -1288,16 +1294,16 @@ const VolumeReport = () => {
               {showArea?.cutting && (
                 <>
                   <TableCell sx={{ fontWeight: 700 }} align="center">
-                    Area Sq. Mtrs
+                    Area (m²)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">
-                    Previous Area
+                    Previous area (m²)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">
-                    Average Sq. Mtrs
+                    Average (m²)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">
-                    Volume Cubic Meters
+                    Volume (m³)
                   </TableCell>
                 </>
               )}
@@ -1305,16 +1311,16 @@ const VolumeReport = () => {
               {showArea?.filling && (
                 <>
                   <TableCell sx={{ fontWeight: 700 }} align="center">
-                    Area Sq. Mtrs
+                    Area (m²)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">
-                    Previous Area
+                    Previous area (m²)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">
-                    Average Sq. Mtrs
+                    Average (m²)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">
-                    Volume Cubic Meters
+                    Volume (m³)
                   </TableCell>
                 </>
               )}
@@ -1325,18 +1331,18 @@ const VolumeReport = () => {
             {tableData?.rows?.map((row, index) => (
               <React.Fragment key={index}>
                 {row.isDeductionRow && (
-                  <TableRow>
-                    <TableCell colSpan={13}>{row.deductionMessage}</TableCell>
+                  <TableRow className="volume-message-row">
+                    <TableCell colSpan={5 + (showArea?.cutting ? 4 : 0) + (showArea?.filling ? 4 : 0)}>{row.deductionMessage}</TableCell>
                   </TableRow>
                 )}
 
                 {row.isBreak && (
-                  <TableRow>
-                    <TableCell colSpan={13}>{row.message}</TableCell>
+                  <TableRow className="volume-message-row">
+                    <TableCell colSpan={5 + (showArea?.cutting ? 4 : 0) + (showArea?.filling ? 4 : 0)}>{row.message}</TableCell>
                   </TableRow>
                 )}
 
-                <TableRow>
+                <TableRow className="volume-data-row" sx={{ bgcolor: index % 2 === 0 ? "white" : "#fafaff" }}>
                   <TableCell align="center">{index + 1}</TableCell>
                   <TableCell align="center">{row.section}</TableCell>
                   <TableCell align="center">{row.prevSection}</TableCell>
@@ -1428,17 +1434,14 @@ const VolumeReport = () => {
               </React.Fragment>
             ))}
 
-            <TableRow>
-              <TableCell colSpan={5}></TableCell>
-
-              <TableCell sx={{ fontWeight: "bold" }} align="center">
-                Total
+            <TableRow className="volume-total-row">
+              <TableCell colSpan={showArea?.cutting ? 8 : 5}>
+                Total volume
               </TableCell>
 
               {showArea?.cutting && (
                 <>
-                  <TableCell colSpan={2}></TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }} align="center">
+                  <TableCell className="volume-total-value">
                     {Number(tableData?.totalCuttingVolume)?.toFixed(3)}
                   </TableCell>
                 </>
@@ -1446,9 +1449,9 @@ const VolumeReport = () => {
 
               {showArea?.filling && (
                 <>
-                  <TableCell colSpan={showArea?.cutting ? 3 : 2}></TableCell>
+                  <TableCell colSpan={3}></TableCell>
 
-                  <TableCell sx={{ fontWeight: "bold" }} align="center">
+                  <TableCell className="volume-total-value">
                     {Number(tableData?.totalFillingVolume)?.toFixed(3)}
                   </TableCell>
                 </>
@@ -1457,9 +1460,39 @@ const VolumeReport = () => {
           </TableBody>
         </Table>
       </TableContainer>
-
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        justifyContent="space-between"
+        spacing={2}
+        sx={{ px: { xs: 2, sm: 3 }, py: 2.25, borderTop: "1px solid #dce2f0" }}
+      >
+        <Typography variant="body2" sx={{ color: "#687594" }}>
+          Showing {tableData?.rows?.length || 0} sections
+        </Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          {showArea?.cutting && (
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Typography variant="body2" fontWeight={800} color="#34436b">Total cutting volume</Typography>
+              <Box sx={{ px: 2, py: 0.75, borderRadius: "5px", bgcolor: "#eff0ff", color: "#211bb5", fontWeight: 900 }}>
+                {Number(tableData?.totalCuttingVolume || 0).toFixed(3)} m³
+              </Box>
+            </Stack>
+          )}
+          {showArea?.filling && (
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Typography variant="body2" fontWeight={800} color="#34436b">Total filling volume</Typography>
+              <Box sx={{ px: 2, py: 0.75, borderRadius: "5px", bgcolor: "#eff0ff", color: "#211bb5", fontWeight: 900 }}>
+                {Number(tableData?.totalFillingVolume || 0).toFixed(3)} m³
+              </Box>
+            </Stack>
+          )}
+        </Stack>
+      </Stack>
+      </Box>
+      </Box>
+      </Container>
     </Box>
-    </>
   );
 };
 

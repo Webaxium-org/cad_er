@@ -33,6 +33,7 @@ import LandingAppBar from "../../components/LandingAppBar";
 import LandingFooter from "../../components/LandingFooter";
 import ScrollToTopButton from "../../components/ScrollToTopButton";
 import ScheduleDemoForm from "./components/ScheduleDemoForm";
+import { APP_VERSION } from "../../constants/appVersion";
 
 const MotionButton = motion.create(Button);
 const MotionStack = motion.create(Stack);
@@ -766,7 +767,7 @@ const Landing = () => {
                               letterSpacing: 1,
                             }}
                           >
-                            v0.1.0 is live
+                            v{APP_VERSION} is live
                           </Typography>
                         </Box>
                       </Box>

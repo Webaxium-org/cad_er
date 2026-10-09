@@ -40,6 +40,7 @@ import PlottingAndQuantityReport from "./pages/survey/PlottingAndQuantityReport"
 import Settings from "./pages/settings";
 import Trash from "./pages/trash";
 import ProposeLevel from "./pages/survey/ProposeLevel";
+import LegalPage from "./pages/public/LegalPage";
 
 function App() {
   return (
@@ -53,6 +54,8 @@ function App() {
             <Route path="/placements" element={<Placements />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/impact" element={<ImpactStats />} />
+            <Route path="/terms" element={<LegalPage type="terms" />} />
+            <Route path="/privacy" element={<LegalPage type="privacy" />} />
           </Route>
 
           <Route element={<PublicRoute />}>

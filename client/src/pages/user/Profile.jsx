@@ -499,7 +499,6 @@ const Profile = () => {
           }}
         >
           {[
-            { label: "SAVE CHANGES", icon: <FiSave size={20} /> },
             {
               label: "DELETE ACCOUNT",
               icon: <FiTrash2 size={20} />,
@@ -507,6 +506,7 @@ const Profile = () => {
               onClick: () =>
                 alert("Delete account feature — please contact support to proceed."),
             },
+            { label: "SAVE CHANGES", icon: <FiSave size={20} /> },
           ].map((action) => (
             <Button
               key={action.label}

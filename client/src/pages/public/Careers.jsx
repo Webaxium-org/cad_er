@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import ScrollToTop from "../../components/ScrollToTop";
+import { submitCareerApplication } from "../../services/indexServices";
 
 // Custom SVG Icons to replace react-icons and ensure successful compilation
 const IconBriefcase = () => (
@@ -135,50 +136,59 @@ const IconClock = () => (
   </svg>
 );
 
-// Mock Data for Job Postings
 const JOBS = [
   {
-    id: "eng-01",
-    title: "Senior Site Engineer",
-    department: "Engineering",
-    location: "Remote / On-site",
-    type: "Full-time",
-    salary: "$80k - $120k",
-  },
-  {
-    id: "prod-02",
-    title: "Product Manager (Civil Tech)",
-    department: "Product",
-    location: "London, UK",
-    type: "Full-time",
-    salary: "$90k - $130k",
-  },
-  {
-    id: "mkt-03",
-    title: "Technical Sales Specialist",
+    id: "tele-callers",
+    title: "Tele Callers",
     department: "Sales",
-    location: "New York, USA",
-    type: "Full-time",
-    salary: "$60k + Commission",
+  },
+  {
+    id: "marketing-executives",
+    title: "Marketing Executives",
+    department: "Marketing",
+    qualification: "MBA",
+  },
+  {
+    id: "survey-engineer",
+    title: "Survey Engineer",
+    department: "Engineering",
+    qualification: "B.Tech / Diploma / ITI",
   },
 ];
 
 const Careers = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [cv, setCv] = useState(null);
 
   const handleApply = (job) => {
     setSelectedJob(job);
+    setCv(null);
+    setSubmitError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormSubmitted(true);
-    setTimeout(() => {
-      setFormSubmitted(false);
-      setSelectedJob(null);
-    }, 5000);
+    setSubmitError("");
+    if (!cv) {
+      setSubmitError("Please attach your CV as a PDF or DOCX file.");
+      return;
+    }
+    const formData = new FormData(e.currentTarget);
+    formData.set("position", selectedJob.title);
+    formData.set("cv", cv);
+    setSubmitting(true);
+    try {
+      await submitCareerApplication(formData);
+      setFormSubmitted(true);
+    } catch (error) {
+      setSubmitError(error.response?.data?.message || "Could not send your application. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -276,17 +286,19 @@ const Careers = () => {
                                 {job.department}
                               </Typography>
                             </Stack>
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                              sx={{ color: "#64748b" }}
-                            >
-                              <IconMapPin />
-                              <Typography variant="body2">
-                                {job.location}
-                              </Typography>
-                            </Stack>
+                            {job.location && (
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                sx={{ color: "#64748b" }}
+                              >
+                                <IconMapPin />
+                                <Typography variant="body2">
+                                  {job.location}
+                                </Typography>
+                              </Stack>
+                            )}
                           </Stack>
                         </Grid>
                         <Grid size={{ xs: 12, md: 3 }}>
@@ -295,29 +307,33 @@ const Careers = () => {
                             spacing={1}
                             alignItems="center"
                           >
-                            <Chip
-                              label={job.type}
-                              size="small"
-                              sx={{
-                                bgcolor: "#f1f5f9",
-                                fontWeight: 600,
-                                color: "#475569",
-                              }}
-                            />
-                            <Stack
-                              direction="row"
-                              spacing={0.5}
-                              alignItems="center"
-                              sx={{ color: "#94a3b8" }}
-                            >
-                              <IconClock />
-                              <Typography
-                                variant="caption"
-                                sx={{ fontWeight: 500 }}
+                            {(job.type || job.qualification) && (
+                              <Chip
+                                label={job.type || job.qualification}
+                                size="small"
+                                sx={{
+                                  bgcolor: "#f1f5f9",
+                                  fontWeight: 600,
+                                  color: "#475569",
+                                }}
+                              />
+                            )}
+                            {job.salary && (
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                alignItems="center"
+                                sx={{ color: "#94a3b8" }}
                               >
-                                {job.salary}
-                              </Typography>
-                            </Stack>
+                                <IconClock />
+                                <Typography
+                                  variant="caption"
+                                  sx={{ fontWeight: 500 }}
+                                >
+                                  {job.salary}
+                                </Typography>
+                              </Stack>
+                            )}
                           </Stack>
                         </Grid>
                         <Grid
@@ -387,6 +403,7 @@ const Careers = () => {
                           <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                               fullWidth
+                              name="name"
                               label="Full Name"
                               required
                               variant="outlined"
@@ -395,6 +412,7 @@ const Careers = () => {
                           <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                               fullWidth
+                              name="email"
                               label="Email Address"
                               type="email"
                               required
@@ -404,6 +422,7 @@ const Careers = () => {
                           <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                               fullWidth
+                              name="phone"
                               label="Phone Number"
                               variant="outlined"
                             />
@@ -411,6 +430,7 @@ const Careers = () => {
                           <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                               fullWidth
+                              name="experience"
                               select
                               label="Experience Level"
                               defaultValue="mid"
@@ -430,6 +450,7 @@ const Careers = () => {
                           <Grid size={{ xs: 12 }}>
                             <TextField
                               fullWidth
+                              name="portfolio"
                               label="LinkedIn or Portfolio URL"
                               placeholder="https://linkedin.com/in/username"
                               variant="outlined"
@@ -438,6 +459,7 @@ const Careers = () => {
                           <Grid size={{ xs: 12 }}>
                             <TextField
                               fullWidth
+                              name="coverLetter"
                               multiline
                               rows={4}
                               label="Cover Letter / Brief Intro"
@@ -448,7 +470,9 @@ const Careers = () => {
 
                           <Grid size={{ xs: 12 }}>
                             <Box
+                              component="label"
                               sx={{
+                                display: "block",
                                 p: 4,
                                 border: "2px dashed #e2e8f0",
                                 borderRadius: 4,
@@ -462,6 +486,23 @@ const Careers = () => {
                                 },
                               }}
                             >
+                              <input
+                                type="file"
+                                name="cv"
+                                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                style={{ display: "none" }}
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0] || null;
+                                  if (file && file.size > 10 * 1024 * 1024) {
+                                    setSubmitError("CV must be 10 MB or smaller.");
+                                    setCv(null);
+                                    event.target.value = "";
+                                    return;
+                                  }
+                                  setCv(file);
+                                  setSubmitError("");
+                                }}
+                              />
                               <IconUpload />
                               <Typography
                                 variant="h6"
@@ -471,7 +512,7 @@ const Careers = () => {
                                   mt: 1,
                                 }}
                               >
-                                Drop your CV here
+                                {cv ? cv.name : "Choose your CV"}
                               </Typography>
                               <Typography
                                 variant="body2"
@@ -483,8 +524,14 @@ const Careers = () => {
                           </Grid>
 
                           <Grid size={{ xs: 12 }}>
+                            {submitError && (
+                              <Typography role="alert" color="error" sx={{ mb: 2 }}>
+                                {submitError}
+                              </Typography>
+                            )}
                             <Button
                               type="submit"
+                              disabled={submitting}
                               fullWidth
                               variant="contained"
                               size="large"
@@ -499,7 +546,7 @@ const Careers = () => {
                                 "&:hover": { bgcolor: "#4f46e5" },
                               }}
                             >
-                              Submit My Application
+                              {submitting ? "Sending Application..." : "Submit My Application"}
                             </Button>
                           </Grid>
                         </Grid>

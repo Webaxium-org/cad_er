@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import Button from "@mui/material/Button";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -12,6 +12,7 @@ const BasicMenu = ({
   itemSx = {},
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const menuId = useId();
   const open = Boolean(anchorEl);
 
   const handleClick = (event) => {
@@ -27,8 +28,8 @@ const BasicMenu = ({
     <div>
       <Button
         variant="outlined"
-        id="menu-button"
-        aria-controls={open ? "menu" : undefined}
+        id={`${menuId}-button`}
+        aria-controls={open ? `${menuId}-menu` : undefined}
         aria-haspopup="true"
         aria-expanded={open ? "true" : undefined}
         onClick={handleClick}
@@ -46,7 +47,7 @@ const BasicMenu = ({
       </Button>
 
       <Menu
-        id="menu"
+        id={`${menuId}-menu`}
         anchorEl={anchorEl}
         open={open}
         onClose={() => handleClose(null)}

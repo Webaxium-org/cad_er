@@ -15,6 +15,7 @@ import {
   Stack,
   ThemeProvider,
   Toolbar,
+  Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -144,10 +145,9 @@ const LandingAppBar = () => {
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent: "flex-start",
                   flexShrink: 0,
-                  width: { xs: 52, md: 60 },
-                  height: { xs: 52, md: 60 },
+                  gap: { xs: 1, md: 1.25 },
                   p: 0,
                   border: 0,
                   bgcolor: "transparent",
@@ -160,11 +160,26 @@ const LandingAppBar = () => {
                   alt=""
                   sx={{
                     display: "block",
-                    width: "100%",
-                    height: "100%",
+                    width: { xs: 52, md: 60 },
+                    height: { xs: 52, md: 60 },
                     objectFit: "contain",
                   }}
                 />
+                <Box sx={{ textAlign: "left", whiteSpace: "nowrap" }}>
+                  <Typography
+                    component="span"
+                    sx={{ display: "block", fontSize: { xs: "1.4rem", md: "1.65rem" }, fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.04em" }}
+                  >
+                    <Box component="span" sx={{ color: "#64748b" }}>Cad</Box>
+                    <Box component="span" sx={{ color: "#6366f1" }}>er</Box>
+                  </Typography>
+                  <Typography
+                    component="span"
+                    sx={{ display: "block", color: "#64748b", fontSize: { xs: "0.56rem", md: "0.67rem" }, fontWeight: 600, lineHeight: 1.2, letterSpacing: "0.01em" }}
+                  >
+                    Complexity simplified
+                  </Typography>
+                </Box>
               </Box>
 
               {/* Desktop Menu */}

@@ -291,8 +291,8 @@ const LandingFooter = () => {
             © 2025 CADER. All rights reserved.
           </Typography>
           <Stack direction="row" spacing={3}>
-            <StyledLink to="#">Privacy Policy</StyledLink>
-            <StyledLink to="#">Terms of Service</StyledLink>
+            <StyledLink to="/privacy">Privacy Policy</StyledLink>
+            <StyledLink to="/terms">Terms &amp; Conditions</StyledLink>
           </Stack>
         </Stack>
       </Container>

@@ -42,11 +42,14 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action }) 
             }}
           >
             <Container maxWidth="lg">
-              <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0 }}>
-                {icon}
-                <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px">
-                  {title}
-                </Typography>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ minWidth: 0 }}>
+                <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0, flex: 1 }}>
+                  {icon && <Box sx={{ display: action ? { xs: "none", sm: "flex" } : "flex" }}>{icon}</Box>}
+                  <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px">
+                    {title}
+                  </Typography>
+                </Stack>
+                {action && <Box sx={{ flexShrink: 0 }}>{action}</Box>}
               </Stack>
             </Container>
           </Box>
@@ -80,7 +83,7 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action }) 
                 {subtitle}
               </Typography>
             </Box>
-            {action}
+            {action && <Box sx={{ visibility: compact ? "hidden" : "visible" }}>{action}</Box>}
           </Stack>
         </Container>
       </Box>

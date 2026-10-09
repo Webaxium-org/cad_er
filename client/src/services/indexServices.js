@@ -31,3 +31,7 @@ export const contactForm = (formData) => {
 export const scheduleDemoForm = (formData) => {
   return axiosInstance.post("schedule-demo", formData);
 };
+
+export const submitCareerApplication = (formData) => {
+  return axiosInstance.post("careers/apply", formData);
+};

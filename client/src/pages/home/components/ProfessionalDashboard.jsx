@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,8 @@ import AlertDialogSlide from "../../../components/AlertDialogSlide";
 import UniversalConverter from "../../../components/UniversalConverter";
 import CreateTicket from "../../tickets/components/CreateTicket";
 import AppHeader from "../../../components/AppHeader";
+import { APP_VERSION } from "../../../constants/appVersion";
+import { compactTitleSx, heroTitleSx } from "../../../components/pageHeaderStyles";
 import { getAllSurvey } from "../../../services/surveyServices";
 import {
   Stack,
@@ -401,6 +403,22 @@ export default function ProfessionalDashboard() {
   const [open, setOpen] = useState(false);
   const [openUnitConverter, setOpenUnitConverter] = useState(false);
   const [projectCounts, setProjectCounts] = useState(null);
+  const heroRef = useRef(null);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    const updateCompactHeader = () => {
+      const halfway = (heroRef.current?.offsetHeight || 0) / 2;
+      setCompactHeaderVisible(halfway > 0 && window.scrollY >= halfway);
+    };
+    updateCompactHeader();
+    window.addEventListener("scroll", updateCompactHeader, { passive: true });
+    window.addEventListener("resize", updateCompactHeader);
+    return () => {
+      window.removeEventListener("scroll", updateCompactHeader);
+      window.removeEventListener("resize", updateCompactHeader);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -458,13 +476,42 @@ export default function ProfessionalDashboard() {
       />
       <AppHeader />
       <Box sx={{ bgcolor: BG_COLOR, minHeight: "100vh", pb: 5 }}>
+        <AnimatePresence>
+          {compactHeaderVisible && (
+            <Box
+              component={motion.div}
+              initial={{ opacity: 0, y: -24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -24 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              sx={{
+                position: "fixed",
+                top: { xs: 49, md: 65 },
+                left: 0,
+                right: 0,
+                zIndex: 1099,
+                p: 2,
+                color: "white",
+                background: `linear-gradient(135deg, ${HEADER_GRADIENT_START} 0%, ${HEADER_GRADIENT_END} 100%)`,
+                borderRadius: "0 0 20px 20px",
+                boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
+              }}
+            >
+              <Container maxWidth="lg">
+                <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px">
+                  CADER Project <span style={{ color: "#c7d2fe" }}>Hub</span>
+                </Typography>
+              </Container>
+            </Box>
+          )}
+        </AnimatePresence>
         {/* Indigo Themed Professional Header */}
         <Box
+          ref={heroRef}
           sx={{
             background: `linear-gradient(135deg, ${HEADER_GRADIENT_START} 0%, ${HEADER_GRADIENT_END} 100%)`,
-            // Adjusted padding top to cleanly sit right below the AppHeader
-            pt: 4,
-            pb: { xs: 4, md: 0 },
+            pt: 10,
+            pb: 10,
             color: "white",
             borderRadius: "0 0 20px 20px",
             boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
@@ -476,7 +523,6 @@ export default function ProfessionalDashboard() {
               container
               spacing={3}
               alignItems="flex-end"
-              height={{ xs: "100%", md: "160px" }}
               pb={{ xs: 1, md: 0 }}
             >
               <Grid
@@ -486,6 +532,12 @@ export default function ProfessionalDashboard() {
                 alignItems={"start"}
                 justifyContent={"start"}
                 height={"100%"}
+                sx={{
+                  opacity: compactHeaderVisible ? 0 : 1,
+                  transform: compactHeaderVisible ? "translateY(-12px) scale(0.96)" : "none",
+                  transformOrigin: "left center",
+                  transition: "opacity 0.3s ease, transform 0.3s ease",
+                }}
               >
                 <Stack
                   direction={"row"}
@@ -500,7 +552,7 @@ export default function ProfessionalDashboard() {
                     sx={{
                       mb: 1,
                       letterSpacing: "-0.02em",
-                      fontSize: { xs: "2rem", md: "2.5rem" },
+                      ...heroTitleSx,
                     }}
                   >
                     CADER Project <span style={{ color: "#c7d2fe" }}>Hub</span>
@@ -535,7 +587,7 @@ export default function ProfessionalDashboard() {
                               letterSpacing: 1,
                             }}
                           >
-                            v0.1.1 is live
+                            v{APP_VERSION} is live
                           </Typography>
                         </Box>
                       </Box>
@@ -582,7 +634,7 @@ export default function ProfessionalDashboard() {
                             letterSpacing: 1,
                           }}
                         >
-                          v0.1.1 is live
+                          v{APP_VERSION} is live
                         </Typography>
                       </Box>
                     </Box>
@@ -1071,6 +1123,7 @@ export default function ProfessionalDashboard() {
 
         {/* Floating Action Button */}
         <Fab
+          aria-label="Select equipment"
           sx={{
             position: "fixed",
             bottom: 30,
@@ -1079,6 +1132,7 @@ export default function ProfessionalDashboard() {
             color: "white",
             width: 60,
             height: 60,
+            borderRadius: "14px",
             "&:hover": {
               bgcolor: HEADER_GRADIENT_START,
               transform: "scale(1.1)",
@@ -1092,6 +1146,7 @@ export default function ProfessionalDashboard() {
 
         {/* Support Action Button */}
         <IconButton
+          aria-label="Add ticket"
           onClick={() => handleOpen("help & support")}
           sx={{
             position: "fixed",
@@ -1101,6 +1156,7 @@ export default function ProfessionalDashboard() {
             border: `1px solid ${CARD_BORDER}`,
             color: PRIMARY_BRAND,
             p: 1.5,
+            borderRadius: "14px",
             boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
             "&:hover": { bgcolor: "#f8fafc" },
           }}

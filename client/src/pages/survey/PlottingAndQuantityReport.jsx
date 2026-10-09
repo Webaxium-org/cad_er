@@ -18,7 +18,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { MdArrowBackIosNew, MdDownload } from "react-icons/md";
+import { MdDownload, MdOutlineAssessment } from "react-icons/md";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
@@ -34,6 +34,7 @@ import html2canvas from "html2canvas";
 import Plotly from "plotly.js/dist/plotly";
 import ExportLoader from "../../components/ExportLoader";
 import SmallHeader from "../../components/SmallHeader";
+import PageHeroHeader from "../../components/PageHeroHeader";
 
 const LEVEL_ORDER = [
   "Initial Level",
@@ -84,6 +85,72 @@ const menuItems = [
     value: "pdf download",
   },
 ];
+
+const reportTableSx = {
+  minWidth: 780,
+  borderCollapse: "separate",
+  borderSpacing: 0,
+  "& .MuiTableCell-root": {
+    px: 1.5,
+    py: 1,
+    borderBottom: "1px solid #e5eaf3",
+    color: "#34436b",
+    fontVariantNumeric: "tabular-nums",
+    whiteSpace: "nowrap",
+  },
+  "& .report-data-row:hover": { bgcolor: "#f5f6ff" },
+  "& .report-data-row .MuiTableCell-root": { textAlign: "center" },
+  "& .report-section-row .MuiTableCell-root": {
+    bgcolor: "#eff0ff",
+    color: "#211bb5",
+    fontWeight: 800,
+    borderTop: "10px solid white",
+    borderBottom: 0,
+    py: 1.05,
+  },
+  "& .report-total-row .MuiTableCell-root": {
+    bgcolor: "#eff0ff",
+    color: "#211bb5",
+    fontWeight: 800,
+    borderTop: "1px solid #d6ddf4",
+    borderBottom: 0,
+    py: 1.15,
+  },
+  "& .report-total-row .report-total-value": {
+    bgcolor: "#dfdfff",
+    textAlign: "right",
+    fontWeight: 900,
+  },
+};
+
+const reportHeadSx = {
+  position: "sticky",
+  top: 0,
+  zIndex: 2,
+  "& .MuiTableCell-root": {
+    bgcolor: "#f0f2fa",
+    color: "#34436b",
+    fontWeight: 800,
+    fontSize: "0.78rem",
+    borderBottom: "1px solid #dce2f0",
+    borderRight: "1px solid #e4e8f2",
+    textAlign: "center",
+    whiteSpace: "normal",
+  },
+  "& tr:first-of-type .MuiTableCell-root[colspan]": {
+    bgcolor: "#dedfff",
+    color: "#211bb5",
+  },
+  "& tr:nth-of-type(2) .MuiTableCell-root": {
+    bgcolor: "#f0f1ff",
+    color: "#34436b",
+    fontSize: "0.73rem",
+  },
+};
+
+// Match the chart width used before the report card became full width.
+// The PDF exporter captures .pdf-chart-item elements from the page.
+const chartCaptureWidth = "calc(210mm - 32px)";
 
 const initialDetails = {
   initialEntry: "",
@@ -1412,47 +1479,37 @@ const PlottingAndQuantityReport = () => {
   }, []);
 
   return (
-    <>
+    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 8 }}>
     <SmallHeader />
-    <Box p={2} sx={{ maxWidth: '210mm', margin: '0 auto' }}>
+    <PageHeroHeader
+      icon={MdOutlineAssessment}
+      title="Plotting and Quantity Report"
+      subtitle="Review field readings, quantities, sections, and plots."
+      action={
+        <BasicMenu
+          label={<BsThreeDots />}
+          items={menuItems}
+          onSelect={handleMenuSelect}
+          sx={{
+            width: 44,
+            height: 44,
+            minWidth: 44,
+            p: 1,
+            color: "white",
+            borderColor: "rgba(255, 255, 255, 0.45)",
+            bgcolor: "rgba(255, 255, 255, 0.16)",
+            "&:hover": { bgcolor: "rgba(255, 255, 255, 0.26)", borderColor: "white" },
+          }}
+        />
+      }
+    />
+    <Box sx={{ px: 0.875, py: 2, mx: 1, mt: -8, position: "relative", bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "20px", background: "linear-gradient(to right, #6366f1 0 6px, #ffffff 6px)" }}>
       <ExportLoader
         open={loading}
         progress={progress?.percent}
         progressMessage={progress?.message}
         estimatedTimeLeft={progress?.estimatedTimeLeft}
       />
-      <Stack
-        direction={"row"}
-        justifyContent={"space-between"}
-        spacing={2}
-        mb={2}
-      >
-        <Box
-          sx={{
-            border: "1px solid #EFEFEF",
-            borderRadius: "9px",
-            width: "40px",
-            height: "40px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
-            mb: "24px",
-          }}
-          onClick={() => navigate(-1)}
-        >
-          <MdArrowBackIosNew />
-        </Box>
-
-        <Box textAlign={"end"}>
-          <BasicMenu
-            label={<BsThreeDots />}
-            items={menuItems}
-            onSelect={handleMenuSelect}
-            sx={{ minWidth: "fit-content", p: 1 }}
-          />
-        </Box>
-      </Stack>
 
       {/* Premium Official Field Book Header Section */}
       <Paper
@@ -1461,11 +1518,10 @@ const PlottingAndQuantityReport = () => {
           p: { xs: 2, sm: 4 },
           mb: 4,
           backgroundColor: "#ffffff",
-          borderRadius: "8px",
+          borderRadius: "20px",
           border: "1px solid #e2e8f0",
           fontFamily: "'Outfit', 'Inter', sans-serif",
-          boxShadow:
-            "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)",
+          boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)",
           "@media print": {
             border: "none",
             boxShadow: "none",
@@ -1579,9 +1635,9 @@ const PlottingAndQuantityReport = () => {
           <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b", textAlign: "center", mb: 2 }}>
             QUANTITY STATEMENT / ABSTRACT
           </Typography>
-          <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e2e8f0" }}>
-            <Table size="small">
-              <TableHead sx={{ backgroundColor: "#f8fafc" }}>
+          <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e2e8f0", borderRadius: "12px" }}>
+            <Table size="small" sx={{ "& .MuiTableCell-root": { px: 1.5, py: 1.25, color: "#34436b", borderBottom: "1px solid #e5eaf3" } }}>
+              <TableHead sx={{ "& .MuiTableCell-root": { bgcolor: "#f0f2fa", color: "#34436b", fontWeight: 800 } }}>
                 <TableRow>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>SL. No.</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>Page No.</TableCell>
@@ -1632,92 +1688,79 @@ const PlottingAndQuantityReport = () => {
         </Box>
       </Paper>
 
-      <TableContainer component={Paper} sx={{ mt: 2 }}>
+      <TableContainer component={Paper} sx={{ mt: 2, border: "1px solid #e2e8f0", borderRadius: "16px", boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)" }}>
         <FieldBookTable
           tableData={fieldBookData}
           isEditing={false}
           onFieldChange={() => {}}
           onRLChange={() => {}}
+          themed
         />
       </TableContainer>
 
       <Typography
         variant="h6"
-        fontSize={18}
-        fontWeight={700}
-        align="center"
-        mt={4}
-        mb={2}
+        sx={{ mt: 4, mb: 2, px: 2, py: 2, bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "16px", color: "#1e293b", fontWeight: 800 }}
       >
-        Volume Report {reportDetails.current.initialEntry} and
+        Volume Report {reportDetails.current.initialEntry} and{" "}
         {reportDetails.current.secondaryEntry}
       </Typography>
 
-      <TableContainer component={Paper} sx={{ maxHeight: "90vh" }}>
-        <Table sx={{ minWidth: 650 }} size="small">
-          <TableHead
-            sx={{
-              backgroundColor: "#f4f6f8",
-              "& .MuiTableCell-root": {
-                border: "1px solid rgba(224, 224, 224, 1)",
-                fontWeight: 700,
-              },
-              position: "sticky",
-              top: 0,
-            }}
-          >
+      <TableContainer component={Paper} sx={{ maxHeight: "min(75vh, 760px)", border: "1px solid #e2e8f0", borderRadius: "16px", boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)" }}>
+        <Table sx={{ ...reportTableSx, minWidth: showArea?.cutting && showArea?.filling ? 1250 : 860 }} size="small">
+          <TableHead sx={reportHeadSx}>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                Sl.No.
+                No.
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                Section From
+                Section from
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                Previous Section
+                Previous section
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                Difference
+                Difference (m)
               </TableCell>
               <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                Width
+                Width (m)
               </TableCell>
 
               {showArea?.cutting && (
                 <TableCell sx={{ fontWeight: 700 }} colSpan={4} align="center">
-                  Cutting Volume
+                  Cutting volume
                 </TableCell>
               )}
 
               {showArea?.filling && (
                 <TableCell sx={{ fontWeight: 700 }} colSpan={4} align="center">
-                  Filling Volume
+                  Filling volume
                 </TableCell>
               )}
             </TableRow>
             <TableRow>
               {showArea?.cutting && (
                 <>
-                  <TableCell sx={{ fontWeight: 700 }}>Area Sq. Mtrs</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Previous Area</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Area (m²)</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Previous area (m²)</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>
-                    Average Sq. Mtrs
+                    Average (m²)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>
-                    Volume Cubic Meters
+                    Volume (m³)
                   </TableCell>
                 </>
               )}
 
               {showArea?.filling && (
                 <>
-                  <TableCell sx={{ fontWeight: 700 }}>Area Sq. Mtrs</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Previous Area</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Area (m²)</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Previous area (m²)</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>
-                    Average Sq. Mtrs
+                    Average (m²)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>
-                    Volume Cubic Meters
+                    Volume (m³)
                   </TableCell>
                 </>
               )}
@@ -1728,17 +1771,17 @@ const PlottingAndQuantityReport = () => {
             {tableData?.rows?.map((row, index) => (
               <React.Fragment key={index}>
                 {row.isDeductionRow && (
-                  <TableRow>
-                    <TableCell colSpan={13}>{row.deductionMessage}</TableCell>
+                  <TableRow className="report-section-row">
+                    <TableCell colSpan={5 + (showArea?.cutting ? 4 : 0) + (showArea?.filling ? 4 : 0)}>{row.deductionMessage}</TableCell>
                   </TableRow>
                 )}
                 {row.isBreak && (
-                  <TableRow>
-                    <TableCell colSpan={13}>{row.message}</TableCell>
+                  <TableRow className="report-section-row">
+                    <TableCell colSpan={5 + (showArea?.cutting ? 4 : 0) + (showArea?.filling ? 4 : 0)}>{row.message}</TableCell>
                   </TableRow>
                 )}
 
-                <TableRow>
+                <TableRow className="report-data-row">
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{row.section}</TableCell>
                   <TableCell>{row.prevSection}</TableCell>
@@ -1764,15 +1807,12 @@ const PlottingAndQuantityReport = () => {
               </React.Fragment>
             ))}
 
-            <TableRow>
-              <TableCell colSpan={5}></TableCell>
-
-              <TableCell sx={{ fontWeight: "bold" }}>Total</TableCell>
+            <TableRow className="report-total-row">
+              <TableCell colSpan={showArea?.cutting ? 8 : 5}>Total volume</TableCell>
 
               {showArea?.cutting && (
                 <>
-                  <TableCell colSpan={2}></TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>
+                  <TableCell className="report-total-value">
                     {Number(tableData?.totalCuttingVolume)?.toFixed(3)}
                   </TableCell>
                 </>
@@ -1780,9 +1820,9 @@ const PlottingAndQuantityReport = () => {
 
               {showArea?.filling && (
                 <>
-                  <TableCell colSpan={showArea?.cutting ? 3 : 2}></TableCell>
+                  <TableCell colSpan={3}></TableCell>
 
-                  <TableCell sx={{ fontWeight: "bold" }}>
+                  <TableCell className="report-total-value">
                     {Number(tableData?.totalFillingVolume)?.toFixed(3)}
                   </TableCell>
                 </>
@@ -1795,41 +1835,28 @@ const PlottingAndQuantityReport = () => {
       <Box id="area-report" mt={4}>
         <Typography
           variant="h6"
-          fontSize={18}
-          fontWeight={700}
-          align="center"
-          mb={2}
+          sx={{ mb: 2, px: 2, py: 2, bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "16px", color: "#1e293b", fontWeight: 800 }}
         >
-          Area Report Between {reportDetails.current.initialEntry} and
+          Area Report Between {reportDetails.current.initialEntry} and{" "}
           {reportDetails.current.secondaryEntry}
         </Typography>
 
         {tableData?.areaReport?.length > 0 ? (
-          <TableContainer component={Paper} sx={{ maxHeight: "90vh" }}>
-            <Table sx={{ minWidth: 650 }} size="small">
-              <TableHead
-                sx={{
-                  backgroundColor: "#f4f6f8",
-                  "& .MuiTableCell-root": {
-                    border: "1px solid rgba(224, 224, 224, 1)",
-                    fontWeight: 700,
-                  },
-                  position: "sticky",
-                  top: 0,
-                }}
-              >
+          <TableContainer component={Paper} sx={{ maxHeight: "min(75vh, 760px)", border: "1px solid #e2e8f0", borderRadius: "16px", boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)" }}>
+            <Table sx={{ ...reportTableSx, minWidth: showArea?.cutting && showArea?.filling ? 1180 : 800 }} size="small">
+              <TableHead sx={reportHeadSx}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                    Sl.No.
+                    No.
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                    Distance Meters
+                    Distance (m)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                    {reportDetails?.current?.initialEntry || ""} Meters
+                    {reportDetails?.current?.initialEntry || "Initial level"} (m)
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} rowSpan={2}>
-                    {reportDetails?.current?.secondaryEntry || ""} Meters
+                    {reportDetails?.current?.secondaryEntry || "Proposed level"} (m)
                   </TableCell>
                   {showArea?.cutting && (
                     <TableCell
@@ -1837,7 +1864,7 @@ const PlottingAndQuantityReport = () => {
                       colSpan={4}
                       align="center"
                     >
-                      Cutting Area
+                      Cutting area
                     </TableCell>
                   )}
                   {showArea?.filling && (
@@ -1846,7 +1873,7 @@ const PlottingAndQuantityReport = () => {
                       colSpan={4}
                       align="center"
                     >
-                      Filling Area
+                      Filling area
                     </TableCell>
                   )}
                 </TableRow>
@@ -1854,14 +1881,14 @@ const PlottingAndQuantityReport = () => {
                   {showArea?.cutting && (
                     <>
                       <TableCell sx={{ fontWeight: 700 }}>
-                        Cutting Meters
+                        Cut depth (m)
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Avg Meters</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Average (m)</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>
-                        Width Meters
+                        Width (m)
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>
-                        Area Sq. Mtrs
+                        Area (m²)
                       </TableCell>
                     </>
                   )}
@@ -1869,14 +1896,14 @@ const PlottingAndQuantityReport = () => {
                   {showArea?.filling && (
                     <>
                       <TableCell sx={{ fontWeight: 700 }}>
-                        Filling Meters
+                        Fill depth (m)
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Avg Meters</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Average (m)</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>
-                        Width Meters
+                        Width (m)
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>
-                        Area Sq. Mtrs
+                        Area (m²)
                       </TableCell>
                     </>
                   )}
@@ -1887,22 +1914,24 @@ const PlottingAndQuantityReport = () => {
                 {tableData?.areaReport.map((row, index) => (
                   <Fragment key={index}>
                     {row.type === "Break" ? (
-                      <TableRow>
-                        <TableCell colSpan={12} sx={{ fontWeight: "bold" }}>{row.message}</TableCell>
+                      <TableRow className="report-section-row">
+                        <TableCell colSpan={4 + (showArea?.cutting ? 4 : 0) + (showArea?.filling ? 4 : 0)}>{row.message}</TableCell>
                       </TableRow>
                     ) : (
                     <>
-                    <TableRow>
-                      <TableCell colSpan={12} sx={{ fontWeight: "bold" }}>
-                        Section: {row.section}
+                    <TableRow className="report-section-row">
+                      <TableCell colSpan={4 + (showArea?.cutting ? 4 : 0) + (showArea?.filling ? 4 : 0)}>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Box>Section {row.section}</Box>
+                          <Typography variant="caption" sx={{ color: "#687594", fontWeight: 500 }}>
+                            {row?.data?.length || 0} measurements
+                          </Typography>
+                        </Stack>
                       </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={12} sx={{ py: 1.8 }}></TableCell>
                     </TableRow>
 
                     {row?.data?.map((entry, idx) => (
-                      <TableRow key={`${index}-${idx}`}>
+                      <TableRow className="report-data-row" key={`${index}-${idx}`}>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>{entry.offset}</TableCell>
                         <TableCell>{entry.initialEntryRL}</TableCell>
@@ -1928,23 +1957,19 @@ const PlottingAndQuantityReport = () => {
                       </TableRow>
                     ))}
 
-                    <TableRow>
-                      <TableCell colSpan={4}></TableCell>
-                      <TableCell sx={{ fontWeight: "bold" }}>Total</TableCell>
+                    <TableRow className="report-total-row">
+                      <TableCell colSpan={showArea?.cutting ? 7 : 4}>Section total</TableCell>
                       {showArea?.cutting && (
                         <>
-                          <TableCell colSpan={2}></TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>
+                          <TableCell className="report-total-value">
                             {Number(row?.totalCuttingAreaSqMtr)?.toFixed(3)}
                           </TableCell>
                         </>
                       )}
                       {showArea?.filling && (
                         <>
-                          <TableCell
-                            colSpan={showArea?.cutting ? 3 : 2}
-                          ></TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>
+                          <TableCell colSpan={3}></TableCell>
+                          <TableCell className="report-total-value">
                             {Number(row?.totalFillingAreaSqMtr)?.toFixed(3)}
                           </TableCell>
                         </>
@@ -1968,6 +1993,9 @@ const PlottingAndQuantityReport = () => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          width: "100%",
+          maxWidth: chartCaptureWidth,
+          mx: "auto",
         }}
         mt={2}
       >
@@ -2001,6 +2029,8 @@ const PlottingAndQuantityReport = () => {
           alignItems: "center",
           width: "100%",
           minWidth: 0,
+          maxWidth: chartCaptureWidth,
+          mx: "auto",
         }}
         mt={2}
       >
@@ -2015,7 +2045,7 @@ const PlottingAndQuantityReport = () => {
           ))}
       </Box>
     </Box>
-    </>
+    </Box>
   );
 };
 
