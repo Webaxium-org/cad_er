@@ -1688,6 +1688,13 @@ const PlottingAndQuantityReport = () => {
         </Box>
       </Paper>
 
+      <Typography
+        variant="h6"
+        sx={{ mt: 4, mb: 2, px: 2, py: 2, bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "16px", color: "#1e293b", fontWeight: 800 }}
+      >
+        Field Book {reportDetails.current.initialEntry}
+      </Typography>
+
       <TableContainer component={Paper} sx={{ mt: 2, border: "1px solid #e2e8f0", borderRadius: "16px", boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)" }}>
         <FieldBookTable
           tableData={fieldBookData}
