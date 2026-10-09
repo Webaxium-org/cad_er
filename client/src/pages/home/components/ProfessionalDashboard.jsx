@@ -510,8 +510,8 @@ export default function ProfessionalDashboard() {
           ref={heroRef}
           sx={{
             background: `linear-gradient(135deg, ${HEADER_GRADIENT_START} 0%, ${HEADER_GRADIENT_END} 100%)`,
-            pt: 10,
-            pb: 10,
+            pt: { xs: 3, md: 10 },
+            pb: { xs: 5, md: 10 },
             color: "white",
             borderRadius: "0 0 20px 20px",
             boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)",
