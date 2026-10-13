@@ -41,11 +41,8 @@ import AlertDialogSlide from "../../components/AlertDialogSlide";
 import StyledTextLink from "../../components/StyledTextLink";
 import { showAlert } from "../../redux/alertSlice";
 
-import { VscGraphLine } from "react-icons/vsc";
-import { SlGraph } from "react-icons/sl";
-import { BiSolidReport } from "react-icons/bi";
 import { HiOutlineDocumentReport } from "react-icons/hi";
-import { FaFileExport } from "react-icons/fa6";
+import { FiTrendingUp, FiActivity, FiFileText, FiBarChart2, FiShare } from "react-icons/fi";
 
 const Report = () => {
   const { id } = useParams();
@@ -313,27 +310,27 @@ const Report = () => {
             {
               label: "CS",
               value: "cross",
-              icon: <VscGraphLine fontSize="20px" />,
+              icon: <FiTrendingUp />,
             },
             {
               label: "LS",
               value: "longitudinal",
-              icon: <SlGraph fontSize="20px" />,
+              icon: <FiActivity />,
             },
             {
               label: "Area",
               value: "area",
-              icon: <BiSolidReport fontSize="20px" />,
+              icon: <FiFileText />,
             },
             {
               label: "Volume",
               value: "volume",
-              icon: <HiOutlineDocumentReport fontSize="20px" />,
+              icon: <FiBarChart2 />,
             },
             {
               label: "Export",
               value: "batch-plotting",
-              icon: <FaFileExport fontSize="20px" />,
+              icon: <FiShare />,
             },
           ].map((type, i) => (
             <Box

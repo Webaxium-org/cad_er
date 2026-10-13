@@ -53,10 +53,8 @@ import AddBranch from "./components/AddBranch";
 import EnterBranch from "./components/EnterBranch";
 import ObservationNotes from "./components/ObservationNotes";
 import AddBreak from "./components/AddBreak";
-import { GiCrossroad } from "react-icons/gi";
-import { PiRoadHorizonFill } from "react-icons/pi";
-import { MdAddRoad } from "react-icons/md";
-import { FaLocationArrow, FaWater } from "react-icons/fa";
+import { FaLocationArrow } from "react-icons/fa";
+import { FiMapPin, FiDroplet, FiGitMerge, FiLayers, FiNavigation } from "react-icons/fi";
 import { GrSafariOption } from "react-icons/gr";
 const colors = {
   Initial: "green",
@@ -2425,7 +2423,7 @@ const RoadSurveyRowsForm = () => {
                       {
                         label: "CH",
                         value: "Chainage",
-                        icon: <MdAddRoad fontSize="20px" />,
+                        icon: <FiMapPin />,
                         onClick: () => handleChangeRowType("Chainage"),
                       },
                       ...(isWaterWay
@@ -2433,7 +2431,7 @@ const RoadSurveyRowsForm = () => {
                             {
                               label: "WL",
                               value: "Water Level",
-                              icon: <FaWater fontSize="20px" />,
+                              icon: <FiDroplet />,
                               onClick: () => handleChangeRowType("Water Level"),
                             },
                           ]
@@ -2441,19 +2439,19 @@ const RoadSurveyRowsForm = () => {
                       {
                         label: "CP",
                         value: "CP",
-                        icon: <GiCrossroad fontSize="20px" />,
+                        icon: <FiGitMerge />,
                         onClick: () => handleChangeRowType("CP"),
                       },
                       {
                         label: "TBM",
                         value: "TBM",
-                        icon: <PiRoadHorizonFill fontSize="20px" />,
+                        icon: <FiLayers />,
                         onClick: () => handleChangeRowType("TBM"),
                       },
                       {
                         label: "NEXT",
                         value: "",
-                        icon: <FaLocationArrow fontSize="20px" />,
+                        icon: <FiNavigation />,
                         onClick: () => handleSubmit(),
                       },
                       // {

@@ -12,9 +12,9 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { MdArrowBackIosNew, MdOutlineGridView, MdOutlineTableRows } from "react-icons/md";
+import { MdArrowBackIosNew, MdOutlineGridView } from "react-icons/md";
 import { FaLocationArrow } from "react-icons/fa";
-import { TbTemplate } from "react-icons/tb";
+import { FiGrid, FiList, FiLayout } from "react-icons/fi";
 import { IoAdd } from "react-icons/io5";
 import { IoIosRemove } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
@@ -220,17 +220,17 @@ const islandOptions = [
   {
     label: "CS",
     value: "cs",
-    icon: <MdOutlineGridView fontSize="20px" />,
+    icon: <FiGrid />,
   },
   {
     label: "LS",
     value: "ls",
-    icon: <MdOutlineTableRows fontSize="20px" />,
+    icon: <FiList />,
   },
   {
     label: "TEMPLATES",
     value: "templates",
-    icon: <TbTemplate fontSize="20px" />,
+    icon: <FiLayout />,
   },
 ];
 

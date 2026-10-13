@@ -39,10 +39,8 @@ import AlertDialogSlide from "../../components/AlertDialogSlide";
 import AdvancedAutoComplete from "../../components/AdvancedAutoComplete";
 import SmallHeader from "../../components/SmallHeader";
 import { getSettings, updateInstrument, updateSettingsFields } from "../../services/settingsServices";
-import { CgGoogleTasks } from "react-icons/cg";
-import { FaLocationArrow } from "react-icons/fa";
-import { IoIosArrowBack } from "react-icons/io";
 import { FiFilePlus } from "react-icons/fi";
+import { FiCheckSquare, FiNavigation, FiArrowLeft, FiSend } from "react-icons/fi";
 
 const commissioningFields = {
   publicProject: {
@@ -1410,13 +1408,13 @@ const RoadSurveyForm = () => {
                     {[
                       {
                         label: "QUEUE",
-                        icon: <CgGoogleTasks fontSize="20px" />,
+                        icon: <FiCheckSquare />,
                         onClick: handleOpenQueue,
                         queue: true,
                       },
                       {
                         label: "NEXT",
-                        icon: <FaLocationArrow fontSize="20px" />,
+                        icon: <FiNavigation />,
                         onClick: handleNext,
                       },
                     ].map((btn, i) => (
@@ -1435,13 +1433,13 @@ const RoadSurveyForm = () => {
                     {[
                       {
                         label: "BACK",
-                        icon: <IoIosArrowBack fontSize="20px" />,
+                        icon: <FiArrowLeft />,
                         onClick: handleBack,
                         muted: true,
                       },
                       {
                         label: btnLoading ? "..." : "SUBMIT",
-                        icon: <FaLocationArrow fontSize="20px" />,
+                        icon: <FiSend />,
                         onClick: handleSubmit,
                       },
                     ].map((btn, i) => (

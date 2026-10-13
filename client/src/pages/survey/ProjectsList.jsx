@@ -30,8 +30,6 @@ import AlertDialogSlide from "../../components/AlertDialogSlide";
 import { showAlert } from "../../redux/alertSlice";
 import BasicButton from "../../components/BasicButton";
 import SmallHeader from "../../components/SmallHeader";
-import { CgGoogleTasks } from "react-icons/cg";
-import { GoClock } from "react-icons/go";
 import {
   FiBookOpen,
   FiFileText,
@@ -43,6 +41,9 @@ import {
   FiLayers,
   FiFilter,
   FiCheck,
+  FiCheckSquare,
+  FiClock,
+  FiCheckCircle,
 } from "react-icons/fi";
 import { SiGooglecalendar } from "react-icons/si";
 import { PiMicrosoftOutlookLogoFill } from "react-icons/pi";
@@ -1763,33 +1764,19 @@ export default function ProjectsList() {
             {
               label: "QUEUED",
               value: "queue",
-              icon: <CgGoogleTasks fontSize="20px" />,
+              icon: <FiCheckSquare />,
               onClick: () => handleChange("queue"),
             },
             {
               label: "UNDERWAY",
               value: "in_progress",
-              icon: <GoClock fontSize="20px" />,
+              icon: <FiClock />,
               onClick: () => handleChange("in_progress"),
             },
             {
               label: "WRAPPED",
               value: "wrapped",
-              icon: (
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-              ),
+              icon: <FiCheckCircle />,
               onClick: () => handleChange("wrapped"),
             },
           ].map((type, i) => (
