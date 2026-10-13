@@ -196,9 +196,9 @@ const CrossSectionReport = () => {
     if (!selectedCs) return;
     try {
       const plot = pdfRef.current?.querySelector(".js-plotly-plot");
-      const { image, width, height } = await capturePlotImage(plot);
+      const { image, width, height, plotArea } = await capturePlotImage(plot);
       const pdf = createGraphPdf();
-      addGraphPage(pdf, image, selectedCs, drawingScales, width, height);
+      addGraphPage(pdf, image, selectedCs, drawingScales, width, height, undefined, plotArea);
 
       pdf.save("cross-section.pdf");
     } catch (error) {
@@ -451,9 +451,9 @@ const CrossSectionReport = () => {
             },
           };
           await Plotly.newPlot(plotNode, traces, layout, { displayModeBar: false, staticPlot: true });
-          const image = await Plotly.toImage(plotNode, { format: "jpeg", width: graphWidth, height: graphHeight, scale: 2 });
+          const { image, plotArea } = await capturePlotImage(plotNode);
           if (renderedCount > 0) pdf.addPage();
-          addGraphPage(pdf, image, section, drawingScales, graphWidth, graphHeight);
+          addGraphPage(pdf, image, section, drawingScales, graphWidth, graphHeight, undefined, plotArea);
           renderedCount++;
           setProgress({ percent: Math.round((index + 1) / allFormattedData.length * 100), message: `Rendering chainage ${index + 1} of ${allFormattedData.length}`, estimatedTimeLeft: null });
           await new Promise((resolve) => requestAnimationFrame(resolve));

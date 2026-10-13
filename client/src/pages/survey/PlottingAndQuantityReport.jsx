@@ -733,7 +733,7 @@ const exportPdf = async ({
       });
 
       const labels = [
-        { label: "TITLE :", value: "ROAD 2 AB SALEM ROAD" },
+        { label: "TITLE :", value: String(surveyInfo?.project || "-") },
         { label: "PROJECT NAME", value: String(surveyInfo?.project || "-") },
         { label: "CLIENT", value: String(surveyInfo?.client || "-") },
         { label: "CONSULTANT", value: String(surveyInfo?.consultant || "-") },
@@ -794,9 +794,8 @@ const exportPdf = async ({
       );
 
       const availableLeft = chartPageMargin;
-      const hasProjectDetails = surveyInfo?.projectType !== "None";
-      const tableWidth = hasProjectDetails ? infoBoxHeight : 0;
-      const availableRight = pageTotalWidth - chartPageMargin - tableWidth - (hasProjectDetails ? chartGap : 0);
+      const tableWidth = infoBoxHeight;
+      const availableRight = pageTotalWidth - chartPageMargin - tableWidth - chartGap;
       const availableWidth = availableRight - availableLeft;
 
       let imgWidth = availableWidth - 2;
@@ -822,7 +821,7 @@ const exportPdf = async ({
         "FAST",
       );
 
-      if (hasProjectDetails) drawGraphInfoSection(availableTop, availableBottom);
+      drawGraphInfoSection(availableTop, availableBottom);
 
       // Cleanup to free memory
       canvas.width = 0;
