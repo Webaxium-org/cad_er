@@ -967,7 +967,7 @@ const AreaReport = () => {
       <PageHeroHeader
         icon={MdOutlineAssessment}
         title="Area Report"
-        subtitle="Review section measurements and area calculations."
+        subtitle="View section areas."
         action={
           <BasicMenu
             label={<BsThreeDots />}
@@ -993,8 +993,7 @@ const AreaReport = () => {
           variant="h6"
           sx={{ px: { xs: 2, sm: 3 }, py: 2.5, fontWeight: 800, color: "#1e293b", borderBottom: "1px solid #e2e8f0" }}
         >
-          Area Report Between {reportDetails.current.initialEntry} and{" "}
-          {reportDetails.current.secondaryEntry}
+          {reportDetails.current.initialEntry} &amp; {reportDetails.current.secondaryEntry}
         </Typography>
 
         {tableData?.length > 0 ? (

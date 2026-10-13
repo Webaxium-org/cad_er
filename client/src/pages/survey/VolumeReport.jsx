@@ -1203,7 +1203,7 @@ const VolumeReport = () => {
       <PageHeroHeader
         icon={MdOutlineAssessment}
         title="Volume Report"
-        subtitle="Review section quantities and volume calculations."
+        subtitle="View section volumes."
         action={
           <BasicMenu
             label={<BsThreeDots />}
@@ -1230,8 +1230,7 @@ const VolumeReport = () => {
       </Typography>}
       <Box sx={{ bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "20px", boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)", overflow: "hidden" }}>
       <Typography variant="h6" sx={{ px: { xs: 2, sm: 3 }, py: 2.5, fontWeight: 800, color: "#1e293b", borderBottom: "1px solid #e2e8f0" }}>
-        Volume Report Between {reportDetails.current.initialEntry} and{" "}
-        {reportDetails.current.secondaryEntry}
+        {reportDetails.current.initialEntry} &amp; {reportDetails.current.secondaryEntry}
       </Typography>
       <TableContainer component={Paper} elevation={0} sx={{ maxHeight: "min(75vh, 760px)", borderRadius: 0, overflowX: "auto", px: 0.5 }}>
         <Table size="small" sx={{

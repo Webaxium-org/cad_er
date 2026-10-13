@@ -42,7 +42,7 @@ import StyledTextLink from "../../components/StyledTextLink";
 import { showAlert } from "../../redux/alertSlice";
 
 import { HiOutlineDocumentReport } from "react-icons/hi";
-import { FiTrendingUp, FiFileText, FiBarChart2, FiShare } from "react-icons/fi";
+import { FiTrendingUp, FiFileText, FiBarChart2, FiShare, FiMinusCircle } from "react-icons/fi";
 import { SlGraph } from "react-icons/sl";
 
 const Report = () => {
@@ -496,35 +496,6 @@ const Report = () => {
                   </Box>
                 )}
 
-                <Activity
-                  mode={
-                    survey &&
-                    reportType === "volume" &&
-                    selectedPurposes.length === 2
-                      ? "visible"
-                      : "hidden"
-                  }
-                >
-                  <Box display={"flex"} justifyContent={"center"}>
-                    <BasicButton
-                      value={"DEDUCTION"}
-                      variant="outlined"
-                      sx={{
-                        fontSize: "12px",
-                        padding: "5.6px 11px",
-                        minWidth: "200px",
-                        color: "#4f46e5",
-                        borderColor: "#6366f1",
-                        "&:hover": {
-                          bgcolor: "rgba(99, 102, 241, 0.08)",
-                          borderColor: "#4f46e5",
-                        },
-                      }}
-                      onClick={handleOpen}
-                    />
-                  </Box>
-                </Activity>
-
                 <Activity mode={survey ? "visible" : "hidden"}>
                   <TableContainer
                     component={Box}
@@ -654,6 +625,37 @@ const Report = () => {
                     mode={selectedPurposes.length > 0 ? "visible" : "hidden"}
                   >
                     <Box mt={4}>
+                      <Activity
+                        mode={
+                          reportType === "volume" && selectedPurposes.length === 2
+                            ? "visible"
+                            : "hidden"
+                        }
+                      >
+                        <Box display="flex" justifyContent="flex-start" mb={2}>
+                          <BasicButton
+                            value={
+                              <Stack direction="row" alignItems="center" spacing={0.75}>
+                                <FiMinusCircle size={16} />
+                                <span>DEDUCTION</span>
+                              </Stack>
+                            }
+                            variant="outlined"
+                            sx={{
+                              fontSize: "12px",
+                              padding: "5.6px 11px",
+                              minWidth: "200px",
+                              color: "#4f46e5",
+                              borderColor: "#6366f1",
+                              "&:hover": {
+                                bgcolor: "rgba(99, 102, 241, 0.08)",
+                                borderColor: "#4f46e5",
+                              },
+                            }}
+                            onClick={handleOpen}
+                          />
+                        </Box>
+                      </Activity>
                       <Typography
                         variant="subtitle1"
                         fontWeight="bold"

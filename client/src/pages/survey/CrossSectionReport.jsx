@@ -890,7 +890,7 @@ const CrossSectionReport = () => {
       <PageHeroHeader
         icon={MdOutlineAssessment}
         title="Cross Section Report"
-        subtitle={selectedCs?.chainage ? `Chainage ${selectedCs.chainage}` : "Select a chainage below"}
+        subtitle="View survey levels and offsets at each chainage."
         action={
           <BasicMenu
             label={<BsThreeDots />}
@@ -945,7 +945,9 @@ const CrossSectionReport = () => {
             <Box sx={{ width: "100%", p: { xs: 2, md: 3 }, border: "1px solid #e2e8f0", borderRadius: "20px", bgcolor: "#fff" }}>
               <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
                 <Box textAlign="left">
-                  <Typography variant="h6" sx={{ color: "#1e293b", fontWeight: 800 }}>Cross section profile</Typography>
+                  <Typography variant="h6" sx={{ color: "#1e293b", fontWeight: 800 }}>
+                    {selectedCs?.chainage != null ? `Chainage ${selectedCs.chainage}` : "Select a chainage"}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary">View and adjust the drawing scale</Typography>
                 </Box>
                 <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
