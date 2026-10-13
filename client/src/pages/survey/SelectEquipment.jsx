@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { stopLoading } from "../../redux/loadingSlice";
 import { useEffect, useRef, useState } from "react";
 import BasicButton from "../../components/BasicButton";
-import { capsuleShellSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleShellSx } from "../../components/bottomIslandStyles";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import { GoAlert } from "react-icons/go";
 import { IoCheckmarkCircle } from "react-icons/io5";
@@ -372,15 +372,13 @@ const SelectEquipment = () => {
             <BasicButton
               value={
                 <Stack
-                  direction="row"
-                  spacing={1.5}
-                  alignItems="center"
-                  justifyContent="center"
+                  direction="column"
+                  sx={islandButtonContentSx(1, "NEXT", 17)}
                 >
                   <FaLocationArrow fontSize="22px" />
                   <Typography
                     fontSize="1.1rem"
-                    fontWeight={900}
+                    fontWeight={600}
                     letterSpacing="0.05em"
                   >
                     NEXT
@@ -391,7 +389,8 @@ const SelectEquipment = () => {
                 background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
                 color: "white",
                 height: capsuleShellSx.height,
-                borderRadius: "24px",
+                borderRadius: ISLAND_BUTTON_RADIUS,
+                containerType: "inline-size",
                 border: "none",
                 boxShadow: "0 15px 35px -5px rgba(99, 102, 241, 0.5)",
                 transition: "all 0.3s ease",

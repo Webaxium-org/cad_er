@@ -37,7 +37,7 @@ import {
 import BigHeader from "../../components/BigHeader";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import BasicButton from "../../components/BasicButton";
-import { capsuleShellSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleShellSx } from "../../components/bottomIslandStyles";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import { getSettings, saveSettings } from "../../services/settingsServices";
 
@@ -999,10 +999,8 @@ export default function Settings() {
               form="settings-form"
               value={
                 <Stack
-                  direction="row"
-                  spacing={1.5}
-                  alignItems="center"
-                  justifyContent="center"
+                  direction="column"
+                  sx={islandButtonContentSx(1, "SAVE CONFIGURATION", 17)}
                 >
                   {saving ? (
                     <CircularProgress size={22} color="inherit" />
@@ -1011,7 +1009,7 @@ export default function Settings() {
                   )}
                   <Typography
                     fontSize="1.1rem"
-                    fontWeight={900}
+                    fontWeight={600}
                     letterSpacing="0.05em"
                   >
                     SAVE CONFIGURATION
@@ -1021,8 +1019,9 @@ export default function Settings() {
               sx={{
                 background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
                 color: "white",
-                 height: capsuleShellSx.height,
-                borderRadius: "24px",
+                height: capsuleShellSx.height,
+                borderRadius: ISLAND_BUTTON_RADIUS,
+                containerType: "inline-size",
                 border: "none",
                 boxShadow: "0 15px 35px -5px rgba(99, 102, 241, 0.5)",
                 transition: "all 0.3s ease",

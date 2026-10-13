@@ -1,5 +1,6 @@
 import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
-import { addGraphPage, capturePlotImage, createGraphPdf } from "../../utils/graphPdf";
+import { createLongitudinalPdf } from "../../utils/longitudinalPdf";
+import ExportLoader from "../../components/ExportLoader";
 import SectionScaleInputs from "./components/SectionScaleInputs";
 import { profilePoints, profileLevel, chainageValue } from "../../utils/surveyGeometry";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,7 +9,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { handleFormError } from "../../utils/handleFormError";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import { getSurvey } from "../../services/surveyServices";
-import { Box, Stack, Typography, Paper } from "@mui/material";
+import { Box, Stack, Typography, Paper, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import CrossSectionChart from "./components/CrossSectionChart";
 import { v1ChartOptions, v2ChartOptions } from "../../constants";
 import BasicMenu from "../../components/BasicMenu";
@@ -78,6 +79,11 @@ const LongitudinalSectionReport = () => {
 
   const [selectedCs, setSelectedCs] = useState(null);
   const [drawingScales, setDrawingScales] = useState({ horizontal: 2400, vertical: 300 });
+  const [pdfPageLength, setPdfPageLength] = useState(300);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const validPdfPageLength = Number.isFinite(Number(pdfPageLength)) && Number(pdfPageLength) > 0;
+  const [exportProgress, setExportProgress] = useState(null);
+  const exportingRef = useRef(false);
 
   const interactiveChartOptions = useMemo(() => ({
     ...chartOptions,
@@ -95,20 +101,26 @@ const LongitudinalSectionReport = () => {
   }), [chartOptions]);
 
   const downloadPDF = async () => {
-    if (!selectedCs) return;
+    if (!selectedCs || exportingRef.current || !validPdfPageLength) return;
+    setPdfDialogOpen(false);
+    exportingRef.current = true;
+    setExportProgress({ percent: 0, message: "Preparing longitudinal pages..." });
     try {
-      const plot = pdfRef.current?.querySelector(".js-plotly-plot");
-      const { image, width, height } = await capturePlotImage(plot);
-      const pdf = createGraphPdf();
-      addGraphPage(pdf, image, selectedCs, drawingScales, width, height, "LONGITUDINAL SECTION");
+      const pdf = await createLongitudinalPdf(selectedCs, drawingScales, chartOptions, pdfPageLength, setExportProgress);
       pdf.save("longitudinal-section.pdf");
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
+    } finally {
+      exportingRef.current = false;
+      setExportProgress(null);
     }
   };
 
   const handleMenuSelect = (item) => {
-    if (item.value === "download") return downloadPDF();
+    if (item.value === "download") {
+      if (selectedCs && !exportingRef.current) setPdfDialogOpen(true);
+      return;
+    }
 
     if (!selectedCs) return;
 
@@ -354,6 +366,33 @@ const LongitudinalSectionReport = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }}>
+      {exportProgress && <ExportLoader progress={exportProgress.percent} progressMessage={exportProgress.message} />}
+      <Dialog open={pdfDialogOpen} onClose={() => setPdfDialogOpen(false)} fullWidth maxWidth="xs" aria-labelledby="pdf-download-title">
+        <Box component="form" onSubmit={(event) => { event.preventDefault(); downloadPDF(); }}>
+          <DialogTitle id="pdf-download-title">Download longitudinal PDF</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              fullWidth
+              label="Range length per page (m)"
+              type="number"
+              size="small"
+              value={pdfPageLength}
+              onChange={(event) => setPdfPageLength(event.target.value)}
+              inputProps={{ min: 0, step: "any" }}
+              error={!validPdfPageLength}
+              helperText={validPdfPageLength
+                ? "Long profiles split automatically. Dense chainages may use shorter pages."
+                : "Enter a range length greater than zero."}
+              sx={{ mt: 1 }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setPdfDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={!validPdfPageLength} startIcon={<MdDownload />}>Download PDF</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
       <SmallHeader />
       <PageHeroHeader
         icon={MdOutlineAssessment}

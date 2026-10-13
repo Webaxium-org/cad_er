@@ -13,7 +13,7 @@ import CreateTicket from "./components/CreateTicket";
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import { FiMessageSquare, FiPlus } from "react-icons/fi";
 import BasicButton from "../../components/BasicButton";
-import { capsuleShellSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleShellSx } from "../../components/bottomIslandStyles";
 import { AnimatePresence, motion } from "framer-motion";
 
 const TicketsDashboard = () => {
@@ -194,9 +194,9 @@ const TicketsDashboard = () => {
           >
             <BasicButton
               value={
-                <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="center">
+                <Stack direction="column" sx={islandButtonContentSx(1, "CREATE TICKET", 17)}>
                   <FiPlus fontSize="22px" />
-                  <Typography fontSize="1.1rem" fontWeight={900} letterSpacing="0.05em">
+                  <Typography fontSize="1.1rem" fontWeight={600} letterSpacing="0.05em">
                     CREATE TICKET
                   </Typography>
                 </Stack>
@@ -204,8 +204,9 @@ const TicketsDashboard = () => {
               sx={{
                 background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
                 color: "white",
-                 height: capsuleShellSx.height,
-                borderRadius: "24px",
+                height: capsuleShellSx.height,
+                borderRadius: ISLAND_BUTTON_RADIUS,
+                containerType: "inline-size",
                 border: "none",
                 boxShadow: "0 15px 35px -5px rgba(99, 102, 241, 0.5)",
                 transition: "all 0.3s ease",

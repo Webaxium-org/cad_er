@@ -1,5 +1,5 @@
 import { Activity, useEffect, useState } from "react";
-import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -42,7 +42,8 @@ import StyledTextLink from "../../components/StyledTextLink";
 import { showAlert } from "../../redux/alertSlice";
 
 import { HiOutlineDocumentReport } from "react-icons/hi";
-import { FiTrendingUp, FiActivity, FiFileText, FiBarChart2, FiShare } from "react-icons/fi";
+import { FiTrendingUp, FiFileText, FiBarChart2, FiShare } from "react-icons/fi";
+import { SlGraph } from "react-icons/sl";
 
 const Report = () => {
   const { id } = useParams();
@@ -315,7 +316,7 @@ const Report = () => {
             {
               label: "LS",
               value: "longitudinal",
-              icon: <FiActivity />,
+              icon: <SlGraph fontSize="20px" />,
             },
             {
               label: "Area",
@@ -342,8 +343,8 @@ const Report = () => {
                 justifyContent: "center",
                 px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "14px",
-                cursor: "pointer",
+                borderRadius: ISLAND_BUTTON_RADIUS,
+                                cursor: "pointer",
                 minWidth: 0,
                 whiteSpace: "nowrap",
                 flex: "1 1 0",
@@ -366,7 +367,7 @@ const Report = () => {
                     position: "absolute",
                     inset: 0,
                     background: "#6366f1",
-                    borderRadius: "14px",
+                    borderRadius: ISLAND_BUTTON_RADIUS,
                     zIndex: 0,
                     boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                   }}
@@ -375,10 +376,7 @@ const Report = () => {
 
               <Box
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 0,
+                  ...islandButtonContentSx(5, "Volume"),
                 }}
               >
                 <Typography
@@ -398,7 +396,7 @@ const Report = () => {
                 </Typography>
                 <Typography
                   variant="body2"
-                  fontWeight={600}
+                  fontWeight={500}
                   letterSpacing={0}
                   sx={{
                     lineHeight: 1,

@@ -1,5 +1,5 @@
 import * as Yup from "yup";
-import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
   Box,
   Grid,
@@ -40,7 +40,8 @@ import AdvancedAutoComplete from "../../components/AdvancedAutoComplete";
 import SmallHeader from "../../components/SmallHeader";
 import { getSettings, updateInstrument, updateSettingsFields } from "../../services/settingsServices";
 import { FiFilePlus } from "react-icons/fi";
-import { FiCheckSquare, FiNavigation, FiArrowLeft, FiSend } from "react-icons/fi";
+import { FiNavigation, FiArrowLeft, FiSend } from "react-icons/fi";
+import { CgGoogleTasks } from "react-icons/cg";
 
 const commissioningFields = {
   publicProject: {
@@ -1408,7 +1409,7 @@ const RoadSurveyForm = () => {
                     {[
                       {
                         label: "QUEUE",
-                        icon: <FiCheckSquare />,
+                        icon: <CgGoogleTasks fontSize="20px" />,
                         onClick: handleOpenQueue,
                         queue: true,
                       },
@@ -1466,8 +1467,8 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
       justifyContent: "center",
       px: { xs: 0.5, md: 2 },
       height: "100%",
-      borderRadius: "14px",
-      cursor: "pointer",
+      borderRadius: ISLAND_BUTTON_RADIUS,
+            cursor: "pointer",
       minWidth: 0,
       whiteSpace: "nowrap",
       flex: "1 1 0",
@@ -1482,10 +1483,7 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
   >
     <Box
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 0,
+        ...islandButtonContentSx(2, "SUBMIT"),
       }}
     >
       <Typography
@@ -1503,7 +1501,7 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
       </Typography>
       <Typography
         variant="body2"
-        fontWeight={600}
+        fontWeight={500}
         letterSpacing={0}
         sx={{
           lineHeight: 1,

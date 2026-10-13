@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
   Avatar,
   Box,
@@ -517,8 +517,8 @@ const Profile = () => {
                 justifyContent: "center",
                 px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "14px",
-                minWidth: 0,
+                borderRadius: ISLAND_BUTTON_RADIUS,
+                                minWidth: 0,
                 whiteSpace: "nowrap",
                 flex: "1 1 0",
                 bgcolor: "white",
@@ -533,16 +533,13 @@ const Profile = () => {
             >
               <Box
                 sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: "center",
-                  gap: 0,
+                  ...islandButtonContentSx(2, "DELETE ACCOUNT", 16),
                 }}
               >
                 {action.icon}
                 <Typography
                   variant="body2"
-                  fontWeight={900}
+                  fontWeight={600}
                   letterSpacing="0.05em"
                   sx={{ lineHeight: 1, fontSize: { xs: "0.8rem", md: "1rem" } }}
                 >

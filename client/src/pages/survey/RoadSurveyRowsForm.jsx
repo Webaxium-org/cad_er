@@ -47,14 +47,17 @@ import BasicDivider from "../../components/BasicDevider";
 import EditPreviousReading from "./components/EditPreviousReading";
 import SmallHeader from "../../components/SmallHeader";
 import PageHeroHeader from "../../components/PageHeroHeader";
-import { capsuleWrapperSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx } from "../../components/bottomIslandStyles";
 import useHardBackLock from "../../hooks/useHardBackLock";
 import AddBranch from "./components/AddBranch";
 import EnterBranch from "./components/EnterBranch";
 import ObservationNotes from "./components/ObservationNotes";
 import AddBreak from "./components/AddBreak";
 import { FaLocationArrow } from "react-icons/fa";
-import { FiMapPin, FiDroplet, FiGitMerge, FiLayers, FiNavigation } from "react-icons/fi";
+import { FiLayers, FiNavigation } from "react-icons/fi";
+import { MdAddRoad } from "react-icons/md";
+import { FaWater } from "react-icons/fa";
+import { GiCrossroad } from "react-icons/gi";
 import { GrSafariOption } from "react-icons/gr";
 const colors = {
   Initial: "green",
@@ -2404,7 +2407,8 @@ const RoadSurveyRowsForm = () => {
                     elevation={0}
                     sx={{
                       p: { xs: "4px", sm: "6px" },
-                      borderRadius: "18px",
+                      borderRadius: ISLAND_BUTTON_RADIUS,
+                      containerType: "inline-size",
                       display: "flex",
                       alignItems: "center",
                       gap: { xs: 0.5, sm: 0.75 },
@@ -2423,7 +2427,7 @@ const RoadSurveyRowsForm = () => {
                       {
                         label: "CH",
                         value: "Chainage",
-                        icon: <FiMapPin />,
+                        icon: <MdAddRoad fontSize="20px" />,
                         onClick: () => handleChangeRowType("Chainage"),
                       },
                       ...(isWaterWay
@@ -2431,7 +2435,7 @@ const RoadSurveyRowsForm = () => {
                             {
                               label: "WL",
                               value: "Water Level",
-                              icon: <FiDroplet />,
+                              icon: <FaWater fontSize="20px" />,
                               onClick: () => handleChangeRowType("Water Level"),
                             },
                           ]
@@ -2439,7 +2443,7 @@ const RoadSurveyRowsForm = () => {
                       {
                         label: "CP",
                         value: "CP",
-                        icon: <FiGitMerge />,
+                        icon: <GiCrossroad fontSize="20px" />,
                         onClick: () => handleChangeRowType("CP"),
                       },
                       {
@@ -2476,8 +2480,8 @@ const RoadSurveyRowsForm = () => {
                             justifyContent: "center",
                             px: { xs: 0.5, md: 2 },
                             height: "100%",
-                            borderRadius: "14px",
-                            cursor: isDisabled ? "not-allowed" : "pointer",
+                            borderRadius: ISLAND_BUTTON_RADIUS,
+                                                        cursor: isDisabled ? "not-allowed" : "pointer",
                             minWidth: 0,
                             whiteSpace: "nowrap",
                             flex: "1 1 0",
@@ -2509,7 +2513,7 @@ const RoadSurveyRowsForm = () => {
                                 position: "absolute",
                                 inset: 0,
                                 background: "#6366f1",
-                                borderRadius: "14px",
+                                borderRadius: ISLAND_BUTTON_RADIUS,
                                 zIndex: 0,
                                 boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                               }}
@@ -2519,8 +2523,7 @@ const RoadSurveyRowsForm = () => {
                             sx={{
                               display: "flex",
                               alignItems: "center",
-                              flexDirection: "column",
-                              gap: 0,
+                              ...islandButtonContentSx(isWaterWay ? 5 : 4, "NEXT"),
                               position: "relative",
                               zIndex: 1,
                             }}
@@ -2539,7 +2542,7 @@ const RoadSurveyRowsForm = () => {
                             </Typography>
                             <Typography
                               variant="body2"
-                              fontWeight={600}
+                              fontWeight={500}
                               sx={{
                                 lineHeight: 1,
                                 fontSize: { xs: "0.75rem", sm: "0.875rem" },

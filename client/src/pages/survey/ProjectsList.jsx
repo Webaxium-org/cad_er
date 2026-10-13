@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
   Box,
   Typography,
@@ -35,7 +35,6 @@ import {
   FiFileText,
   FiPlay,
   FiEdit3,
-  FiFlag,
   FiTrash2,
   FiCalendar,
   FiLayers,
@@ -45,6 +44,7 @@ import {
   FiClock,
   FiCheckCircle,
 } from "react-icons/fi";
+import { FaCodeBranch } from "react-icons/fa6";
 import { SiGooglecalendar } from "react-icons/si";
 import { PiMicrosoftOutlookLogoFill } from "react-icons/pi";
 import { axiosInstance } from "../../utils/config";
@@ -261,7 +261,7 @@ const PROJECT_ACTION_SX = {
   minWidth: 0,
   width: "100%",
   px: { xs: 0.5, sm: 1.5 },
-  borderRadius: "11px",
+  borderRadius: ISLAND_BUTTON_RADIUS,
   borderColor: "#cfd8ff",
   color: HEADER_GRADIENT_START,
   bgcolor: "#f8faff",
@@ -1326,7 +1326,7 @@ export default function ProjectsList() {
                               },
                               {
                                 label: "Final Level",
-                                icon: <FiFlag />,
+                                icon: <FiCheckCircle />,
                                 onClick: () => handleFinalLevel(survey),
                                 disabled:
                                   getProjectProgress(survey) < 50 ||
@@ -1352,21 +1352,18 @@ export default function ProjectsList() {
                                   handleOpenDeleteProjectAlert(survey._id),
                                 color: "error",
                               },
-                              ...(survey.branchDetails?.hasBranching
-                                ? [
-                                    {
-                                      label: "Branch Reports",
-                                      icon: <FiFileText />,
-                                      onClick: () =>
-                                        navigate("/survey/report", {
-                                          state: {
-                                            getBranchReport: true,
-                                            surveyId: survey._id,
-                                          },
-                                        }),
+                              {
+                                label: "Branch Reports",
+                                icon: <FaCodeBranch />,
+                                disabled: !survey.branchDetails?.hasBranching,
+                                onClick: () =>
+                                  navigate("/survey/report", {
+                                    state: {
+                                      getBranchReport: true,
+                                      surveyId: survey._id,
                                     },
-                                  ]
-                                : []),
+                                  }),
+                              },
                             ].map((action) => (
                               <Button
                                 key={action.label}
@@ -1504,9 +1501,7 @@ export default function ProjectsList() {
                             sx={{
                               display: "grid",
                               gridTemplateColumns: {
-                                xs: survey.branchDetails?.hasBranching
-                                  ? "repeat(3, minmax(0, 1fr))"
-                                  : "repeat(2, minmax(0, 1fr))",
+                                xs: "repeat(3, minmax(0, 1fr))",
                               },
                               gap: { xs: 0.75, sm: 1.25 },
                               borderTop: "1px solid #dce4ff",
@@ -1525,21 +1520,18 @@ export default function ProjectsList() {
                                 onClick: () =>
                                   navigate(getLink(survey, "reports")),
                               },
-                              ...(survey.branchDetails?.hasBranching
-                                ? [
-                                    {
-                                      label: "Branch Reports",
-                                      icon: <FiFileText />,
-                                      onClick: () =>
-                                        navigate("/survey/report", {
-                                          state: {
-                                            getBranchReport: true,
-                                            surveyId: survey._id,
-                                          },
-                                        }),
+                              {
+                                label: "Branch Reports",
+                                icon: <FaCodeBranch />,
+                                disabled: !survey.branchDetails?.hasBranching,
+                                onClick: () =>
+                                  navigate("/survey/report", {
+                                    state: {
+                                      getBranchReport: true,
+                                      surveyId: survey._id,
                                     },
-                                  ]
-                                : []),
+                                  }),
+                              },
                             ].map((action) => (
                               <Button
                                 key={action.label}
@@ -1547,12 +1539,13 @@ export default function ProjectsList() {
                                 startIcon={action.icon}
                                 onClick={action.onClick}
                                 aria-label={action.label}
+                                disabled={action.disabled}
                                 sx={PROJECT_ACTION_SX}
                               >
-                                <Box component="span" sx={{ display: { xs: survey.branchDetails?.hasBranching ? "inline" : "none", sm: "none" } }}>
+                                <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
                                   {action.label === "Reports / Library" ? "Reports" : action.label === "Branch Reports" ? "Branch" : action.label}
                                 </Box>
-                                <Box component="span" sx={{ display: { xs: survey.branchDetails?.hasBranching ? "none" : "inline", sm: "inline" } }}>
+                                <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
                                   {action.label}
                                 </Box>
                               </Button>
@@ -1789,8 +1782,8 @@ export default function ProjectsList() {
                 justifyContent: "center",
                 px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "14px",
-                cursor: "pointer",
+                borderRadius: ISLAND_BUTTON_RADIUS,
+                                cursor: "pointer",
                 minWidth: 0,
                 whiteSpace: "nowrap",
                 flex: "1 1 0",
@@ -1818,7 +1811,7 @@ export default function ProjectsList() {
                     position: "absolute",
                     inset: 0,
                     background: type.value === "queue" ? "#ea580c" : "#6366f1",
-                    borderRadius: "14px",
+                    borderRadius: ISLAND_BUTTON_RADIUS,
                     zIndex: 0,
                     boxShadow: type.value === "queue"
                       ? "0 4px 15px rgba(234, 88, 12, 0.3)"
@@ -1829,10 +1822,7 @@ export default function ProjectsList() {
 
               <Box
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 0,
+                  ...islandButtonContentSx(3, "UNDERWAY"),
                 }}
               >
                 <Typography
@@ -1852,7 +1842,7 @@ export default function ProjectsList() {
                 </Typography>
                 <Typography
                   variant="body2"
-                  fontWeight={600}
+                  fontWeight={500}
                   letterSpacing={0}
                   sx={{
                     lineHeight: 1,

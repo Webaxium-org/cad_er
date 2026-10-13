@@ -1,5 +1,5 @@
 import * as Yup from "yup";
-import { capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
+import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
   Box,
   Container,
@@ -901,8 +901,8 @@ export default function ProposeLevel() {
                 justifyContent: "center",
                 px: { xs: 0.5, md: 2 },
                 height: "100%",
-                borderRadius: "14px",
-                cursor: "pointer",
+                borderRadius: ISLAND_BUTTON_RADIUS,
+                                cursor: "pointer",
                 minWidth: 0,
                 whiteSpace: "nowrap",
                 flex: "1 1 0",
@@ -929,7 +929,7 @@ export default function ProposeLevel() {
                     position: "absolute",
                     inset: 0,
                     background: "#6366f1",
-                    borderRadius: "14px",
+                    borderRadius: ISLAND_BUTTON_RADIUS,
                     zIndex: 0,
                     boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
                   }}
@@ -938,10 +938,7 @@ export default function ProposeLevel() {
 
               <Box
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 0,
+                  ...islandButtonContentSx(3, "TEMPLATES"),
                 }}
               >
                 <Typography
@@ -961,7 +958,7 @@ export default function ProposeLevel() {
                 </Typography>
                 <Typography
                   variant="body2"
-                  fontWeight={600}
+                  fontWeight={500}
                   letterSpacing={0}
                   sx={{
                     lineHeight: 1,
