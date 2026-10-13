@@ -2418,7 +2418,7 @@ const RoadSurveyRowsForm = () => {
                       height: "clamp(52px, 12vw, 64px)",
                       width: "100%",
                       boxSizing: "border-box",
-                      "& svg": { width: { xs: 24, sm: 22 }, height: { xs: 24, sm: 22 } },
+                      "& svg": { width: { xs: 22, sm: 24 }, height: { xs: 22, sm: 24 } },
                     }}
                   >
                     {[
@@ -2544,7 +2544,7 @@ const RoadSurveyRowsForm = () => {
                               fontWeight={600}
                               sx={{
                                 lineHeight: 1,
-                                fontSize: { xs: "0.75rem", sm: "0.75rem" },
+                                fontSize: { xs: "0.75rem", sm: "0.875rem" },
                               }}
                             >
                               {type.label}

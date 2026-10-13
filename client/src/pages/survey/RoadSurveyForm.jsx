@@ -1485,7 +1485,7 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
     <Box
       sx={{
         display: "flex",
-        flexDirection: { xs: "column", sm: "row" },
+        flexDirection: "column",
         alignItems: "center",
         gap: 0,
       }}
@@ -1505,12 +1505,12 @@ const ActionBtn = ({ label, icon, onClick, muted, queue }) => (
       </Typography>
       <Typography
         variant="body2"
-        fontWeight={900}
-        letterSpacing="0.05em"
+        fontWeight={600}
+        letterSpacing={0}
         sx={{
           lineHeight: 1,
           color: "inherit",
-          fontSize: { xs: "0.75rem", sm: "0.75rem" },
+          fontSize: { xs: "0.75rem", sm: "0.875rem" },
           transition: "color 0.3s ease",
         }}
       >

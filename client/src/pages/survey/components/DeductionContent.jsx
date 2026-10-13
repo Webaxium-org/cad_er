@@ -1,4 +1,4 @@
-import { Box, Stack, Typography, Divider } from "@mui/material";
+import { Box, Button, Stack, Typography, Divider } from "@mui/material";
 import { useEffect, useState, useMemo } from "react";
 import BasicSelect from "../../../components/BasicSelect";
 import { IoAdd } from "react-icons/io5";
@@ -14,20 +14,10 @@ const initialRow = {
 };
 
 const addButtonSx = {
-  display: "flex",
-  alignItems: "center",
-  gap: 1,
+  color: "#4f46e5",
   px: 1.5,
-  py: 0.75,
-  borderRadius: 2,
-  bgcolor: "primary.50",
-  color: "primary.main",
-  cursor: "pointer",
-  fontSize: 14,
-  fontWeight: 600,
-  transition: "all 0.2s",
   "&:hover": {
-    bgcolor: "primary.100",
+    bgcolor: "rgba(99, 102, 241, 0.08)",
   },
 };
 
@@ -177,10 +167,13 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
           Deduction
         </Typography>
 
-        <Box onClick={handleAddRow} sx={addButtonSx}>
-          <IoAdd size={18} />
-          Add Range
-        </Box>
+        <BasicButton
+          value="Add Range"
+          variant="text"
+          startIcon={<IoAdd size={18} />}
+          sx={addButtonSx}
+          onClick={handleAddRow}
+        />
       </Stack>
 
       {/* ----------- History Section ----------- */}
@@ -278,9 +271,13 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
         </Stack>
       ))}
 
-      <Stack direction="row" justifyContent="end">
-        <BasicButton value="Cancel" variant="text" onClick={onCancel} />
-        <BasicButton value="Generate" variant="text" onClick={handleGenerate} />
+      <Stack direction="row" justifyContent="end" gap={1}>
+        <Button onClick={onCancel} variant="outlined" sx={{ borderRadius: "12px", borderColor: "#cbd5e1", color: "#475569", fontWeight: 700, textTransform: "none" }}>
+          Cancel
+        </Button>
+        <Button onClick={handleGenerate} variant="contained" sx={{ borderRadius: "12px", bgcolor: "#6366f1", fontWeight: 800, textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }}>
+          Generate
+        </Button>
       </Stack>
     </Stack>
   );

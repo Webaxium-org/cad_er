@@ -1355,6 +1355,7 @@ const PlottingAndQuantityReport = () => {
         if (isDeductionRow) {
           isDeductionStarted = true;
           currentDeduction = isDeductionRow;
+          isDeductionRemarkAdded = false;
 
           difference = prevSection !== null
             ? (currentChainage - prevChainage).toFixed(3)
@@ -1373,6 +1374,10 @@ const PlottingAndQuantityReport = () => {
                 : `from ${currentDeduction?.from} to ${currentDeduction?.to}`);
 
             isDeductionRemarkAdded = true;
+            if (currentDeduction.to === row.chainage) {
+              currentDeduction = null;
+              isDeductionStarted = false;
+            }
           } else {
             const isDeductionEndingNow = currentDeduction.to === row.chainage;
 

@@ -368,7 +368,7 @@ const Report = () => {
                   sx={{
                     position: "absolute",
                     inset: 0,
-                    background: "#6366f1", // similar tone color for selected
+                    background: "#6366f1",
                     borderRadius: "14px",
                     zIndex: 0,
                     boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
@@ -401,14 +401,14 @@ const Report = () => {
                 </Typography>
                 <Typography
                   variant="body2"
-                  fontWeight={900}
-                  letterSpacing="0.05em"
+                  fontWeight={600}
+                  letterSpacing={0}
                   sx={{
                     lineHeight: 1,
                     position: "relative",
                     zIndex: 1,
                     color: "inherit",
-                    fontSize: { xs: "0.75rem", sm: "0.75rem" },
+                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     transition: "color 0.3s ease",
                   }}
                 >
@@ -518,6 +518,12 @@ const Report = () => {
                         fontSize: "12px",
                         padding: "5.6px 11px",
                         minWidth: "200px",
+                        color: "#4f46e5",
+                        borderColor: "#6366f1",
+                        "&:hover": {
+                          bgcolor: "rgba(99, 102, 241, 0.08)",
+                          borderColor: "#4f46e5",
+                        },
                       }}
                       onClick={handleOpen}
                     />

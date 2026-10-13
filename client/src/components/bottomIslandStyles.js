@@ -1,7 +1,7 @@
-export const capsuleWrapperSx = (buttonCount) => ({
+export const capsuleWrapperSx = () => ({
   bottom: { xs: "calc(12px + env(safe-area-inset-bottom))", md: 32 },
-  width: `clamp(260px, 72vw, ${Math.max(320, buttonCount * 70 + 180)}px)`,
-  maxWidth: "calc(100vw - 24px)",
+  width: "min(100%, 552px)",
+  maxWidth: "calc(100vw - 32px)",
 });
 
 export const capsuleShellSx = {
@@ -13,6 +13,6 @@ export const capsuleShellSx = {
   height: "clamp(52px, 12vw, 64px)",
   width: "100%",
   boxSizing: "border-box",
-  "& svg": { width: { xs: 24, sm: 22 }, height: { xs: 24, sm: 22 } },
+  "& svg": { width: { xs: 22, sm: 24 }, height: { xs: 22, sm: 24 } },
 };
 
