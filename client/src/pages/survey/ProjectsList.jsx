@@ -40,11 +40,11 @@ import {
   FiLayers,
   FiFilter,
   FiCheck,
-  FiCheckSquare,
   FiClock,
   FiCheckCircle,
 } from "react-icons/fi";
 import { FaCodeBranch } from "react-icons/fa6";
+import { CgGoogleTasks } from "react-icons/cg";
 import { SiGooglecalendar } from "react-icons/si";
 import { PiMicrosoftOutlookLogoFill } from "react-icons/pi";
 import { axiosInstance } from "../../utils/config";
@@ -1757,7 +1757,7 @@ export default function ProjectsList() {
             {
               label: "QUEUED",
               value: "queue",
-              icon: <FiCheckSquare />,
+              icon: <CgGoogleTasks fontSize="20px" />,
               onClick: () => handleChange("queue"),
             },
             {
