@@ -54,7 +54,8 @@ import EnterBranch from "./components/EnterBranch";
 import ObservationNotes from "./components/ObservationNotes";
 import AddBreak from "./components/AddBreak";
 import { FaLocationArrow } from "react-icons/fa";
-import { FiLayers, FiNavigation } from "react-icons/fi";
+import { optionMenuHeaderSx, optionMenuItemSx, optionMenuPaperSx } from "../../components/optionMenuStyles";
+import { FiLayers } from "react-icons/fi";
 import { MdAddRoad } from "react-icons/md";
 import { FaWater } from "react-icons/fa";
 import { GiCrossroad } from "react-icons/gi";
@@ -1757,22 +1758,14 @@ const RoadSurveyRowsForm = () => {
                       slotProps={{
                         paper: {
                           sx: {
-                            mt: 1,
+                            ...optionMenuPaperSx,
                             minWidth: 210,
-                            p: 1,
-                            border: "1px solid #e2e8f0",
-                            borderLeft: "6px solid #6366f1",
-                            borderRadius: "20px",
-                            boxShadow: "0 18px 40px rgba(30, 41, 59, 0.16)",
-                            bgcolor: "#fff",
                           },
                         },
-                        list: { sx: { p: 0 } },
+                        list: { sx: { p: 0, pb: 0.5 } },
                       }}
                     >
-                      <Typography sx={{ px: 1.5, py: 1, color: "#64748b", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em" }}>
-                        SURVEY OPTIONS
-                      </Typography>
+                      <Typography component="div" sx={optionMenuHeaderSx}>Survey options</Typography>
                       {speedDialActions.filter((action) => action.show).map((action) => (
                         <MenuItem
                           key={action.name}
@@ -1781,14 +1774,8 @@ const RoadSurveyRowsForm = () => {
                             action.onClick();
                           }}
                           sx={{
+                            ...optionMenuItemSx,
                             gap: 1.5,
-                            px: 1.5,
-                            py: 1.25,
-                            borderRadius: "10px",
-                            color: "#1e293b",
-                            fontSize: 14,
-                            fontWeight: 700,
-                            "&:hover": { bgcolor: "#f1f2ff", color: "#4f46e5" },
                           }}
                         >
                           <Box sx={{ display: "flex", color: "#6366f1", fontSize: 19 }}>{action.icon}</Box>
@@ -2455,7 +2442,7 @@ const RoadSurveyRowsForm = () => {
                       {
                         label: "NEXT",
                         value: "",
-                        icon: <FiNavigation />,
+                        icon: <FaLocationArrow />,
                         onClick: () => handleSubmit(),
                       },
                       // {

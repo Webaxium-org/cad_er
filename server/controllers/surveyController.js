@@ -29,7 +29,7 @@ const getAllSurvey = async (req, res, next) => {
   try {
     const {
       user: { userId },
-      query: { status, project, purpose, type, rootBranch, stage, page, limit },
+      query: { status, project, purpose, type, rootBranch, stage, page, limit, upcoming, metrics },
     } = req;
 
     const filter = {
@@ -47,6 +47,9 @@ const getAllSurvey = async (req, res, next) => {
       } else if (["Scheduled", "Active", "Completed"].includes(status)) {
         filter.status = status;
       }
+    }
+    if (upcoming === "true") {
+      filter.status = "Scheduled";
     }
 
     if (project) {
@@ -119,7 +122,7 @@ const getAllSurvey = async (req, res, next) => {
     const skipNum = (pageNum - 1) * limitNum;
 
     let queryBuilder = Survey.find(filter)
-      .sort({ createdAt: -1 })
+      .sort(upcoming === "true" ? { proposalScheduleDate: 1, _id: 1 } : { createdAt: -1 })
       .populate({
         path: "purposes",
         match: { deleted: false },
@@ -134,15 +137,44 @@ const getAllSurvey = async (req, res, next) => {
       queryBuilder = queryBuilder.skip(skipNum).limit(limitNum);
     }
 
-    const [surveys, total] = await Promise.all([
+    const [surveys, total, overdueTotal, proposalMetrics] = await Promise.all([
       queryBuilder.lean(),
       Survey.countDocuments(filter),
+      upcoming === "true"
+        ? Survey.countDocuments({
+            ...filter,
+            proposalScheduleDate: { $lt: new Date(new Date().setHours(0, 0, 0, 0)) },
+          })
+        : Promise.resolve(undefined),
+      metrics === "true"
+        ? (async () => {
+            const eligibleIds = await Survey.distinct("_id", {
+              createdBy: userId,
+              deleted: false,
+              "branchDetails.isBranch": false,
+              status: { $in: ["Active", "Completed"] },
+            });
+            const generatedIds = eligibleIds.length
+              ? await SurveyPurpose.distinct("surveyId", {
+                  surveyId: { $in: eligibleIds },
+                  createdBy: userId,
+                  deleted: false,
+                  phase: "Proposal",
+                  type: /^Proposed/,
+                  isPurposeFinish: true,
+                })
+              : [];
+            return { eligible: eligibleIds.length, generated: generatedIds.length };
+          })()
+        : Promise.resolve(undefined),
     ]);
 
     res.status(200).json({
       success: true,
       count: surveys.length,
       total,
+      ...(upcoming === "true" && { overdueTotal }),
+      ...(metrics === "true" && { proposalMetrics }),
       page: pageNum,
       limit: limitNum,
       message:

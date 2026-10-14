@@ -25,7 +25,7 @@ import { BsThreeDots } from "react-icons/bs";
 import BasicMenu from "../../components/BasicMenu";
 import BasicInput from "../../components/BasicInput";
 import BasicButton from "../../components/BasicButton";
-import { MdDownload, MdOutlineAssessment } from "react-icons/md";
+import { MdDownload, MdOutlineAssessment, MdUpdate } from "react-icons/md";
 import { showAlert } from "../../redux/alertSlice";
 import { DxfWriter, Units, point2d, point3d } from "@tarikjabiri/dxf";
 import { saveAs } from "file-saver";
@@ -1165,14 +1165,22 @@ const CrossSectionReport = () => {
                                       left: 0,
                                       zIndex: 10,
                                       backgroundColor: "#fff",
-                                      width: "fit-content",
-                                      paddingLeft: 2,
+                                      width: "100%",
+                                      px: 2,
+                                      boxSizing: "border-box",
                                     }}
                                   >
                                     <BasicButton
                                       value="Update"
-                                      variant="outlined"
-                                      sx={{ py: 1, px: 2 }}
+                                      variant="contained"
+                                      fullWidth
+                                      startIcon={<MdUpdate size={18} />}
+                                      sx={{
+                                        py: 1.25,
+                                        bgcolor: "#6366f1",
+                                        color: "white",
+                                        "&:hover": { bgcolor: "#4f46e5" },
+                                      }}
                                       onClick={handleUpdateReducedLevels}
                                     />
                                   </Box>

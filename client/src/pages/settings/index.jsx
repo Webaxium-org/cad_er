@@ -167,8 +167,8 @@ function Select({ label, value, onChange, options, ...props }) {
       {...props}
     >
       {options.map((option) => (
-        <MenuItem key={option} value={option}>
-          {option}
+        <MenuItem key={typeof option === "string" ? option : option.value} value={typeof option === "string" ? option : option.value}>
+          {typeof option === "string" ? option : option.label}
         </MenuItem>
       ))}
     </TextField>
@@ -602,7 +602,7 @@ export default function Settings() {
               <Grid size={{ xs: 12, md: 8 }}>
                 <Section
                   title="Client Management"
-                  detail="Keep separate details for government and corporate projects."
+                  detail="Keep separate details for municipal and commercial projects."
                   icon={<FiBriefcase size={22} />}
                 >
                   <Grid container spacing={2}>
@@ -613,7 +613,10 @@ export default function Settings() {
                         onChange={(e) =>
                           set("commissioningType", e.target.value)
                         }
-                        options={["Government", "Corporate / Private"]}
+                        options={[
+                          { label: "Municipal", value: "Government" },
+                          { label: "Commercial", value: "Corporate / Private" },
+                        ]}
                       />
                     </Grid>
                     {settings.commissioningType === "Government" && (

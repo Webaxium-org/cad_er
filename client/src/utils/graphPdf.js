@@ -30,7 +30,7 @@ export const capturePlotImage = async (plot) => {
   return { image, width: bounds.width, height: bounds.height, plotArea };
 };
 
-const layoutDistanceBands = (pdf, section, lineWidth, xRange) => {
+const layoutLevelBands = (pdf, section, lineWidth, xRange) => {
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(8);
   const series = [...(section.series || [])].reverse();
@@ -48,18 +48,24 @@ const layoutDistanceBands = (pdf, section, lineWidth, xRange) => {
     ? rangeEnd - rangeStart
     : Math.max(...offsets) - minOffset;
   return series.map((item) => {
-    const seen = new Set();
-    const points = (item.data || []).map((point) => Number(point.x))
-      .filter(Number.isFinite).sort((a, b) => a - b)
-      .filter((offset) => {
-        if (seen.has(offset)) return false;
-        seen.add(offset);
-        return true;
-      })
-      .map((offset) => ({
+    const levelsByOffset = new Map();
+    for (const point of item.data || []) {
+      const offset = Number(point.x);
+      const level = point.y === null || point.y === undefined || point.y === ""
+        ? NaN : Number(point.y);
+      if (!Number.isFinite(offset) || !Number.isFinite(level)) continue;
+      const levels = levelsByOffset.get(offset) || [];
+      const formattedLevel = level.toFixed(3);
+      if (!levels.includes(formattedLevel)) levels.push(formattedLevel);
+      levelsByOffset.set(offset, levels);
+    }
+    const points = [...levelsByOffset.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([offset, levels]) => ({
         offset,
+        value: levels.join(" / "),
         x: ((offset - minOffset) / (span || 0.001)) * lineWidth,
-        textWidth: pdf.getTextWidth(offset.toFixed(3)),
+        textWidth: pdf.getTextWidth(levels.join(" / ")),
       }))
       .filter(({ x }) => x >= 0 && x <= lineWidth)
       .sort((a, b) => a.x - b.x);
@@ -90,7 +96,7 @@ const layoutDistanceBands = (pdf, section, lineWidth, xRange) => {
   });
 };
 
-const drawDistanceBands = (pdf, bands, top, lineStart, lineWidth) => {
+const drawLevelBands = (pdf, bands, top, lineStart, lineWidth) => {
   let y = top;
   bands.forEach(({ item, points, height }) => {
     const color = {
@@ -99,12 +105,12 @@ const drawDistanceBands = (pdf, bands, top, lineStart, lineWidth) => {
       red: "#ff0000",
     }[item.color?.toLowerCase()] || item.color || "#000000";
     const label = item.name?.includes("Initial")
-      ? "Initial Dist"
+      ? "Initial Level"
       : item.name?.includes("Proposed")
-        ? "Prop. Dist"
+        ? "Prop. Level"
         : item.name?.includes("Final")
-          ? "Final Dist"
-          : `${item.name} Dist`;
+          ? "Final Level"
+          : item.name;
 
     pdf.setTextColor(color);
     pdf.setDrawColor(color);
@@ -114,11 +120,11 @@ const drawDistanceBands = (pdf, bands, top, lineStart, lineWidth) => {
     pdf.setLineWidth(0.4);
     pdf.line(lineStart, y + 5, lineStart + lineWidth, y + 5);
 
-    for (const { offset, labelX, textWidth } of points) {
+    for (const { value, labelX, textWidth } of points) {
       pdf.setFontSize(8);
       // Rotated text extends upward: measure its length so every label starts
       // at y + 9, below the band line.
-      pdf.text(offset.toFixed(3), lineStart + labelX + 0.9, y + 9 + textWidth, { angle: 90, align: "left" });
+      pdf.text(value, lineStart + labelX + 0.9, y + 9 + textWidth, { angle: 90, align: "left" });
     }
     y += height;
   });
@@ -131,15 +137,15 @@ export const addGraphPage = (pdf, image, section, scales, imageWidth, imageHeigh
   const pageHeight = pdf.internal.pageSize.getHeight();
   const pageCenter = pageWidth / 2;
   const margin = 10;
-  const hasDistanceBands = (section.type === "cs" || section.type === "ls") && section.series?.length;
-  const availableWidth = hasDistanceBands ? pageWidth - 47 : pageWidth - margin * 2;
-  const graphLeft = hasDistanceBands && plotArea
+  const hasLevelBands = (section.type === "cs" || section.type === "ls") && section.series?.length;
+  const availableWidth = hasLevelBands ? pageWidth - 47 : pageWidth - margin * 2;
+  const graphLeft = hasLevelBands && plotArea
     ? pageCenter - availableWidth * (plotArea.left + plotArea.width / 2)
     : (pageWidth - availableWidth) / 2;
   const graphHeight = availableWidth * imageHeight / imageWidth;
   const lineWidth = availableWidth * (plotArea?.width ?? 0.8);
-  const bands = hasDistanceBands ? layoutDistanceBands(pdf, section, lineWidth, plotArea?.xRange) : [];
-  const bandHeight = bands.reduce((height, band) => height + band.height, 0) + (hasDistanceBands ? 5 : 0);
+  const bands = hasLevelBands ? layoutLevelBands(pdf, section, lineWidth, plotArea?.xRange) : [];
+  const bandHeight = bands.reduce((height, band) => height + band.height, 0) + (hasLevelBands ? 5 : 0);
   const graphY = (pageHeight - graphHeight - bandHeight) / 2;
 
   pdf.setTextColor("#1e293b");
@@ -155,35 +161,5 @@ export const addGraphPage = (pdf, image, section, scales, imageWidth, imageHeigh
   const bandTop = plotArea
     ? graphY + graphHeight * plotArea.bottom + 10
     : graphY + graphHeight + 5;
-  const bandBottom = hasDistanceBands
-    ? drawDistanceBands(pdf, bands, bandTop, lineStart, lineWidth)
-    : graphY + graphHeight;
-  const datumY = bandBottom + 10;
-  pdf.setFont("helvetica", "bold");
-  pdf.text(`Datum: ${section.datum}`, pageCenter, datumY, { align: "center" });
-  pdf.setFont("helvetica", "normal");
-
-  const rows = [[]];
-  let rowWidth = 0;
-  for (const series of section.series || []) {
-    const itemWidth = pdf.getTextWidth(series.name) + 9;
-    if (rowWidth && rowWidth + itemWidth > availableWidth) {
-      rows.push([]);
-      rowWidth = 0;
-    }
-    rows[rows.length - 1].push({ series, width: itemWidth });
-    rowWidth += itemWidth;
-  }
-  rows.forEach((row, index) => {
-    const totalWidth = row.reduce((width, item) => width + item.width, 0);
-    let x = pageCenter - totalWidth / 2;
-    const y = datumY + 8 + index * 7;
-    row.forEach(({ series, width }) => {
-      pdf.setFillColor(series.color || "#000000");
-      pdf.circle(x + 2, y - 1, 1.4, "F");
-      pdf.setTextColor("#1e293b");
-      pdf.text(series.name, x + 6, y);
-      x += width;
-    });
-  });
+  if (hasLevelBands) drawLevelBands(pdf, bands, bandTop, lineStart, lineWidth);
 };

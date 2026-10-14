@@ -1,6 +1,7 @@
 import * as Yup from "yup";
 import { Button, DialogActions, MenuItem, Stack, TextField, Typography } from "@mui/material";
-import { FiImage, FiSend } from "react-icons/fi";
+import { FiImage } from "react-icons/fi";
+import { FaLocationArrow } from "react-icons/fa";
 import { useState } from "react";
 import { handleFormError } from "../../../utils/handleFormError";
 import { useDispatch } from "react-redux";
@@ -195,7 +196,7 @@ const CreateTicket = ({ onClose }) => {
           onClick={handleSubmit}
           loading={isLoading}
           variant="contained"
-          startIcon={<FiSend />}
+          startIcon={<FaLocationArrow />}
           sx={{
             borderRadius: "12px",
             px: 3,

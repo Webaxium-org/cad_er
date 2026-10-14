@@ -13,6 +13,7 @@ import {
   StepLabel,
   Divider,
   Checkbox,
+  Switch,
   Button,
   TextField,
   MenuItem,
@@ -20,7 +21,7 @@ import {
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { MdArrowBackIosNew } from "react-icons/md";
+import { MdArrowBackIosNew, MdOutlineAccountBalance, MdOutlineApartment } from "react-icons/md";
 import { useNavigate, useLocation } from "react-router-dom";
 import BasicButtons from "../../components/BasicButton";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
@@ -39,8 +40,9 @@ import AlertDialogSlide from "../../components/AlertDialogSlide";
 import AdvancedAutoComplete from "../../components/AdvancedAutoComplete";
 import SmallHeader from "../../components/SmallHeader";
 import { getSettings, updateInstrument, updateSettingsFields } from "../../services/settingsServices";
-import { FiFilePlus } from "react-icons/fi";
-import { FiNavigation, FiArrowLeft, FiSend } from "react-icons/fi";
+import { FiCheckCircle, FiFilePlus, FiMinusCircle, FiTool, FiUser } from "react-icons/fi";
+import { FiArrowLeft, FiSend } from "react-icons/fi";
+import { FaLocationArrow } from "react-icons/fa";
 import { CgGoogleTasks } from "react-icons/cg";
 
 const commissioningFields = {
@@ -104,14 +106,14 @@ const step1Fields = [
     options: [{ label: "Initial Level", value: "Initial Level" }],
   },
   {
-    label: "Select Commissioning Entity",
+    label: "Select Commissioning Entity*",
     name: "category",
     mode: "checkbox",
     hidden: false,
     options: [
       { name: "noneProject", label: "None" },
-      { name: "publicProject", label: "Public project" },
-      { name: "privateProject", label: "Private project" },
+      { name: "publicProject", label: "Municipal" },
+      { name: "privateProject", label: "Commercial" },
     ],
   },
   {
@@ -858,46 +860,53 @@ const RoadSurveyForm = () => {
             onChange={handleInputChange}
           />
         ) : mode === "toggle" ? (
-          <Box
-            component="label"
-            display="inline-flex"
-            alignItems="center"
-            gap={1}
-            sx={{
-              cursor: "pointer",
-              alignSelf: "flex-start",
-              px: 1.5,
-              py: 0.75,
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: formValues[input.name] ? "#818cf8" : "#dbe2ea",
-              bgcolor: formValues[input.name] ? "#eef2ff" : "#f8fafc",
-              transition: "background-color 0.2s, border-color 0.2s",
-              "&:hover": { borderColor: "#818cf8", bgcolor: "#eef2ff" },
-            }}
-          >
-            <Checkbox
-              size="small"
-              sx={{ p: 0, color: "#94a3b8", "&.Mui-checked": { color: "#4f46e5" } }}
-              checked={Boolean(formValues[input.name])}
-              onChange={(event) => {
-                const checked = event.target.checked;
-                setFormValues((current) => ({
-                  ...current,
-                  [input.name]: checked,
-                  ...(input.name === "hasEquipment" && !checked ? { instrumentModel: "", instrumentNo: "" } : {}),
-                  ...(input.name === "hasTechnicalLead" && !checked ? {
-                    engineerSurveyor: "",
-                    assistant1: "", assistant2: "", assistant3: "", assistant4: "", assistant5: "",
-                  } : {}),
-                }));
-                setFormErrors(null);
-              }}
-              inputProps={{ "aria-label": input.label }}
-            />
-            <Typography variant="body2" fontSize="14px" fontWeight={700} color="#1e293b">
-              {input.label}
-            </Typography>
+          <Box>
+            {input.name === "hasEquipment" && (
+              <Box sx={{ borderTop: "1px solid #e2e8f0", pt: 2, mt: 1, mb: 1.5 }}>
+                <Typography variant="subtitle2" fontWeight={800} color="#17234d">Optional setup</Typography>
+              </Box>
+            )}
+            <Paper elevation={0} sx={{ border: "1px solid", borderColor: formValues[input.name] ? "#818cf8" : "#dbe2ea", borderRadius: "12px", overflow: "hidden", bgcolor: "white" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1.5, bgcolor: formValues[input.name] ? "#f5f3ff" : "#f8fafc" }}>
+                <Box sx={{ width: 38, height: 38, borderRadius: "50%", display: "grid", placeItems: "center", color: "#4f46e5", bgcolor: "#e9e8ff", flexShrink: 0 }}>
+                  {input.name === "hasEquipment" ? <FiTool size={21} /> : <FiUser size={21} />}
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" fontWeight={800} color="#17234d">{input.label}</Typography>
+                  <Typography variant="caption" color="#64748b">
+                    {input.name === "hasEquipment" ? "Select the equipment required for this survey." : "Add a lead to oversee the survey."}
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={Boolean(formValues[input.name])}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setFormValues((current) => ({
+                      ...current,
+                      [input.name]: checked,
+                      ...(input.name === "hasEquipment" && !checked ? { instrumentModel: "", instrumentNo: "" } : {}),
+                      ...(input.name === "hasTechnicalLead" && !checked ? {
+                        engineerSurveyor: "",
+                        assistant1: "", assistant2: "", assistant3: "", assistant4: "", assistant5: "",
+                      } : {}),
+                    }));
+                    setFormErrors(null);
+                  }}
+                  inputProps={{ "aria-label": input.label }}
+                  sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: "#4f46e5" }, "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: "#6366f1" } }}
+                />
+              </Box>
+              {formValues[input.name] && (
+                <Box sx={{ p: 2, pt: 1.5 }}>
+                  <Grid container spacing={2} columns={12}>
+                    {visibleStep1Fields.filter((child) => input.name === "hasEquipment"
+                      ? ["instrumentModel", "instrumentNo"].includes(child.name)
+                      : ["engineerSurveyor", "assistant1", "assistant2", "assistant3", "assistant4", "assistant5"].includes(child.name))
+                      .map((child, childIndex) => renderField(child, `${input.name}-${childIndex}`))}
+                  </Grid>
+                </Box>
+              )}
+            </Paper>
           </Box>
         ) : mode === "select" ? (
           <Stack spacing={1}>
@@ -926,33 +935,43 @@ const RoadSurveyForm = () => {
             onChange={handleInputChange}
           />
         ) : mode === "checkbox" ? (
-          <Box>
-            <Typography variant="body2" fontWeight={700} mb={0.25}>
-              {input.label}
-            </Typography>
-            <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1}>
+          <Paper elevation={0} sx={{ border: "1px solid #dbe2ea", borderRadius: "12px", overflow: "hidden", bgcolor: "white" }}>
+            <Box sx={{ px: 2, py: 1.5, bgcolor: "#f5f3ff" }}>
+              <Typography variant="body2" fontWeight={800} color="#17234d">
+                {input.label}
+              </Typography>
+              <Typography variant="caption" color="#64748b">
+                Choose the entity commissioning this project.
+              </Typography>
+            </Box>
+            <Box sx={{ p: 2 }}>
+            <Grid container spacing={1.25} columns={12}>
               {input.options?.map((option) => (
-                <Box
+                <Grid
                   component="label"
-                  display="inline-flex"
-                  alignItems="center"
-                  gap={1}
+                  size={{ xs: 12, sm: 4 }}
                   key={option.name}
                   sx={{
                     cursor: "pointer",
-                    px: 1.5,
-                    py: 0.75,
-                    borderRadius: 2,
+                    minWidth: 0,
+                    minHeight: 74,
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    px: 2,
+                    py: 1.25,
+                    borderRadius: "10px",
                     border: "1px solid",
-                    borderColor: category === option.name ? "#818cf8" : "#dbe2ea",
-                    bgcolor: category === option.name ? "#eef2ff" : "#f8fafc",
+                    borderColor: category === option.name ? "#6366f1" : "#dbe2ea",
+                    bgcolor: category === option.name ? "#f5f3ff" : "white",
                     transition: "background-color 0.2s, border-color 0.2s",
-                    "&:hover": { borderColor: "#818cf8", bgcolor: "#eef2ff" },
+                    "&:hover, &:focus-within": { borderColor: "#6366f1", bgcolor: "#f5f3ff" },
                   }}
                 >
                   <Checkbox
                     size="small"
-                    sx={{ p: 0, color: "#94a3b8", "&.Mui-checked": { color: "#4f46e5" } }}
+                    sx={{ position: "absolute", opacity: 0, width: 1, height: 1, p: 0 }}
                     inputProps={{ "aria-label": option.label }}
                     checked={category === option.name}
                     onChange={() => {
@@ -977,18 +996,25 @@ const RoadSurveyForm = () => {
                       setFormErrors((prev) => ({ ...prev, category: null }));
                     }}
                   />
-                  <Typography variant="body2" fontSize="14px" fontWeight={700} color="#1e293b">
-                    {option.label}
-                  </Typography>
-                </Box>
+                  <Box sx={{ color: "#17234d", flexShrink: 0, display: "grid", placeItems: "center" }}>
+                    {option.name === "noneProject" ? <FiMinusCircle size={28} /> : option.name === "publicProject" ? <MdOutlineAccountBalance size={30} /> : <MdOutlineApartment size={30} />}
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="body2" fontSize="14px" fontWeight={800} color="#17234d">{option.label}</Typography>
+                    <Typography variant="caption" color="#64748b">
+                      {option.name === "noneProject" ? "No commissioning entity" : option.name === "publicProject" ? "Commissioned by a municipal entity" : "Commissioned by a commercial entity"}
+                    </Typography>
+                  </Box>
+                  {category === option.name && <FiCheckCircle size={17} color="#4f46e5" style={{ position: "absolute", top: 8, right: 8 }} />}
+                </Grid>
               ))}
-            </Stack>
+            </Grid>
             {category !== "noneProject" && commissioningDefaults && (
               <Button size="small" onClick={() => openSettingsEdit(
                 "commissioning",
                 category === "publicProject" ? "Government" : "Corporate / Private",
               )}>
-                Edit saved {category === "publicProject" ? "public" : "private"} project details
+                Edit saved {category === "publicProject" ? "municipal" : "commercial"} project details
               </Button>
             )}
             {formErrors?.category && (
@@ -996,7 +1022,8 @@ const RoadSurveyForm = () => {
                 {formErrors.category}
               </Typography>
             )}
-          </Box>
+            </Box>
+          </Paper>
         ) : (
           <BasicInput
             {...input}
@@ -1144,7 +1171,7 @@ const RoadSurveyForm = () => {
 
       <AlertDialogSlide
         title="Continue without project details?"
-        description="The plotting report won't show public or private project details. Are you sure you want to continue?"
+        description="The plotting report won't show municipal or commercial project details. Are you sure you want to continue?"
         cancelButtonText="Cancel"
         submitButtonText="Continue"
         open={Boolean(noneWarningAction)}
@@ -1346,7 +1373,9 @@ const RoadSurveyForm = () => {
                 >
                   <Grid container rowSpacing={2} columnSpacing={3} columns={12} alignItems="start">
                     {visibleStep1Fields.map((field, idx) =>
-                      renderField(field, idx),
+                      ["instrumentModel", "instrumentNo", "engineerSurveyor", "assistant1", "assistant2", "assistant3", "assistant4", "assistant5"].includes(field.name)
+                        ? null
+                        : renderField(field, idx),
                     )}
                   </Grid>
                 </motion.div>
@@ -1415,7 +1444,7 @@ const RoadSurveyForm = () => {
                       },
                       {
                         label: "NEXT",
-                        icon: <FiNavigation />,
+                        icon: <FaLocationArrow />,
                         onClick: handleNext,
                       },
                     ].map((btn, i) => (

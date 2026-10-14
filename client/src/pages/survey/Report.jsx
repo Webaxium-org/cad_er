@@ -311,12 +311,12 @@ const Report = () => {
             {
               label: "CS",
               value: "cross",
-              icon: <FiTrendingUp />,
+              icon: <SlGraph fontSize="20px" />,
             },
             {
               label: "LS",
               value: "longitudinal",
-              icon: <SlGraph fontSize="20px" />,
+              icon: <FiTrendingUp />,
             },
             {
               label: "Area",
@@ -475,13 +475,13 @@ const Report = () => {
                   </Box>
                 ) : (
                   <Typography
-                    variant="h6"
-                    fontWeight="800"
+                    variant="subtitle1"
+                    fontWeight={600}
                     color="#334155"
                     noWrap={true}
                   >
-                    Project Name:{" "}
-                    <span style={{ fontWeight: "600", color: "#6366f1" }}>
+                    Title:{" "}
+                    <span style={{ fontWeight: 500, color: "#6366f1" }}>
                       {survey?.project}
                     </span>
                   </Typography>
@@ -644,7 +644,7 @@ const Report = () => {
                             sx={{
                               fontSize: "12px",
                               padding: "5.6px 11px",
-                              minWidth: "200px",
+                              minWidth: "auto",
                               color: "#4f46e5",
                               borderColor: "#6366f1",
                               "&:hover": {

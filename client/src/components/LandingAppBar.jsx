@@ -140,7 +140,7 @@ const LandingAppBar = () => {
               <Box
                 component="button"
                 type="button"
-                aria-label="Cader home"
+                aria-label="CADER home"
                 onClick={() => navigate("/")}
                 sx={{
                   display: "flex",
@@ -168,14 +168,14 @@ const LandingAppBar = () => {
                 <Box sx={{ textAlign: "left", whiteSpace: "nowrap" }}>
                   <Typography
                     component="span"
-                    sx={{ display: "block", fontSize: { xs: "1.4rem", md: "1.65rem" }, fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.04em" }}
+                    sx={{ display: "block", fontSize: { xs: "1.8rem", md: "2.1rem" }, fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.04em" }}
                   >
-                    <Box component="span" sx={{ color: "#64748b" }}>Cad</Box>
-                    <Box component="span" sx={{ color: "#6366f1" }}>er</Box>
+                    <Box component="span" sx={{ color: "#64748b" }}>CAD</Box>
+                    <Box component="span" sx={{ color: "#6366f1" }}>ER</Box>
                   </Typography>
                   <Typography
                     component="span"
-                    sx={{ display: "block", color: "#64748b", fontSize: { xs: "0.56rem", md: "0.67rem" }, fontWeight: 600, lineHeight: 1.2, letterSpacing: "0.01em" }}
+                    sx={{ display: "block", color: "#64748b", fontSize: { xs: "0.7rem", md: "0.8rem" }, fontWeight: 600, lineHeight: 1.2, letterSpacing: "0.01em" }}
                   >
                     Complexity simplified
                   </Typography>

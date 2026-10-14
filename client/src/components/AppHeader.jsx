@@ -9,12 +9,12 @@ import {
   InputAdornment,
   IconButton,
   Menu,
-  Divider,
   Container,
 } from "@mui/material";
 import TemporaryDrawer from "./TemporaryDrawer";
 import DrawerList from "./DrawerList";
 import logo from "../assets/logo/cader_logo.png";
+import { optionMenuHeaderSx, optionMenuPaperSx } from "./optionMenuStyles";
 
 const Icons = {
   Search: () => (
@@ -221,17 +221,16 @@ const AppHeader = ({
                   onClose={handleNotifClose}
                   disableScrollLock={true}
                   PaperProps={{
-                    sx: { width: 300, mt: 1.5, borderRadius: "12px" },
+                    sx: { ...optionMenuPaperSx, width: 300 },
                   }}
+                  slotProps={{ list: { sx: { p: 0 } } }}
                 >
                   <Typography
-                    variant="subtitle1"
-                    fontWeight={700}
-                    sx={{ px: 2, py: 1 }}
+                    component="div"
+                    sx={optionMenuHeaderSx}
                   >
                     Notifications
                   </Typography>
-                  <Divider />
                   <Typography
                     variant="body2"
                     color="text.secondary"

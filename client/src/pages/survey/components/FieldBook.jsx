@@ -649,17 +649,6 @@ export default function FieldBook() {
             }}
             menuSx={{
               minWidth: 150,
-              py: 0.75,
-              "&::before": {
-                bgcolor: "#ffffff",
-                borderLeft: "1px solid rgba(226, 232, 240, 0.9)",
-                borderTop: "1px solid rgba(226, 232, 240, 0.9)",
-              },
-            }}
-            itemSx={{
-              mx: 0.75,
-              my: 0.25,
-              borderRadius: "10px",
             }}
           />
         </Box>

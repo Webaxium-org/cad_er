@@ -48,6 +48,7 @@ import { CgGoogleTasks } from "react-icons/cg";
 import { SiGooglecalendar } from "react-icons/si";
 import { PiMicrosoftOutlookLogoFill } from "react-icons/pi";
 import { axiosInstance } from "../../utils/config";
+import { optionMenuHeaderSx, optionMenuItemSx, optionMenuPaperSx } from "../../components/optionMenuStyles";
 
 const WEATHER_CODES = {
   0: "Clear sky",
@@ -1710,14 +1711,15 @@ export default function ProjectsList() {
         anchorEl={filterAnchorEl}
         open={Boolean(filterAnchorEl)}
         onClose={() => setFilterAnchorEl(null)}
-        slotProps={{ paper: { sx: { mt: 1, minWidth: 260, borderRadius: "14px", border: "1px solid #e2e8f0", boxShadow: "0 16px 40px rgba(15, 23, 42, 0.16)" } } }}
+        slotProps={{ paper: { sx: { ...optionMenuPaperSx, minWidth: 260 } }, list: { sx: { p: 0, pb: 0.5 } } }}
       >
+        <Typography component="div" sx={optionMenuHeaderSx}>Filters</Typography>
         {STAGE_FILTERS.map((option) => (
           <MenuItem
             key={option.value || "all"}
             selected={stageFilter === option.value}
             onClick={() => selectStageFilter(option.value)}
-            sx={{ gap: 2, py: 1.25, fontWeight: stageFilter === option.value ? 800 : 600, color: "#334155", "&.Mui-selected": { bgcolor: "#eef2ff", color: "#4f46e5" }, "&.Mui-selected:hover": { bgcolor: "#e0e7ff" } }}
+            sx={{ ...optionMenuItemSx, gap: 2 }}
           >
             <Box sx={{ flex: 1 }}>{option.label}</Box>
             {stageFilter === option.value && <FiCheck size={16} />}

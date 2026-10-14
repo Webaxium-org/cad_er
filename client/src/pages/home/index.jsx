@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { stopLoading } from "../../redux/loadingSlice";
 import { useNavigate } from "react-router-dom";
-import ProfessionalDashboard from "./components/ProfessionalDashboard";
+import ProfessionalDashboard from "./components/DashboardOverview";
 import StudentDashboard from "./components/StudentDashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import { getDashboard } from "../../services/indexServices";

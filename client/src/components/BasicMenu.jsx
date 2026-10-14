@@ -2,9 +2,12 @@ import { useId, useState } from "react";
 import Button from "@mui/material/Button";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import Typography from "@mui/material/Typography";
+import { optionMenuHeaderSx, optionMenuItemSx, optionMenuPaperSx } from "./optionMenuStyles";
 
 const BasicMenu = ({
   label = "Menu",
+  header = "Options",
   items = [],
   onSelect,
   sx = {},
@@ -37,9 +40,9 @@ const BasicMenu = ({
           height: 40,
           width: 40,
           minWidth: 40,
-          border: "1px solid #1976d2",
+          border: "1px solid #6366f1",
           borderRadius: "10px",
-          color: "#1976d2",
+          color: "#4f46e5",
           ...sx,
         }}
       >
@@ -55,51 +58,22 @@ const BasicMenu = ({
           paper: {
             elevation: 0,
             sx: {
-              overflow: "visible",
-              filter: "drop-shadow(0px 14px 28px rgba(15, 23, 42, 0.14))",
-              mt: 1.5,
-              borderRadius: "14px",
-              border: "1px solid rgba(226, 232, 240, 0.9)",
-              "& .MuiAvatar-root": {
-                width: 32,
-                height: 32,
-                ml: -0.5,
-                mr: 1,
-              },
-              "&::before": {
-                content: '""',
-                display: "block",
-                position: "absolute",
-                top: 0,
-                right: 14,
-                width: 10,
-                height: 10,
-                bgcolor: "background.paper",
-                transform: "translateY(-50%) rotate(45deg)",
-                zIndex: 0,
-              },
+              ...optionMenuPaperSx,
               ...menuSx,
             },
           },
+          list: { sx: { p: 0, pb: 0.5 } },
         }}
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
+        <Typography component="div" sx={optionMenuHeaderSx}>{header}</Typography>
         {items.map((item, index) => (
           <MenuItem
             key={index}
             onClick={() => handleClose(item)}
             sx={{
-              fontSize: 12,
-              minHeight: "auto",
-              py: 1,
-              px: 2,
-              fontWeight: 700,
-              color: "#334155",
-              "&:hover": {
-                bgcolor: "rgba(99, 102, 241, 0.08)",
-                color: "#4f46e5",
-              },
+              ...optionMenuItemSx,
               ...itemSx,
             }}
           >
