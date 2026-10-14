@@ -147,7 +147,7 @@ const LandingAppBar = () => {
                   alignItems: "center",
                   justifyContent: "flex-start",
                   flexShrink: 0,
-                  gap: { xs: 1, md: 1.25 },
+                  gap: 1,
                   p: 0,
                   border: 0,
                   bgcolor: "transparent",
@@ -165,21 +165,39 @@ const LandingAppBar = () => {
                     objectFit: "contain",
                   }}
                 />
-                <Box sx={{ textAlign: "left", whiteSpace: "nowrap" }}>
+
+                <Stack>
                   <Typography
                     component="span"
-                    sx={{ display: "block", fontSize: { xs: "1.8rem", md: "2.1rem" }, fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.04em" }}
+                    sx={{
+                      display: "block",
+                      fontSize: { xs: "2.1rem", md: "2.45rem" },
+                      fontWeight: 1000,
+                      lineHeight: 1.05,
+                      letterSpacing: "0.04em",
+                    }}
                   >
-                    <Box component="span" sx={{ color: "#64748b" }}>CAD</Box>
-                    <Box component="span" sx={{ color: "#6366f1" }}>ER</Box>
+                    <Box component="span" sx={{ color: "#64748b" }}>
+                      CAD
+                    </Box>
+                    <Box component="span" sx={{ color: "#6366f1" }}>
+                      ER
+                    </Box>
                   </Typography>
                   <Typography
                     component="span"
-                    sx={{ display: "block", color: "#64748b", fontSize: { xs: "0.7rem", md: "0.8rem" }, fontWeight: 600, lineHeight: 1.2, letterSpacing: "0.01em" }}
+                    sx={{
+                      display: "block",
+                      color: "#64748b",
+                      fontSize: { xs: "0.7rem", md: "0.8rem" },
+                      fontWeight: 400,
+                      lineHeight: 1.2,
+                      letterSpacing: "0.01em",
+                    }}
                   >
                     Complexity simplified
                   </Typography>
-                </Box>
+                </Stack>
               </Box>
 
               {/* Desktop Menu */}

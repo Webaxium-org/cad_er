@@ -1,0 +1,55 @@
+.signin-page { min-height: 100vh; position: relative; overflow: hidden; background: radial-gradient(ellipse at 25% 32%, rgba(174, 166, 255, .32), transparent 38%), radial-gradient(ellipse at 38% 78%, rgba(160, 190, 255, .24), transparent 35%), #fff; color: #080e48; display: grid; place-items: center; font-family: Arial, sans-serif; }
+.signin-layout { width: min(1120px, calc(100% - 48px)); position: relative; z-index: 1; display: grid; grid-template-columns: 500px minmax(0, 1fr); gap: 82px; align-items: center; padding: 52px 0; }
+.signin-card {
+  box-sizing: border-box;
+  width: 500px;
+  min-height: 626px;
+  padding: 46px;
+  border: 1px solid rgba(255, 255, 255, .8);
+  border-radius: 17px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .38), rgba(255, 255, 255, .12));
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: 0 20px 50px rgba(56, 48, 130, .13), 0 0 0 1px rgba(136, 132, 210, .16), inset 1px 1px 0 rgba(255, 255, 255, .9), inset -1px -1px 0 rgba(255, 255, 255, .3);
+  display: flex;
+  flex-direction: column;
+}
+.signin-title.MuiTypography-root { font-size: 36px; font-weight: 800; letter-spacing: -.04em; margin-bottom: 28px; line-height: 1.15; }
+.signin-fields { display: flex; flex-direction: column; gap: 17px; }
+.signin-fields .MuiTypography-body2 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.signin-fields .MuiInputBase-root { border-radius: 11px; }
+.signin-card .signin-fields .MuiInputBase-root:not(.Mui-error) { background-color: rgba(255, 255, 255, .22); border-color: rgba(151, 151, 225, .55); }
+.signin-card .signin-fields .MuiInputBase-root:not(.Mui-error):hover { background-color: rgba(255, 255, 255, .34); border-color: #7777e8; }
+.signin-card .signin-fields .MuiInputBase-root.Mui-focused:not(.Mui-error) { background-color: rgba(255, 255, 255, .45); border-color: #5353ed; }
+.signin-card > .MuiButton-outlined { background-color: rgba(255, 255, 255, .22); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .signin-card { background: rgba(248, 247, 255, .92); }
+}
+.signin-fields .MuiButton-root { margin-top: -1px; font-size: 16px; }
+.signin-forgot { align-self: center; color: #4244f1; font-weight: 700; font-size: 14px; text-decoration: none; }
+.signin-divider.MuiDivider-root { margin: 27px 0 20px; color: #080e48; font-size: 14px; }
+.signin-divider::before, .signin-divider::after { border-color: #c3c7ff; }
+.signin-card > .MuiButton-root { font-size: 14px; font-weight: 700; }
+.signin-card > .MuiButton-root .MuiButton-startIcon { margin-right: 9px; }
+.signin-signup.MuiTypography-root { text-align: center; font-size: 16px; margin-top: 22px; }
+.signin-card a:not(.signin-mobile-logo) { color: #4344ed; text-decoration: none; font-weight: 700; }
+.signin-legal.MuiTypography-root { margin-top: 25px; color: #5c659a; text-align: center; font-size: 12px; line-height: 1.5; }
+.signin-mobile-logo { display: none; }
+.signin-hero { text-align: center; display: flex; align-items: center; flex-direction: column; }
+.signin-hero-logo img { width: 74px; height: 74px; object-fit: contain; }
+.signin-hero h2 { font-size: clamp(34px, 3.1vw, 51px); letter-spacing: -.055em; line-height: 1.08; margin: 22px 0 38px; font-weight: 800; white-space: nowrap; }
+.signin-hero h2 span { color: #4948eb; }
+.signin-together { position: relative; }
+.signin-together-underline { position: absolute; bottom: -5px; left: 0; width: 100%; }
+.signin-robot-row { display: flex; align-items: center; justify-content: center; gap: 17px; width: 100%; }
+.signin-robot { width: 160px; height: 170px; flex: 0 0 160px; position: relative; }
+.signin-robot img { position: absolute; width: 250px; max-width: none; height: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); animation: signin-robot-float 5s ease-in-out infinite; }
+@keyframes signin-robot-float { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 8px)); } }
+@media (prefers-reduced-motion: reduce) { .signin-robot img { animation: none; } }
+.signin-speech { position: relative; box-sizing: border-box; width: 305px; padding: 21px 30px 17px 34px; border: 1px solid #c4c5ff; border-radius: 29px; background: rgba(255,255,255,.9); text-align: left; font-size: 17px; line-height: 1.5; }
+.signin-speech::before { content: ""; position: absolute; left: -15px; top: 58px; width: 23px; height: 23px; background: #fff; border-left: 1px solid #c4c5ff; border-bottom: 1px solid #c4c5ff; transform: rotate(45deg); }
+.signin-speech strong { color: #4948eb; font-size: 14px; }
+.signin-hero-note { font-size: 21px; font-style: italic; color: #566096; line-height: 1.5; max-width: 470px; margin: 37px 0 23px; }
+.signin-hero-cta { color: #4545ed; font-size: 18px; font-weight: 700; text-decoration: none; }
+@media (max-width: 1050px) { .signin-layout { gap: 32px; grid-template-columns: minmax(360px, 480px) minmax(0, 1fr); } .signin-card { width: 100%; } .signin-hero h2 { font-size: 36px; } .signin-robot-row { gap: 0; } .signin-robot { width: 120px; flex-basis: 120px; } .signin-robot img { width: 205px; } .signin-speech { font-size: 14px; padding: 14px 20px; } }
+@media (max-width: 760px) { .signin-layout { display: block; width: min(500px, calc(100% - 32px)); padding: 28px 0; } .signin-card { min-height: 0; padding: 30px 26px; } .signin-mobile-logo { display: block; margin-bottom: 12px; } .signin-mobile-logo img { width: 50px; height: 50px; object-fit: contain; } .signin-hero { display: none; } .signin-title.MuiTypography-root { margin-bottom: 24px; } }
