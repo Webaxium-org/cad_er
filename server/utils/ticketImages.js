@@ -4,10 +4,10 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const client = new S3Client({ region: process.env.AWS_REGION });
 const bucket = () => {
-  if (!process.env.TICKET_IMAGES_BUCKET || !process.env.AWS_REGION) {
+  if (!process.env.S3_BUCKET_NAME || !process.env.AWS_REGION) {
     throw new Error("Ticket image storage is not configured");
   }
-  return process.env.TICKET_IMAGES_BUCKET;
+  return process.env.S3_BUCKET_NAME;
 };
 
 const actualType = (bytes) => {

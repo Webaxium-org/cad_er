@@ -36,6 +36,8 @@ import { getAllSurvey } from "../../../services/surveyServices";
 import AlertDialogSlide from "../../../components/AlertDialogSlide";
 import CreateTicket from "../../tickets/components/CreateTicket";
 import ProfessionalTrialCountdown from "./ProfessionalTrialCountdown";
+import { ISLAND_BUTTON_RADIUS } from "../../../components/bottomIslandStyles";
+import { DASHBOARD_CARD_RADIUS } from "./dashboardStyles";
 
 const BRAND = "#595cf2";
 const PRIMARY_BRAND = "#6366f1";
@@ -80,7 +82,7 @@ const getProgress = (survey) => {
 
 const panelSx = {
   border: `1px solid ${BORDER}`,
-  borderRadius: "12px",
+  borderRadius: DASHBOARD_CARD_RADIUS,
   bgcolor: "white",
   boxShadow: "0 6px 24px rgba(52, 70, 129, 0.04)",
 };
@@ -141,7 +143,8 @@ function ActiveCard({ survey, onResume, onFieldBook, onOpen }) {
           <Typography variant="caption" color={BRAND} fontWeight={800}>{progress}%</Typography>
           <LinearProgress variant="determinate" value={progress} sx={{ flex: 1, height: 8, borderRadius: 4, bgcolor: "#e9ecfc", "& .MuiLinearProgress-bar": { bgcolor: BRAND, borderRadius: 4 } }} />
         </Stack>
-        <Stack spacing={0.75} sx={{ minWidth: { md: 132 } }}>
+        <Stack direction={{ xs: "row", md: "column" }} spacing={0.75}
+          sx={{ minWidth: { md: 132 }, "& > .MuiButton-root": { flex: { xs: 1, md: "initial" }, minHeight: { xs: 50, sm: 48, md: "auto" }, whiteSpace: "nowrap" } }}>
           <Button size="small" variant="contained" startIcon={<FiPlay />} onClick={onResume}
             sx={{ bgcolor: BRAND, textTransform: "none", "&:hover": { bgcolor: "#494bd2" } }}>Resume</Button>
           {finishedBook ? (
@@ -234,7 +237,7 @@ export default function DashboardOverview({ data }) {
         content={ticketOpen && <CreateTicket onClose={() => setTicketOpen(false)} />}
       />
       <AppHeader />
-      <Box sx={{ minHeight: "100vh", bgcolor: "#f7f9fd", pb: { xs: 3, md: 4 } }}>
+      <Box sx={{ minHeight: "100vh", bgcolor: "#f7f9fd", pb: { xs: 3, md: 4 }, "& .MuiButton-root": { borderRadius: ISLAND_BUTTON_RADIUS } }}>
         <AnimatePresence>
           {compactHeaderVisible && (
             <Box
@@ -495,7 +498,7 @@ export default function DashboardOverview({ data }) {
                 elevation={0}
                 sx={{
                   p: "8px",
-                  borderRadius: "20px",
+                  borderRadius: DASHBOARD_CARD_RADIUS,
                   display: "inline-flex",
                   gap: 2,
 
@@ -546,7 +549,7 @@ export default function DashboardOverview({ data }) {
                       gap: 1.5,
                       px: 2,
                       py: 1,
-                      borderRadius: "16px",
+                      borderRadius: ISLAND_BUTTON_RADIUS,
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                       flexShrink: 0,
@@ -591,7 +594,7 @@ export default function DashboardOverview({ data }) {
 
           {data?.subscription?.kind === "trial" && <ProfessionalTrialCountdown subscription={data.subscription} />}
           {data?.subscription?.kind === "paid" && (
-            <Paper elevation={0} sx={{ border: "1px solid #c7d2fe", borderRadius: "12px", bgcolor: "#eef2ff", px: 2, py: 1.5, mb: 1.25 }}>
+            <Paper elevation={0} sx={{ border: "1px solid #c7d2fe", borderRadius: DASHBOARD_CARD_RADIUS, bgcolor: "#eef2ff", px: 2, py: 1.5, mb: 1.25 }}>
               <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} spacing={1}>
                 <Box>
                   <Typography fontWeight={800} color="#312e81">{data.subscription.planCode.replaceAll("_", " ")}</Typography>
@@ -603,7 +606,7 @@ export default function DashboardOverview({ data }) {
           )}
 
           {overdueTotal > 0 && (
-            <Paper elevation={0} sx={{ border: "1px solid #ffd4a0", bgcolor: "#fff7ed", borderRadius: "10px", px: 2, py: 1.25, mb: 1.25 }}>
+            <Paper elevation={0} sx={{ border: "1px solid #ffd4a0", bgcolor: "#fff7ed", borderRadius: DASHBOARD_CARD_RADIUS, px: 2, py: 1.25, mb: 1.25 }}>
               <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ sm: "center" }} spacing={1.5}>
                 <FiAlertCircle size={23} color="#ec8000" />
                 <Box sx={{ flex: 1 }}>
@@ -672,7 +675,7 @@ export default function DashboardOverview({ data }) {
                     { label: "Tickets", detail: "View and manage support tickets", icon: FiFileText, action: () => navigate("/tickets") },
                     { label: "Settings", detail: "Manage your preferences", icon: FiSettings, action: () => navigate("/settings") },
                   ].map(({ label, detail, icon: Icon, action }) => (
-                    <Button key={label} fullWidth onClick={action} sx={{ border: `1px solid ${BORDER}`, borderRadius: "10px", mb: 0.75, p: 1, textAlign: "left", textTransform: "none", color: "#17234d", justifyContent: "flex-start" }}>
+                    <Button key={label} fullWidth onClick={action} sx={{ border: `1px solid ${BORDER}`, borderRadius: ISLAND_BUTTON_RADIUS, mb: 0.75, p: 1, textAlign: "left", textTransform: "none", color: "#17234d", justifyContent: "flex-start" }}>
                       <Icon size={20} color={BRAND} style={{ marginRight: 12, flexShrink: 0 }} />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" fontWeight={800}>{label}</Typography>
@@ -704,7 +707,7 @@ export default function DashboardOverview({ data }) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigate("/survey/add-survey", { state: { openCalibration: true } })}
-                  sx={{ p: 3, borderRadius: "24px", bgcolor: PRIMARY_BRAND, color: "white", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: "0 10px 20px -5px rgba(99, 102, 241, 0.3)" }}
+                  sx={{ p: 3, borderRadius: DASHBOARD_CARD_RADIUS, bgcolor: PRIMARY_BRAND, color: "white", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: "0 10px 20px -5px rgba(99, 102, 241, 0.3)" }}
                 >
                   <Box sx={{ position: "relative", zIndex: 1 }}>
                     <Typography variant="caption" fontWeight={700} sx={{ opacity: 0.8, letterSpacing: "0.1em" }}>CALIBRATION ALERT</Typography>
@@ -725,7 +728,7 @@ export default function DashboardOverview({ data }) {
           sx={{
             position: "fixed", bottom: 30, right: 30, zIndex: 1100,
             bgcolor: PRIMARY_BRAND, color: "white", width: 60, height: 60,
-            borderRadius: "14px",
+            borderRadius: ISLAND_BUTTON_RADIUS,
             transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
             "&:hover": { bgcolor: HEADER_GRADIENT_START, transform: "scale(1.1)" },
           }}
@@ -738,7 +741,7 @@ export default function DashboardOverview({ data }) {
           sx={{
             position: "fixed", bottom: 30, left: 30, zIndex: 1100,
             bgcolor: "white", border: `1px solid ${BORDER}`, color: PRIMARY_BRAND,
-            p: 1.5, borderRadius: "14px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+            p: 1.5, borderRadius: ISLAND_BUTTON_RADIUS, boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
             "&:hover": { bgcolor: "#f8fafc" },
           }}
         >

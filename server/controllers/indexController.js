@@ -7,7 +7,10 @@ import jwt from "../utils/jwt.js";
 import { send_mail } from "../utils/mailer.js";
 import { EMAIL_TEMPLATES } from "../utils/emails/templates.js";
 import { ensureTrialSubscription } from "../services/trialSubscription.js";
-import { getCurrentSubscription, hasSubscriptionAccess } from "../services/subscriptionAccess.js";
+import {
+  getCurrentSubscription,
+  hasSubscriptionAccess,
+} from "../services/subscriptionAccess.js";
 
 export const loginUser = async (req, res, next) => {
   try {

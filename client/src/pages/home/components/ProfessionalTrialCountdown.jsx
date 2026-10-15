@@ -1,6 +1,23 @@
 import { useEffect, useState } from "react";
 import { Box, Button, Paper, Stack, Typography } from "@mui/material";
 import { Link } from "react-router-dom";
+import { ISLAND_BUTTON_RADIUS } from "../../../components/bottomIslandStyles";
+import { DASHBOARD_CARD_RADIUS } from "./dashboardStyles";
+
+const choosePlanAnimationSx = {
+  animation: "choosePlanPulse 3s ease-in-out infinite",
+  "@keyframes choosePlanPulse": {
+    "0%, 100%": { boxShadow: "0 5px 12px rgba(79,70,229,.22)" },
+    "50%": { boxShadow: "0 5px 20px rgba(79,70,229,.4), 0 0 0 5px rgba(91,85,244,.1)" },
+  },
+  transition: "transform 180ms ease, background-color 180ms ease",
+  "&:hover": { bgcolor: "#4f46e5", transform: "translateY(-2px)", animation: "none" },
+  "&:active": { transform: "translateY(0)" },
+  "&.Mui-focusVisible": { outline: "3px solid #a5b4fc", outlineOffset: 3 },
+  "@media (prefers-reduced-motion: reduce)": {
+    animation: "none", transition: "none", "&:hover": { transform: "none" },
+  },
+};
 
 export default function ProfessionalTrialCountdown({ subscription }) {
   const [now, setNow] = useState(Date.now());
@@ -29,7 +46,7 @@ export default function ProfessionalTrialCountdown({ subscription }) {
   const progress = Math.min(100, Math.max(0, remaining / (end - start) * 100));
 
   return (
-    <Paper elevation={0} sx={{ mb: 1.5, px: { xs: 1.75, sm: 2 }, py: { xs: 1.5, sm: 1.75 }, border: "1px solid #c7d2fe", borderRadius: 2, background: "linear-gradient(110deg, #fff 0%, #fafaff 65%, #f4f4ff 100%)", boxShadow: "0 6px 20px rgba(79,70,229,.06)" }}>
+    <Paper elevation={0} sx={{ mb: 1.5, px: { xs: 1.75, sm: 2 }, py: { xs: 1.5, sm: 1.75 }, border: "1px solid #c7d2fe", borderRadius: DASHBOARD_CARD_RADIUS, background: "linear-gradient(110deg, #fff 0%, #fafaff 65%, #f4f4ff 100%)", boxShadow: "0 6px 20px rgba(79,70,229,.06)" }}>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0,1fr)", sm: "minmax(0,1fr) minmax(0,1fr)", lg: "minmax(0,1.35fr) minmax(0,.85fr) minmax(0,.95fr) auto" }, gap: { xs: 1.5, sm: 2 }, alignItems: "center" }}>
         <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
           <Box sx={{ width: 56, height: 56, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 1.5, bgcolor: "#eef2ff", color: "#5b55f4" }}>
@@ -66,7 +83,7 @@ export default function ProfessionalTrialCountdown({ subscription }) {
             <Typography role="timer" aria-label="Trial time remaining" sx={{ color: expired ? "#b91c1c" : "#312e81", fontWeight: 900, fontSize: { xs: 13, sm: 14 }, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", mt: .2 }}>{expired ? "Trial expired" : time}</Typography>
           </Box>
         </Stack>
-        <Button component={Link} to="/subscription" variant="contained" endIcon={<span aria-hidden="true">→</span>} sx={{ justifySelf: { xs: "stretch", sm: "start", lg: "end" }, bgcolor: "#5b55f4", textTransform: "none", whiteSpace: "nowrap", fontSize: 12, fontWeight: 800, borderRadius: 1.5, px: 1.75, py: 1, boxShadow: "0 5px 12px rgba(79,70,229,.22)", "&:hover": { bgcolor: "#4f46e5" } }}>Choose a plan</Button>
+        <Button component={Link} to="/subscription" variant="contained" endIcon={<span aria-hidden="true">→</span>} sx={{ justifySelf: { xs: "stretch", sm: "start", lg: "end" }, bgcolor: "#5b55f4", textTransform: "none", whiteSpace: "nowrap", fontSize: 12, fontWeight: 800, borderRadius: ISLAND_BUTTON_RADIUS, px: 1.75, py: 1, boxShadow: "0 5px 12px rgba(79,70,229,.22)", ...choosePlanAnimationSx }}>Choose a plan</Button>
       </Box>
     </Paper>
   );

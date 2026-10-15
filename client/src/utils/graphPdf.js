@@ -40,9 +40,9 @@ const layoutLevelBands = (pdf, section, lineWidth, xRange) => {
   if (!series.length || !offsets.length) return [];
 
   // Include every distinct horizontal position across the displayed profiles.
-  // Reuse the level-band layout so offsets share alignment and label spacing.
+  // Reuse the level-band layout so positions share alignment and label spacing.
   series.push({
-    name: "Offset",
+    name: section.type === "ls" ? "Chainage" : "Offset",
     color: "#000000",
     data: [...new Set(offsets)].map((offset) => ({ x: offset, y: offset })),
   });
