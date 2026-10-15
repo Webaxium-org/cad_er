@@ -83,7 +83,7 @@ export default function ProfessionalTrialCountdown({ subscription }) {
             <Typography role="timer" aria-label="Trial time remaining" sx={{ color: expired ? "#b91c1c" : "#312e81", fontWeight: 900, fontSize: { xs: 13, sm: 14 }, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", mt: .2 }}>{expired ? "Trial expired" : time}</Typography>
           </Box>
         </Stack>
-        <Button component={Link} to="/subscription" variant="contained" endIcon={<span aria-hidden="true">→</span>} sx={{ justifySelf: { xs: "stretch", sm: "start", lg: "end" }, bgcolor: "#5b55f4", textTransform: "none", whiteSpace: "nowrap", fontSize: 12, fontWeight: 800, borderRadius: ISLAND_BUTTON_RADIUS, px: 1.75, py: 1, boxShadow: "0 5px 12px rgba(79,70,229,.22)", ...choosePlanAnimationSx }}>Choose a plan</Button>
+        <Button component={Link} to="/subscription" variant="contained" endIcon={<span aria-hidden="true">→</span>} sx={{ justifySelf: { xs: "stretch", sm: "start", md: "stretch", lg: "end" }, width: { xs: "100%", sm: "auto", md: "100%", lg: "auto" }, bgcolor: "#5b55f4", textTransform: "none", whiteSpace: "nowrap", fontSize: "1.1rem", fontWeight: 800, borderRadius: ISLAND_BUTTON_RADIUS, px: 1.75, py: 1, boxShadow: "0 5px 12px rgba(79,70,229,.22)", ...choosePlanAnimationSx }}>Choose a plan</Button>
       </Box>
     </Paper>
   );

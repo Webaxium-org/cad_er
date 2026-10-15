@@ -1,11 +1,10 @@
 import * as React from "react";
 import * as Yup from "yup";
-import { motion as Motion, useReducedMotion } from "framer-motion";
-import { Box, Divider, Typography, IconButton } from "@mui/material";
+import { Box, Divider, Typography, IconButton, InputAdornment } from "@mui/material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useDispatch } from "react-redux";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 import { GoogleIcon } from "./components/CustomIcons";
 import { showAlert } from "../../redux/alertSlice";
 import { stopLoading } from "../../redux/loadingSlice";
@@ -14,10 +13,6 @@ import { googleLogin, registerUser } from "../../services/indexServices";
 import BasicButtons from "../../components/BasicButton";
 import BasicInput from "../../components/BasicInput";
 import { setUser } from "../../redux/userSlice";
-import AuthBrand from "./components/AuthBrand";
-import SurveyBackground from "./components/SurveyBackground";
-import LoginRobot from "./components/LoginRobot";
-import "./signIn.css";
 
 const inputSx = {
   backgroundColor: "#fff", color: "#080e48", borderColor: "#bfc4ff", height: 50,
@@ -50,7 +45,6 @@ const initialFormValues = {
 };
 
 export default function SignUp() {
-  const reduceMotion = useReducedMotion();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -150,16 +144,14 @@ export default function SignUp() {
   });
 
   return (
-    <main className="signin-page signin-page-survey register-page">
-      <SurveyBackground />
-      <div className="signin-layout">
         <Box component="form" className="signin-card" noValidate onSubmit={(event) => { event.preventDefault(); handleSubmit(); }}>
-          <RouterLink to="/" className="signin-mobile-logo" aria-label="CADER home"><AuthBrand /></RouterLink>
-          <Typography component="h1" className="signin-title">Sign up</Typography>
+
+          <Typography component="h1" className="signin-title">Create account</Typography>
+          <Typography className="login-subtitle">Get started with your CADER workspace.</Typography>
           <div className="signin-fields">
             {[
               { name: "name", label: "Full Name", type: "text", placeholder: "Full Name", autoComplete: "name" },
-              { name: "email", label: "Email", type: "email", placeholder: "name@gmail.com", autoComplete: "email" },
+              { name: "email", label: "Email", type: "email", placeholder: "you@company.com", autoComplete: "email" },
               { name: "password", label: "Password", type: showPassword ? "text" : "password", placeholder: "Password", autoComplete: "new-password" },
               { name: "confirmPassword", label: "Confirm Password", type: showConfirmPassword ? "text" : "password", placeholder: "Confirm password", autoComplete: "new-password" },
             ].map((field) => {
@@ -167,48 +159,34 @@ export default function SignUp() {
               const visible = field.name === "password" ? showPassword : showConfirmPassword;
               return (
                 <BasicInput key={field.name} {...field}
+                  inputProps={{ "aria-label": field.label }}
+                  startAdornment={<InputAdornment position="start">{isPassword ? <FiLock /> : field.name === "email" ? <FiMail /> : <FiUser />}</InputAdornment>}
                   value={formValues[field.name]} error={formErrors[field.name] || ""}
                   onChange={handleInputChange} labelColor="#080e48" errorTextColor="#bd2d43" sx={inputSx}
                   endAdornment={isPassword ? (
+                    <InputAdornment position="end">
                     <IconButton type="button" size="small" aria-label={`${visible ? "Hide" : "Show"} ${field.label.toLowerCase()}`}
                       aria-pressed={visible} sx={{ color: "#62659c" }}
                       onClick={() => field.name === "password" ? setShowPassword((value) => !value) : setShowConfirmPassword((value) => !value)}>
-                      {visible ? <FaEyeSlash /> : <FaEye />}
+                      {visible ? <FiEyeOff /> : <FiEye />}
                     </IconButton>
+                    </InputAdornment>
                   ) : undefined}
                 />
               );
             })}
-            <BasicButtons value="Create Account" loading={loading} type="submit" fullWidth
+            <BasicButtons value="Create account" loading={loading} type="submit" fullWidth
               sx={{ height: 49, color: "#fff", background: "linear-gradient(100deg, #5858ed, #413cea)",
                 boxShadow: "0 8px 17px rgba(72, 68, 227, .18)",
                 "&:hover": { background: "linear-gradient(100deg, #4d4ddf, #3832da)" } }} />
           </div>
-          <Divider className="signin-divider">or</Divider>
-          <BasicButtons value="Sign up with Google" variant="outlined" fullWidth onClick={() => googleAuth()}
+          <Divider className="signin-divider">or continue with</Divider>
+          <BasicButtons value="Continue with Google" type="button" variant="outlined" fullWidth onClick={() => googleAuth()}
             startIcon={<GoogleIcon />}
             sx={{ height: 49, color: "#080e48", borderColor: "#7777ff", backgroundColor: "#fff",
               "&:hover": { borderColor: "#5050ed", backgroundColor: "#f7f7ff" } }} />
           <Typography className="signin-signup">Already have an account? <RouterLink to="/login">Sign in</RouterLink></Typography>
           <Typography className="signin-legal">By signing up you agree to our <RouterLink to="/terms">Terms &amp; Conditions</RouterLink> and <RouterLink to="/privacy">Privacy Policy</RouterLink></Typography>
         </Box>
-        <section className="signin-hero register-hero" aria-label="Engineering the Future">
-          <RouterLink to="/" className="signin-hero-logo" aria-label="CADER home"><AuthBrand /></RouterLink>
-          <h2>Engineering the<br /><span className="signin-together">Future
-            <svg className="signin-together-underline" viewBox="0 0 100 10" aria-hidden="true" focusable="false">
-              <Motion.path initial={reduceMotion ? false : { pathLength: 0 }} animate={{ pathLength: 1 }}
-                transition={reduceMotion ? { duration: 0 } : { duration: 1.5, delay: 0.5 }}
-                d="M0 5 Q 25 0, 50 5 T 100 5" fill="transparent" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </span></h2>
-          <div className="signin-robot-row">
-            <LoginRobot />
-            <div className="signin-speech"><strong>CADER</strong><br />I turn your field observations into precise cut-and-fill reports—so you can finish faster.</div>
-          </div>
-          <p className="signin-hero-note">Transforming raw spatial data into precision infrastructure. CADer empowers surveyors with real-time topographical accuracy.</p>
-          <RouterLink to="/login" className="signin-hero-cta">Sign in – let’s pick up where you left off!</RouterLink>
-        </section>
-      </div>
-    </main>
   );
 }

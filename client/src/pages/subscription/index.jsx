@@ -1,24 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Alert, Box, Button, Container, Grid, LinearProgress, Paper, Stack, Switch, Typography } from "@mui/material";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiCreditCard } from "react-icons/fi";
+import { Alert, Box, Button, Container, LinearProgress, Paper, Stack, Switch, Typography } from "@mui/material";
 import AppHeader from "../../components/AppHeader";
+import PricingCard from "../../components/PricingCard";
+import { getPricingPlans } from "../../constants/pricingPlans";
 import { cancelSubscription, createSubscriptionCheckout, getSubscription, getSubscriptionPlans, loadRazorpayCheckout, verifySubscriptionCheckout } from "../../services/subscriptionServices";
+import { stopLoading } from "../../redux/loadingSlice";
+import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 
-const money = (paise) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(paise / 100);
 const date = (value) => value ? new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
 const accent = "#4f46e5";
-const planDetails = {
-  junior_monthly: { original: 999, discount: "90% off", features: ["Single user access", "Priority email support", "PDF, CSV, DWG and XLSX exports", "Cloud storage"] },
-  executive_monthly: { original: 4999, discount: "90% off", includes: "Everything in Junior" },
-  director_monthly: { original: 9999, discount: "90% off", includes: "Everything in Executive" },
-  professionals_yearly: { original: 19999, discount: "70% off", features: ["Single user access", "Priority email support", "PDF, CSV, DWG and XLSX exports", "Cloud storage", "Auto level calibration check"] },
-  teams_yearly: { original: 49999, discount: "76% off", includes: "Everything in Professionals" },
-};
-const CheckIcon = () => <Box component="span" aria-hidden="true" sx={{ color: accent, fontWeight: 900, fontSize: 20, lineHeight: 1 }}>✓</Box>;
 
 export default function SubscriptionPage() {
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -28,6 +25,22 @@ export default function SubscriptionPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const heroRef = useRef(null);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    const updateCompactHeader = () => {
+      const halfway = (heroRef.current?.offsetHeight || 0) / 2;
+      setCompactHeaderVisible(window.scrollY >= halfway && halfway > 0);
+    };
+    updateCompactHeader();
+    window.addEventListener("scroll", updateCompactHeader, { passive: true });
+    window.addEventListener("resize", updateCompactHeader);
+    return () => {
+      window.removeEventListener("scroll", updateCompactHeader);
+      window.removeEventListener("resize", updateCompactHeader);
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     const [{ data: planData }, { data: accountData }] = await Promise.all([getSubscriptionPlans(), getSubscription()]);
@@ -35,7 +48,10 @@ export default function SubscriptionPage() {
     setAccount(accountData);
   }, []);
 
-  useEffect(() => { refresh().catch(() => setError("Subscription details could not be loaded.")); }, [refresh]);
+  useEffect(() => {
+    dispatch(stopLoading());
+    refresh().catch(() => setError("Subscription details could not be loaded."));
+  }, [dispatch, refresh]);
 
   const choosePlan = async (plan) => {
     setBusy(true);
@@ -83,20 +99,51 @@ export default function SubscriptionPage() {
   const activePaid = subscription?.kind === "paid" && account?.hasAccess;
   const selectedPlan = plans.find((plan) => plan.code === subscription?.planCode);
   const usage = subscription?.projectLimit ? Math.min(100, subscription.projectCount / subscription.projectLimit * 100) : 0;
-  const visiblePlans = plans.filter((plan) => plan.interval === billingCycle);
+  const visiblePlans = getPricingPlans(billingCycle);
 
   return <>
     <AppHeader />
     <Box sx={{ minHeight: "100vh", bgcolor: "#fcfcfd", pb: { xs: 8, md: 14 } }}>
-      <Box sx={{ color: "white", pt: { xs: 7, md: 9 }, pb: { xs: 12, md: 14 }, background: "linear-gradient(120deg, #4338ca 0%, #4f46e5 55%, #6366f1 100%)" }}>
+      <AnimatePresence>
+        {compactHeaderVisible && (
+          <Box component={motion.div}
+            initial={{ opacity: 0, y: -24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            sx={{ position: "fixed", top: { xs: 49, md: 65 }, left: 0, right: 0, zIndex: 1099,
+              p: 2, color: "white", background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+              borderRadius: "0 0 20px 20px", boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.3)" }}>
+            <Container maxWidth="lg">
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <FiCreditCard size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+                <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px" noWrap>
+                  Your <span style={{ color: "#c7d2fe" }}>Subscription</span>
+                </Typography>
+              </Stack>
+            </Container>
+          </Box>
+        )}
+      </AnimatePresence>
+      <Box ref={heroRef} sx={{ color: "white", pt: 10, pb: 10, mb: 6, position: "relative",
+        borderRadius: "0 0 20px 20px", boxShadow: "0 10px 40px -10px rgba(79, 70, 229, 0.4)",
+        background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)" }}>
         <Container maxWidth="lg">
-          <Typography sx={{ fontWeight: 800, letterSpacing: 2, fontSize: 13, textTransform: "uppercase", opacity: .8, mb: 1.5 }}>Your subscription</Typography>
-          <Typography component="h1" sx={{ fontSize: { xs: "2.35rem", md: "3.5rem" }, fontWeight: 900, letterSpacing: "-0.035em", lineHeight: 1.12, maxWidth: 760 }}>A plan for every stage of your surveying work.</Typography>
-          <Typography sx={{ mt: 2, opacity: .85, fontSize: { xs: 16, md: 18 }, maxWidth: 650 }}>Choose the project capacity you need. Your account and projects stay together as you move between periods.</Typography>
+          <Box sx={{ opacity: compactHeaderVisible ? 0 : 1,
+            transform: compactHeaderVisible ? "translateY(-12px) scale(0.96)" : "none",
+            transformOrigin: "left center", transition: "opacity 0.3s ease, transform 0.3s ease" }}>
+            <Stack direction="row" alignItems="center" spacing={2} mb={1}>
+              <FiCreditCard size={32} opacity={0.9} style={{ flexShrink: 0 }} />
+              <Typography component="h1" sx={heroTitleSx} fontWeight={900} letterSpacing="-0.02em">
+                Your <span style={{ color: "#c7d2fe" }}>Subscription</span>
+              </Typography>
+            </Stack>
+            <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 500, fontWeight: 500 }}>
+              Choose the project capacity you need. Your account and projects stay together as you move between periods.
+            </Typography>
+          </Box>
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ position: "relative", mt: -7 }}>
+      <Container maxWidth="lg" sx={{ position: "relative", mt: -14 }}>
         {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
         {notice && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{notice}</Alert>}
         <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: 5, border: "1px solid #e0e7ff", boxShadow: "0 24px 65px rgba(67,56,202,.12)", mb: 3 }}>
@@ -130,33 +177,23 @@ export default function SubscriptionPage() {
           </Stack>
         </Box>
 
-        <Grid container spacing={3} alignItems="stretch">
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gridAutoRows: "1fr", gap: 3 }}>
           {visiblePlans.map((plan) => {
-            const details = planDetails[plan.code] || {};
-            const highlighted = ["executive_monthly", "teams_yearly"].includes(plan.code);
+            const checkoutPlan = plans.find((available) => available.code === plan.code);
             const isPending = account?.pendingCheckout?.planCode === plan.code;
-            const disabled = busy || activePaid || (account?.pendingCheckout && !isPending);
-            return <Grid key={plan.code} size={{ xs: 12, md: 4 }}>
-              <motion.div whileHover={{ y: -7 }} transition={{ type: "spring", stiffness: 300 }} style={{ height: "100%" }}>
-                <Paper elevation={0} sx={{ p: { xs: 3.5, md: 4 }, height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", borderRadius: 5, border: `1px solid ${highlighted ? accent : "rgba(0,0,0,.08)"}`, boxShadow: highlighted ? "0 24px 55px rgba(79,70,229,.15)" : "none", bgcolor: "#fff" }}>
-                  {highlighted && <Box sx={{ position: "absolute", right: -37, top: 21, transform: "rotate(45deg)", bgcolor: accent, color: "white", px: 5, py: .5, fontSize: 11, fontWeight: 800, letterSpacing: .5 }}>Most popular</Box>}
-                  <Typography variant="h6" fontWeight={800} color="#111">{plan.name}</Typography>
-                  <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mt: 2 }}><Typography sx={{ fontSize: { xs: 37, md: 42 }, lineHeight: 1, fontWeight: 900, letterSpacing: "-0.04em" }}>{money(plan.amountPaise)}</Typography><Typography color="text.secondary">/{plan.interval === "monthly" ? "mo" : "yr"}</Typography></Stack>
-                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1.5, mb: 2.5 }}><Typography variant="body2" color="text.secondary" sx={{ textDecoration: "line-through" }}>{money(details.original * 100)}</Typography><Box sx={{ bgcolor: "#ecfdf5", color: "#059669", px: 1, py: .4, borderRadius: 1, fontSize: 12, fontWeight: 800 }}>{details.discount}</Box></Stack>
-                  <Typography sx={{ color: accent, fontWeight: 800, mb: 2 }}>{plan.projectLimit} new projects / {plan.interval === "monthly" ? "month" : "year"}</Typography>
-                  {details.includes && <Typography variant="body2" fontWeight={700} sx={{ mb: 1.5 }}>{details.includes}</Typography>}
-                  <Stack spacing={1.5} sx={{ mb: 4, flexGrow: 1 }}>{(details.features || ["All CADer survey tools", "Exports and cloud storage", "Use on mobile, tablet and desktop"]).map((feature) => <Stack key={feature} direction="row" spacing={1.5} alignItems="center"><CheckIcon /><Typography variant="body2" color="#444">{feature}</Typography></Stack>)}</Stack>
-                  <Button fullWidth variant={highlighted ? "contained" : "outlined"} disabled={Boolean(disabled)} onClick={() => choosePlan(plan)} sx={{ py: 1.5, borderRadius: 2.5, textTransform: "none", fontWeight: 800, bgcolor: highlighted ? accent : "transparent", color: highlighted ? "white" : accent, borderColor: accent, "&:hover": { bgcolor: highlighted ? "#4338ca" : "#eef2ff", borderColor: accent } }}>{activePaid && subscription.planCode === plan.code ? "Current plan" : activePaid ? "Available after current period" : isPending ? "Resume checkout" : "Choose plan"}</Button>
-                </Paper>
-              </motion.div>
-            </Grid>;
+            const disabled = Boolean(plan.code && (!checkoutPlan || busy || activePaid || (account?.pendingCheckout && !isPending)));
+            return <Box key={plan.code || plan.tier} sx={{ minWidth: 0 }}>
+              <PricingCard
+                {...plan}
+                introductoryPrice={checkoutPlan ? String(checkoutPlan.amountPaise / 100) : plan.introductoryPrice}
+                disabled={disabled}
+                buttonText={!plan.code ? "Contact Sales" : activePaid && subscription.planCode === plan.code ? "Current plan" : activePaid ? "Available after current period" : isPending ? "Resume checkout" : "Choose plan"}
+                buttonHref={!plan.code ? "mailto:admin@getcader.com?subject=CADer%20Institutions%20and%20Enterprise%20plan" : undefined}
+                handleContactSales={checkoutPlan ? () => choosePlan(checkoutPlan) : undefined}
+              />
+            </Box>;
           })}
-          {billingCycle === "yearly" && <Grid size={{ xs: 12, md: 4 }}><Paper elevation={0} sx={{ p: { xs: 3.5, md: 4 }, height: "100%", display: "flex", flexDirection: "column", borderRadius: 5, border: "1px solid rgba(0,0,0,.08)", bgcolor: "white" }}>
-            <Typography variant="h6" fontWeight={800}>Institutions & Enterprise</Typography><Typography sx={{ fontSize: 42, fontWeight: 900, mt: 2, lineHeight: 1 }}>Custom</Typography><Typography color="text.secondary" sx={{ mt: 1.5, mb: 2.5 }}>Annual pricing tailored to your organization.</Typography><Typography color={accent} fontWeight={800} sx={{ mb: 2 }}>Custom project capacity</Typography>
-            <Stack spacing={1.5} sx={{ mb: 4, flexGrow: 1 }}>{["Multi-user access", "Dedicated account manager", "On-site training", "Custom feature development"].map((feature) => <Stack key={feature} direction="row" spacing={1.5} alignItems="center"><CheckIcon /><Typography variant="body2" color="#444">{feature}</Typography></Stack>)}</Stack>
-            <Button component="a" href="mailto:admin@getcader.com?subject=CADer%20Institutions%20and%20Enterprise%20plan" fullWidth variant="outlined" sx={{ py: 1.5, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: accent, borderColor: accent }}>Contact sales</Button>
-          </Paper></Grid>}
-        </Grid>
+        </Box>
 
         <Paper elevation={0} sx={{ mt: { xs: 7, md: 10 }, p: { xs: 4, md: 6 }, borderRadius: 5, bgcolor: "#111827", color: "white", textAlign: "center" }}><Typography variant="h4" fontWeight={850}>Need help choosing?</Typography><Typography sx={{ opacity: .75, mt: 1, mb: 3 }}>Tell us about your projects and we’ll help you find the right fit.</Typography><Button component="a" href="mailto:admin@getcader.com?subject=CADer%20subscription%20question" variant="contained" sx={{ bgcolor: "white", color: "#111827", borderRadius: 2.5, px: 4, py: 1.5, textTransform: "none", fontWeight: 800, "&:hover": { bgcolor: "#e0e7ff" } }}>Contact our team</Button></Paper>
       </Container>

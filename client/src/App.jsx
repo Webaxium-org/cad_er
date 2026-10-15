@@ -14,6 +14,7 @@ import AreaReport from "./pages/survey/AreaReport";
 import VolumeReport from "./pages/survey/VolumeReport";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
+import AuthLayout from "./pages/auth/components/AuthLayout";
 import PublicRoute from "./routes/PublicRoute";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import CrossSectionReport from "./pages/survey/CrossSectionReport";
@@ -61,8 +62,10 @@ function App() {
           </Route>
 
           <Route element={<PublicRoute />}>
-            <Route path="/login" element={<SignIn />} />
-            <Route path="/register" element={<SignUp />} />
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<SignIn />} />
+              <Route path="/register" element={<SignUp />} />
+            </Route>
           </Route>
 
           <Route element={<OnboardingRoute />}>

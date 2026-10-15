@@ -1,0 +1,125 @@
+.login-page {
+  --login-primary: #4c40f4;
+  min-height: 100svh;
+  padding: 64px 24px;
+  box-sizing: border-box;
+  background: radial-gradient(ellipse at center, #eef0ff 0%, #f6f8ff 75%);
+  color: #16182f;
+  isolation: isolate;
+}
+/* Override the application's universal font rule only on this page. */
+.login-page, .login-page * { font-family: Arial, sans-serif !important; }
+.workspace-contours { position: absolute; pointer-events: none; width: 100%; height: 100%; inset: 0; }
+.workspace-contours-page { color: #b9beff; opacity: .36; }
+.auth-form-stage {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  border-radius: 28px 0 0 28px;
+  background: #fff;
+}
+.auth-form-transition { display: flex; width: 100%; min-width: 0; }
+.login-page .signin-layout {
+  width: min(1236px, 100%);
+  grid-template-columns: 43.6% 56.4%;
+  gap: 0;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #d9dcf3;
+  border-radius: 32px;
+  background: linear-gradient(135deg, #5147f4, #3938e9);
+  box-shadow: 0 20px 50px rgba(49, 59, 126, .16);
+}
+.login-illustration-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 40px 46px 36px;
+  overflow: hidden;
+  color: #fff;
+}
+.workspace-contours-panel { color: #a7a4ff; opacity: .15; }
+.login-illustration-panel > :not(.workspace-contours) { position: relative; z-index: 1; }
+.login-brand { text-decoration: none; }
+.login-brand .cader-brand { --brand-scale: 1.08; gap: 14px; }
+.login-brand .cader-brand-copy { width: 160px; }
+.login-brand .cader-brand-name, .login-brand .cader-brand-accent, .login-brand .cader-brand-tagline { fill: #fff; }
+.login-illustration-panel h2 { margin: 58px 0 18px; font-size: 40px; line-height: 1.28; letter-spacing: -.025em; font-weight: 700; }
+.login-illustration-panel p { margin: 0; color: #c0bdff; font-size: 20px; line-height: 1.5; }
+.login-illustration { display: block; width: calc(100% + 38px); max-width: none; height: 400px; box-sizing: border-box; margin: auto -19px 0; padding-top: 24px; object-fit: contain; }
+.login-page .signin-card {
+  width: 100%; min-width: 0; min-height: 750px;
+  padding: 66px 66px 38px 84px;
+  border: 0; border-radius: 28px 0 0 28px;
+  background: #fff; box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.login-page .signin-title.MuiTypography-root { color: #16182f; font-size: 40px; font-weight: 700; letter-spacing: -.035em; line-height: 1.2; margin: 0 0 8px; }
+.login-subtitle.MuiTypography-root { color: #8a8daa; font-size: 20px; line-height: 1.5; margin-bottom: 34px; }
+.login-page .signin-fields { gap: 24px; }
+.login-page .signin-fields .MuiTypography-body2 { color: #343958; font-size: 16px; font-weight: 500; margin-bottom: 10px; }
+.login-page .signin-fields .MuiInputBase-root { border: 1px solid #d6d8ee; border-radius: 12px; padding: 12px 22px; height: 61px; background: #fff; color: #343958; }
+.login-page .signin-fields input { font-size: 18px; }
+.login-page .signin-fields input::placeholder { color: #898dab; opacity: 1; }
+.login-page .signin-fields .MuiInputBase-root:not(.Mui-error) { background: #fff; border-color: #d6d8ee; }
+.login-page .signin-fields .MuiInputBase-root:not(.Mui-error):hover { background: #fff; border-color: #a29cf5; }
+.login-page .signin-fields .MuiInputBase-root.Mui-focused:not(.Mui-error) { background: #fff; border-color: var(--login-primary); box-shadow: 0 0 0 3px #4c40f414; }
+.login-page .MuiInputAdornment-root { color: #777d9f; }
+.login-page .MuiInputAdornment-positionStart { margin-right: 18px; }
+.login-page .MuiInputAdornment-root svg { width: 22px; height: 22px; }
+.login-page .MuiInputAdornment-root .MuiIconButton-root { color: inherit; }
+.login-page .signin-forgot { align-self: flex-end; font-size: 14px; margin-top: -10px; margin-bottom: -4px; }
+.login-page .signin-fields .MuiButton-root { border-radius: 12px; height: 56px; margin: 0; font-size: 18px; background: linear-gradient(100deg, #5040fa, #483cf0); box-shadow: none; }
+.login-page .signin-fields .MuiButton-root:hover { background: #4033df; }
+.login-page .signin-divider.MuiDivider-root { margin: 26px 0 22px; color: #737a98; font-size: 14px; }
+.login-page .signin-divider::before, .login-page .signin-divider::after { border-color: #d6d8eb; }
+.login-page .signin-card > .MuiButton-outlined { height: 58px; border-radius: 12px; border-color: #d6d8ee; background: #fff; color: #343958; font-size: 17px; font-weight: 500; }
+.login-page .signin-card > .MuiButton-outlined:hover { background: #f8f8ff; border-color: #a29cf5; }
+.login-page .signin-card > .MuiButton-root .MuiButton-startIcon { margin-right: 16px; }
+.login-page .signin-card > .MuiButton-root .MuiButton-startIcon svg { width: 28px; height: 28px; }
+.login-page .signin-signup.MuiTypography-root { margin-top: 30px; color: #4d5476; font-size: 14px; }
+.login-page .signin-card a:not(.signin-mobile-logo) { color: #4b3cff; font-weight: 500; text-decoration: none; }
+.login-page .signin-card a:hover { text-decoration: underline; }
+.login-page .signin-legal.MuiTypography-root { color: #8a90ad; font-size: 12px; line-height: 1.6; margin-top: 20px; }
+.login-page a:focus-visible { outline: 2px solid var(--login-primary); outline-offset: 4px; }
+.register-page .signin-card { padding-top: 42px; }
+.register-page .login-subtitle.MuiTypography-root { margin-bottom: 24px; }
+.register-page .signin-fields { gap: 16px; }
+.register-page .signin-fields .MuiTypography-body2 { margin-bottom: 8px; }
+.register-page .signin-fields .MuiInputBase-root { height: 54px; }
+.register-page .signin-divider.MuiDivider-root { margin: 22px 0 18px; }
+.register-page .signin-signup.MuiTypography-root { margin-top: 24px; }
+.register-page .signin-legal.MuiTypography-root { margin-top: 16px; }
+@media (min-width: 761px) {
+  .login-page { padding-block: 40px; }
+  /* Scale both auth cards together, including their layout footprint. */
+  .login-page .signin-layout { zoom: .9; }
+}
+@media (max-width: 1100px) and (min-width: 761px) {
+  .login-illustration-panel { padding: 36px 28px; }
+  .login-illustration-panel h2 { font-size: 32px; }
+  .login-illustration-panel p { font-size: 17px; }
+  .login-page .signin-card { padding: 52px 36px 36px; min-height: 700px; }
+  .login-page .signin-title.MuiTypography-root { font-size: 34px; }
+  .login-subtitle.MuiTypography-root { font-size: 17px; }
+}
+@media (max-width: 760px) {
+  .auth-form-stage { border-radius: 26px 26px 0 0; }
+  .login-page { padding: 24px 16px; }
+  .login-page .signin-layout { display: flex; flex-direction: column; width: min(520px, 100%); padding: 0; border-radius: 26px; }
+  .login-illustration-panel { min-height: 220px; padding: 28px; }
+  .login-brand .cader-brand { --brand-scale: .85; gap: 8px; }
+  .login-brand .cader-brand-copy { width: 136px; }
+  .login-illustration-panel h2 { max-width: 64%; margin: 30px 0 12px; font-size: 25px; }
+  .login-illustration-panel p { max-width: 62%; font-size: 14px; }
+  .login-illustration-panel .login-illustration { position: absolute; width: 42%; height: auto; right: -4px; bottom: 16px; padding: 0; margin: 0; }
+  .login-page .signin-card { min-height: 0; padding: 32px 26px; border-radius: 26px 26px 0 0; }
+  .login-page .signin-mobile-logo { display: none; }
+  .login-page .signin-title.MuiTypography-root { font-size: 30px; }
+  .login-subtitle.MuiTypography-root { font-size: 16px; margin-bottom: 28px; }
+  .login-page .signin-fields .MuiInputBase-root { padding-inline: 14px; height: 56px; }
+  .login-page .signin-fields input { font-size: 16px; }
+}

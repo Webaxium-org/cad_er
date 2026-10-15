@@ -1,7 +1,6 @@
 import * as React from "react";
-import { motion as Motion, useReducedMotion } from "framer-motion";
 import * as Yup from "yup";
-import { Box, Typography, Divider } from "@mui/material";
+import { Box, Typography, Divider, InputAdornment, IconButton } from "@mui/material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useDispatch } from "react-redux";
@@ -13,10 +12,7 @@ import { handleFormError } from "../../utils/handleFormError";
 import { setUser } from "../../redux/userSlice";
 import BasicButtons from "../../components/BasicButton";
 import BasicInput from "../../components/BasicInput";
-import AuthBrand from "./components/AuthBrand";
-import SurveyBackground from "./components/SurveyBackground";
-import LoginRobot from "./components/LoginRobot";
-import "./signIn.css";
+import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 
 const schema = Yup.object().shape({
   email: Yup.string()
@@ -29,7 +25,6 @@ const schema = Yup.object().shape({
 });
 
 export default function SignIn() {
-  const reduceMotion = useReducedMotion();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [formValues, setFormValues] = React.useState({
@@ -38,6 +33,7 @@ export default function SignIn() {
   });
   const [formErrors, setFormErrors] = React.useState({});
   const [loading, setLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   React.useEffect(() => {
     dispatch(stopLoading());
@@ -105,32 +101,24 @@ export default function SignIn() {
   });
 
   return (
-    <main className="signin-page signin-page-survey">
-      <SurveyBackground />
-      <div className="signin-layout">
         <Box
           component="form"
           className="signin-card"
           noValidate
           onSubmit={handleSubmit}
         >
-          <RouterLink
-            to="/"
-            className="signin-mobile-logo"
-            aria-label="CADER home"
-          >
-            <AuthBrand />
-          </RouterLink>
+
           <Typography component="h1" className="signin-title">
-            Sign in
+            Welcome back
           </Typography>
+          <Typography className="login-subtitle">Sign in to your CADER workspace.</Typography>
           <div className="signin-fields">
             {[
               {
                 name: "email",
                 label: "Email",
                 type: "email",
-                placeholder: "name@gmail.com",
+                placeholder: "you@company.com",
               },
               {
                 name: "password",
@@ -142,6 +130,17 @@ export default function SignIn() {
               <BasicInput
                 key={field.name}
                 {...field}
+                type={field.name === "password" && showPassword ? "text" : field.type}
+                startAdornment={<InputAdornment position="start">{field.name === "email" ? <FiMail /> : <FiLock />}</InputAdornment>}
+                endAdornment={field.name === "password" ? (
+                  <InputAdornment position="end">
+                    <IconButton type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)} edge="end">
+                      {showPassword ? <FiEyeOff /> : <FiEye />}
+                    </IconButton>
+                  </InputAdornment>
+                ) : undefined}
+                autoComplete={field.name === "email" ? "username" : "current-password"}
+                inputProps={{ "aria-label": field.label }}
                 value={formValues[field.name]}
                 onChange={handleInputChange}
                 error={formErrors[field.name] || ""}
@@ -164,6 +163,16 @@ export default function SignIn() {
                 }}
               />
             ))}
+            <RouterLink
+              to="#"
+              className="signin-forgot"
+              onClick={(event) => {
+                event.preventDefault();
+                window.alert("This feature in progress !!");
+              }}
+            >
+              Forgot your password?
+            </RouterLink>
             <BasicButtons
               value="Sign in"
               loading={loading}
@@ -179,22 +188,13 @@ export default function SignIn() {
                 },
               }}
             />
-            <RouterLink
-              to="#"
-              className="signin-forgot"
-              onClick={(event) => {
-                event.preventDefault();
-                window.alert("This feature in progress !!");
-              }}
-            >
-              Forgot your password?
-            </RouterLink>
           </div>
-          <Divider className="signin-divider">or</Divider>
+          <Divider className="signin-divider">or continue with</Divider>
           <BasicButtons
-            value="Sign in with Google"
+            value="Continue with Google"
             variant="outlined"
             fullWidth
+            type="button"
             onClick={() => googleAuth()}
             startIcon={<GoogleIcon />}
             sx={{
@@ -206,8 +206,8 @@ export default function SignIn() {
             }}
           />
           <Typography className="signin-signup">
-            Don&apos;t have an account?{" "}
-            <RouterLink to="/register">Sign up</RouterLink>
+            New to CADER?{" "}
+            <RouterLink to="/register">Create account</RouterLink>
           </Typography>
           <Typography className="signin-legal">
             By signing in you agree to our{" "}
@@ -215,60 +215,5 @@ export default function SignIn() {
             <RouterLink to="/privacy">Privacy Policy</RouterLink>
           </Typography>
         </Box>
-
-        <section className="signin-hero" aria-label="Welcome to CADER">
-          <RouterLink
-            to="/"
-            className="signin-hero-logo"
-            aria-label="CADER home"
-          >
-            <AuthBrand />
-          </RouterLink>
-          <h2>
-            Hey!
-            <br />
-            We’re better{" "}
-            <span className="signin-together">
-              together!
-              <svg
-                className="signin-together-underline"
-                viewBox="0 0 100 10"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <Motion.path
-                  initial={reduceMotion ? false : { pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={
-                    reduceMotion
-                      ? { duration: 0 }
-                      : { duration: 1.5, delay: 0.5 }
-                  }
-                  d="M0 5 Q 25 0, 50 5 T 100 5"
-                  fill="transparent"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-              </svg>
-            </span>
-          </h2>
-          <div className="signin-robot-row">
-            <LoginRobot />
-            <div className="signin-speech">
-              <strong>CADER</strong>
-              <br />I turn your field observations into precise cut-and-fill
-              reports—so you can finish faster.
-            </div>
-          </div>
-          <p className="signin-hero-note">
-            Now, let’s sign in to eliminate post-processing wrestling—and get
-            you back some quality family time.
-          </p>
-          <RouterLink to="/register" className="signin-hero-cta">
-            Sign up – let’s wrap up the race!
-          </RouterLink>
-        </section>
-      </div>
-    </main>
   );
 }

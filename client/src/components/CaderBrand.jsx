@@ -1,10 +1,10 @@
 import logo from "../assets/logo/cader_logo_2.png";
 import "./caderBrand.css";
 
-export default function CaderBrand() {
+export default function CaderBrand({ iconSrc = logo }) {
   return (
     <span className="cader-brand">
-      <img className="cader-brand-icon" src={logo} alt="" />
+      <img className="cader-brand-icon" src={iconSrc} alt="" />
       <svg className="cader-brand-copy" viewBox="0 0 160 54" role="img"
         aria-label="CADER — Complexity simplified">
         <text className="cader-brand-name" x="0" y="32" textLength="160" lengthAdjust="spacingAndGlyphs">
