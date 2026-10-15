@@ -1,11 +1,17 @@
 import "./config/env.js";
 import app from "./app.js";
 import connectDB from "./config/db.js";
+import Subscription from "./models/subscription.js";
+import CheckoutLock from "./models/checkoutLock.js";
+import RazorpayEvent from "./models/razorpayEvent.js";
+import Payment from "./models/payments.js";
+import RazorpayPlan from "./models/razorpayPlan.js";
 
 const startServer = async () => {
   try {
     // 1. Connect to Database first
     await connectDB();
+    await Promise.all([Subscription.init(), CheckoutLock.init(), RazorpayEvent.init(), Payment.init(), RazorpayPlan.init()]);
 
     const PORT = process.env.PORT || 5000;
 

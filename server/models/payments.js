@@ -11,6 +11,7 @@ const PaymentSchema = new Schema({
 
   razorpayOrderId: String,
   razorpayPaymentId: String,
+  razorpaySubscriptionId: String,
   razorpaySignature: String,
 
   amount: Number,
@@ -30,5 +31,7 @@ const PaymentSchema = new Schema({
 
   createdAt: { type: Date, default: Date.now },
 });
+
+PaymentSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
 
 export default model("Payments", PaymentSchema);

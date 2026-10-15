@@ -14,8 +14,8 @@ import { googleLogin, registerUser } from "../../services/indexServices";
 import BasicButtons from "../../components/BasicButton";
 import BasicInput from "../../components/BasicInput";
 import { setUser } from "../../redux/userSlice";
-import logo from "../../assets/logo/cader_logo.png";
-import LoginContours from "./components/LoginContours";
+import AuthBrand from "./components/AuthBrand";
+import SurveyBackground from "./components/SurveyBackground";
 import LoginRobot from "./components/LoginRobot";
 import "./signIn.css";
 
@@ -150,11 +150,11 @@ export default function SignUp() {
   });
 
   return (
-    <main className="signin-page register-page">
-      <LoginContours />
+    <main className="signin-page signin-page-survey register-page">
+      <SurveyBackground />
       <div className="signin-layout">
         <Box component="form" className="signin-card" noValidate onSubmit={(event) => { event.preventDefault(); handleSubmit(); }}>
-          <RouterLink to="/" className="signin-mobile-logo" aria-label="CADER home"><img src={logo} alt="" /></RouterLink>
+          <RouterLink to="/" className="signin-mobile-logo" aria-label="CADER home"><AuthBrand /></RouterLink>
           <Typography component="h1" className="signin-title">Sign up</Typography>
           <div className="signin-fields">
             {[
@@ -193,7 +193,7 @@ export default function SignUp() {
           <Typography className="signin-legal">By signing up you agree to our <RouterLink to="/terms">Terms &amp; Conditions</RouterLink> and <RouterLink to="/privacy">Privacy Policy</RouterLink></Typography>
         </Box>
         <section className="signin-hero register-hero" aria-label="Engineering the Future">
-          <RouterLink to="/" className="signin-hero-logo" aria-label="CADER home"><img src={logo} alt="" /></RouterLink>
+          <RouterLink to="/" className="signin-hero-logo" aria-label="CADER home"><AuthBrand /></RouterLink>
           <h2>Engineering the<br /><span className="signin-together">Future
             <svg className="signin-together-underline" viewBox="0 0 100 10" aria-hidden="true" focusable="false">
               <Motion.path initial={reduceMotion ? false : { pathLength: 0 }} animate={{ pathLength: 1 }}

@@ -13,8 +13,8 @@ import { handleFormError } from "../../utils/handleFormError";
 import { setUser } from "../../redux/userSlice";
 import BasicButtons from "../../components/BasicButton";
 import BasicInput from "../../components/BasicInput";
-import logo from "../../assets/logo/cader_logo.png";
-import LoginContours from "./components/LoginContours";
+import AuthBrand from "./components/AuthBrand";
+import SurveyBackground from "./components/SurveyBackground";
 import LoginRobot from "./components/LoginRobot";
 import "./signIn.css";
 
@@ -105,8 +105,8 @@ export default function SignIn() {
   });
 
   return (
-    <main className="signin-page">
-      <LoginContours />
+    <main className="signin-page signin-page-survey">
+      <SurveyBackground />
       <div className="signin-layout">
         <Box
           component="form"
@@ -119,7 +119,7 @@ export default function SignIn() {
             className="signin-mobile-logo"
             aria-label="CADER home"
           >
-            <img src={logo} alt="" />
+            <AuthBrand />
           </RouterLink>
           <Typography component="h1" className="signin-title">
             Sign in
@@ -222,7 +222,7 @@ export default function SignIn() {
             className="signin-hero-logo"
             aria-label="CADER home"
           >
-            <img src={logo} alt="" />
+            <AuthBrand />
           </RouterLink>
           <h2>
             Hey!

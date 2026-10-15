@@ -1,0 +1,43 @@
+﻿/* Both lines share exact left/right coordinates; all pages use this lockup. */
+.cader-brand {
+  --brand-scale: 1;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-shrink: 0;
+  text-align: left;
+  font-family: "Inter", system-ui, sans-serif;
+  font-style: normal;
+  text-transform: none;
+}
+.cader-brand .cader-brand-icon {
+  display: block;
+  width: calc(54px * var(--brand-scale));
+  height: calc(54px * var(--brand-scale));
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.cader-brand .cader-brand-copy {
+  display: block;
+  width: calc(160px * var(--brand-scale));
+  height: calc(54px * var(--brand-scale));
+  overflow: visible;
+}
+.cader-brand .cader-brand-name {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 40px;
+  font-weight: 1000;
+  letter-spacing: 0;
+  fill: #64748b;
+}
+.cader-brand .cader-brand-accent { fill: #6366f1; }
+.cader-brand .cader-brand-tagline {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  fill: #64748b;
+}
+@media (max-width: 899.95px) {
+  .cader-brand { --brand-scale: .857143; }
+}

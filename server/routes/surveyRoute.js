@@ -30,10 +30,11 @@ import {
   createBreak,
   deleteSurveyPurpose,
 } from "../controllers/surveyController.js";
-import { isAuthenticated, requireAuth } from "../middleware/auth.js";
+import { isAuthenticated, isAuthorized, requireAuth } from "../middleware/auth.js";
+import { requireProfessionalSubscription } from "../services/subscriptionAccess.js";
 import lookupLocation from "../services/weatherLocationService.js";
 
-router.use(requireAuth, isAuthenticated);
+router.use(requireAuth, isAuthenticated, isAuthorized({ types: ["Professional"] }), requireProfessionalSubscription);
 
 // 🔹 Static routes
 router.get("/exists", checkSurveyExists);

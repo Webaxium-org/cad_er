@@ -41,6 +41,8 @@ import Settings from "./pages/settings";
 import Trash from "./pages/trash";
 import ProposeLevel from "./pages/survey/ProposeLevel";
 import LegalPage from "./pages/public/LegalPage";
+import SubscriptionPage from "./pages/subscription";
+import SubscriptionGate from "./routes/SubscriptionGate";
 
 function App() {
   return (
@@ -73,8 +75,13 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<RootLayout />}>
               <Route index element={<Home />} />
-              <Route path="camera" element={<CameraPage />} />
+              <Route element={<SubscriptionGate />}>
+                <Route path="camera" element={<CameraPage />} />
+              </Route>
               <Route path="profile" element={<Profile />} />
+              <Route element={<ProtectedRoute requiredTypes={["Professional"]} />}>
+                <Route path="subscription" element={<SubscriptionPage />} />
+              </Route>
 
               {/* 🎓 STUDENT ONLY */}
               <Route path="quiz" element={<Quiz />} />
@@ -95,45 +102,35 @@ function App() {
               <Route
                 element={<ProtectedRoute requiredTypes={["Professional"]} />}
               >
-                <Route path="survey">
-                  <Route index element={<ProjectsList />} />
-                  <Route
-                    path="select-equipment"
-                    element={<SelectEquipment />}
-                  />
-                  <Route path="add-survey" element={<SurveyLanding />} />
-                  <Route path=":id/propose-level" element={<ProposeLevel />} />
-                  <Route path="report" element={<Report />} />
-                  <Route path=":id/report" element={<Report />} />
-                  <Route path="road-survey">
-                    <Route index element={<RoadSurveyForm />} />
-                    <Route path="continue-survey/:id" element={<ContinueSurveyForm />} />
-                    <Route path=":id/rows" element={<RoadSurveyRowsForm />} />
-                    <Route path=":id/field-book" element={<FieldBook />} />
-                    <Route path=":id/report" element={<CrossSectionReport />} />
-                    <Route
-                      path=":id/longitudinal-report"
-                      element={<LongitudinalSectionReport />}
-                    />
-                    <Route path=":id/area-report" element={<AreaReport />} />
-                    <Route
-                      path=":id/volume-report"
-                      element={<VolumeReport />}
-                    />
-                    <Route
-                      path=":id/plotting-and-quantity-report"
-                      element={<PlottingAndQuantityReport />}
-                    />
+                <Route element={<SubscriptionGate />}>
+                  <Route path="survey">
+                    <Route index element={<ProjectsList />} />
+                    <Route path="select-equipment" element={<SelectEquipment />} />
+                    <Route path="add-survey" element={<SurveyLanding />} />
+                    <Route path=":id/propose-level" element={<ProposeLevel />} />
+                    <Route path="report" element={<Report />} />
+                    <Route path=":id/report" element={<Report />} />
+                    <Route path="road-survey">
+                      <Route index element={<RoadSurveyForm />} />
+                      <Route path="continue-survey/:id" element={<ContinueSurveyForm />} />
+                      <Route path=":id/rows" element={<RoadSurveyRowsForm />} />
+                      <Route path=":id/field-book" element={<FieldBook />} />
+                      <Route path=":id/report" element={<CrossSectionReport />} />
+                      <Route path=":id/longitudinal-report" element={<LongitudinalSectionReport />} />
+                      <Route path=":id/area-report" element={<AreaReport />} />
+                      <Route path=":id/volume-report" element={<VolumeReport />} />
+                      <Route path=":id/plotting-and-quantity-report" element={<PlottingAndQuantityReport />} />
+                    </Route>
                   </Route>
-                </Route>
 
-                <Route path="tickets">
-                  <Route index element={<TicketsDashboard />} />
-                  <Route path=":id/followup" element={<Followup />} />
+                  <Route path="tickets">
+                    <Route index element={<TicketsDashboard />} />
+                    <Route path=":id/followup" element={<Followup />} />
+                  </Route>
+
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="trash" element={<Trash />} />
                 </Route>
-                
-                <Route path="settings" element={<Settings />} />
-                <Route path="trash" element={<Trash />} />
               </Route>
 
               {/* Errors */}

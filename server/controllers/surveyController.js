@@ -7,6 +7,7 @@ import { isValidObjectId, calculateReducedLevel } from "../helper/index.js";
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
 import { prepareWaterWaySections } from "../helper/waterWayGeometry.js";
+import { reserveProjectSlot } from "../services/subscriptionAccess.js";
 
 const checkSurveyExists = async (req, res, next) => {
   try {
@@ -282,6 +283,7 @@ const createSurvey = async (req, res, next) => {
     }
 
     // 🔹 Create Survey
+    await reserveProjectSlot(req, session);
     const survey = await Survey.create(
       [
         {
@@ -395,6 +397,8 @@ const createSurvey = async (req, res, next) => {
 // Creates a "Scheduled" survey with only Step-1 data. No purpose/rows are
 // created. The user can return later to complete the technical details.
 const queueSurvey = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     const {
       user: { userId },
@@ -466,7 +470,8 @@ const queueSurvey = async (req, res, next) => {
       );
     }
 
-    const survey = await Survey.create({
+    await reserveProjectSlot(req, session);
+    const [survey] = await Survey.create([{
       project,
       projectType: projectType || (isPublicProject ? "Public" : "Private"),
       createdBy: userId,
@@ -491,7 +496,9 @@ const queueSurvey = async (req, res, next) => {
       location,
       finalScheduleDate: finalScheduleDate || null,
       finalDeadline: finalDeadline || null,
-    });
+    }], { session });
+
+    await session.commitTransaction();
 
     res.status(201).json({
       success: true,
@@ -499,7 +506,10 @@ const queueSurvey = async (req, res, next) => {
       survey,
     });
   } catch (err) {
+    await session.abortTransaction();
     next(err);
+  } finally {
+    session.endSession();
   }
 };
 

@@ -184,6 +184,7 @@ export default function DashboardOverview({ data }) {
   }, []);
 
   useEffect(() => {
+    if (!data?.subscription?.hasAccess) return;
     let mounted = true;
     Promise.all([
       getAllSurvey({ page: 1, limit: 1, metrics: true }),
@@ -200,7 +201,7 @@ export default function DashboardOverview({ data }) {
       setOverdueTotal(scheduled.data.overdueTotal || 0);
     }).catch(() => { if (mounted) setError(true); });
     return () => { mounted = false; };
-  }, []);
+  }, [data?.subscription?.hasAccess]);
 
   const statusItems = [
     { label: "Queued", value: counts?.queued || 0, color: "#f5a100" },
@@ -588,7 +589,18 @@ export default function DashboardOverview({ data }) {
         </Container>
         <Container maxWidth="lg">
 
-          {data?.professionalTrialStartedAt && <ProfessionalTrialCountdown startedAt={data.professionalTrialStartedAt} />}
+          {data?.subscription?.kind === "trial" && <ProfessionalTrialCountdown subscription={data.subscription} />}
+          {data?.subscription?.kind === "paid" && (
+            <Paper elevation={0} sx={{ border: "1px solid #c7d2fe", borderRadius: "12px", bgcolor: "#eef2ff", px: 2, py: 1.5, mb: 1.25 }}>
+              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} spacing={1}>
+                <Box>
+                  <Typography fontWeight={800} color="#312e81">{data.subscription.planCode.replaceAll("_", " ")}</Typography>
+                  <Typography variant="caption" color="#4338ca">{data.subscription.projectCount} of {data.subscription.projectLimit} new projects used this period</Typography>
+                </Box>
+                <Button onClick={() => navigate("/subscription")} sx={{ color: "#4f46e5" }}>Manage subscription</Button>
+              </Stack>
+            </Paper>
+          )}
 
           {overdueTotal > 0 && (
             <Paper elevation={0} sx={{ border: "1px solid #ffd4a0", bgcolor: "#fff7ed", borderRadius: "10px", px: 2, py: 1.25, mb: 1.25 }}>

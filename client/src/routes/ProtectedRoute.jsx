@@ -8,7 +8,8 @@ const ProtectedRoute = ({ requiredRoles = [], requiredTypes = [] }) => {
 
   // 1️⃣ Not authenticated
   if (!user) {
-    if (hasLoggedInBefore === true) {
+    // The public home page must remain accessible after a previous login.
+    if (location.pathname !== "/" && hasLoggedInBefore === true) {
       return <Navigate to="/login" replace />;
     }
     return <Landing />;

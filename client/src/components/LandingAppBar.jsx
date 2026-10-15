@@ -22,7 +22,7 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import logo from "../assets/logo/cader_logo_2.png";
+import CaderBrand from "./CaderBrand";
 // --- Theme Configuration ---
 const theme = createTheme({
   palette: {
@@ -154,50 +154,7 @@ const LandingAppBar = () => {
                   cursor: "pointer",
                 }}
               >
-                <Box
-                  component="img"
-                  src={logo}
-                  alt=""
-                  sx={{
-                    display: "block",
-                    width: { xs: 52, md: 60 },
-                    height: { xs: 52, md: 60 },
-                    objectFit: "contain",
-                  }}
-                />
-
-                <Stack>
-                  <Typography
-                    component="span"
-                    sx={{
-                      display: "block",
-                      fontSize: { xs: "2.1rem", md: "2.45rem" },
-                      fontWeight: 1000,
-                      lineHeight: 1.05,
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    <Box component="span" sx={{ color: "#64748b" }}>
-                      CAD
-                    </Box>
-                    <Box component="span" sx={{ color: "#6366f1" }}>
-                      ER
-                    </Box>
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{
-                      display: "block",
-                      color: "#64748b",
-                      fontSize: { xs: "0.7rem", md: "0.8rem" },
-                      fontWeight: 400,
-                      lineHeight: 1.2,
-                      letterSpacing: "0.01em",
-                    }}
-                  >
-                    Complexity simplified
-                  </Typography>
-                </Stack>
+                <CaderBrand />
               </Box>
 
               {/* Desktop Menu */}

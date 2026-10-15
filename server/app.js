@@ -2,7 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import compression from "compression";
-import { globalLimiter } from "./middleware/rateLimiter.js";
+import { globalLimiter, webhookLimiter } from "./middleware/rateLimiter.js";
 import configureCors from "./utils/cors.js";
 import errorHandler from "./middleware/errorHandler.js";
 
@@ -13,6 +13,7 @@ import userRouter from "./routes/userRoute.js";
 import surveyRouter from "./routes/surveyRoute.js";
 import ticketRouter from "./routes/ticketRoute.js";
 import openingRouter from "./routes/openingRoute.js";
+import subscriptionRouter from "./routes/subscriptionRoute.js";
 
 const app = express();
 
@@ -30,11 +31,12 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // 3. Parsers
+app.use("/api/subscriptions/webhook", express.raw({ type: "application/json", limit: "256kb" }));
 app.use(express.json());
 app.use(cookieParser());
 
 // 4. Rate Limiting
-app.use(globalLimiter);
+app.use((req, res, next) => req.path === "/api/subscriptions/webhook" ? webhookLimiter(req, res, next) : globalLimiter(req, res, next));
 
 // 5. Routes
 app.use("/api/organizations", organizationRouter);
@@ -43,6 +45,7 @@ app.use("/api/settings", settingsRouter);
 app.use("/api/surveys", surveyRouter);
 app.use("/api/tickets", ticketRouter);
 app.use("/api/openings", openingRouter);
+app.use("/api/subscriptions", subscriptionRouter);
 app.use("/api", indexRouter);
 
 // 6. Error Handling

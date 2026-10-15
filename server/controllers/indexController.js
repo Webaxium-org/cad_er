@@ -1,10 +1,13 @@
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 import User from "../models/user.js";
 import Company from "../models/company.js";
 import Opening from "../models/opening.js";
 import jwt from "../utils/jwt.js";
 import { send_mail } from "../utils/mailer.js";
 import { EMAIL_TEMPLATES } from "../utils/emails/templates.js";
+import { ensureTrialSubscription } from "../services/trialSubscription.js";
+import { getCurrentSubscription, hasSubscriptionAccess } from "../services/subscriptionAccess.js";
 
 export const loginUser = async (req, res, next) => {
   try {
@@ -280,9 +283,22 @@ export const registerAccountType = async (req, res, next) => {
 
     user.type = type;
     user.details = details;
-    if (type === "Professional") user.professionalTrialStartedAt = new Date();
-
-    await user.save();
+    if (type === "Professional") {
+      const session = await mongoose.startSession();
+      try {
+        session.startTransaction();
+        await user.save({ session });
+        await ensureTrialSubscription(user._id, { session });
+        await session.commitTransaction();
+      } catch (error) {
+        await session.abortTransaction();
+        throw error;
+      } finally {
+        session.endSession();
+      }
+    } else {
+      await user.save();
+    }
 
     let finalUser = user;
 
@@ -356,15 +372,19 @@ export const getDashboard = async (req, res, next) => {
       stats = { ...stats, openings };
     }
 
-    if (type === "Professional") {
-      // Existing accounts receive a trial start once; later visits reuse it.
-      const initialized = await User.findOneAndUpdate(
-        { _id: userId, professionalTrialStartedAt: null },
-        { $set: { professionalTrialStartedAt: new Date() } },
-        { new: true, projection: { professionalTrialStartedAt: 1 } },
-      );
-      const professional = initialized || await User.findById(userId).select("professionalTrialStartedAt");
-      stats.professionalTrialStartedAt = professional?.professionalTrialStartedAt;
+    if (type === "Professional" && role !== "Super Admin") {
+      // Backfill one trial for Professionals who onboarded before subscriptions existed.
+      const subscription = await getCurrentSubscription(userId);
+      stats.subscription = {
+        kind: subscription.kind,
+        planCode: subscription.planCode,
+        status: subscription.status,
+        periodStart: subscription.periodStart,
+        periodEnd: subscription.periodEnd,
+        projectLimit: subscription.projectLimit,
+        projectCount: subscription.projectCount,
+        hasAccess: hasSubscriptionAccess(subscription),
+      };
     }
 
     res.status(200).json({

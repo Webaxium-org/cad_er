@@ -23,6 +23,7 @@ const createLimiter = (windowMs, max, message) => {
 
 /* Global limiter: 300 requests per 15 mins */
 export const globalLimiter = createLimiter(15 * 60 * 1000, 300);
+export const webhookLimiter = createLimiter(60 * 1000, 1000);
 
 /* Login limiter: 5 attempts per 10 mins */
 export const loginLimiter = createLimiter(

@@ -15,6 +15,7 @@ import {
 import { motion } from "framer-motion";
 import ScrollToTop from "../../components/ScrollToTop";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 // --- Icons ---
 const CheckIcon = () => (
@@ -51,6 +52,7 @@ const PricingCard = ({
   tier,
   price,
   introductoryPrice,
+  discountLabel,
   duration,
   includes,
   features,
@@ -118,11 +120,9 @@ const PricingCard = ({
             ? "Custom"
             : `₹${introductoryPrice || price}`}
         </Typography>
-        {(introductoryPrice || price) !== "Custom" && (
-          <Typography variant="body1" sx={{ color: "text.secondary", ml: 1 }}>
-            /{tier === "Junior" ? "mtr" : duration}
-          </Typography>
-        )}
+        <Typography variant="body1" sx={{ color: "text.secondary", ml: 1 }}>
+          /{duration}
+        </Typography>
       </Box>
 
       {introductoryPrice &&
@@ -134,7 +134,7 @@ const PricingCard = ({
               variant="body2"
               sx={{ color: "text.secondary", textDecoration: "line-through" }}
             >
-              ₹{price}/{tier === "Junior" ? "mtr" : duration}
+              ₹{price}/{duration}
             </Typography>
             <Typography
               variant="body2"
@@ -148,7 +148,7 @@ const PricingCard = ({
                 fontSize: "0.75rem",
               }}
             >
-              Launch Price
+              {discountLabel || "Launch Price"}
             </Typography>
           </Box>
         )}
@@ -230,22 +230,30 @@ const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState("monthly");
 
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.user);
 
   const handleContactSales = () => {
-    navigate("/", { state: { target: "schedule demo" } });
+    if (user?.type === "Professional") navigate("/subscription");
+    else navigate("/", { state: { target: "schedule demo" } });
+  };
+  const handleSelectPlan = (planCode) => {
+    if (user?.type === "Professional") navigate("/subscription", { state: { planCode } });
+    else navigate("/register");
   };
 
   const plans = [
     {
       tier: billingCycle === "monthly" ? "Junior" : "Professionals",
-      price: billingCycle === "monthly" ? "1.9" : "45000",
-      introductoryPrice: billingCycle === "monthly" ? "1" : "9999",
+      code: billingCycle === "monthly" ? "junior_monthly" : "professionals_yearly",
+      price: billingCycle === "monthly" ? "999" : "19999",
+      introductoryPrice: billingCycle === "monthly" ? "99" : "5999",
+      discountLabel: billingCycle === "monthly" ? "90% off" : "70% off",
       duration: billingCycle === "monthly" ? "mo" : "yr",
       features: [
+        billingCycle === "monthly" ? "1 new project / month" : "80 new projects / year",
         "Single user access",
         "Priority email support",
         "Export to .pdf, .csv, .dwg, .xlsx formats",
-        "Multi-user collaboration",
         "Use anywhere (mobile / tablet / desktop)",
         "Cloud storage",
         ...(billingCycle === "yearly"
@@ -256,17 +264,44 @@ const Pricing = () => {
           : []),
       ],
     },
+    ...(billingCycle === "yearly"
+      ? [{
+          tier: "Teams",
+          code: "teams_yearly",
+          price: "49999",
+          introductoryPrice: "11999",
+          discountLabel: "76% off",
+          duration: "yr",
+          highlighted: true,
+          includes: "All features of Professionals",
+          features: ["200 new projects / year"],
+        }]
+      : []),
+    ...(billingCycle === "monthly"
+      ? [{
+          tier: "Executive",
+          code: "executive_monthly",
+          price: "4999",
+          introductoryPrice: "499",
+          discountLabel: "90% off",
+          highlighted: true,
+          duration: "mo",
+          includes: "All features of Junior",
+          features: ["6 new projects / month"],
+        }]
+      : []),
     {
-      tier: billingCycle === "monthly" ? "Executive" : "Institutions",
-      price: billingCycle === "monthly" ? "2999" : "Custom",
-      introductoryPrice: billingCycle === "monthly" ? "1199" : "Custom",
-      highlighted: true,
+      tier: billingCycle === "monthly" ? "Director" : "Institutions & Enterprise",
+      code: billingCycle === "monthly" ? "director_monthly" : null,
+      price: billingCycle === "monthly" ? "9999" : "Custom",
+      introductoryPrice: billingCycle === "monthly" ? "999" : "Custom",
+      discountLabel: billingCycle === "monthly" ? "90% off" : undefined,
       duration: billingCycle === "monthly" ? "mo" : "yr",
       includes: `All features of ${
-        billingCycle === "monthly" ? "Junior" : "Professionals"
+        billingCycle === "monthly" ? "Executive" : "Teams"
       }`,
       features: [
-        "Limited to 10 projects",
+        billingCycle === "monthly" ? "14 new projects / month" : "Custom project capacity",
         ...(billingCycle === "yearly"
           ? [
               "Multi-user access",
@@ -275,22 +310,6 @@ const Pricing = () => {
               "Loyalty privileges",
               "Digital portfolio",
               "Community access",
-            ]
-          : []),
-      ],
-    },
-    {
-      tier: billingCycle === "monthly" ? "Director" : "Enterprise",
-      price: billingCycle === "monthly" ? "5999" : "Custom",
-      introductoryPrice: billingCycle === "monthly" ? "2999" : "Custom",
-      duration: "org",
-      includes: `All features of ${
-        billingCycle === "monthly" ? "Executive" : "Institutions"
-      }`,
-      features: [
-        "Unlimited projects",
-        ...(billingCycle === "yearly"
-          ? [
               "Dedicated account manager",
               "Custom feature development",
               "On-site training",
@@ -369,21 +388,7 @@ const Pricing = () => {
                   color: billingCycle === "yearly" ? "#000" : "text.secondary",
                 }}
               >
-                Yearly{" "}
-                <Box
-                  component="span"
-                  sx={{
-                    color: "#10b981",
-                    ml: 1,
-                    fontSize: "0.8rem",
-                    bgcolor: "rgba(16, 185, 129, 0.1)",
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: 1,
-                  }}
-                >
-                  Save 20%
-                </Box>
+                Yearly
               </Typography>
             </Stack>
           </Box>
@@ -394,7 +399,8 @@ const Pricing = () => {
               <Grid size={{ xs: 12, md: 4 }} key={index}>
                 <PricingCard
                   {...plan}
-                  handleContactSales={handleContactSales}
+                  buttonText={plan.code ? "Choose plan" : "Contact Sales"}
+                  handleContactSales={() => plan.code ? handleSelectPlan(plan.code) : handleContactSales()}
                 />
               </Grid>
             ))}
@@ -411,11 +417,11 @@ const Pricing = () => {
             <Stack spacing={1}>
               <FAQItem
                 question="Can I upgrade or downgrade my plan later?"
-                answer="Yes, you can change your plan at any time. If you upgrade, the price difference will be prorated. If you downgrade, you'll receive credit towards your next billing cycle."
+                answer="You can cancel renewal and choose a different plan when your current paid period ends. Prorated plan changes are not available yet."
               />
               <FAQItem
                 question="Is there a free trial available?"
-                answer="We offer a 14-day free trial on our Individual and Professional plans. No credit card is required to start your trial."
+                answer="Professional accounts include a 30-day free trial. A subscription is required to continue using CADer after the trial ends."
               />
               <FAQItem
                 question="Do you offer discounts for educational institutions?"
@@ -423,7 +429,7 @@ const Pricing = () => {
               />
               <FAQItem
                 question="What happens to my data if I cancel?"
-                answer="Your data is yours. If you cancel your subscription, you'll have 30 days to export your projects before they are moved to our archival storage."
+                answer="Cancellation stops renewal at the end of your current paid period. Your projects stay stored, but survey access requires an active subscription."
               />
             </Stack>
           </Box>

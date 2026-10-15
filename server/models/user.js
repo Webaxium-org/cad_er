@@ -65,7 +65,6 @@ const UserSchema = new Schema(
       type: String,
       enum: ["Student", "Professional", "Company"],
     },
-    professionalTrialStartedAt: Date,
     role: {
       type: String,
       required: true,

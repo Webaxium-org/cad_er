@@ -6,6 +6,7 @@ import {
   isAuthorized,
   requireAuth,
 } from "../middleware/auth.js";
+import { requireProfessionalSubscription } from "../services/subscriptionAccess.js";
 
 const router = Router();
 const upload = multer({
@@ -22,7 +23,7 @@ const upload = multer({
   },
 });
 
-router.use(requireAuth, isAuthenticated);
+router.use(requireAuth, isAuthenticated, requireProfessionalSubscription);
 
 router.get("/", ticketController.getAllTickets);
 router.get("/:id", ticketController.getTicketById);

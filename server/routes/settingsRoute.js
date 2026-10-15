@@ -1,9 +1,10 @@
 import express from "express";
 import Settings from "../models/setting.js";
 import { requireAuth, isAuthenticated } from "../middleware/auth.js";
+import { requireProfessionalSubscription } from "../services/subscriptionAccess.js";
 
 const router = express.Router();
-router.use(requireAuth, isAuthenticated);
+router.use(requireAuth, isAuthenticated, requireProfessionalSubscription);
 
 router.get("/", async (req, res, next) => {
   try {

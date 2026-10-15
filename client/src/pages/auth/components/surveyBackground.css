@@ -1,0 +1,82 @@
+.survey-background {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: #4f46e5;
+  background: radial-gradient(ellipse at 28% 42%, #eeecff 0, transparent 48%),
+    radial-gradient(ellipse at 92% 76%, #f6f4ff 0, transparent 36%), #fff;
+}
+.survey-background *, .survey-background *::before { pointer-events: none; }
+.survey-background svg { position: absolute; }
+.survey-background path, .survey-background circle { vector-effect: non-scaling-stroke; }
+.survey-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(#4f46e508 1px, transparent 1px), linear-gradient(90deg, #4f46e508 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at center, transparent 20%, #000 95%);
+}
+.survey-contours { width: min(43vw, 740px); height: auto; overflow: visible; stroke: currentColor; stroke-width: .7; stroke-opacity: .16; }
+.survey-contours-left { left: -8%; top: -5%; }
+.survey-contours-right { right: -5%; top: -18%; }
+.survey-contours-edge { left: -4%; bottom: 18%; width: 400px; opacity: .7; }
+.survey-contours .survey-index-contour { stroke-width: .85; stroke-opacity: .21; }
+.survey-contours-left .survey-contour-highlight { animation-delay: -3s; }
+.survey-contours-right .survey-contour-highlight { animation-delay: -13s; }
+.survey-contours-edge .survey-contour-highlight { animation-delay: -19s; }
+.survey-contours .survey-contour-highlight {
+  stroke-width: 1.5;
+  stroke-opacity: .38;
+  stroke-dasharray: 24 976;
+  stroke-linecap: round;
+  animation: survey-contour-travel 24s linear infinite;
+}
+.survey-background text { font: 11px ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .2px; fill: currentColor; stroke: none; opacity: .65; }
+.survey-annotations { stroke-opacity: .4; }
+.survey-markers { inset: 0; stroke: currentColor; stroke-width: .7; opacity: .18; }
+.survey-control { right: 20px; top: 37%; width: 180px; stroke: currentColor; stroke-width: .8; opacity: .18; }
+.survey-triangulation { stroke-dasharray: 3 7; opacity: .65; }
+.survey-coordinates { inset: 0; stroke: currentColor; stroke-width: .6; stroke-dasharray: 2 3; opacity: .65; }
+.survey-terrain { position: absolute; bottom: -2px; left: 0; width: 100%; height: 38vh; pointer-events: none; }
+.survey-mesh { stroke: currentColor; stroke-width: .65; }
+.survey-mesh-highlight { stroke: currentColor; stroke-width: 1; opacity: .4; }
+.survey-point { fill: currentColor; opacity: .27; }
+.survey-point-pulse { animation: survey-point-pulse 5s ease-in-out infinite; }
+.survey-scan { animation: survey-terrain-scan 22s linear infinite; animation-delay: -5s; }
+.survey-terrain-compact { display: none; }
+.survey-content-mask {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 25% 40% at 34% 48%, #ffffffed 25%, #ffffffa8 60%, transparent 100%),
+    radial-gradient(ellipse 27% 40% at 66% 48%, #fff 30%, #ffffffdc 60%, transparent 100%);
+}
+.survey-total-station { right: 3%; bottom: 10%; width: clamp(100px, 7.5vw, 130px); stroke: #a49ef1; stroke-width: 1; }
+@keyframes survey-contour-travel { to { stroke-dashoffset: -1000; } }
+@keyframes survey-point-pulse { 0%, 100% { opacity: .18; } 50% { opacity: .55; } }
+@keyframes survey-terrain-scan { 0% { transform: translateX(0); } 65%, 100% { transform: translateX(1900px); } }
+@media (max-width: 1100px) {
+  .survey-contours { width: 480px; opacity: .7; }
+  .survey-contours-left { left: -190px; top: -105px; }
+  .survey-contours-right { right: -190px; top: -95px; }
+  .survey-contours-edge, .survey-control { display: none; }
+  .survey-coordinates { opacity: .3; }
+  .survey-terrain-desktop { display: none; }
+  .survey-terrain-compact { display: block; }
+  .survey-total-station { right: 12px; bottom: 22px; width: 85px; }
+}
+@media (max-width: 760px) {
+  .survey-contours { width: 380px; opacity: .6; }
+  .survey-contours-left { left: -200px; top: -95px; }
+  .survey-contours-right { right: -200px; top: -70px; }
+  .survey-contours path:nth-child(2n):not(.survey-contour-highlight) { display: none; }
+  .survey-total-station, .survey-annotations { display: none; }
+  .survey-coordinates { display: none; }
+  .survey-grid { background-size: 48px 48px; opacity: .6; }
+  .survey-terrain { height: 23vh; opacity: .65; }
+  .survey-content-mask { background: radial-gradient(ellipse 65% 47% at 50% 44%, #fff 40%, #fffffff5 70%, transparent 100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .survey-background *, .survey-background *::before { animation: none !important; }
+  .survey-contour-highlight, .survey-mesh-highlight { display: none; }
+}
