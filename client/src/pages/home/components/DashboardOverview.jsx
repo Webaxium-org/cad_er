@@ -35,6 +35,7 @@ import { compactTitleSx, heroTitleSx } from "../../../components/pageHeaderStyle
 import { getAllSurvey } from "../../../services/surveyServices";
 import AlertDialogSlide from "../../../components/AlertDialogSlide";
 import CreateTicket from "../../tickets/components/CreateTicket";
+import ProfessionalTrialCountdown from "./ProfessionalTrialCountdown";
 
 const BRAND = "#595cf2";
 const PRIMARY_BRAND = "#6366f1";
@@ -156,7 +157,7 @@ function ActiveCard({ survey, onResume, onFieldBook, onOpen }) {
   );
 }
 
-export default function DashboardOverview() {
+export default function DashboardOverview({ data }) {
   const [ticketOpen, setTicketOpen] = useState(false);
   const navigate = useNavigate();
   const heroRef = useRef(null);
@@ -586,6 +587,8 @@ export default function DashboardOverview() {
           </Box>
         </Container>
         <Container maxWidth="lg">
+
+          {data?.professionalTrialStartedAt && <ProfessionalTrialCountdown startedAt={data.professionalTrialStartedAt} />}
 
           {overdueTotal > 0 && (
             <Paper elevation={0} sx={{ border: "1px solid #ffd4a0", bgcolor: "#fff7ed", borderRadius: "10px", px: 2, py: 1.25, mb: 1.25 }}>

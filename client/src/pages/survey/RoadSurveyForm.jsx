@@ -41,7 +41,7 @@ import AdvancedAutoComplete from "../../components/AdvancedAutoComplete";
 import SmallHeader from "../../components/SmallHeader";
 import { getSettings, updateInstrument, updateSettingsFields } from "../../services/settingsServices";
 import { FiCheckCircle, FiFilePlus, FiMinusCircle, FiTool, FiUser } from "react-icons/fi";
-import { FiArrowLeft, FiSend } from "react-icons/fi";
+import { FiArrowLeft } from "react-icons/fi";
 import { FaLocationArrow } from "react-icons/fa";
 import { CgGoogleTasks } from "react-icons/cg";
 
@@ -1469,7 +1469,7 @@ const RoadSurveyForm = () => {
                       },
                       {
                         label: btnLoading ? "..." : "SUBMIT",
-                        icon: <FiSend />,
+                        icon: <FaLocationArrow />,
                         onClick: handleSubmit,
                       },
                     ].map((btn, i) => (

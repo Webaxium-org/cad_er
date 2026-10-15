@@ -280,6 +280,7 @@ export const registerAccountType = async (req, res, next) => {
 
     user.type = type;
     user.details = details;
+    if (type === "Professional") user.professionalTrialStartedAt = new Date();
 
     await user.save();
 
@@ -353,6 +354,17 @@ export const getDashboard = async (req, res, next) => {
     if (type === "Company") {
       const openings = await Opening.find({ createdBy: userId });
       stats = { ...stats, openings };
+    }
+
+    if (type === "Professional") {
+      // Existing accounts receive a trial start once; later visits reuse it.
+      const initialized = await User.findOneAndUpdate(
+        { _id: userId, professionalTrialStartedAt: null },
+        { $set: { professionalTrialStartedAt: new Date() } },
+        { new: true, projection: { professionalTrialStartedAt: 1 } },
+      );
+      const professional = initialized || await User.findById(userId).select("professionalTrialStartedAt");
+      stats.professionalTrialStartedAt = professional?.professionalTrialStartedAt;
     }
 
     res.status(200).json({

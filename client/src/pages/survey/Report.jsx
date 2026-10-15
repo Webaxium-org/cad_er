@@ -64,7 +64,7 @@ const Report = () => {
 
   const [selectedPurposes, setSelectedPurposes] = useState([]);
 
-  const [reportType, setReportType] = useState("cross");
+  const [reportType, setReportType] = useState("longitudinal");
 
   const [open, setOpen] = useState(null);
 
@@ -309,14 +309,9 @@ const Report = () => {
         >
           {[
             {
-              label: "CS",
-              value: "cross",
-              icon: <SlGraph fontSize="20px" />,
-            },
-            {
-              label: "LS",
-              value: "longitudinal",
-              icon: <FiTrendingUp />,
+              label: "Volume",
+              value: "volume",
+              icon: <FiBarChart2 />,
             },
             {
               label: "Area",
@@ -324,9 +319,14 @@ const Report = () => {
               icon: <FiFileText />,
             },
             {
-              label: "Volume",
-              value: "volume",
-              icon: <FiBarChart2 />,
+              label: "LS",
+              value: "longitudinal",
+              icon: <FiTrendingUp />,
+            },
+            {
+              label: "CS",
+              value: "cross",
+              icon: <SlGraph fontSize="20px" />,
             },
             {
               label: "Export",

@@ -18,6 +18,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import { motion } from "framer-motion";
+import { alpha } from "@mui/material/styles";
 import BasicButtons from "../../components/BasicButton";
 import { IoAdd } from "react-icons/io5";
 import { IoIosAddCircleOutline, IoIosArrowForward } from "react-icons/io";
@@ -65,6 +66,7 @@ const colors = {
   Proposed: "blue",
   Final: "red",
 };
+const surveyAccent = "#4f46e5";
 
 const formatDateTime = () => {
   const now = new Date();
@@ -90,7 +92,7 @@ const PulseDot = () => (
       width: 8,
       height: 8,
       borderRadius: "50%",
-      bgcolor: "primary.main",
+      bgcolor: surveyAccent,
       display: "inline-block",
       mr: 1,
     }}
@@ -113,14 +115,14 @@ const addButtonSx = {
   px: 1.5,
   py: 0.75,
   borderRadius: 2,
-  bgcolor: "primary.50",
-  color: "primary.main",
+  bgcolor: alpha(surveyAccent, 0.08),
+  color: surveyAccent,
   cursor: "pointer",
   fontSize: 14,
   fontWeight: 600,
   transition: "all 0.2s",
   "&:hover": {
-    bgcolor: "primary.100",
+    bgcolor: alpha(surveyAccent, 0.14),
   },
 };
 
@@ -1588,8 +1590,8 @@ const RoadSurveyRowsForm = () => {
                         py: 0.5,
                         mb: 0,
                         borderRadius: 10,
-                        bgcolor: "rgba(99, 102, 241, 0.1)",
-                        border: "1px solid rgba(99, 102, 241, 0.2)",
+                        bgcolor: alpha(surveyAccent, 0.1),
+                        border: `1px solid ${alpha(surveyAccent, 0.2)}`,
                       }}
                     >
                       <Box
@@ -1602,7 +1604,7 @@ const RoadSurveyRowsForm = () => {
                           variant="caption"
                           sx={{
                             // Change: Pure white or very light indigo for readability
-                            color: "primary.main",
+                            color: surveyAccent,
                             fontWeight: 700,
                             letterSpacing: 1,
                           }}
