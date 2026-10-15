@@ -703,7 +703,7 @@ export default function DashboardOverview({ data }) {
                   component={motion.div}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate("/survey/select-equipment")}
+                  onClick={() => navigate("/survey/add-survey", { state: { openCalibration: true } })}
                   sx={{ p: 3, borderRadius: "24px", bgcolor: PRIMARY_BRAND, color: "white", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: "0 10px 20px -5px rgba(99, 102, 241, 0.3)" }}
                 >
                   <Box sx={{ position: "relative", zIndex: 1 }}>

@@ -7,7 +7,7 @@ import { FaRoad } from "react-icons/fa6";
 import { FaWater } from "react-icons/fa";
 import { SiLevelsdotfyi } from "react-icons/si";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { stopLoading } from "../../redux/loadingSlice";
 import { showAlert as showGlobalAlert } from "../../redux/alertSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -57,11 +57,27 @@ const cardData = [
 const Index = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [active, setActive] = useState(0);
-  const [isCalibrationOpen, setCalibrationOpen] = useState(false);
+  const [isCalibrationOpen, setCalibrationOpen] = useState(
+    () => location.state?.openCalibration === true,
+  );
   const heroRef = useRef(null);
   const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.openCalibration !== true) return;
+
+    setCalibrationOpen(true);
+    // Consume the request so revisiting this history entry doesn't reopen the modal.
+    const remainingState = { ...location.state };
+    delete remainingState.openCalibration;
+    navigate(`${location.pathname}${location.search}${location.hash}`, {
+      replace: true,
+      state: remainingState,
+    });
+  }, [location, navigate]);
 
   useEffect(() => {
     const updateCompactHeader = () => {

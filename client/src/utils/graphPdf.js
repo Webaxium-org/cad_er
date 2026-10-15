@@ -39,6 +39,14 @@ const layoutLevelBands = (pdf, section, lineWidth, xRange) => {
     .filter(Number.isFinite);
   if (!series.length || !offsets.length) return [];
 
+  // Include every distinct horizontal position across the displayed profiles.
+  // Reuse the level-band layout so offsets share alignment and label spacing.
+  series.push({
+    name: "Offset",
+    color: "#000000",
+    data: [...new Set(offsets)].map((offset) => ({ x: offset, y: offset })),
+  });
+
   const rangeStart = Number(xRange?.[0]);
   const rangeEnd = Number(xRange?.[1]);
   const minOffset = Number.isFinite(rangeStart) && Number.isFinite(rangeEnd)
