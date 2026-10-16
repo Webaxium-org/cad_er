@@ -1,17 +1,21 @@
 import createHttpError from "http-errors";
 import Subscription from "../models/subscription.js";
 import { ensureTrialSubscription } from "./trialSubscription.js";
+import { hasInitialAccess, initialAccessFilter } from "./initialSubscriptionPayment.js";
+
+export const paidAccessFilter = now => ({ kind: "paid", $or: [
+  initialAccessFilter(now),
+  { paidCount: { $gt: 0 }, status: { $in: ["active", "pending", "cancelled"] },
+    $or: [{ endedAt: null }, { endedAt: { $gt: now } }] },
+] });
 
 export const getCurrentSubscription = async (userId) => {
   const now = new Date();
   const paid = await Subscription.findOne({
     userId,
-    kind: "paid",
-    paidCount: { $gt: 0 },
+    ...paidAccessFilter(now),
     periodStart: { $lte: now },
     periodEnd: { $gt: now },
-    status: { $in: ["active", "pending", "cancelled"] },
-    $or: [{ endedAt: null }, { endedAt: { $gt: now } }],
   }).sort({ periodEnd: -1 });
   if (paid) return paid;
 
@@ -22,7 +26,7 @@ export const getCurrentSubscription = async (userId) => {
 };
 
 export const hasSubscriptionAccess = (subscription, now = new Date()) =>
-  Boolean(subscription && subscription.periodStart <= now && subscription.periodEnd > now &&
+  hasInitialAccess(subscription, now) || Boolean(subscription && subscription.periodStart <= now && subscription.periodEnd > now &&
     ((subscription.kind === "trial" && subscription.status === "active") || (subscription.paidCount > 0 && ["active", "pending", "cancelled"].includes(subscription.status))) &&
     (!subscription.endedAt || subscription.endedAt > now));
 
@@ -45,7 +49,7 @@ export const reserveProjectSlot = async (req, session) => {
   if (!hasSubscriptionAccess(subscription, now)) throw createHttpError(402, "An active subscription is required");
   const eligibility = subscription.kind === "trial"
     ? { kind: "trial", status: "active" }
-    : { kind: "paid", paidCount: { $gt: 0 }, status: { $in: ["active", "pending", "cancelled"] }, $or: [{ endedAt: null }, { endedAt: { $gt: now } }] };
+    : paidAccessFilter(now);
   const updated = await Subscription.findOneAndUpdate(
     { _id: subscription._id, ...eligibility, periodStart: { $lte: now }, periodEnd: { $gt: now }, $expr: { $lt: ["$projectCount", "$projectLimit"] } },
     { $inc: { projectCount: 1 } },

@@ -12,6 +12,10 @@ const PaymentSchema = new Schema({
   razorpayOrderId: String,
   razorpayPaymentId: String,
   razorpaySubscriptionId: String,
+  razorpayInvoiceId: String,
+  planVersionId: { type: Types.ObjectId, ref: "PlanVersion" },
+  subscriptionId: { type: Types.ObjectId, ref: "Subscription" },
+  billingPhase: { type: String, enum: ["initial", "recurring"] },
   razorpaySignature: String,
 
   amount: Number,

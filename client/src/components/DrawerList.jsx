@@ -73,6 +73,8 @@ const menuListDetails = [
     label: "Settings",
     icon: <IoSettingsOutline />,
     path: "/settings",
+    required: ["Super Admin"],
+    requiredTypes: ["Professional"],
   },
   {
     label: "Trash",
@@ -127,11 +129,9 @@ const DrawerList = ({ toggleDrawer }) => {
   useEffect(() => {
     if (user) {
       const filteredMenu = menuListDetails.filter((menu) =>
-        menu.required
-          ? menu.required.includes(
-            menu.label === "Tickets" ? user.type : user.role,
-          )
-          : true,
+        (!menu.required && !menu.requiredTypes) ||
+        menu.required?.includes(menu.label === "Tickets" ? user.type : user.role) ||
+        menu.requiredTypes?.includes(user.type),
       );
 
       setMenuList(filteredMenu);

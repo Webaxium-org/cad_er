@@ -35,6 +35,9 @@ export const verifyHmac = (message, signature, secret) => {
 export const verifyCheckoutSignature = (subscriptionId, paymentId, signature) =>
   verifyHmac(`${paymentId}|${subscriptionId}`, signature, credentials().keySecret);
 
+export const verifyOrderSignature = (orderId, paymentId, signature) =>
+  verifyHmac(`${orderId}|${paymentId}`, signature, credentials().keySecret);
+
 export const verifyWebhookSignature = (rawBody, signature) => {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!secret) throw createHttpError(503, "Webhook is not configured");

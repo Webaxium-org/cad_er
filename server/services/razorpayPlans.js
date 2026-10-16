@@ -1,11 +1,11 @@
 import createHttpError from "http-errors";
 import RazorpayPlan from "../models/razorpayPlan.js";
 import { getCheckoutKey, razorpayRequest } from "./razorpay.js";
-import { SUBSCRIPTION_PLANS } from "./subscriptionPlans.js";
 
-export const getOrCreateRazorpayPlan = async (code) => {
-  const plan = SUBSCRIPTION_PLANS[code];
+export const getOrCreateRazorpayPlan = async (plan) => {
   if (!plan) throw createHttpError(400, "Unknown plan");
+  // Version 1 uses the original mapping; later versions get distinct provider plans.
+  const code = plan.version === 1 ? plan.code : `${plan.code}:v${plan.version}`;
   const keyId = getCheckoutKey();
   let mapping = await RazorpayPlan.findOne({ keyId, code });
   if (!mapping) {

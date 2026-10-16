@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Alert,
+  LinearProgress,
   Box,
   Container,
   Typography,
@@ -12,6 +14,7 @@ import {
   AccordionDetails,
 } from "@mui/material";
 import PricingCard from "../../components/PricingCard";
+import { getSubscriptionPlans } from "../../services/subscriptionServices";
 import { getPricingPlans } from "../../constants/pricingPlans";
 import ScrollToTop from "../../components/ScrollToTop";
 import { useNavigate } from "react-router-dom";
@@ -72,7 +75,17 @@ const Pricing = () => {
     else navigate("/register");
   };
 
-  const plans = getPricingPlans(billingCycle);
+  const [catalog, setCatalog] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [plansError, setPlansError] = useState("");
+  useEffect(() => {
+    let mounted = true;
+    getSubscriptionPlans().then(({ data }) => { if (mounted) setCatalog(data.plans); })
+      .catch(() => { if (mounted) setPlansError("Pricing could not be loaded. Please refresh to try again."); })
+      .finally(() => { if (mounted) setLoadingPlans(false); });
+    return () => { mounted = false; };
+  }, []);
+  const plans = getPricingPlans(billingCycle, catalog);
 
 
   return (
@@ -82,6 +95,8 @@ const Pricing = () => {
         sx={{ bgcolor: "#fcfcfd", minHeight: "100vh", py: { xs: 8, md: 12 } }}
       >
         <Container maxWidth="lg">
+          {loadingPlans && <LinearProgress aria-label="Loading pricing" />}
+          {plansError && <Alert severity="error">{plansError}</Alert>}
           {/* Header */}
           <Box sx={{ textAlign: "center", mb: 10 }}>
             <Typography

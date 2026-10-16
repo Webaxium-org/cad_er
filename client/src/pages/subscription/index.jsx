@@ -6,8 +6,8 @@ import { FiCreditCard } from "react-icons/fi";
 import { Alert, Box, Button, Container, LinearProgress, Paper, Stack, Switch, Typography } from "@mui/material";
 import AppHeader from "../../components/AppHeader";
 import PricingCard from "../../components/PricingCard";
-import { getPricingPlans } from "../../constants/pricingPlans";
-import { cancelSubscription, createSubscriptionCheckout, getSubscription, getSubscriptionPlans, loadRazorpayCheckout, verifySubscriptionCheckout } from "../../services/subscriptionServices";
+import { getPricingPlans, offerTerms } from "../../constants/pricingPlans";
+import { cancelSubscription, createSubscriptionCheckout, getSubscription, getSubscriptionPlans, loadRazorpayCheckout, verifySubscriptionCheckout, setupSubscriptionAutopay } from "../../services/subscriptionServices";
 import { stopLoading } from "../../redux/loadingSlice";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 
@@ -53,36 +53,66 @@ export default function SubscriptionPage() {
     refresh().catch(() => setError("Subscription details could not be loaded."));
   }, [dispatch, refresh]);
 
-  const choosePlan = async (plan) => {
-    setBusy(true);
-    setError("");
-    setNotice("");
+  const openCheckout = async data => {
+    if (data.type === "paid") {
+      await refresh(); setNotice("Your first payment is confirmed. Complete auto pay setup below."); setBusy(false); return;
+    }
+    const Razorpay = await loadRazorpayCheckout();
+    const initial = Boolean(data.orderId);
+    const checkout = new Razorpay({
+      key: data.keyId,
+      ...(initial ? { order_id: data.orderId, amount: data.amountPaise, currency: data.currency } : { subscription_id: data.subscriptionId }),
+      name: "CADer",
+      description: initial ? `${data.pricing.name}: first paid period` : `${data.pricing?.name || "CADer"}: auto pay`,
+      prefill: { name: user.name, email: user.email, contact: user.phone || undefined },
+      theme: { color: "#4f46e5" },
+      handler: async response => {
+        try {
+          const { data: confirmation } = await verifySubscriptionCheckout(response);
+          await refresh();
+          if (initial) {
+            setNotice(confirmation.hasAccess
+              ? "Step 1 complete: your first period is paid and access is active. Continue to step 2 below to authorize auto pay."
+              : "Payment received and awaiting capture. Refresh billing status shortly; access starts after payment is confirmed.");
+          } else if (data.type === "autopay") {
+            setNotice(confirmation.autopayAuthorized
+              ? `Auto pay authorized. Regular billing starts on ${date(data.startsAt)}.`
+              : "Auto pay authorization is awaiting bank confirmation. Your paid first-period access remains active.");
+          } else {
+            setNotice(confirmation.hasAccess ? "Subscription activated." : "Authorization received. Access starts when payment is confirmed.");
+          }
+        } catch (paymentError) {
+          setError(paymentError.response?.data?.message || "Payment confirmation could not be loaded. Refresh billing status before paying again.");
+        } finally { setBusy(false); }
+      },
+      modal: { ondismiss: () => { setBusy(false); refresh().catch(() => {}); } },
+    });
+    checkout.on("payment.failed", () => {
+      setError(initial ? "Payment failed. Refresh billing status, cancel the failed checkout, then choose the plan to try again." : "Auto pay authorization failed. Your already-paid period remains valid; retry setup below.");
+      setBusy(false); refresh().catch(() => {});
+    });
+    checkout.open();
+  };
+
+  const choosePlan = async plan => {
+    setBusy(true); setError(""); setNotice("");
     try {
-      const Razorpay = await loadRazorpayCheckout();
-      const { data } = await createSubscriptionCheckout(plan.code);
-      const checkout = new Razorpay({
-        key: data.keyId,
-        subscription_id: data.subscriptionId,
-        name: "CADer",
-        description: `${plan.name} ${plan.interval} subscription`,
-        prefill: { name: user.name, email: user.email, contact: user.phone || undefined },
-        theme: { color: "#4f46e5" },
-        handler: async (response) => {
-          try {
-            const { data: confirmation } = await verifySubscriptionCheckout(response);
-            await refresh();
-            setNotice(confirmation.hasAccess ? "Subscription activated." : "Payment authorization received. Access will update when the first charge is confirmed.");
-          } catch (paymentError) {
-            setError(paymentError.response?.data?.message || "Payment confirmation failed. Contact support before trying again.");
-          } finally { setBusy(false); }
-        },
-        modal: { ondismiss: () => setBusy(false) },
-      });
-      checkout.on("payment.failed", () => { setError("Payment failed. Please try again."); setBusy(false); });
-      checkout.open();
+      const { data } = await createSubscriptionCheckout(plan.code, plan.quoteKey);
+      await openCheckout(data);
     } catch (checkoutError) {
       setError(checkoutError.response?.data?.message || checkoutError.message || "Checkout could not be started.");
-      setBusy(false);
+      setBusy(false); refresh().catch(() => {});
+    }
+  };
+
+  const setupAutopay = async () => {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const { data } = await setupSubscriptionAutopay(account.subscription.id);
+      await openCheckout(data);
+    } catch (setupError) {
+      setError(setupError.response?.data?.message || "Auto pay could not be started. Your paid period remains valid.");
+      setBusy(false); refresh().catch(() => {});
     }
   };
 
@@ -99,7 +129,7 @@ export default function SubscriptionPage() {
   const activePaid = subscription?.kind === "paid" && account?.hasAccess;
   const selectedPlan = plans.find((plan) => plan.code === subscription?.planCode);
   const usage = subscription?.projectLimit ? Math.min(100, subscription.projectCount / subscription.projectLimit * 100) : 0;
-  const visiblePlans = getPricingPlans(billingCycle);
+  const visiblePlans = getPricingPlans(billingCycle, plans);
 
   return <>
     <AppHeader />
@@ -150,21 +180,33 @@ export default function SubscriptionPage() {
           <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={3}>
             <Box sx={{ flex: 1 }}>
               <Typography sx={{ color: accent, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", fontSize: 12 }}>Current account</Typography>
-              <Typography variant="h5" sx={{ fontWeight: 850, mt: .5 }}>{subscription?.kind === "trial" ? "30-day free trial" : selectedPlan?.name || (subscription?.planCode ? subscription.planCode.replaceAll("_", " ") : "Loading your plan")}</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 850, mt: .5 }}>{subscription?.kind === "trial" ? "30-day free trial" : subscription?.planName || selectedPlan?.name || (subscription?.planCode ? subscription.planCode.replaceAll("_", " ") : "Loading your plan")}</Typography>
               <Typography color="text.secondary" sx={{ mt: .5 }}>{account?.hasAccess ? `Access through ${date(subscription.periodEnd)}` : "Choose a plan to continue using CADer."}{subscription?.cancelAtPeriodEnd && " Renewal is cancelled."}</Typography>
+              {activePaid && <Typography sx={{ mt: 1 }}>
+                {subscription.cancelAtPeriodEnd ? "Renewal cancelled" : `${subscription.autopaySetupRequired ? "Next period (auto pay setup required)" : "Next renewal"}: ₹${(subscription.nextAmountPaise / 100).toLocaleString("en-IN")} on ${date(subscription.periodEnd)}`}
+              </Typography>}
               {subscription && <Box sx={{ maxWidth: 450, mt: 2.5 }}>
                 <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}><Typography variant="body2" fontWeight={700}>New projects used</Typography><Typography variant="body2" fontWeight={800} color={accent}>{subscription.projectCount} / {subscription.projectLimit}</Typography></Stack>
                 <LinearProgress variant="determinate" value={usage} sx={{ height: 8, borderRadius: 5, bgcolor: "#e0e7ff", "& .MuiLinearProgress-bar": { bgcolor: accent, borderRadius: 5 } }} />
               </Box>}
             </Box>
             <Stack alignItems={{ xs: "stretch", md: "flex-end" }} justifyContent="center" spacing={1}>
+              <Button disabled={busy} onClick={() => refresh().catch(() => setError("Billing status could not be refreshed."))} sx={{ textTransform: "none" }}>Refresh billing status</Button>
               {account?.hasAccess && <Button variant="outlined" onClick={() => navigate(state?.from || "/")} sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700, borderColor: accent, color: accent }}>Back to dashboard</Button>}
-              {activePaid && !subscription.cancelAtPeriodEnd && <Button onClick={() => cancel(false)} disabled={busy} sx={{ textTransform: "none", color: "#64748b" }}>Cancel renewal</Button>}
+              {(activePaid || subscription?.canCancelRenewal) && !subscription.cancelAtPeriodEnd && <Button onClick={() => cancel(false)} disabled={busy} sx={{ textTransform: "none", color: "#64748b" }}>Cancel renewal</Button>}
             </Stack>
           </Stack>
         </Paper>
 
-        {account?.pendingCheckout && <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }} action={<Button onClick={() => cancel(true)} disabled={busy} size="small">Cancel</Button>}>Checkout for {account.pendingCheckout.planCode.replaceAll("_", " ")} is pending. Resume that plan or cancel its checkout to choose another.</Alert>}
+        {subscription?.autopaySetupRequired && <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, border: "1px solid #c7d2fe", bgcolor: "#eef2ff" }}>
+          <Typography fontWeight={800} color="#312e81">Step 2: authorize auto pay</Typography>
+          <Typography sx={{ mt: 1, mb: 2 }} color="text.secondary">Your first period is paid through {date(subscription.initialPeriodEnd)}. Authorize {subscription.nextAmountPaise / 100} INR per {subscription.billingInterval === "monthly" ? "month" : "year"}, starting on that date. You will not pay the first-period price again. Your bank may require a separate mandate verification payment shown in checkout. Without authorization, access ends after the paid period.</Typography>
+          <Button variant="contained" disabled={busy} onClick={setupAutopay} sx={{ textTransform: "none", borderRadius: 2 }}>Continue to auto pay</Button>
+        </Paper>}
+
+        {account?.pendingCheckout && <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }} action={<Button onClick={() => cancel(true)} disabled={busy} size="small">Cancel</Button>}>Checkout for {account.pendingCheckout.planCode.replaceAll("_", " ")} is pending. {offerTerms(account.pendingCheckout.pricingSnapshot)}</Alert>}
+
+        {account?.pendingCheckout && <Button sx={{ mb: 2 }} disabled={busy} onClick={() => choosePlan({ code: account.pendingCheckout.planCode, ...account.pendingCheckout.pricingSnapshot })}>Resume saved checkout</Button>}
 
         <Box sx={{ textAlign: "center", pt: { xs: 6, md: 8 }, mb: 5 }}>
           <Typography sx={{ color: accent, fontWeight: 800, letterSpacing: 1.5, fontSize: 13, textTransform: "uppercase", mb: 1.5 }}>Pricing plans</Typography>
@@ -181,13 +223,12 @@ export default function SubscriptionPage() {
           {visiblePlans.map((plan) => {
             const checkoutPlan = plans.find((available) => available.code === plan.code);
             const isPending = account?.pendingCheckout?.planCode === plan.code;
-            const disabled = Boolean(plan.code && (!checkoutPlan || busy || activePaid || (account?.pendingCheckout && !isPending)));
+            const disabled = Boolean(plan.code && (!checkoutPlan || busy || activePaid || account?.pendingCheckout));
             return <Box key={plan.code || plan.tier} sx={{ minWidth: 0 }}>
               <PricingCard
                 {...plan}
-                introductoryPrice={checkoutPlan ? String(checkoutPlan.amountPaise / 100) : plan.introductoryPrice}
                 disabled={disabled}
-                buttonText={!plan.code ? "Contact Sales" : activePaid && subscription.planCode === plan.code ? "Current plan" : activePaid ? "Available after current period" : isPending ? "Resume checkout" : "Choose plan"}
+                buttonText={!plan.code ? "Contact Sales" : activePaid && subscription.planCode === plan.code ? "Current plan" : activePaid ? "Available after current period" : isPending ? "Use saved checkout above" : "Choose plan"}
                 buttonHref={!plan.code ? "mailto:admin@getcader.com?subject=CADer%20Institutions%20and%20Enterprise%20plan" : undefined}
                 handleContactSales={checkoutPlan ? () => choosePlan(checkoutPlan) : undefined}
               />

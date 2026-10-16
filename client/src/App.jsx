@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/home";
 import SurveyLanding from "./pages/survey";
 import RoadSurveyForm from "./pages/survey/RoadSurveyForm";
@@ -43,6 +43,7 @@ import Trash from "./pages/trash";
 import ProposeLevel from "./pages/survey/ProposeLevel";
 import LegalPage from "./pages/public/LegalPage";
 import SubscriptionPage from "./pages/subscription";
+import SettingsRoute from "./routes/SettingsRoute";
 import SubscriptionGate from "./routes/SubscriptionGate";
 
 function App() {
@@ -82,6 +83,9 @@ function App() {
                 <Route path="camera" element={<CameraPage />} />
               </Route>
               <Route path="profile" element={<Profile />} />
+              <Route path="settings" element={<SettingsRoute />}>
+                <Route index element={<Settings />} />
+              </Route>
               <Route element={<ProtectedRoute requiredTypes={["Professional"]} />}>
                 <Route path="subscription" element={<SubscriptionPage />} />
               </Route>
@@ -96,6 +100,7 @@ function App() {
                 <Route path="organizations">
                   <Route index element={<OrganizationsDashboard />} />
                 </Route>
+                <Route path="admin/plans" element={<Navigate to="/settings" replace />} />
                 <Route path="users">
                   <Route index element={<UsersDashboard />} />
                 </Route>
@@ -131,7 +136,6 @@ function App() {
                     <Route path=":id/followup" element={<Followup />} />
                   </Route>
 
-                  <Route path="settings" element={<Settings />} />
                   <Route path="trash" element={<Trash />} />
                 </Route>
               </Route>

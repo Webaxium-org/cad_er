@@ -4,10 +4,13 @@ import Subscription from "../models/subscription.js";
 import RazorpayEvent from "../models/razorpayEvent.js";
 import Payment from "../models/payments.js";
 import CheckoutLock from "../models/checkoutLock.js";
-import { SUBSCRIPTION_PLANS, publicPlans } from "../services/subscriptionPlans.js";
+import { publicPlans, activeOffer, quotePlanForUser, renewalAmount } from "../services/subscriptionPlans.js";
+import PlanVersion from "../models/planVersion.js";
 import { getCurrentSubscription, hasSubscriptionAccess } from "../services/subscriptionAccess.js";
 import { getCheckoutKey, razorpayRequest, verifyCheckoutSignature, verifyWebhookSignature } from "../services/razorpay.js";
 import { getOrCreateRazorpayPlan } from "../services/razorpayPlans.js";
+import { verifyOrderSignature } from "../services/razorpay.js";
+import { hasInitialAccess, needsAutopaySetup, recordInitialPayment, reconcileInitialOrder } from "../services/initialSubscriptionPayment.js";
 
 const fromUnix = (seconds) => seconds ? new Date(seconds * 1000) : null;
 
@@ -15,8 +18,12 @@ const syncPaidSubscription = async (record, remote) => {
   if (remote.id !== record.razorpaySubscriptionId || remote.plan_id !== record.razorpayPlanId) {
     throw createHttpError(409, "Subscription identity mismatch");
   }
-  const currentStart = fromUnix(remote.current_start);
-  const currentEnd = fromUnix(remote.current_end);
+  // A mandate authorisation or an unpaid first renewal must not replace paid upfront access.
+  const remoteStart = fromUnix(remote.current_start);
+  const paidPeriod = remote.paid_count > 0 && ((remote.paid_count || 0) > (record.paidCount || 0) ||
+    remoteStart?.getTime() === record.periodStart?.getTime());
+  const currentStart = paidPeriod ? remoteStart : null;
+  const currentEnd = paidPeriod ? fromUnix(remote.current_end) : null;
   const periodChanged = currentStart && currentStart.getTime() !== record.periodStart.getTime();
   const update = {
     status: remote.status,
@@ -24,14 +31,15 @@ const syncPaidSubscription = async (record, remote) => {
     endedAt: fromUnix(remote.ended_at),
     ...(currentStart && currentEnd ? { periodStart: currentStart, periodEnd: currentEnd } : {}),
   };
+  const monotonic = { _id: record._id, paidCount: { $lte: remote.paid_count || 0 } };
   if (periodChanged) {
     const reset = await Subscription.updateOne(
-      { _id: record._id, periodStart: record.periodStart },
+      { ...monotonic, periodStart: record.periodStart },
       { $set: { ...update, projectCount: 0 } },
     );
-    if (!reset.modifiedCount) await Subscription.updateOne({ _id: record._id }, { $set: update });
+    if (!reset.modifiedCount) await Subscription.updateOne({ ...monotonic, periodStart: { $lte: currentStart } }, { $set: update });
   } else {
-    await Subscription.updateOne({ _id: record._id }, { $set: update });
+    await Subscription.updateOne(monotonic, { $set: update });
   }
   if ((remote.paid_count || 0) > 0 && currentStart) {
     await Subscription.updateOne(
@@ -42,26 +50,44 @@ const syncPaidSubscription = async (record, remote) => {
   return Subscription.findById(record._id);
 };
 
-export const listPlans = (_req, res) => res.json({ plans: publicPlans() });
+export const listPlans = async (req, res, next) => {
+  try { res.set("Cache-Control", "no-store").json({ plans: await publicPlans(req.user?.userId) }); }
+  catch (error) { next(error); }
+};
 
 export const getSubscription = async (req, res, next) => {
   try {
     if (req.user.type !== "Professional") throw createHttpError(403, "Professional account required");
+    let pendingCheckout = await Subscription.findOne({ userId: req.user.userId, kind: "paid", initialPaidAt: null, status: { $in: ["created", "authenticated"] } }).sort({ createdAt: -1 });
+    if (pendingCheckout?.razorpayOrderId) {
+      pendingCheckout = await reconcileInitialOrder(pendingCheckout);
+      if (pendingCheckout.initialPaidAt) pendingCheckout = null;
+    }
     const subscription = await getCurrentSubscription(req.user.userId);
-    const pendingCheckout = await Subscription.findOne({ userId: req.user.userId, kind: "paid", status: { $in: ["created", "authenticated"] } }).sort({ createdAt: -1 });
     res.json({
       subscription: {
+        id: subscription._id,
         kind: subscription.kind,
         planCode: subscription.planCode,
+        planName: subscription.pricingSnapshot?.name,
+        pricingSnapshot: subscription.pricingSnapshot,
+        amountPaise: subscription.amountPaise,
+        nextAmountPaise: renewalAmount(subscription),
+        billingInterval: subscription.billingInterval,
         status: subscription.status,
         periodStart: subscription.periodStart,
         periodEnd: subscription.periodEnd,
         projectLimit: subscription.projectLimit,
         projectCount: subscription.projectCount,
-        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || ["cancelled", "completed", "expired"].includes(subscription.status),
+        autopaySetupRequired: needsAutopaySetup(subscription),
+        initialPeriodEnd: subscription.initialPeriodEnd,
+        initialPaidAt: subscription.initialPaidAt,
+        canCancelRenewal: Boolean(subscription.razorpaySubscriptionId && ["created", "authenticated", "active", "pending", "halted", "paused"].includes(subscription.status)),
       },
       hasAccess: hasSubscriptionAccess(subscription),
-      pendingCheckout: pendingCheckout ? { planCode: pendingCheckout.planCode, status: pendingCheckout.status } : null,
+      pendingCheckout: pendingCheckout ? { planCode: pendingCheckout.planCode, status: pendingCheckout.status,
+        pricingSnapshot: pendingCheckout.pricingSnapshot, expiresAt: pendingCheckout.checkoutExpiresAt } : null,
     });
   } catch (error) { next(error); }
 };
@@ -72,8 +98,7 @@ export const createCheckout = async (req, res, next) => {
   try {
     if (req.user.type !== "Professional") throw createHttpError(403, "Professional account required");
     const requestedCode = req.body?.planCode;
-    if (typeof requestedCode !== "string" || !Object.hasOwn(SUBSCRIPTION_PLANS, requestedCode)) throw createHttpError(400, "Unknown plan");
-    const plan = SUBSCRIPTION_PLANS[requestedCode];
+    if (typeof requestedCode !== "string" || !/^[a-z_]{1,60}$/.test(requestedCode)) throw createHttpError(400, "Unknown plan");
     lockToken = crypto.randomUUID();
     try {
       await CheckoutLock.findOneAndUpdate(
@@ -87,31 +112,77 @@ export const createCheckout = async (req, res, next) => {
     }
     const current = await getCurrentSubscription(req.user.userId);
     if (current.kind === "paid" && hasSubscriptionAccess(current)) throw createHttpError(409, "Manage the current subscription before choosing another plan");
-    let pending = await Subscription.findOne({ userId: req.user.userId, kind: "paid", status: { $in: ["created", "authenticated"] } }).sort({ createdAt: -1 });
+    if (current.razorpaySubscriptionId && (current.initialPaidAt || ["halted", "paused", "pending"].includes(current.status)) &&
+        ["created", "authenticated", "active", "pending", "halted", "paused"].includes(current.status)) {
+      throw createHttpError(409, "Cancel the current auto pay mandate before choosing another plan");
+    }
+    let pending = await Subscription.findOne({ userId: req.user.userId, kind: "paid", initialPaidAt: null, status: { $in: ["created", "authenticated"] } }).sort({ createdAt: -1 });
     if (pending) {
+      if (pending.razorpayOrderId) {
+        pending = await reconcileInitialOrder(pending);
+        if (pending.initialPaidAt) return res.json({ type: "paid", subscriptionRecordId: pending._id });
+        if (pending.planCode !== requestedCode) throw createHttpError(409, "Finish or cancel the pending checkout first");
+        if (pending.checkoutExpiresAt <= new Date()) throw createHttpError(409, "Checkout expired. Cancel it and choose the plan again");
+        const order = await razorpayRequest("GET", `/orders/${encodeURIComponent(pending.razorpayOrderId)}`);
+        if (order.attempts > 0) throw createHttpError(409, "A payment was attempted. Refresh to check its result; if it failed, cancel this checkout and try again");
+        return res.json(initialCheckoutResponse(pending));
+      }
       const remotePending = await razorpayRequest("GET", `/subscriptions/${encodeURIComponent(pending.razorpaySubscriptionId)}`);
       pending = await syncPaidSubscription(pending, remotePending);
       if (["created", "authenticated"].includes(pending.status)) {
         if (pending.planCode !== requestedCode) throw createHttpError(409, "Finish or cancel the pending checkout first");
-        return res.json({ keyId: getCheckoutKey(), subscriptionId: pending.razorpaySubscriptionId, planCode: pending.planCode });
+        if (pending.checkoutExpiresAt && pending.checkoutExpiresAt <= new Date()) throw createHttpError(409, "This checkout has expired. Cancel it and choose a plan again");
+        return res.json({ keyId: getCheckoutKey(), subscriptionId: pending.razorpaySubscriptionId, planCode: pending.planCode, pricing: pending.pricingSnapshot });
       }
       if (hasSubscriptionAccess(pending)) throw createHttpError(409, "Manage the current subscription before choosing another plan");
     }
 
-    const planId = await getOrCreateRazorpayPlan(requestedCode);
+    const plan = await PlanVersion.findOne({ code: requestedCode }).sort({ version: -1 }).lean();
+    if (!plan?.available) throw createHttpError(400, "This plan is no longer available");
+    const pricing = await quotePlanForUser(plan, req.user.userId);
+    if (req.body.quoteKey !== pricing.quoteKey) throw createHttpError(409, "Pricing or offer availability changed. Refresh and review the current price");
+    if (pricing.firstPaymentAmountPaise != null) {
+      const order = await razorpayRequest("POST", "/orders", {
+        amount: pricing.firstPaymentAmountPaise, currency: "INR", partial_payment: false,
+        receipt: crypto.randomUUID(),
+        notes: { purpose: "subscription_initial", userId: String(req.user.userId), planVersionId: String(plan._id) },
+      });
+      if (!order.id || order.amount !== pricing.firstPaymentAmountPaise || order.currency !== "INR") throw createHttpError(502, "Payment provider did not confirm the initial amount");
+      const now = new Date();
+      const record = await Subscription.create({ userId: req.user.userId, kind: "paid", planCode: plan.code,
+        planVersionId: plan._id, pricingSnapshot: pricing, razorpayOrderId: order.id,
+        checkoutExpiresAt: new Date(Date.now() + 30 * 60000), status: "created", periodStart: now, periodEnd: now,
+        projectLimit: plan.projectLimit, projectCount: 0, amountPaise: plan.amountPaise, billingInterval: plan.interval,
+      });
+      return res.json(initialCheckoutResponse(record));
+    }
+    const offer = activeOffer(plan);
+    if (offer && offer.razorpayKeyId !== getCheckoutKey()) throw createHttpError(503, "This offer is not configured for the current payment environment");
+    const checkoutExpiresAt = new Date(Math.min(Date.now() + 30 * 60 * 1000, offer ? new Date(offer.endsAt).getTime() : Infinity));
+    if (checkoutExpiresAt.getTime() - Date.now() < 60000) throw createHttpError(409, "This offer is ending. Refresh in a minute for current pricing");
+    const planId = await getOrCreateRazorpayPlan(plan);
     const remote = await razorpayRequest("POST", "/subscriptions", {
       plan_id: planId,
+      ...(offer ? { offer_id: offer.razorpayOfferId } : {}),
+      expire_by: Math.floor(checkoutExpiresAt.getTime() / 1000),
       total_count: plan.interval === "monthly" ? 120 : 10,
       quantity: 1,
       customer_notify: true,
-      notes: { userId: String(req.user.userId), planCode: requestedCode },
+      notes: { userId: String(req.user.userId), planCode: requestedCode, planVersionId: String(plan._id) },
     });
     unsavedRemoteId = remote.id;
+    if (remote.plan_id !== planId || (offer && remote.offer_id !== offer.razorpayOfferId)) {
+      throw createHttpError(502, "Payment provider did not confirm the selected plan and offer");
+    }
     const now = new Date();
     await Subscription.create({
       userId: req.user.userId,
       kind: "paid",
       planCode: requestedCode,
+      planVersionId: plan._id,
+      pricingSnapshot: pricing,
+      razorpayOfferId: offer?.razorpayOfferId,
+      checkoutExpiresAt,
       status: "created",
       periodStart: now,
       periodEnd: now,
@@ -123,7 +194,7 @@ export const createCheckout = async (req, res, next) => {
       razorpaySubscriptionId: remote.id,
     });
     unsavedRemoteId = null;
-    res.json({ keyId: getCheckoutKey(), subscriptionId: remote.id, planCode: requestedCode });
+    res.json({ keyId: getCheckoutKey(), subscriptionId: remote.id, planCode: requestedCode, pricing });
   } catch (error) {
     if (unsavedRemoteId) {
       try { await razorpayRequest("POST", `/subscriptions/${encodeURIComponent(unsavedRemoteId)}/cancel`, { cancel_at_cycle_end: false }); }
@@ -136,6 +207,15 @@ export const createCheckout = async (req, res, next) => {
 
 export const verifyCheckout = async (req, res, next) => {
   try {
+    if (req.body?.razorpay_order_id) {
+      const { razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body;
+      const record = await Subscription.findOne({ userId: req.user.userId, razorpayOrderId: orderId, kind: "paid" });
+      if (!record || typeof paymentId !== "string" || !verifyOrderSignature(record.razorpayOrderId, paymentId, signature)) throw createHttpError(400, "Invalid initial payment confirmation");
+      const payment = await razorpayRequest("GET", `/payments/${encodeURIComponent(paymentId)}`);
+      const updated = await recordInitialPayment(record, payment);
+      return res.json({ status: updated.status, hasAccess: hasSubscriptionAccess(updated),
+        subscriptionRecordId: updated._id, autopaySetupRequired: needsAutopaySetup(updated) });
+    }
     const { razorpay_subscription_id: subscriptionId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body || {};
     const record = await Subscription.findOne({ userId: req.user.userId, razorpaySubscriptionId: subscriptionId, kind: "paid" });
     if (!record || !paymentId || !verifyCheckoutSignature(record.razorpaySubscriptionId, paymentId, signature)) {
@@ -143,20 +223,92 @@ export const verifyCheckout = async (req, res, next) => {
     }
     const remote = await razorpayRequest("GET", `/subscriptions/${encodeURIComponent(record.razorpaySubscriptionId)}`);
     const updated = await syncPaidSubscription(record, remote);
-    res.json({ status: updated.status, hasAccess: hasSubscriptionAccess(updated) });
+    res.json({ status: updated.status, hasAccess: hasSubscriptionAccess(updated),
+      initialPaidAt: updated.initialPaidAt, autopayAuthorized: ["authenticated", "active"].includes(updated.status) });
   } catch (error) { next(error); }
 };
 
 export const cancelSubscription = async (req, res, next) => {
+  let lockToken;
   try {
-    const record = await Subscription.findOne({ userId: req.user.userId, kind: "paid", status: { $in: ["created", "authenticated", "active", "pending"] } }).sort({ createdAt: -1 });
+    lockToken = await acquireBillingLock(req.user.userId);
+    const record = await Subscription.findOne({ userId: req.user.userId, kind: "paid", status: { $in: ["created", "authenticated", "active", "pending", "halted", "paused"] } }).sort({ createdAt: -1 });
     if (!record) throw createHttpError(404, "No cancellable subscription");
-    const atPeriodEnd = record.paidCount > 0 && record.periodEnd > new Date();
+    if (record.razorpayOrderId && !record.initialPaidAt) await reconcileInitialOrder(record);
+    const initial = await Subscription.findById(record._id);
+    if (!initial.razorpaySubscriptionId) {
+      await Subscription.updateOne({ _id: initial._id }, { $set: { cancelAtPeriodEnd: true, status: "cancelled" } });
+      return res.json({ success: true, periodEnd: hasInitialAccess(initial) ? initial.initialPeriodEnd : null });
+    }
+    const atPeriodEnd = initial.paidCount > 0 && initial.periodEnd > new Date();
     const remote = await razorpayRequest("POST", `/subscriptions/${encodeURIComponent(record.razorpaySubscriptionId)}/cancel`, { cancel_at_cycle_end: atPeriodEnd });
     await syncPaidSubscription(record, remote);
-    await Subscription.updateOne({ _id: record._id }, { $set: { cancelAtPeriodEnd: atPeriodEnd } });
-    res.json({ success: true, periodEnd: atPeriodEnd ? record.periodEnd : null });
+    const preserveInitialPeriod = hasInitialAccess(initial);
+    await Subscription.updateOne({ _id: record._id }, { $set: { cancelAtPeriodEnd: atPeriodEnd || preserveInitialPeriod } });
+    res.json({ success: true, periodEnd: preserveInitialPeriod ? initial.initialPeriodEnd : atPeriodEnd ? record.periodEnd : null });
   } catch (error) { next(error); }
+  finally { if (lockToken) await CheckoutLock.deleteOne({ userId: req.user.userId, token: lockToken }); }
+};
+
+const initialCheckoutResponse = record => ({ type: "initial", keyId: getCheckoutKey(), orderId: record.razorpayOrderId,
+  amountPaise: record.pricingSnapshot.firstPaymentAmountPaise, currency: "INR", pricing: record.pricingSnapshot,
+  subscriptionRecordId: record._id });
+
+const acquireBillingLock = async userId => {
+  const token = crypto.randomUUID();
+  try {
+    await CheckoutLock.findOneAndUpdate({ userId, expiresAt: { $lte: new Date() } },
+      { $set: { token, expiresAt: new Date(Date.now() + 60000) } }, { upsert: true, new: true });
+    return token;
+  } catch (error) {
+    if (error.code === 11000) throw createHttpError(409, "A billing change is already in progress");
+    throw error;
+  }
+};
+
+export const setupAutopay = async (req, res, next) => {
+  let lockToken, unsavedRemoteId;
+  try {
+    if (req.user.type !== "Professional") throw createHttpError(403, "Professional account required");
+    lockToken = await acquireBillingLock(req.user.userId);
+    let record = await Subscription.findOne({ _id: req.body?.subscriptionRecordId, userId: req.user.userId, kind: "paid" });
+    if (!record || !hasInitialAccess(record) || record.cancelAtPeriodEnd) throw createHttpError(409, "An active initial paid period is required to set up auto pay");
+    const otherMandate = await Subscription.exists({ userId: req.user.userId, _id: { $ne: record._id },
+      razorpaySubscriptionId: { $exists: true }, status: { $in: ["created", "authenticated", "active", "pending", "halted", "paused"] } });
+    if (otherMandate) throw createHttpError(409, "Cancel the other subscription before authorizing another auto pay mandate");
+    if (record.razorpaySubscriptionId) {
+      const remote = await razorpayRequest("GET", `/subscriptions/${encodeURIComponent(record.razorpaySubscriptionId)}`);
+      record = await syncPaidSubscription(record, remote);
+      if (record.status !== "created") throw createHttpError(409, "Auto pay is already authorized or this mandate has ended. Refresh your subscription");
+    } else {
+      const plan = await PlanVersion.findById(record.planVersionId).lean();
+      if (!plan || plan.amountPaise !== record.amountPaise || plan.interval !== record.billingInterval) throw createHttpError(409, "Purchased pricing could not be verified");
+      const startAt = Math.floor(record.initialPeriodEnd.getTime() / 1000);
+      // Leave time to finish authorisation; never schedule a retroactive first debit.
+      if (startAt <= Date.now() / 1000 + 3600) throw createHttpError(409, "This period is ending. Choose a new plan after it ends");
+      const planId = await getOrCreateRazorpayPlan(plan);
+      const remote = await razorpayRequest("POST", "/subscriptions", {
+        plan_id: planId, start_at: startAt, expire_by: startAt - 60,
+        total_count: plan.interval === "monthly" ? 119 : 9, quantity: 1, customer_notify: true,
+        notes: { userId: String(req.user.userId), planVersionId: String(plan._id), initialOrderId: record.razorpayOrderId },
+      });
+      unsavedRemoteId = remote.id;
+      if (!remote.id || remote.plan_id !== planId || remote.start_at !== startAt) throw createHttpError(502, "Payment provider did not confirm the renewal schedule");
+      await Subscription.updateOne({ _id: record._id }, { $set: {
+        razorpaySubscriptionId: remote.id, razorpayPlanId: planId, status: remote.status,
+      } });
+      record.razorpaySubscriptionId = remote.id;
+      unsavedRemoteId = null;
+    }
+    res.json({ type: "autopay", keyId: getCheckoutKey(), subscriptionId: record.razorpaySubscriptionId,
+      pricing: record.pricingSnapshot, startsAt: record.initialPeriodEnd });
+  } catch (error) {
+    if (unsavedRemoteId) {
+      try { await razorpayRequest("POST", `/subscriptions/${encodeURIComponent(unsavedRemoteId)}/cancel`, { cancel_at_cycle_end: false }); }
+      catch (cleanupError) { console.error("Could not cancel orphaned auto pay mandate", cleanupError); }
+    }
+    next(error);
+  } finally { if (lockToken) await CheckoutLock.deleteOne({ userId: req.user.userId, token: lockToken }); }
 };
 
 export const razorpayWebhook = async (req, res, next) => {
@@ -166,6 +318,16 @@ export const razorpayWebhook = async (req, res, next) => {
     if (!eventId) throw createHttpError(400, "Missing webhook event ID");
     if (await RazorpayEvent.exists({ eventId })) return res.json({ success: true });
     const event = JSON.parse(req.body.toString("utf8"));
+    const eventPayment = event.payload?.payment?.entity;
+    if (eventPayment?.order_id && ["payment.captured", "order.paid", "payment.refunded"].includes(event.event)) {
+      const initialRecord = await Subscription.findOne({ razorpayOrderId: eventPayment.order_id });
+      if (initialRecord) {
+        const payment = await razorpayRequest("GET", `/payments/${encodeURIComponent(eventPayment.id)}`);
+        await recordInitialPayment(initialRecord, payment);
+      } else if (eventPayment.notes?.purpose === "subscription_initial" || event.payload?.order?.entity?.notes?.purpose === "subscription_initial") {
+        throw createHttpError(503, "Initial purchase is not ready");
+      }
+    }
     const subscriptionId = event.payload?.subscription?.entity?.id;
     if (subscriptionId) {
       const record = await Subscription.findOne({ razorpaySubscriptionId: subscriptionId });
@@ -173,10 +335,21 @@ export const razorpayWebhook = async (req, res, next) => {
         const remote = await razorpayRequest("GET", `/subscriptions/${encodeURIComponent(subscriptionId)}`);
         await syncPaidSubscription(record, remote);
         const payment = event.payload?.payment?.entity;
-        if (payment?.id && payment.status === "captured" && payment.amount === record.amountPaise && payment.currency === "INR") {
+        if (event.event === "subscription.charged" && payment?.id && payment.status === "captured" && payment.currency === "INR") {
+          // Discounted invoices and regular renewals legitimately have different amounts.
+          // Verify invoice ownership rather than comparing every payment to one price.
+          if (!payment.invoice_id) throw createHttpError(502, "Subscription payment is missing its invoice");
+          const invoice = await razorpayRequest("GET", `/invoices/${encodeURIComponent(payment.invoice_id)}`);
+          if (invoice.subscription_id !== subscriptionId || invoice.payment_id !== payment.id ||
+              invoice.amount_paid !== payment.amount || invoice.currency !== payment.currency) {
+            throw createHttpError(409, "Subscription invoice mismatch");
+          }
           await Payment.updateOne(
             { razorpayPaymentId: payment.id },
-            { $setOnInsert: { userId: record.userId, razorpaySubscriptionId: subscriptionId, razorpayPaymentId: payment.id, amount: payment.amount, currency: payment.currency, purpose: "SUBSCRIPTION", status: "SUCCESS" } },
+            { $setOnInsert: { userId: record.userId, razorpaySubscriptionId: subscriptionId, razorpayPaymentId: payment.id,
+              razorpayInvoiceId: payment.invoice_id, planVersionId: record.planVersionId,
+              subscriptionId: record._id, billingPhase: "recurring",
+              amount: payment.amount, currency: payment.currency, purpose: "SUBSCRIPTION", status: "SUCCESS" } },
             { upsert: true },
           );
         }

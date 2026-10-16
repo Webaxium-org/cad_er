@@ -11,6 +11,7 @@ export default function PricingCard ({
   introductoryPrice,
   discountLabel,
   duration,
+  renewalText,
   includes,
   features,
   highlighted = false,
@@ -92,16 +93,16 @@ export default function PricingCard ({
           <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
               variant="body2"
-              sx={{ color: "text.secondary", textDecoration: "line-through" }}
+              sx={{ color: "text.secondary", textDecoration: Number(introductoryPrice) < Number(price) ? "line-through" : "none" }}
             >
               ₹{price}/{duration}
             </Typography>
             <Typography
               variant="body2"
               sx={{
-                color: "#10b981",
+                color: Number(introductoryPrice) < Number(price) ? "#10b981" : "#4f46e5",
                 fontWeight: 700,
-                bgcolor: "rgba(16, 185, 129, 0.1)",
+                bgcolor: Number(introductoryPrice) < Number(price) ? "rgba(16, 185, 129, 0.1)" : "#eef2ff",
                 px: 1,
                 py: 0.5,
                 borderRadius: 1,
@@ -112,6 +113,8 @@ export default function PricingCard ({
             </Typography>
           </Box>
         )}
+
+      {renewalText && <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>{renewalText}</Typography>}
 
       {includes && (
         <Box sx={{ mb: 2 }}>
