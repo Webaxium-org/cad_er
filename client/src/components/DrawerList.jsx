@@ -31,6 +31,7 @@ import { logoutUser } from "../services/indexServices";
 import { IoSettingsOutline } from "react-icons/io5";
 import { AiOutlineDelete } from "react-icons/ai";
 import { BiSupport } from "react-icons/bi";
+import { FiCreditCard } from "react-icons/fi";
 import profileImage from "../assets/blank-profile-picture.webp";
 
 const menuListDetails = [
@@ -68,6 +69,12 @@ const menuListDetails = [
     icon: <BiSupport />,
     path: "/tickets",
     required: ["Professional"],
+  },
+  {
+    label: "Payments",
+    icon: <FiCreditCard />,
+    path: "/admin/payments",
+    required: ["Super Admin"],
   },
   {
     label: "Settings",

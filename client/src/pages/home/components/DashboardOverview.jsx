@@ -20,6 +20,7 @@ import {
   FiBookOpen,
   FiCheckCircle,
   FiChevronRight,
+  FiCreditCard,
   FiExternalLink,
   FiFileText,
   FiLayers,
@@ -594,13 +595,45 @@ export default function DashboardOverview({ data }) {
 
           {data?.subscription?.kind === "trial" && <ProfessionalTrialCountdown subscription={data.subscription} />}
           {data?.subscription?.kind === "paid" && (
-            <Paper elevation={0} sx={{ border: "1px solid #c7d2fe", borderRadius: DASHBOARD_CARD_RADIUS, bgcolor: "#eef2ff", px: 2, py: 1.5, mb: 1.25 }}>
-              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} spacing={1}>
-                <Box>
-                  <Typography fontWeight={800} color="#312e81">{data.subscription.planCode.replaceAll("_", " ")}</Typography>
-                  <Typography variant="caption" color="#4338ca">{data.subscription.projectCount} of {data.subscription.projectLimit} new projects used this period</Typography>
+            <Paper elevation={0} sx={{ border: "1px solid #c7d2fe", borderRadius: DASHBOARD_CARD_RADIUS,
+              background: "linear-gradient(110deg, #fff 68%, #f3f4ff 100%)", p: { xs: 2, sm: 2.5 }, mb: 1.25,
+              boxShadow: "0 10px 28px rgba(79,70,229,.06)", position: "relative", overflow: "hidden",
+              "&::before": { content: '""', position: "absolute", inset: "0 auto 0 0", width: 4, bgcolor: PRIMARY_BRAND } }}>
+              <Stack direction={{ xs: "column", md: "row" }} alignItems={{ md: "center" }} justifyContent="space-between" spacing={2.5}>
+                <Stack direction="row" alignItems="flex-start" spacing={1.5} sx={{ minWidth: 0, flex: 1 }}>
+                  <Box sx={{ width: 42, height: 42, borderRadius: 2.5, bgcolor: "#eef2ff", color: PRIMARY_BRAND,
+                    display: "grid", placeItems: "center", flexShrink: 0 }}><FiCreditCard size={21} /></Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                      <Typography fontWeight={850} color="#1e1b4b" sx={{ fontSize: "1.05rem" }}>
+                        {data.subscription.planName || data.subscription.planCode.split("_")[0].replace(/^./, first => first.toUpperCase())}
+                      </Typography>
+                      <Box component="span" sx={{ px: 1, py: .25, borderRadius: 5, bgcolor: "#eef2ff", color: "#4338ca",
+                        fontSize: ".7rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em" }}>
+                        {data.subscription.planCode.endsWith("_yearly") ? "Yearly plan" : "Monthly plan"}
+                      </Box>
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: .25 }}>
+                      {data.subscription.hasAccess ? `Access through ${formatDate(data.subscription.periodEnd)}` : "Subscription access ended"}
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Box sx={{ width: { xs: "100%", md: 240 }, flexShrink: 0 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: .75 }}>
+                    <Typography variant="caption" fontWeight={700} color="#475569">New projects this period</Typography>
+                    <Typography variant="body2" fontWeight={850} color="#4338ca">
+                      {data.subscription.projectCount} / {data.subscription.projectLimit}
+                    </Typography>
+                  </Stack>
+                  <LinearProgress variant="determinate" value={data.subscription.projectLimit > 0
+                    ? Math.min(100, data.subscription.projectCount / data.subscription.projectLimit * 100) : 0}
+                    sx={{ height: 7, borderRadius: 5, bgcolor: "#e0e7ff",
+                      "& .MuiLinearProgress-bar": { bgcolor: PRIMARY_BRAND, borderRadius: 5 } }} />
                 </Box>
-                <Button onClick={() => navigate("/subscription")} sx={{ color: "#4f46e5" }}>Manage subscription</Button>
+                <Button variant="outlined" onClick={() => navigate("/subscription")} endIcon={<FiChevronRight />}
+                  sx={{ borderColor: "#c7d2fe", color: "#4338ca", borderRadius: 2.5, px: 2, textTransform: "none",
+                    fontWeight: 800, whiteSpace: "nowrap", alignSelf: { xs: "flex-start", md: "center" },
+                    "&:hover": { borderColor: PRIMARY_BRAND, bgcolor: "#eef2ff" } }}>Manage plan</Button>
               </Stack>
             </Paper>
           )}

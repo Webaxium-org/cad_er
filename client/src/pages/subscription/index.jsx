@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiCreditCard } from "react-icons/fi";
 import { Alert, Box, Button, Container, LinearProgress, Paper, Stack, Switch, Typography } from "@mui/material";
 import AppHeader from "../../components/AppHeader";
+import AlertDialogSlide from "../../components/AlertDialogSlide";
 import PricingCard from "../../components/PricingCard";
 import { getPricingPlans, offerTerms } from "../../constants/pricingPlans";
 import { cancelSubscription, createSubscriptionCheckout, getSubscription, getSubscriptionPlans, loadRazorpayCheckout, verifySubscriptionCheckout, setupSubscriptionAutopay } from "../../services/subscriptionServices";
@@ -13,6 +14,8 @@ import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 
 const date = (value) => value ? new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
 const accent = "#4f46e5";
+const themedAlert = { borderRadius: 2, bgcolor: "#eef2ff", color: "#312e81", border: "1px solid #c7d2fe",
+  "& .MuiAlert-icon": { color: accent }, "& .MuiAlert-action .MuiButton-root": { color: accent } };
 
 export default function SubscriptionPage() {
   const dispatch = useDispatch();
@@ -25,6 +28,7 @@ export default function SubscriptionPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [cancelTarget, setCancelTarget] = useState(null);
   const heroRef = useRef(null);
   const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
 
@@ -116,13 +120,14 @@ export default function SubscriptionPage() {
     }
   };
 
-  const cancel = async (isPending = false) => {
-    if (!window.confirm(isPending ? "Cancel this pending checkout?" : "Cancel renewal at the end of the current billing period?")) return;
+  const confirmCancellation = async () => {
+    const isPending = cancelTarget === "checkout";
+    if (!cancelTarget) return;
     setBusy(true);
     setError("");
     try { await cancelSubscription(); await refresh(); setNotice(isPending ? "Pending checkout cancelled." : "Renewal cancelled. Your paid access continues until the current period ends."); }
     catch (cancelError) { setError(cancelError.response?.data?.message || "Cancellation failed."); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setCancelTarget(null); }
   };
 
   const subscription = account?.subscription;
@@ -174,8 +179,8 @@ export default function SubscriptionPage() {
       </Box>
 
       <Container maxWidth="lg" sx={{ position: "relative", mt: -14 }}>
-        {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
-        {notice && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{notice}</Alert>}
+        {error && <Alert severity="error" sx={{ ...themedAlert, mb: 2 }}>{error}</Alert>}
+        {notice && <Alert severity="success" sx={{ ...themedAlert, mb: 2 }}>{notice}</Alert>}
         <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: 5, border: "1px solid #e0e7ff", boxShadow: "0 24px 65px rgba(67,56,202,.12)", mb: 3 }}>
           <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={3}>
             <Box sx={{ flex: 1 }}>
@@ -191,9 +196,9 @@ export default function SubscriptionPage() {
               </Box>}
             </Box>
             <Stack alignItems={{ xs: "stretch", md: "flex-end" }} justifyContent="center" spacing={1}>
-              <Button disabled={busy} onClick={() => refresh().catch(() => setError("Billing status could not be refreshed."))} sx={{ textTransform: "none" }}>Refresh billing status</Button>
+              <Button disabled={busy} onClick={() => refresh().catch(() => setError("Billing status could not be refreshed."))} sx={{ textTransform: "none", color: accent }}>Refresh billing status</Button>
               {account?.hasAccess && <Button variant="outlined" onClick={() => navigate(state?.from || "/")} sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700, borderColor: accent, color: accent }}>Back to dashboard</Button>}
-              {(activePaid || subscription?.canCancelRenewal) && !subscription.cancelAtPeriodEnd && <Button onClick={() => cancel(false)} disabled={busy} sx={{ textTransform: "none", color: "#64748b" }}>Cancel renewal</Button>}
+              {(activePaid || subscription?.canCancelRenewal) && !subscription.cancelAtPeriodEnd && <Button onClick={() => setCancelTarget("renewal")} disabled={busy} sx={{ textTransform: "none", color: "#64748b" }}>Cancel renewal</Button>}
             </Stack>
           </Stack>
         </Paper>
@@ -201,12 +206,12 @@ export default function SubscriptionPage() {
         {subscription?.autopaySetupRequired && <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, border: "1px solid #c7d2fe", bgcolor: "#eef2ff" }}>
           <Typography fontWeight={800} color="#312e81">Step 2: authorize auto pay</Typography>
           <Typography sx={{ mt: 1, mb: 2 }} color="text.secondary">Your first period is paid through {date(subscription.initialPeriodEnd)}. Authorize {subscription.nextAmountPaise / 100} INR per {subscription.billingInterval === "monthly" ? "month" : "year"}, starting on that date. You will not pay the first-period price again. Your bank may require a separate mandate verification payment shown in checkout. Without authorization, access ends after the paid period.</Typography>
-          <Button variant="contained" disabled={busy} onClick={setupAutopay} sx={{ textTransform: "none", borderRadius: 2 }}>Continue to auto pay</Button>
+          <Button variant="contained" disabled={busy} onClick={setupAutopay} sx={{ textTransform: "none", borderRadius: 2, bgcolor: accent, "&:hover": { bgcolor: "#4338ca" } }}>Continue to auto pay</Button>
         </Paper>}
 
-        {account?.pendingCheckout && <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }} action={<Button onClick={() => cancel(true)} disabled={busy} size="small">Cancel</Button>}>Checkout for {account.pendingCheckout.planCode.replaceAll("_", " ")} is pending. {offerTerms(account.pendingCheckout.pricingSnapshot)}</Alert>}
+        {account?.pendingCheckout && <Alert severity="info" sx={{ ...themedAlert, mb: 4 }} action={<Button onClick={() => setCancelTarget("checkout")} disabled={busy} size="small">Cancel</Button>}>Checkout for {account.pendingCheckout.planCode.replaceAll("_", " ")} is pending. {offerTerms(account.pendingCheckout.pricingSnapshot)}</Alert>}
 
-        {account?.pendingCheckout && <Button sx={{ mb: 2 }} disabled={busy} onClick={() => choosePlan({ code: account.pendingCheckout.planCode, ...account.pendingCheckout.pricingSnapshot })}>Resume saved checkout</Button>}
+        {account?.pendingCheckout && <Button sx={{ mb: 2, color: accent }} disabled={busy} onClick={() => choosePlan({ code: account.pendingCheckout.planCode, ...account.pendingCheckout.pricingSnapshot })}>Resume saved checkout</Button>}
 
         <Box sx={{ textAlign: "center", pt: { xs: 6, md: 8 }, mb: 5 }}>
           <Typography sx={{ color: accent, fontWeight: 800, letterSpacing: 1.5, fontSize: 13, textTransform: "uppercase", mb: 1.5 }}>Pricing plans</Typography>
@@ -236,8 +241,25 @@ export default function SubscriptionPage() {
           })}
         </Box>
 
-        <Paper elevation={0} sx={{ mt: { xs: 7, md: 10 }, p: { xs: 4, md: 6 }, borderRadius: 5, bgcolor: "#111827", color: "white", textAlign: "center" }}><Typography variant="h4" fontWeight={850}>Need help choosing?</Typography><Typography sx={{ opacity: .75, mt: 1, mb: 3 }}>Tell us about your projects and we’ll help you find the right fit.</Typography><Button component="a" href="mailto:admin@getcader.com?subject=CADer%20subscription%20question" variant="contained" sx={{ bgcolor: "white", color: "#111827", borderRadius: 2.5, px: 4, py: 1.5, textTransform: "none", fontWeight: 800, "&:hover": { bgcolor: "#e0e7ff" } }}>Contact our team</Button></Paper>
+        <Paper elevation={0} sx={{ mt: { xs: 7, md: 10 }, p: { xs: 4, md: 6 }, borderRadius: 5, background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)", color: "white", textAlign: "center" }}><Typography variant="h4" fontWeight={850}>Need help choosing?</Typography><Typography sx={{ opacity: .75, mt: 1, mb: 3 }}>Tell us about your projects and we’ll help you find the right fit.</Typography><Button component="a" href="mailto:admin@getcader.com?subject=CADer%20subscription%20question" variant="contained" sx={{ bgcolor: "white", color: accent, borderRadius: 2.5, px: 4, py: 1.5, textTransform: "none", fontWeight: 800, "&:hover": { bgcolor: "#eef2ff" } }}>Contact our team</Button></Paper>
       </Container>
     </Box>
+    <AlertDialogSlide
+      open={Boolean(cancelTarget)}
+      title={cancelTarget === "checkout" ? "Cancel pending checkout?" : "Cancel auto pay renewal?"}
+      content={<Box sx={{ p: 2, borderRadius: "12px", bgcolor: "#eef2ff", border: "1px solid #c7d2fe" }}>
+        <Typography fontWeight={750} color="#312e81">
+          {cancelTarget === "checkout"
+            ? "This checkout will be closed. You can choose a plan again whenever you are ready."
+            : `Your ${subscription?.planName || selectedPlan?.name || "plan"} access stays active through ${date(subscription?.periodEnd)}. No further automatic renewal will be scheduled.`}
+        </Typography>
+      </Box>}
+      cancelButtonText={cancelTarget === "checkout" ? "Keep checkout" : "Keep auto pay"}
+      submitButtonText={busy ? "Cancelling…" : cancelTarget === "checkout" ? "Cancel checkout" : "Cancel renewal"}
+      submitDisabled={busy}
+      onCancel={() => !busy && setCancelTarget(null)}
+      onSubmit={confirmCancellation}
+      paperSx={{ borderRadius: "20px", border: "1px solid #c7d2fe", boxShadow: "0 24px 70px rgba(49,46,129,.18)" }}
+    />
   </>;
 }

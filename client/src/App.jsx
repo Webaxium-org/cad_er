@@ -43,6 +43,7 @@ import Trash from "./pages/trash";
 import ProposeLevel from "./pages/survey/ProposeLevel";
 import LegalPage from "./pages/public/LegalPage";
 import SubscriptionPage from "./pages/subscription";
+import AdminPayments from "./pages/subscription/AdminPayments";
 import SettingsRoute from "./routes/SettingsRoute";
 import SubscriptionGate from "./routes/SubscriptionGate";
 
@@ -101,6 +102,7 @@ function App() {
                   <Route index element={<OrganizationsDashboard />} />
                 </Route>
                 <Route path="admin/plans" element={<Navigate to="/settings" replace />} />
+                <Route path="admin/payments" element={<AdminPayments />} />
                 <Route path="users">
                   <Route index element={<UsersDashboard />} />
                 </Route>

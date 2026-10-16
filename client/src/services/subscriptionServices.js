@@ -18,5 +18,6 @@ export const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
 });
 
 export const getAdminPlans = () => axiosInstance.get("/subscriptions/admin/plans");
+export const getAdminSubscriptionPayments = (params) => axiosInstance.get("/subscriptions/admin/payments", { params });
 export const getPlanHistory = (code) => axiosInstance.get(`/subscriptions/admin/plans/${code}/history`);
 export const publishPlan = (code, data) => axiosInstance.post(`/subscriptions/admin/plans/${code}/versions`, data);

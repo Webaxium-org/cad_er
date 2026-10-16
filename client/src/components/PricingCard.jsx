@@ -100,9 +100,9 @@ export default function PricingCard ({
             <Typography
               variant="body2"
               sx={{
-                color: Number(introductoryPrice) < Number(price) ? "#10b981" : "#4f46e5",
+                color: "#4f46e5",
                 fontWeight: 700,
-                bgcolor: Number(introductoryPrice) < Number(price) ? "rgba(16, 185, 129, 0.1)" : "#eef2ff",
+                bgcolor: "#eef2ff",
                 px: 1,
                 py: 0.5,
                 borderRadius: 1,

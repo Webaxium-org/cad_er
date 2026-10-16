@@ -381,6 +381,7 @@ export const getDashboard = async (req, res, next) => {
       stats.subscription = {
         kind: subscription.kind,
         planCode: subscription.planCode,
+        planName: subscription.pricingSnapshot?.name,
         status: subscription.status,
         periodStart: subscription.periodStart,
         periodEnd: subscription.periodEnd,

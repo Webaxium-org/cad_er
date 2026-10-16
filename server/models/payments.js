@@ -37,5 +37,6 @@ const PaymentSchema = new Schema({
 });
 
 PaymentSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
+PaymentSchema.index({ purpose: 1, status: 1, currency: 1, createdAt: -1 });
 
 export default model("Payments", PaymentSchema);

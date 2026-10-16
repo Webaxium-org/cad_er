@@ -6,6 +6,8 @@ Professional accounts receive one 30-day trial with the configured project allow
 
 Super Admin > Settings > Pricing plans (`/settings`; `/admin/plans` redirects here) manages names, regular prices, project limits, features, visibility, and an optional first-period offer. Each publish inserts a permanent version and records its author. Concurrent edits are rejected.
 
+Super Admin > Payments (`/admin/payments`) shows captured subscription charges, gross totals, customer counts, first-period and renewal breakdowns, and a searchable payment history. Today, this week, this month, custom inclusive calendar dates, and all-time filters use the administrator's local date boundaries. Totals are gross recorded captures; this ledger does not deduct refunds or represent Razorpay settlements.
+
 For Junior at INR 99 for the first month and INR 999 thereafter:
 
 1. Set the regular monthly price to INR 999.
