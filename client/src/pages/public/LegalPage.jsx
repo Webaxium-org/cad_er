@@ -31,6 +31,7 @@ const pages = {
           "Plan prices, billing intervals, project allowances, and any introductory price are shown on the subscription page. The checkout shows GST, processing fees, and the total payable before you pay. Prices are in Indian rupees. An introductory price applies only when you are eligible for it; the regular price applies to later periods.",
           "Payments are processed through Razorpay. Some plans require a first-period payment followed by a separate auto pay authorization. Where you authorize auto pay, future charges are scheduled at the regular plan price for the billing interval shown at checkout. Your bank or payment provider may require a separate verification step or payment when you authorize a mandate.",
           "You can cancel renewal from your subscription page. Cancellation stops future renewals and paid access continues to the end of the current period. If you do not complete auto pay authorization, paid access ends when that period expires. A failed renewal does not extend access. Plan changes do not currently receive a prorated credit.",
+          "Each successful payment provides only the plan features, project capacity, and access period shown for that purchase at checkout. A payment does not include features or capacity from another plan or a later billing period.",
         ],
       },
       {
@@ -40,16 +41,17 @@ const pages = {
         ],
       },
       {
-        title: "Cancellations and refund requests",
+        title: "Cancellations and refunds",
         paragraphs: [
-          "Paid subscription periods and additional project purchases are generally non-refundable. Cancelling renewal prevents future plan charges; it does not refund a period already paid for. This policy does not limit any refund or other remedy required by applicable law.",
-          "If you believe a charge was duplicate or incorrect, or paid access was not provided, email admin@getcader.com with your account email, payment ID, date, and reason. We will review your request and respond within 7 business days. Where a refund is required or approved, we will initiate it through Razorpay to the original payment method within 7 business days of approval. The time for the credit to appear also depends on Razorpay and your bank.",
+          "Once a payment is completed, subscription periods and additional project purchases are non-refundable. Cancelling renewal stops future charges but does not refund a completed payment. This does not limit any refund or other remedy required by applicable law.",
+          "If a charge is duplicate or incorrect, or the paid features are not provided, contact admin@getcader.com with your account email, payment ID, date, and details so we can investigate and provide any remedy required by applicable law.",
         ],
       },
       {
         title: "Your data and reports",
         paragraphs: [
           "You remain responsible for the survey data, images, and other content you submit. You allow CADER to store and process that content as needed to provide the features you use.",
+          "If you do not have an active subscription, we keep your project data for no more than one month after your subscription ends. Export or save a copy of any projects you want to keep before that period ends; deleted project data may not be recoverable.",
           "Check field measurements, calculations, drawings, and exported reports before relying on them for engineering, construction, or safety decisions.",
         ],
       },
@@ -89,7 +91,7 @@ const pages = {
       {
         title: "Payments and Razorpay",
         paragraphs: [
-          "When you pay or authorize auto pay, CADER opens Razorpay checkout and supplies your name, email address, and phone number, when available, to prefill it. Razorpay processes your chosen payment method and mandate. CADER receives payment status, amounts, dates, and Razorpay order, payment, subscription, and invoice references so we can activate access, show payment history, reconcile charges, and handle support or refunds.",
+          "When you pay or authorize auto pay, CADER opens Razorpay checkout and supplies your name, email address, and phone number, when available, to prefill it. Razorpay processes your chosen payment method and mandate. CADER receives payment status, amounts, dates, and Razorpay order, payment, subscription, and invoice references so we can activate access, show payment history, reconcile charges, and handle support or legally required remedies.",
           "CADER does not ask you to enter card or bank credentials into its own forms and does not store full card numbers or bank account credentials in its application database. Razorpay handles payment credentials under its own privacy practices.",
         ],
       },
@@ -102,7 +104,8 @@ const pages = {
       {
         title: "Keeping and managing information",
         paragraphs: [
-          "We keep information while it is needed to provide the service and to meet applicable recordkeeping, tax, accounting, dispute, and security requirements. Payment and subscription records may therefore remain after an account or subscription ends.",
+          "If you do not have an active subscription, we retain your project data for no more than one month after your subscription ends, then delete it. Project data includes surveys, field readings, uploaded project files, and related reports. Export or save a copy before that period ends if you want to keep it.",
+          "Account, payment, and subscription records are kept as needed to provide the service and meet applicable recordkeeping, tax, accounting, dispute, and security requirements. These records may remain after project data is deleted or a subscription ends.",
           "You can contact us to ask about retention or to request access to, correction of, or deletion of your account information. We may need to verify your identity before acting on a request. We will explain when a request cannot be fully completed because retention is required by law or necessary for an unresolved transaction or dispute.",
         ],
       },
