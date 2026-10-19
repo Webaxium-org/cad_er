@@ -11,7 +11,10 @@ import {
   Grid, // Reverting to the standard stable Grid component
 } from "@mui/material";
 import { motion } from "framer-motion";
+import { publicHeroMotion, publicCardContainerVariants, publicCardVariants } from "../../components/publicMotion";
 import ScrollToTop from "../../components/ScrollToTop";
+import { publicEyebrowSx, publicHeroTitleSx, publicHeroLeadSx } from "../../components/publicTypography";
+import { publicSectionStartSx } from "../../components/publicLayoutStyles";
 
 /**
  * Custom SVG Icons for Social Media
@@ -78,33 +81,6 @@ const teamMembers = [
   },
 ];
 
-// Animation Variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-      delayChildren: 0.3,
-    },
-  },
-};
-
-const cardVariants = {
-  hidden: { y: 40, opacity: 0, scale: 0.95 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 15,
-      duration: 0.8,
-    },
-  },
-};
-
 const OurTeam = () => {
   const handleNavigate = (path) => {
     if (path) window.open(path, "_blank");
@@ -130,9 +106,7 @@ const OurTeam = () => {
         {/* Hero Header */}
         <Box
           component={motion.div}
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          {...publicHeroMotion}
           sx={{
             pt: 12,
             pb: 10,
@@ -144,39 +118,20 @@ const OurTeam = () => {
           <Container maxWidth="md">
             <Typography
               variant="overline"
-              sx={{
-                color: "#6366f1",
-                fontWeight: 800,
-                letterSpacing: 4,
-                display: "block",
-                mb: 1,
-              }}
+              sx={publicEyebrowSx}
             >
               OUR TALENT
             </Typography>
             <Typography
+              component="h1"
               variant="h2"
-              sx={{
-                fontWeight: 900,
-                color: "#111827",
-                mb: 3,
-                fontSize: { xs: "2.75rem", md: "4.5rem" },
-                lineHeight: 1,
-                letterSpacing: -1,
-              }}
+              sx={{ ...publicHeroTitleSx, mb: 3 }}
             >
-              Governance
+              Our <Box component="span" sx={{ color: "#4f46e5" }}>Governance</Box>
             </Typography>
             <Typography
               variant="h6"
-              sx={{
-                color: "#6b7280",
-                fontWeight: 400,
-                lineHeight: 1.7,
-                maxWidth: 650,
-                mx: "auto",
-                fontSize: "1.25rem",
-              }}
+              sx={{ ...publicHeroLeadSx, mx: "auto" }}
             >
               We're a diverse group of creators working to redefine the
               intersection of engineering and design.
@@ -185,27 +140,30 @@ const OurTeam = () => {
         </Box>
 
         {/* Team Grid using standard Grid */}
-        <Container maxWidth="lg">
+        <Container maxWidth="lg" sx={publicSectionStartSx}>
           <Grid
             container
             spacing={4}
             component={motion.div}
-            variants={containerVariants}
+            variants={publicCardContainerVariants}
             initial="hidden"
             animate="visible"
           >
             {teamMembers.map((member, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+              <Grid size={{ xs: 12, sm: 6, lg: 4, xl: 3 }} key={index} sx={{ minWidth: 0 }}>
                 <motion.div
-                  variants={cardVariants}
+                  variants={publicCardVariants}
                   whileHover={{ y: -10 }}
                   style={{ height: "100%" }}
                 >
                   <Paper
                     elevation={0}
                     sx={{
-                      p: 4,
+                      p: { xs: 3, md: 4 },
                       height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
                       borderRadius: 10,
                       textAlign: "center",
                       border: "1px solid #f1f5f9",
@@ -214,8 +172,8 @@ const OurTeam = () => {
                       overflow: "hidden",
                       transition: "all 0.3s ease-in-out",
                       "&:hover": {
-                        borderColor: "#6366f1",
-                        boxShadow: "0 30px 60px -12px rgba(99, 102, 241, 0.12)",
+                        borderColor: "#4f46e5",
+                        boxShadow: "0 30px 60px -12px rgba(79, 70, 229, 0.12)",
                         "& .social-stack": { opacity: 1, y: 0 },
                         "& .member-avatar": { transform: "scale(1.1)" },
                       },
@@ -225,15 +183,15 @@ const OurTeam = () => {
                       sx={{
                         position: "relative",
                         mb: 4,
-                        width: 150,
-                        height: 150,
+                        width: { xs: 120, md: 140, xl: 150 },
+                        height: { xs: 120, md: 140, xl: 150 },
                         mx: "auto",
                         "&::after": {
                           content: '""',
                           position: "absolute",
                           inset: -6,
                           borderRadius: "50%",
-                          border: "2px solid #6366f1",
+                          border: "2px solid #4f46e5",
                           opacity: 0,
                           transition: "0.3s",
                           transform: "scale(0.8)",
@@ -258,14 +216,14 @@ const OurTeam = () => {
 
                     <Typography
                       variant="h5"
-                      sx={{ fontWeight: 800, color: "#111827", mb: 0.5 }}
+                      sx={{ fontWeight: 800, color: "#111827", mb: 0.5, overflowWrap: "anywhere" }}
                     >
                       {member.name}
                     </Typography>
                     <Typography
                       variant="subtitle2"
                       sx={{
-                        color: "#6366f1",
+                        color: "#4f46e5",
                         fontWeight: 700,
                         mb: 2,
                         textTransform: "uppercase",
@@ -281,6 +239,7 @@ const OurTeam = () => {
                       sx={{
                         color: "#64748b",
                         mb: 4,
+                        flexGrow: 1,
                         lineHeight: 1.7,
                         fontSize: "0.95rem",
                       }}
@@ -299,6 +258,7 @@ const OurTeam = () => {
                         y: 20,
                         transition:
                           "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        "@media (hover: none)": { opacity: 1 },
                       }}
                     >
                       {[
@@ -316,7 +276,7 @@ const OurTeam = () => {
                           whileHover={{
                             scale: 1.2,
                             rotate: 8,
-                            color: "#6366f1",
+                            color: "#4f46e5",
                           }}
                           whileTap={{ scale: 0.9 }}
                           sx={{
@@ -369,14 +329,14 @@ const OurTeam = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               sx={{
-                bgcolor: "#6366f1",
+                bgcolor: "#4f46e5",
                 color: "white",
                 borderRadius: 3,
                 px: 4,
                 py: 1.5,
                 fontSize: "1rem",
                 fontWeight: 700,
-                "&:hover": { bgcolor: "#4f46e5" },
+                "&:hover": { bgcolor: "#4338ca" },
               }}
             >
               View Open Positions

@@ -109,7 +109,7 @@ const MdOutlineBusiness = (props) => (
 const FormSectionHeader = ({ title, subtitle, icon: Icon }) => (
   <Box sx={{ mb: 3, mt: 1 }}>
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.5 }}>
-      {Icon && <Icon size={20} color="#6366f1" />}
+      {Icon && <Icon size={20} color="#4f46e5" />}
       <Typography
         variant="subtitle2"
         sx={{
@@ -300,7 +300,7 @@ const ScheduleDemoForm = ({ open, onClose }) => {
                           cursor: "pointer",
                           borderRadius: "20px",
                           border: "2px solid",
-                          borderColor: isActive ? "#6366f1" : "#f1f5f9",
+                          borderColor: isActive ? "#4f46e5" : "#f1f5f9",
                           transition: "0.3s",
                           "&:hover": {
                             transform: "translateY(-4px)",
@@ -312,7 +312,7 @@ const ScheduleDemoForm = ({ open, onClose }) => {
                           sx={{
                             p: 1,
                             borderRadius: "12px",
-                            bgcolor: isActive ? "#6366f1" : "#f8fafc",
+                            bgcolor: isActive ? "#4f46e5" : "#f8fafc",
                             color: isActive ? "white" : "#94a3b8",
                             mb: 1,
                             display: "inline-flex",
@@ -492,9 +492,9 @@ const ScheduleDemoForm = ({ open, onClose }) => {
                 sx={{
                   mb: 6,
                   p: 3,
-                  bgcolor: alpha("#6366f1", 0.02),
+                  bgcolor: alpha("#4f46e5", 0.02),
                   borderRadius: "24px",
-                  border: "1px dashed #6366f1",
+                  border: "1px dashed #4f46e5",
                 }}
               >
                 <Typography
@@ -560,7 +560,7 @@ const ScheduleDemoForm = ({ open, onClose }) => {
                 <Box sx={{ mt: 4 }}>
                   <Typography
                     variant="overline"
-                    sx={{ fontWeight: 900, color: "#6366f1" }}
+                    sx={{ fontWeight: 900, color: "#4f46e5" }}
                   >
                     Practical Training Integration
                   </Typography>
@@ -828,7 +828,7 @@ const ScheduleDemoForm = ({ open, onClose }) => {
             borderRadius: "12px",
             fontWeight: 900,
             bgcolor: "#0f172a",
-            "&:hover": { bgcolor: "#6366f1" },
+            "&:hover": { bgcolor: "#4338ca" },
           }}
         >
           {isSubmitting ? (

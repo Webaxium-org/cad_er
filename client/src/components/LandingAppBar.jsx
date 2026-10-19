@@ -26,7 +26,7 @@ import CaderBrand from "./CaderBrand";
 // --- Theme Configuration ---
 const theme = createTheme({
   palette: {
-    primary: { main: "#6366f1" }, // Indigo
+    primary: { main: "#4f46e5" }, // Indigo
     secondary: { main: "#000000" }, // Black
     background: { default: "#ffffff" },
     text: {
@@ -35,7 +35,7 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Inter", "system-ui", sans-serif',
+    fontFamily: '"Carlito", sans-serif',
     h1: { fontWeight: 900, letterSpacing: "-0.02em" },
     h2: { fontWeight: 800, letterSpacing: "-0.01em" },
   },
@@ -52,15 +52,16 @@ const theme = createTheme({
           padding: "10px 24px",
         },
         containedPrimary: {
-          boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.3)",
+          boxShadow: "0 10px 15px -3px rgba(79, 70, 229, 0.3)",
           "&:hover": {
-            boxShadow: "0 20px 25px -5px rgba(99, 102, 241, 0.4)",
+            boxShadow: "0 20px 25px -5px rgba(79, 70, 229, 0.4)",
           },
         },
       },
     },
   },
 });
+export const publicTheme = theme;
 
 const MenuIcon = ({ size = 24 }) => (
   <svg
@@ -106,7 +107,7 @@ const LandingAppBar = () => {
   const navigate = useNavigate();
 
   const muiTheme = useTheme();
-  const isMdDown = useMediaQuery(muiTheme.breakpoints.down("md"));
+  const isMdDown = useMediaQuery(muiTheme.breakpoints.down("lg"));
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -168,7 +169,7 @@ const LandingAppBar = () => {
                         color: "text.secondary",
                         "&:hover": {
                           color: "primary.main",
-                          bgcolor: "rgba(99, 102, 241, 0.05)",
+                          bgcolor: "rgba(79, 70, 229, 0.05)",
                         },
                       }}
                       onClick={() => navigate(item.path)}

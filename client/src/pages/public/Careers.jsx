@@ -12,7 +12,10 @@ import {
   Chip,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
+import { publicHeroMotion, publicCardContainerVariants, publicCardVariants } from "../../components/publicMotion";
 import ScrollToTop from "../../components/ScrollToTop";
+import { publicEyebrowSx, publicHeroTitleSx, publicHeroLeadSx } from "../../components/publicTypography";
+import { publicSectionStartSx } from "../../components/publicLayoutStyles";
 import { submitCareerApplication } from "../../services/indexServices";
 
 // Custom SVG Icons to replace react-icons and ensure successful compilation
@@ -197,6 +200,8 @@ const Careers = () => {
       <Box sx={{ bgcolor: "#ffffff", minHeight: "100vh", pb: 10 }}>
         {/* Header Section */}
         <Box
+          component={motion.div}
+          {...publicHeroMotion}
           sx={{
             bgcolor: "#f8fafc",
             pt: { xs: 8, md: 12 },
@@ -208,24 +213,21 @@ const Careers = () => {
             <Stack spacing={2} alignItems="center" textAlign="center">
               <Typography
                 variant="overline"
-                sx={{ color: "#6366f1", fontWeight: 800, letterSpacing: 3 }}
+                sx={publicEyebrowSx}
               >
                 JOIN OUR MISSION
               </Typography>
               <Typography
+                component="h1"
                 variant="h2"
-                sx={{
-                  fontWeight: 900,
-                  color: "#111827",
-                  fontSize: { xs: "2.5rem", md: "3.5rem" },
-                }}
+                sx={publicHeroTitleSx}
               >
                 Build the Future of <br />
-                <span style={{ color: "#6366f1" }}>Construction Tech</span>
+                <span style={{ color: "#4f46e5" }}>Construction Tech</span>
               </Typography>
               <Typography
                 variant="h6"
-                sx={{ color: "#64748b", maxWidth: 600, fontWeight: 400 }}
+                sx={publicHeroLeadSx}
               >
                 Join CADER and help us revolutionize how site engineers and
                 surveyors work across the globe.
@@ -234,13 +236,14 @@ const Careers = () => {
           </Container>
         </Box>
 
-        <Container maxWidth="lg" sx={{ mt: -4 }}>
+        <Container maxWidth="lg" sx={publicSectionStartSx}>
           <AnimatePresence mode="wait">
             {!selectedJob ? (
               <motion.div
                 key="job-list"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                variants={publicCardContainerVariants}
+                initial="hidden"
+                animate="visible"
                 exit={{ opacity: 0, y: -20 }}
               >
                 <Stack spacing={3}>
@@ -252,6 +255,8 @@ const Careers = () => {
                   </Typography>
                   {JOBS.map((job) => (
                     <Paper
+                      component={motion.div}
+                      variants={publicCardVariants}
                       key={job.id}
                       elevation={0}
                       sx={{
@@ -260,8 +265,8 @@ const Careers = () => {
                         border: "1px solid #e2e8f0",
                         transition: "all 0.2s",
                         "&:hover": {
-                          borderColor: "#6366f1",
-                          boxShadow: "0 10px 25px -5px rgba(99, 102, 241, 0.1)",
+                          borderColor: "#4f46e5",
+                          boxShadow: "0 10px 25px -5px rgba(79, 70, 229, 0.1)",
                           transform: "translateY(-2px)",
                         },
                       }}
@@ -345,12 +350,12 @@ const Careers = () => {
                             onClick={() => handleApply(job)}
                             endIcon={<IconChevronRight />}
                             sx={{
-                              bgcolor: "#6366f1",
+                              bgcolor: "#4f46e5",
                               borderRadius: 2,
                               px: 3,
                               textTransform: "none",
                               fontWeight: 700,
-                              "&:hover": { bgcolor: "#4f46e5" },
+                              "&:hover": { bgcolor: "#4338ca" },
                             }}
                           >
                             Apply Now
@@ -481,7 +486,7 @@ const Careers = () => {
                                 cursor: "pointer",
                                 transition: "0.2s",
                                 "&:hover": {
-                                  borderColor: "#6366f1",
+                                  borderColor: "#4f46e5",
                                   bgcolor: "#f3f4ff",
                                 },
                               }}
@@ -537,13 +542,13 @@ const Careers = () => {
                               size="large"
                               sx={{
                                 py: 2,
-                                bgcolor: "#6366f1",
+                                bgcolor: "#4f46e5",
                                 borderRadius: 3,
                                 fontWeight: 800,
                                 fontSize: "1.1rem",
                                 textTransform: "none",
                                 mt: 2,
-                                "&:hover": { bgcolor: "#4f46e5" },
+                                "&:hover": { bgcolor: "#4338ca" },
                               }}
                             >
                               {submitting ? "Sending Application..." : "Submit My Application"}

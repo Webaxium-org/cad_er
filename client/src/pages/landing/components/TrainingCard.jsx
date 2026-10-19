@@ -12,11 +12,11 @@ const TrainingCard = ({ icon, title, description }) => (
       "&:hover": {
         transform: "translateY(-5px)",
         boxShadow: "0 20px 40px rgba(0,0,0,0.04)",
-        borderColor: "#6366f1",
+        borderColor: "#4f46e5",
       },
     }}
   >
-    <Box sx={{ color: "#6366f1", mb: 2 }}>{icon}</Box>
+    <Box sx={{ color: "#4f46e5", mb: 2 }}>{icon}</Box>
     <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: "#111" }}>
       {title}
     </Typography>

@@ -2,10 +2,11 @@ import createHttpError from "http-errors";
 import RazorpayPlan from "../models/razorpayPlan.js";
 import { getCheckoutKey, razorpayRequest } from "./razorpay.js";
 
-export const getOrCreateRazorpayPlan = async (plan) => {
+export const getOrCreateRazorpayPlan = async (plan, amountPaise = plan.amountPaise) => {
   if (!plan) throw createHttpError(400, "Unknown plan");
   // Version 1 uses the original mapping; later versions get distinct provider plans.
-  const code = plan.version === 1 ? plan.code : `${plan.code}:v${plan.version}`;
+  const originalCode = plan.version === 1 ? plan.code : `${plan.code}:v${plan.version}`;
+  const code = amountPaise === plan.amountPaise ? originalCode : `${originalCode}:gross:${amountPaise}`;
   const keyId = getCheckoutKey();
   let mapping = await RazorpayPlan.findOne({ keyId, code });
   if (!mapping) {
@@ -14,7 +15,7 @@ export const getOrCreateRazorpayPlan = async (plan) => {
       interval: 1,
       item: {
         name: `CADer ${plan.name} ${plan.interval}`,
-        amount: plan.amountPaise,
+        amount: amountPaise,
         currency: "INR",
         description: `${plan.projectLimit} new projects per ${plan.interval === "monthly" ? "month" : "year"}`,
       },
@@ -33,7 +34,7 @@ export const getOrCreateRazorpayPlan = async (plan) => {
     }
   }
   const remote = await razorpayRequest("GET", `/plans/${encodeURIComponent(mapping.planId)}`);
-  if (remote.item?.amount !== plan.amountPaise || remote.item?.currency !== "INR" || remote.period !== plan.interval || remote.interval !== 1) {
+  if (remote.item?.amount !== amountPaise || remote.item?.currency !== "INR" || remote.period !== plan.interval || remote.interval !== 1) {
     throw createHttpError(503, "Razorpay plan does not match the configured price");
   }
   return mapping.planId;

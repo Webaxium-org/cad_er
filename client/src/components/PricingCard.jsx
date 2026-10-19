@@ -1,8 +1,10 @@
 import { Box, Typography, Stack, Button, Paper } from "@mui/material";
 import { motion as Motion } from "framer-motion";
 
+const displayPrice = value => value === "Custom" ? "Custom" : `₹${Number(value).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+
 const CheckIcon = () => (
-  <Box component="span" aria-hidden="true" sx={{ color: "#6366f1", fontWeight: 900, fontSize: 20, lineHeight: 1, flexShrink: 0 }}>&#10003;</Box>
+  <Box component="span" aria-hidden="true" sx={{ color: "#4f46e5", fontWeight: 900, fontSize: 20, lineHeight: 1, flexShrink: 0 }}>&#10003;</Box>
 );
 
 export default function PricingCard ({
@@ -35,12 +37,12 @@ export default function PricingCard ({
         boxSizing: "border-box",
         borderRadius: 6,
         border: "1px solid",
-        borderColor: highlighted ? "#6366f1" : "rgba(0,0,0,0.08)",
+        borderColor: highlighted ? "#4f46e5" : "rgba(0,0,0,0.08)",
         bgcolor: highlighted ? "#fff" : "rgba(255,255,255,0.6)",
         position: "relative",
         overflow: "hidden",
         boxShadow: highlighted
-          ? "0 30px 60px rgba(99, 102, 241, 0.15)"
+          ? "0 30px 60px rgba(79, 70, 229, 0.15)"
           : "none",
       }}
     >
@@ -50,7 +52,7 @@ export default function PricingCard ({
             position: "absolute",
             top: 20,
             right: -35,
-            bgcolor: "#6366f1",
+            bgcolor: "#4f46e5",
             color: "white",
             px: 6,
             py: 0.5,
@@ -73,13 +75,11 @@ export default function PricingCard ({
         sx={{
           display: "flex",
           alignItems: "baseline",
-          mb: introductoryPrice && introductoryPrice !== price ? 0.5 : 3,
+          mb: 0.5,
         }}
       >
         <Typography variant="h3" sx={{ fontWeight: 800, color: "#000" }}>
-          {(introductoryPrice || price) === "Custom"
-            ? "Custom"
-            : `₹${introductoryPrice || price}`}
+          {displayPrice(introductoryPrice || price)}
         </Typography>
         <Typography variant="body1" sx={{ color: "text.secondary", ml: 1 }}>
           /{duration}
@@ -90,12 +90,12 @@ export default function PricingCard ({
         introductoryPrice !== price &&
         introductoryPrice !== "Custom" &&
         price !== "Custom" && (
-          <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
               variant="body2"
               sx={{ color: "text.secondary", textDecoration: Number(introductoryPrice) < Number(price) ? "line-through" : "none" }}
             >
-              ₹{price}/{duration}
+              {displayPrice(price)}/{duration}
             </Typography>
             <Typography
               variant="body2"
@@ -113,6 +113,10 @@ export default function PricingCard ({
             </Typography>
           </Box>
         )}
+
+      {price !== "Custom" && <Typography variant="caption" sx={{ display: "block", color: "text.secondary", mb: 2.5 }}>
+        Excludes GST and processing fee
+      </Typography>}
 
       {renewalText && <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>{renewalText}</Typography>}
 
@@ -151,12 +155,12 @@ export default function PricingCard ({
           textTransform: "none",
           fontWeight: 700,
           fontSize: "1rem",
-          bgcolor: highlighted ? "#6366f1" : "transparent",
+          bgcolor: highlighted ? "#4f46e5" : "transparent",
           color: highlighted ? "#fff" : "#111",
-          borderColor: highlighted ? "#6366f1" : "rgba(0,0,0,0.2)",
+          borderColor: highlighted ? "#4f46e5" : "rgba(0,0,0,0.2)",
           "&:hover": {
-            bgcolor: highlighted ? "#4f46e5" : "rgba(0,0,0,0.05)",
-            borderColor: highlighted ? "#4f46e5" : "#000",
+            bgcolor: highlighted ? "#4338ca" : "rgba(0,0,0,0.05)",
+            borderColor: highlighted ? "#4338ca" : "#000",
           },
         }}
         disabled={disabled}

@@ -43,6 +43,7 @@ import Trash from "./pages/trash";
 import ProposeLevel from "./pages/survey/ProposeLevel";
 import LegalPage from "./pages/public/LegalPage";
 import SubscriptionPage from "./pages/subscription";
+import SubscriptionCheckoutPage from "./pages/subscription/Checkout";
 import AdminPayments from "./pages/subscription/AdminPayments";
 import SettingsRoute from "./routes/SettingsRoute";
 import SubscriptionGate from "./routes/SubscriptionGate";
@@ -89,6 +90,7 @@ function App() {
               </Route>
               <Route element={<ProtectedRoute requiredTypes={["Professional"]} />}>
                 <Route path="subscription" element={<SubscriptionPage />} />
+                <Route path="subscription/checkout" element={<SubscriptionCheckoutPage />} />
               </Route>
 
               {/* 🎓 STUDENT ONLY */}

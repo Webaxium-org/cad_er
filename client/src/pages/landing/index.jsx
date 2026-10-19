@@ -10,7 +10,6 @@ import {
   Paper,
   TextField,
   ThemeProvider,
-  createTheme,
   CssBaseline,
   Card,
   CardContent,
@@ -29,7 +28,10 @@ import { useDispatch } from "react-redux";
 import { contactForm } from "../../services/indexServices";
 import { handleFormError } from "../../utils/handleFormError";
 import { showAlert } from "../../redux/alertSlice";
-import LandingAppBar from "../../components/LandingAppBar";
+import LandingAppBar, { publicTheme } from "../../components/LandingAppBar";
+import { publicContentWidthSx } from "../../components/publicLayoutStyles";
+import { publicHeroTitleSx, publicHeroLeadSx } from "../../components/publicTypography";
+import { publicHeroMotion } from "../../components/publicMotion";
 import LandingFooter from "../../components/LandingFooter";
 import ScrollToTopButton from "../../components/ScrollToTopButton";
 import ScheduleDemoForm from "./components/ScheduleDemoForm";
@@ -132,45 +134,6 @@ const Icons = {
   ),
 };
 
-// --- Theme Configuration ---
-const theme = createTheme({
-  palette: {
-    primary: { main: "#6366f1" }, // Indigo
-    secondary: { main: "#000000" }, // Black
-    background: { default: "#ffffff" },
-    text: {
-      primary: "#000000",
-      secondary: "#4b5563",
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "system-ui", sans-serif',
-    h1: { fontWeight: 900, letterSpacing: "-0.02em" },
-    h2: { fontWeight: 800, letterSpacing: "-0.01em" },
-  },
-  shape: {
-    borderRadius: 8,
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: "none",
-          fontWeight: 600,
-          padding: "10px 24px",
-        },
-        containedPrimary: {
-          boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.3)",
-          "&:hover": {
-            boxShadow: "0 20px 25px -5px rgba(99, 102, 241, 0.4)",
-          },
-        },
-      },
-    },
-  },
-});
-
 const PulseDot = () => (
   <Box
     component={motion.span}
@@ -199,7 +162,7 @@ const FeatureCard = ({ icon: Icon, title, description, badge }) => (
     sx={{
       height: "100%",
       borderRadius: 6,
-      border: "1px solid rgba(99, 102, 241, 0.1)",
+      border: "1px solid rgba(79, 70, 229, 0.1)",
       bgcolor: "rgba(255, 255, 255, 0.7)",
       backdropFilter: "blur(10px)",
       boxShadow: "0 4px 20px -10px rgba(0,0,0,0.08)",
@@ -208,10 +171,10 @@ const FeatureCard = ({ icon: Icon, title, description, badge }) => (
       position: "relative",
       "&:hover": {
         transform: "translateY(-8px) scale(1.02)",
-        boxShadow: "0 25px 50px -12px rgba(99, 102, 241, 0.15)",
-        borderColor: "#6366f1",
+        boxShadow: "0 25px 50px -12px rgba(79, 70, 229, 0.15)",
+        borderColor: "#4f46e5",
         "& .icon-box": {
-          bgcolor: "#6366f1",
+          bgcolor: "#4f46e5",
           color: "#fff",
         },
       },
@@ -226,7 +189,7 @@ const FeatureCard = ({ icon: Icon, title, description, badge }) => (
             position: "absolute",
             top: -12,
             right: 20,
-            bgcolor: "#6366f1",
+            bgcolor: "#4f46e5",
             color: "white",
             fontWeight: 700,
             fontSize: "0.7rem",
@@ -242,8 +205,8 @@ const FeatureCard = ({ icon: Icon, title, description, badge }) => (
           width: 52,
           height: 52,
           borderRadius: "16px",
-          bgcolor: "rgba(99, 102, 241, 0.1)",
-          color: "#6366f1",
+          bgcolor: "rgba(79, 70, 229, 0.1)",
+          color: "#4f46e5",
           mb: 2.5,
           transition: "all 0.3s ease",
         }}
@@ -373,7 +336,7 @@ const CheckCircle = ({ size = 20 }) => (
     height={size}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#6366f1"
+    stroke="#4f46e5"
     strokeWidth="2.5"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -691,7 +654,7 @@ const Landing = () => {
   }, [location.state?.target]);
 
   return (
-    <Box sx={{ bgcolor: "#fff", minHeight: "100vh" }}>
+    <Box sx={{ ...publicContentWidthSx, bgcolor: "#fff", minHeight: "100vh" }}>
       <AnimatePresence mode="wait">
         {loading && (
           <Preloader
@@ -712,7 +675,7 @@ const Landing = () => {
           display: loading ? "none" : "block", // or keep it block and use opacity
         }}
       >
-        <ThemeProvider theme={theme}>
+        <ThemeProvider theme={publicTheme}>
           <CssBaseline />
 
           <AlertDialogSlide
@@ -727,6 +690,8 @@ const Landing = () => {
 
           {/* Hero Section */}
           <Box
+            component={motion.div}
+            {...publicHeroMotion}
             sx={{
               position: "relative",
               pt: { xs: 6, md: 12 },
@@ -753,8 +718,8 @@ const Landing = () => {
                           py: 0.5,
                           mb: 3,
                           borderRadius: 10,
-                          bgcolor: "rgba(99, 102, 241, 0.1)",
-                          border: "1px solid rgba(99, 102, 241, 0.2)",
+                          bgcolor: "rgba(79, 70, 229, 0.1)",
+                          border: "1px solid rgba(79, 70, 229, 0.2)",
                         }}
                       >
                         <Box display="flex" alignItems="center">
@@ -777,13 +742,7 @@ const Landing = () => {
                       <Typography
                         variant="h1"
                         gutterBottom
-                        sx={{
-                          fontSize: {
-                            xs: "2.5rem",
-                            sm: "3.5rem",
-                            md: "4rem",
-                          },
-                        }}
+                        sx={publicHeroTitleSx}
                       >
                         Construction Survey <br />
                         <Box component="span" sx={{ color: "primary.main" }}>
@@ -795,12 +754,7 @@ const Landing = () => {
                     <motion.div variants={fUp}>
                       <Typography
                         variant="body1"
-                        sx={{
-                          color: "text.secondary",
-                          fontSize: "1.1rem",
-                          mb: 4,
-                          maxWidth: 540,
-                        }}
+                        sx={{ ...publicHeroLeadSx, maxWidth: 540, mb: 4 }}
                       >
                         Yeah, you heard it right. Automate construction surveys
                         with CADER, stop letting outdated methods and slow
@@ -872,9 +826,9 @@ const Landing = () => {
                             textTransform: "none",
                             bgcolor: "#fff",
                             "&:hover": {
-                              borderColor: "#6366f1",
-                              color: "#6366f1",
-                              bgcolor: "rgba(99, 102, 241, 0.04)",
+                              borderColor: "#4f46e5",
+                              color: "#4f46e5",
+                              bgcolor: "rgba(79, 70, 229, 0.04)",
                             },
                           }}
                           onClick={() => setOpen(true)}
@@ -903,7 +857,7 @@ const Landing = () => {
                         width: "100%",
                         height: "100%",
                         background:
-                          "radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)",
+                          "radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, transparent 70%)",
                         zIndex: -1,
                         filter: "blur(40px)",
                       }}
@@ -917,7 +871,7 @@ const Landing = () => {
                         background: "rgba(255, 255, 255, 0.05)",
                         backdropFilter: "blur(10px)",
                         border: "1px solid rgba(255, 255, 255, 0.1)",
-                        boxShadow: "0 15px 40px rgba(0,0,0,0.3)",
+                        boxShadow: "0 20px 50px rgba(79, 70, 229, 0.3)",
                         width: "100%",
                         maxWidth: {
                           xs: "100%",
@@ -952,7 +906,8 @@ const Landing = () => {
             </Container>
           </Box>
 
-          <Grid container spacing={6} alignItems="center" p={{ xs: 8, md: 12 }}>
+          <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
+            <Grid container spacing={6} alignItems="center">
             <Grid size={{ xs: 12, md: 6 }} sx={{ order: { xs: 2, md: 1 } }}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -970,7 +925,7 @@ const Landing = () => {
                     width: "100%",
                     height: "100%",
                     background:
-                      "radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)",
+                      "radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, transparent 70%)",
                     zIndex: -1,
                     filter: "blur(40px)",
                   }}
@@ -1031,10 +986,10 @@ const Landing = () => {
                         mb: 2,
                       }}
                     >
-                      <Box sx={{ width: 40, height: 2, bgcolor: "#6366f1" }} />
+                      <Box sx={{ width: 40, height: 2, bgcolor: "#4f46e5" }} />
                       <Typography
                         sx={{
-                          color: "#6366f1",
+                          color: "#4f46e5",
                           fontWeight: 800,
                           letterSpacing: 1.5,
                           fontSize: "0.75rem",
@@ -1096,7 +1051,8 @@ const Landing = () => {
                 </Stack>
               </motion.div>
             </Grid>
-          </Grid>
+            </Grid>
+          </Container>
 
           {/* Feature Highlights */}
           <Box
@@ -1201,7 +1157,7 @@ const Landing = () => {
                       flexShrink: 0,
                       p: 4,
                       bgcolor: "rgba(255,255,255,0.03)",
-                      borderLeft: "2px solid #6366f1",
+                      borderLeft: "2px solid #4f46e5",
                       borderRadius: "4px",
                       transition: "background-color 0.3s ease",
                       display: "flex",
@@ -1252,11 +1208,11 @@ const Landing = () => {
                           }}
                         >
                           <Box
-                            sx={{ width: 40, height: 2, bgcolor: "#6366f1" }}
+                            sx={{ width: 40, height: 2, bgcolor: "#4f46e5" }}
                           />
                           <Typography
                             sx={{
-                              color: "#6366f1",
+                              color: "#4f46e5",
                               fontWeight: 800,
                               letterSpacing: 1.5,
                               fontSize: "0.75rem",
@@ -1277,7 +1233,7 @@ const Landing = () => {
                           }}
                         >
                           CADER{" "}
-                          <Box component="span" sx={{ color: "#6366f1" }}>
+                          <Box component="span" sx={{ color: "#4f46e5" }}>
                             Training Program
                           </Box>
                         </Typography>
@@ -1356,9 +1312,9 @@ const Landing = () => {
                             textTransform: "none",
                             bgcolor: "#fff",
                             "&:hover": {
-                              borderColor: "#6366f1",
-                              color: "#6366f1",
-                              bgcolor: "rgba(99, 102, 241, 0.04)",
+                              borderColor: "#4f46e5",
+                              color: "#4f46e5",
+                              bgcolor: "rgba(79, 70, 229, 0.04)",
                             },
                           }}
                           onClick={() => setOpenValidateCert(true)}
@@ -1381,7 +1337,7 @@ const Landing = () => {
                         left: "10%",
                         width: "80%",
                         height: "80%",
-                        bgcolor: "rgba(99, 102, 241, 0.05)",
+                        bgcolor: "rgba(79, 70, 229, 0.05)",
                         filter: "blur(60px)",
                         zIndex: 0,
                       }}
@@ -1478,11 +1434,11 @@ const Landing = () => {
                           }}
                         >
                           <Box
-                            sx={{ width: 40, height: 2, bgcolor: "#6366f1" }}
+                            sx={{ width: 40, height: 2, bgcolor: "#4f46e5" }}
                           />
                           <Typography
                             sx={{
-                              color: "#6366f1",
+                              color: "#4f46e5",
                               fontWeight: 800,
                               letterSpacing: 1.5,
                               fontSize: "0.75rem",
@@ -1505,7 +1461,7 @@ const Landing = () => {
                           }}
                         >
                           Your Professional <br />
-                          <Box component="span" sx={{ color: "#6366f1" }}>
+                          <Box component="span" sx={{ color: "#4f46e5" }}>
                             Identity, Reimagined.
                           </Box>
                         </Typography>
@@ -1528,8 +1484,8 @@ const Landing = () => {
                         sx={{
                           p: 3,
                           borderRadius: 4,
-                          bgcolor: "rgba(99, 102, 241, 0.03)",
-                          borderLeft: "4px solid #6366f1",
+                          bgcolor: "rgba(79, 70, 229, 0.03)",
+                          borderLeft: "4px solid #4f46e5",
                         }}
                       >
                         <Typography
@@ -1557,14 +1513,14 @@ const Landing = () => {
                           sx={{
                             py: 2,
                             px: 5,
-                            bgcolor: "#6366f1",
+                            bgcolor: "#4f46e5",
                             borderRadius: "12px",
                             fontWeight: 800,
                             textTransform: "none",
                             fontSize: "1rem",
                             boxShadow:
-                              "0 15px 30px -10px rgba(99, 102, 241, 0.4)",
-                            "&:hover": { bgcolor: "#4f46e5" },
+                              "0 15px 30px -10px rgba(79, 70, 229, 0.4)",
+                            "&:hover": { bgcolor: "#4338ca" },
                           }}
                           onClick={() => navigate("/get-started")}
                         >
@@ -1581,7 +1537,7 @@ const Landing = () => {
                             display: "flex",
                             gap: 1,
                             "&:hover": {
-                              color: "#6366f1",
+                              color: "#4f46e5",
                               bgcolor: "transparent",
                             },
                           }}
@@ -1606,7 +1562,7 @@ const Landing = () => {
                         height: 300,
                         borderRadius: "50%",
                         background:
-                          "radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(255, 255, 255, 0) 70%)",
+                          "radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, rgba(255, 255, 255, 0) 70%)",
                         zIndex: 0,
                       }}
                     />
@@ -1684,11 +1640,11 @@ const Landing = () => {
               <Paper
                 elevation={0}
                 sx={{
-                  bgcolor: "#6366f1",
+                  bgcolor: "#4f46e5",
                   borderRadius: { xs: 4, md: 8 },
                   overflow: "hidden",
                   position: "relative",
-                  boxShadow: "0 40px 80px rgba(99, 102, 241, 0.25)",
+                  boxShadow: "0 40px 80px rgba(79, 70, 229, 0.25)",
                 }}
               >
                 {/* Background Decorative Circles */}

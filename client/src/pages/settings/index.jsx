@@ -405,8 +405,7 @@ export default function Settings() {
                 variant="body1"
                 sx={{ opacity: 0.85, maxWidth: 500, fontWeight: 500 }}
               >
-                Manage application preferences, client configuration, instrument
-                details, and project reporting.
+                Manage preferences, instruments, and project reports.
               </Typography>
             </Box>
 

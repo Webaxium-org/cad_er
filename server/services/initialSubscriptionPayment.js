@@ -25,7 +25,7 @@ export const needsAutopaySetup = (record, now = new Date()) => hasInitialAccess(
 
 export const recordInitialPayment = async (record, payment) => {
   if (!record.razorpayOrderId || payment.order_id !== record.razorpayOrderId || payment.currency !== "INR" ||
-      payment.amount !== record.pricingSnapshot?.firstPaymentAmountPaise || !payment.id) {
+      payment.amount !== (record.pricingSnapshot?.checkout?.totalPaise ?? record.pricingSnapshot?.firstPaymentAmountPaise) || !payment.id) {
     throw createHttpError(409, "Initial payment does not match this purchase");
   }
   if (payment.amount_refunded >= payment.amount) {

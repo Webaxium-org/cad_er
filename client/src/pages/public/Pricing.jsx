@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
-  LinearProgress,
   Box,
   Container,
   Typography,
@@ -14,6 +13,9 @@ import {
   AccordionDetails,
 } from "@mui/material";
 import PricingCard from "../../components/PricingCard";
+import { motion } from "framer-motion";
+import { publicHeroMotion } from "../../components/publicMotion";
+import { publicEyebrowSx, publicHeroTitleSx, publicHeroLeadSx } from "../../components/publicTypography";
 import { getSubscriptionPlans } from "../../services/subscriptionServices";
 import { getPricingPlans } from "../../constants/pricingPlans";
 import ScrollToTop from "../../components/ScrollToTop";
@@ -76,13 +78,11 @@ const Pricing = () => {
   };
 
   const [catalog, setCatalog] = useState([]);
-  const [loadingPlans, setLoadingPlans] = useState(true);
   const [plansError, setPlansError] = useState("");
   useEffect(() => {
     let mounted = true;
     getSubscriptionPlans().then(({ data }) => { if (mounted) setCatalog(data.plans); })
-      .catch(() => { if (mounted) setPlansError("Pricing could not be loaded. Please refresh to try again."); })
-      .finally(() => { if (mounted) setLoadingPlans(false); });
+      .catch(() => { if (mounted) setPlansError("Pricing could not be loaded. Please refresh to try again."); });
     return () => { mounted = false; };
   }, []);
   const plans = getPricingPlans(billingCycle, catalog);
@@ -95,33 +95,24 @@ const Pricing = () => {
         sx={{ bgcolor: "#fcfcfd", minHeight: "100vh", py: { xs: 8, md: 12 } }}
       >
         <Container maxWidth="lg">
-          {loadingPlans && <LinearProgress aria-label="Loading pricing" />}
           {plansError && <Alert severity="error">{plansError}</Alert>}
           {/* Header */}
-          <Box sx={{ textAlign: "center", mb: 10 }}>
+          <Box component={motion.div} {...publicHeroMotion} sx={{ textAlign: "center", mb: 10 }}>
             <Typography
-              sx={{
-                color: "#6366f1",
-                fontWeight: 800,
-                letterSpacing: 1.5,
-                fontSize: "0.9rem",
-                textTransform: "uppercase",
-                mb: 2,
-              }}
+              sx={publicEyebrowSx}
             >
               Pricing Plans
             </Typography>
             <Typography
+              component="h1"
               variant="h2"
-              sx={{
-                fontSize: { xs: "2.5rem", md: "3.5rem" },
-                fontWeight: 900,
-                mb: 3,
-                color: "#000",
-                letterSpacing: "-0.02em",
-              }}
+              sx={{ ...publicHeroTitleSx, mb: 3 }}
             >
-              Pricing for every stage <br /> of your career.
+              Pricing for every stage <br />
+              <Box component="span" sx={{ color: "#4f46e5" }}>of your career.</Box>
+            </Typography>
+            <Typography sx={{ ...publicHeroLeadSx, mx: "auto" }}>
+              Shown prices are CADer plan prices. An offer applies to the first month or year; the regular plan price follows.
             </Typography>
 
             <Stack
@@ -147,9 +138,9 @@ const Pricing = () => {
                   )
                 }
                 sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": { color: "#6366f1" },
+                  "& .MuiSwitch-switchBase.Mui-checked": { color: "#4f46e5" },
                   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#6366f1",
+                    backgroundColor: "#4f46e5",
                   },
                 }}
               />

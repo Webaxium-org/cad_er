@@ -11,7 +11,9 @@ import {
   Button,
 } from "@mui/material";
 import { motion } from "framer-motion";
+import { publicHeroMotion, publicCardContainerVariants, publicCardVariants } from "../../components/publicMotion";
 import ScrollToTop from "../../components/ScrollToTopButton";
+import { publicEyebrowSx, publicHeroTitleSx, publicHeroLeadSx } from "../../components/publicTypography";
 
 /**
  * Icons for the Stats
@@ -23,7 +25,7 @@ const StatIcons = {
       height="40"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#6366f1"
+      stroke="#4f46e5"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -38,7 +40,7 @@ const StatIcons = {
       height="40"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#6366f1"
+      stroke="#4f46e5"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -53,7 +55,7 @@ const StatIcons = {
       height="40"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#6366f1"
+      stroke="#4f46e5"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -70,7 +72,7 @@ const StatIcons = {
       height="40"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#6366f1"
+      stroke="#4f46e5"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -133,24 +135,6 @@ const timelineEvents = [
   },
 ];
 
-// Animation Variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.15, delayChildren: 0.2 },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 30, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 100, damping: 12 },
-  },
-};
-
 const ImpactStats = () => {
   return (
     <>
@@ -178,7 +162,7 @@ const ImpactStats = () => {
             width: "50%",
             height: "50%",
             background:
-              "radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(255, 255, 255, 0) 70%)",
+              "radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, rgba(255, 255, 255, 0) 70%)",
             zIndex: 0,
           }}
         />
@@ -188,48 +172,26 @@ const ImpactStats = () => {
           sx={{ position: "relative", zIndex: 1, pt: 12, pb: 15 }}
         >
           {/* --- Hero Section --- */}
-          <Box sx={{ textAlign: "center", mb: 10 }}>
+          <Box component={motion.div} {...publicHeroMotion} sx={{ textAlign: "center", mb: 10 }}>
             <Typography
-              component={motion.span}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
               variant="overline"
-              sx={{
-                color: "#6366f1",
-                fontWeight: 800,
-                letterSpacing: 4,
-                display: "block",
-                mb: 2,
-              }}
+              sx={publicEyebrowSx}
             >
               OUR GLOBAL FOOTPRINT
             </Typography>
             <Typography
+              component="h1"
               variant="h2"
-              sx={{
-                fontWeight: 900,
-                color: "#111827",
-                mb: 3,
-                fontSize: { xs: "2.8rem", md: "4.5rem" },
-                letterSpacing: -1,
-                lineHeight: 1.1,
-              }}
+              sx={{ ...publicHeroTitleSx, mb: 3 }}
             >
               Empowering the Next <br />
-              <Box component="span" sx={{ color: "#6366f1" }}>
+              <Box component="span" sx={{ color: "#4f46e5" }}>
                 Generation of Engineers
               </Box>
             </Typography>
             <Typography
               variant="h6"
-              sx={{
-                color: "#6b7280",
-                fontWeight: 400,
-                maxWidth: 750,
-                mx: "auto",
-                lineHeight: 1.6,
-                fontSize: "1.1rem",
-              }}
+              sx={{ ...publicHeroLeadSx, maxWidth: 750, mx: "auto" }}
             >
               Transparency is the cornerstone of our mission. Explore the
               real-world metrics that drive our innovation and the communities
@@ -242,14 +204,14 @@ const ImpactStats = () => {
             container
             spacing={4}
             component={motion.div}
-            variants={containerVariants}
+            variants={publicCardContainerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
           >
             {statsData.map((stat, index) => (
               <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
-                <motion.div variants={itemVariants} style={{ height: "100%" }}>
+                <motion.div variants={publicCardVariants} style={{ height: "100%" }}>
                   <Paper
                     elevation={0}
                     sx={{
@@ -266,11 +228,11 @@ const ImpactStats = () => {
                       textAlign: "center",
                       "&:hover": {
                         transform: "translateY(-10px)",
-                        borderColor: "#6366f1",
+                        borderColor: "#4f46e5",
                         bgcolor: "#ffffff",
-                        boxShadow: "0 25px 50px -12px rgba(99, 102, 241, 0.15)",
+                        boxShadow: "0 25px 50px -12px rgba(79, 70, 229, 0.15)",
                         "& .stat-icon-container": {
-                          bgcolor: "#6366f1",
+                          bgcolor: "#4f46e5",
                           "& svg": { stroke: "#fff" },
                         },
                       },
@@ -308,7 +270,7 @@ const ImpactStats = () => {
                       variant="subtitle1"
                       sx={{
                         fontWeight: 700,
-                        color: "#6366f1",
+                        color: "#4f46e5",
                         textTransform: "uppercase",
                         letterSpacing: 1.5,
                         fontSize: "0.75rem",
@@ -336,7 +298,7 @@ const ImpactStats = () => {
               <Grid item xs={12} md={5}>
                 <Typography
                   variant="overline"
-                  sx={{ color: "#6366f1", fontWeight: 800, letterSpacing: 2 }}
+                  sx={{ color: "#4f46e5", fontWeight: 800, letterSpacing: 2 }}
                 >
                   OUR JOURNEY
                 </Typography>
@@ -358,14 +320,14 @@ const ImpactStats = () => {
                 <Button
                   variant="contained"
                   sx={{
-                    bgcolor: "#6366f1",
+                    bgcolor: "#4f46e5",
                     px: 4,
                     py: 1.5,
                     borderRadius: 3,
                     textTransform: "none",
                     fontWeight: 700,
-                    boxShadow: "0 10px 20px rgba(99, 102, 241, 0.3)",
-                    "&:hover": { bgcolor: "#4f46e5" },
+                    boxShadow: "0 10px 20px rgba(79, 70, 229, 0.3)",
+                    "&:hover": { bgcolor: "#4338ca" },
                   }}
                 >
                   Read our Story
@@ -399,7 +361,7 @@ const ImpactStats = () => {
                         variant="h4"
                         sx={{
                           fontWeight: 900,
-                          color: "#6366f1",
+                          color: "#4f46e5",
                           minWidth: 100,
                           opacity: 0.5,
                         }}
@@ -515,7 +477,7 @@ const ImpactStats = () => {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#6366f1",
+                      color: "#4f46e5",
                       fontWeight: 700,
                       textTransform: "uppercase",
                     }}
@@ -534,7 +496,7 @@ const ImpactStats = () => {
                 {
                   title: "Strategic Growth",
                   sub: "Consistency in delivery since day one.",
-                  color: "#6366f1",
+                  color: "#4f46e5",
                 },
                 {
                   title: "Global Standard",

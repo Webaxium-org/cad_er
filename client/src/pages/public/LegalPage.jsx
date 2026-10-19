@@ -1,12 +1,16 @@
 import { useEffect } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
+import { publicEyebrowSx, publicHeroTitleSx, publicHeroLeadSx } from "../../components/publicTypography";
+import { motion } from "framer-motion";
+import { publicHeroMotion } from "../../components/publicMotion";
 
 const contactEmail = "admin@getcader.com";
 
 const pages = {
   terms: {
-    title: "Terms & Conditions",
+    titleLead: "Terms &",
+    titleAccent: "Conditions",
     intro: "These basic terms explain how you may use CADER and its surveying tools.",
     sections: [
       {
@@ -44,7 +48,8 @@ const pages = {
     related: { label: "Read Privacy Policy", to: "/privacy" },
   },
   privacy: {
-    title: "Privacy Policy",
+    titleLead: "Privacy",
+    titleAccent: "Policy",
     intro: "This policy describes the information CADER uses to run its accounts, surveys, reports, and support features.",
     sections: [
       {
@@ -93,8 +98,10 @@ export default function LegalPage({ type }) {
   return (
     <Box component="main" sx={{ minHeight: "100vh", bgcolor: "#f8fafc", pb: 10 }}>
       <Box
+        component={motion.div}
+        {...publicHeroMotion}
         sx={{
-          background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
+          background: "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)",
           color: "white",
           pt: { xs: 10, md: 12 },
           pb: { xs: 12, md: 14 },
@@ -102,10 +109,11 @@ export default function LegalPage({ type }) {
         }}
       >
         <Container maxWidth="md">
-          <Typography component="h1" variant="h3" fontWeight={900} sx={{ fontSize: { xs: "2rem", md: "3rem" } }}>
-            {page.title}
+          <Typography variant="overline" sx={{ ...publicEyebrowSx, color: "#c7d2fe" }}>Legal information</Typography>
+          <Typography component="h1" variant="h3" sx={{ ...publicHeroTitleSx, color: "white" }}>
+            {page.titleLead} <Box component="span" sx={{ color: "#c7d2fe" }}>{page.titleAccent}</Box>
           </Typography>
-          <Typography sx={{ mt: 2, maxWidth: 680, opacity: 0.9, lineHeight: 1.7 }}>
+          <Typography sx={{ ...publicHeroLeadSx, mt: 2, color: "white", opacity: 0.9 }}>
             {page.intro}
           </Typography>
         </Container>

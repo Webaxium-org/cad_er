@@ -6,6 +6,7 @@ import {
   useMediaQuery,
   Paper,
   Container,
+  Chip,
 } from "@mui/material";
 import Lottie from "lottie-react";
 import { useDispatch, useSelector } from "react-redux";
@@ -277,18 +278,17 @@ const SelectEquipment = () => {
 
                   {/* Text content */}
                   <Box sx={{ flexGrow: 1, position: "relative", zIndex: 1 }}>
-                    <Typography
-                      fontWeight={900}
-                      fontSize={{ xs: "1.1rem", md: "1.25rem" }}
-                      color={isActive ? "#1e293b" : "#64748b"}
-                      sx={{
-                        transition: "color 0.3s ease",
-                        letterSpacing: "-0.02em",
-                        mb: 0.5,
-                      }}
-                    >
-                      {equipment.label}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 0.5 }}>
+                      <Typography
+                        fontWeight={900}
+                        fontSize={{ xs: "1.1rem", md: "1.25rem" }}
+                        color={isActive ? "#1e293b" : "#64748b"}
+                        sx={{ transition: "color 0.3s ease", letterSpacing: "-0.02em" }}
+                      >
+                        {equipment.label}
+                      </Typography>
+                      {idx > 0 && <Chip label="Coming soon" size="small" sx={{ height: 22, bgcolor: "#eef2ff", color: "#4338ca", fontWeight: 800, fontSize: "0.68rem" }} />}
+                    </Stack>
                     <Typography
                       variant="body2"
                       color={isActive ? equipment.color : "text.secondary"}

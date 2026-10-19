@@ -10,7 +10,9 @@ import {
   Grid,
 } from "@mui/material";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { publicHeroMotion, publicCardContainerVariants, publicCardVariants } from "../../components/publicMotion";
 import ScrollToTop from "../../components/ScrollToTop";
+import { publicEyebrowSx, publicHeroTitleSx, publicHeroLeadSx } from "../../components/publicTypography";
 import { useNavigate } from "react-router-dom";
 
 const CustomIcons = {
@@ -76,24 +78,8 @@ const CustomIcons = {
   ),
 };
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+const fadeInUp = publicCardVariants;
+const staggerContainer = publicCardContainerVariants;
 
 const About = () => {
   const containerRef = useRef(null);
@@ -148,7 +134,7 @@ const About = () => {
 
         <Box sx={{ position: "relative", zIndex: 1 }}>
           {/* Hero Section */}
-          <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 15 }, pb: 8 }}>
+          <Container component={motion.div} {...publicHeroMotion} maxWidth="lg" sx={{ pt: { xs: 8, md: 15 }, pb: 8 }}>
             <Grid container spacing={8} alignItems="center">
               <Grid size={{ xs: 12, md: 7 }}>
                 <Stack
@@ -161,28 +147,16 @@ const About = () => {
                   <motion.div variants={fadeInUp}>
                     <Typography
                       variant="overline"
-                      sx={{
-                        color: "#6366f1",
-                        fontWeight: 800,
-                        letterSpacing: 4,
-                        mb: 2,
-                        display: "block",
-                      }}
+                      sx={publicEyebrowSx}
                     >
                       THE FUTURE OF SURVEYING
                     </Typography>
                     <Typography
                       variant="h1"
-                      sx={{
-                        fontSize: { xs: "2.5rem", md: "4rem" },
-                        fontWeight: 900,
-                        lineHeight: 1.1,
-                        color: "#111827",
-                        letterSpacing: -1.5,
-                      }}
+                      sx={publicHeroTitleSx}
                     >
                       Why spend <br />
-                      <span style={{ color: "#6366f1" }}>
+                      <span style={{ color: "#4f46e5" }}>
                         evenings in office?
                       </span>
                     </Typography>
@@ -191,13 +165,7 @@ const About = () => {
                   <motion.div variants={fadeInUp}>
                     <Typography
                       variant="h5"
-                      sx={{
-                        color: "#4b5563",
-                        fontWeight: 400,
-                        lineHeight: 1.6,
-                        maxWidth: 600,
-                        fontSize: { xs: "1.1rem", md: "1.25rem" },
-                      }}
+                      sx={publicHeroLeadSx}
                     >
                       Eliminate post-processing entirely — your field data isn’t
                       just a list of numbers anymore. With precise numerical
@@ -216,7 +184,7 @@ const About = () => {
                         variant="contained"
                         size="large"
                         sx={{
-                          bgcolor: "#6366f1",
+                          bgcolor: "#4f46e5",
                           color: "white",
                           px: 5,
                           py: 2,
@@ -224,8 +192,8 @@ const About = () => {
                           textTransform: "none",
                           fontSize: "1.1rem",
                           fontWeight: 700,
-                          boxShadow: "0 10px 20px -5px rgba(99, 102, 241, 0.4)",
-                          "&:hover": { bgcolor: "#4f46e5" },
+                          boxShadow: "0 10px 20px -5px rgba(79, 70, 229, 0.4)",
+                          "&:hover": { bgcolor: "#4338ca" },
                         }}
                       >
                         Start Surveying
@@ -243,7 +211,7 @@ const About = () => {
                           fontSize: "1.1rem",
                           fontWeight: 700,
                           "&:hover": {
-                            borderColor: "#6366f1",
+                            borderColor: "#4f46e5",
                             bgcolor: "#f3f4ff",
                           },
                         }}
@@ -275,7 +243,7 @@ const About = () => {
                   >
                     <Typography
                       variant="h2"
-                      sx={{ fontWeight: 900, color: "#6366f1", mb: 1 }}
+                      sx={{ fontWeight: 900, color: "#4f46e5", mb: 1 }}
                     >
                       40%
                     </Typography>
@@ -349,7 +317,7 @@ const About = () => {
                           border: "1px solid #f1f5f9",
                         }}
                       >
-                        <Box sx={{ color: "#6366f1", mb: 3 }}>{item.icon}</Box>
+                        <Box sx={{ color: "#4f46e5", mb: 3 }}>{item.icon}</Box>
                         <Typography
                           variant="h5"
                           sx={{ fontWeight: 800, mb: 2, color: "#111827" }}
@@ -461,7 +429,7 @@ const About = () => {
                   right: -100,
                   width: 400,
                   height: 400,
-                  bgcolor: "#6366f1",
+                  bgcolor: "#4f46e5",
                   filter: "blur(120px)",
                   opacity: 0.15,
                   borderRadius: "50%",

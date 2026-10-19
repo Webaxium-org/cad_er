@@ -2,25 +2,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiCreditCard } from "react-icons/fi";
-import { Alert, Box, Button, Container, LinearProgress, Paper, Stack, Switch, Typography } from "@mui/material";
+import { FiCreditCard, FiRefreshCw } from "react-icons/fi";
+import { Alert, Box, Button, Container, LinearProgress, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
 import AppHeader from "../../components/AppHeader";
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import PricingCard from "../../components/PricingCard";
 import { getPricingPlans, offerTerms } from "../../constants/pricingPlans";
-import { cancelSubscription, createSubscriptionCheckout, getSubscription, getSubscriptionPlans, loadRazorpayCheckout, verifySubscriptionCheckout, setupSubscriptionAutopay } from "../../services/subscriptionServices";
+import { cancelSubscription, getSubscription, getSubscriptionPaymentHistory, getSubscriptionPlans, loadRazorpayCheckout, verifySubscriptionCheckout, setupSubscriptionAutopay } from "../../services/subscriptionServices";
 import { stopLoading } from "../../redux/loadingSlice";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 
 const date = (value) => value ? new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
 const accent = "#4f46e5";
+const money = paise => `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const themedAlert = { borderRadius: 2, bgcolor: "#eef2ff", color: "#312e81", border: "1px solid #c7d2fe",
   "& .MuiAlert-icon": { color: accent }, "& .MuiAlert-action .MuiButton-root": { color: accent } };
 
 export default function SubscriptionPage() {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.user);
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.user);
   const { state } = useLocation();
   const [plans, setPlans] = useState([]);
   const [account, setAccount] = useState(null);
@@ -28,7 +29,14 @@ export default function SubscriptionPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  useEffect(() => { if (state?.checkoutNotice) setNotice(state.checkoutNotice); }, [state]);
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentHistory, setPaymentHistory] = useState(null);
+  const [paymentHistoryBusy, setPaymentHistoryBusy] = useState(true);
+  const [paymentHistoryError, setPaymentHistoryError] = useState("");
+  const [paymentHistoryRefresh, setPaymentHistoryRefresh] = useState(0);
   const heroRef = useRef(null);
   const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
 
@@ -57,9 +65,23 @@ export default function SubscriptionPage() {
     refresh().catch(() => setError("Subscription details could not be loaded."));
   }, [dispatch, refresh]);
 
+  useEffect(() => {
+    let ignore = false;
+    setPaymentHistoryBusy(true);
+    setPaymentHistory(null);
+    getSubscriptionPaymentHistory(paymentPage).then(({ data }) => {
+      if (!ignore) { setPaymentHistory(data); setPaymentHistoryError(""); }
+    }).catch(() => {
+      if (!ignore) setPaymentHistoryError("Payment history could not be loaded.");
+    }).finally(() => {
+      if (!ignore) setPaymentHistoryBusy(false);
+    });
+    return () => { ignore = true; };
+  }, [paymentPage, paymentHistoryRefresh]);
+
   const openCheckout = async data => {
     if (data.type === "paid") {
-      await refresh(); setNotice("Your first payment is confirmed. Complete auto pay setup below."); setBusy(false); return;
+      await refresh(); setPaymentHistoryRefresh(value => value + 1); setNotice("Your first payment is confirmed. Complete auto pay setup below."); setBusy(false); return;
     }
     const Razorpay = await loadRazorpayCheckout();
     const initial = Boolean(data.orderId);
@@ -74,6 +96,7 @@ export default function SubscriptionPage() {
         try {
           const { data: confirmation } = await verifySubscriptionCheckout(response);
           await refresh();
+          setPaymentHistoryRefresh(value => value + 1);
           if (initial) {
             setNotice(confirmation.hasAccess
               ? "Step 1 complete: your first period is paid and access is active. Continue to step 2 below to authorize auto pay."
@@ -99,14 +122,7 @@ export default function SubscriptionPage() {
   };
 
   const choosePlan = async plan => {
-    setBusy(true); setError(""); setNotice("");
-    try {
-      const { data } = await createSubscriptionCheckout(plan.code, plan.quoteKey);
-      await openCheckout(data);
-    } catch (checkoutError) {
-      setError(checkoutError.response?.data?.message || checkoutError.message || "Checkout could not be started.");
-      setBusy(false); refresh().catch(() => {});
-    }
+    navigate(`/subscription/checkout?plan=${encodeURIComponent(plan.code)}`);
   };
 
   const setupAutopay = async () => {
@@ -118,6 +134,10 @@ export default function SubscriptionPage() {
       setError(setupError.response?.data?.message || "Auto pay could not be started. Your paid period remains valid.");
       setBusy(false); refresh().catch(() => {});
     }
+  };
+
+  const addProject = async () => {
+    navigate("/subscription/checkout?item=project");
   };
 
   const confirmCancellation = async () => {
@@ -172,19 +192,22 @@ export default function SubscriptionPage() {
               </Typography>
             </Stack>
             <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 500, fontWeight: 500 }}>
-              Choose the project capacity you need. Your account and projects stay together as you move between periods.
+              Choose a plan that fits your projects.
             </Typography>
           </Box>
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ position: "relative", mt: -14 }}>
+      <Container maxWidth="lg" sx={{ position: "relative", mt: -8 }}>
         {error && <Alert severity="error" sx={{ ...themedAlert, mb: 2 }}>{error}</Alert>}
         {notice && <Alert severity="success" sx={{ ...themedAlert, mb: 2 }}>{notice}</Alert>}
         <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: 5, border: "1px solid #e0e7ff", boxShadow: "0 24px 65px rgba(67,56,202,.12)", mb: 3 }}>
+          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2} sx={{ mb: 1 }}>
+            <Typography sx={{ color: accent, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", fontSize: 12 }}>Current account</Typography>
+            {activePaid && <Button variant="contained" disabled={busy} onClick={addProject} sx={{ bgcolor: accent, textTransform: "none", borderRadius: 2, whiteSpace: "nowrap", "&:hover": { bgcolor: "#4338ca" } }}>Add project</Button>}
+          </Stack>
           <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={3}>
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ color: accent, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", fontSize: 12 }}>Current account</Typography>
               <Typography variant="h5" sx={{ fontWeight: 850, mt: .5 }}>{subscription?.kind === "trial" ? "30-day free trial" : subscription?.planName || selectedPlan?.name || (subscription?.planCode ? subscription.planCode.replaceAll("_", " ") : "Loading your plan")}</Typography>
               <Typography color="text.secondary" sx={{ mt: .5 }}>{account?.hasAccess ? `Access through ${date(subscription.periodEnd)}` : "Choose a plan to continue using CADer."}{subscription?.cancelAtPeriodEnd && " Renewal is cancelled."}</Typography>
               {activePaid && <Typography sx={{ mt: 1 }}>
@@ -196,8 +219,7 @@ export default function SubscriptionPage() {
               </Box>}
             </Box>
             <Stack alignItems={{ xs: "stretch", md: "flex-end" }} justifyContent="center" spacing={1}>
-              <Button disabled={busy} onClick={() => refresh().catch(() => setError("Billing status could not be refreshed."))} sx={{ textTransform: "none", color: accent }}>Refresh billing status</Button>
-              {account?.hasAccess && <Button variant="outlined" onClick={() => navigate(state?.from || "/")} sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700, borderColor: accent, color: accent }}>Back to dashboard</Button>}
+              <Button startIcon={<FiRefreshCw />} disabled={busy} onClick={() => { refresh().catch(() => setError("Billing status could not be refreshed.")); setPaymentHistoryRefresh(value => value + 1); }} sx={{ textTransform: "none", color: accent }}>Refresh billing</Button>
               {(activePaid || subscription?.canCancelRenewal) && !subscription.cancelAtPeriodEnd && <Button onClick={() => setCancelTarget("renewal")} disabled={busy} sx={{ textTransform: "none", color: "#64748b" }}>Cancel renewal</Button>}
             </Stack>
           </Stack>
@@ -216,7 +238,7 @@ export default function SubscriptionPage() {
         <Box sx={{ textAlign: "center", pt: { xs: 6, md: 8 }, mb: 5 }}>
           <Typography sx={{ color: accent, fontWeight: 800, letterSpacing: 1.5, fontSize: 13, textTransform: "uppercase", mb: 1.5 }}>Pricing plans</Typography>
           <Typography component="h2" sx={{ fontSize: { xs: "2rem", md: "3rem" }, fontWeight: 900, letterSpacing: "-0.03em", color: "#111" }}>Choose your next chapter.</Typography>
-          <Typography color="text.secondary" sx={{ mt: 1 }}>Every plan includes the CADer tools you use today.</Typography>
+          <Typography color="text.secondary" sx={{ mt: 1, maxWidth: 620, mx: "auto" }}>Shown prices are CADer plan prices. An offer applies to the first month or year; the regular plan price follows.</Typography>
           <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5} sx={{ mt: 3 }}>
             <Typography fontWeight={billingCycle === "monthly" ? 800 : 500} color={billingCycle === "monthly" ? "#111" : "text.secondary"}>Monthly</Typography>
             <Switch checked={billingCycle === "yearly"} onChange={(_, checked) => setBillingCycle(checked ? "yearly" : "monthly")} inputProps={{ "aria-label": "Choose yearly billing" }} sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: accent }, "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: accent } }} />
@@ -240,6 +262,45 @@ export default function SubscriptionPage() {
             </Box>;
           })}
         </Box>
+
+        <Paper elevation={0} sx={{ mt: 4, borderRadius: 5, border: "1px solid #e0e7ff", overflow: "hidden" }}>
+          <Box sx={{ p: { xs: 2.5, md: 3 } }}>
+            <Typography component="h2" variant="h6" fontWeight={850} color="#1e1b4b">Payment history</Typography>
+            <Typography variant="body2" color="text.secondary">Successful subscription payments on your account.</Typography>
+          </Box>
+          {paymentHistoryBusy && <LinearProgress />}
+          {paymentHistoryError && <Alert severity="error" sx={{ mx: 3, mb: 2 }} action={
+            <Button size="small" onClick={() => setPaymentHistoryRefresh(value => value + 1)}>Retry</Button>
+          }>{paymentHistoryError}</Alert>}
+          <TableContainer sx={{ borderTop: "1px solid #e0e7ff" }}>
+            <Table sx={{ minWidth: 620 }}>
+              <TableHead sx={{ bgcolor: "#f5f6ff" }}><TableRow>
+                {["Date", "Plan", "Type", "Amount", "Status", "Payment ID"].map(label =>
+                  <TableCell key={label} sx={{ color: "#4338ca", fontWeight: 800 }}>{label}</TableCell>)}
+              </TableRow></TableHead>
+              <TableBody>
+                {paymentHistory?.payments.map(payment => <TableRow key={payment.id} hover>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>{date(payment.createdAt)}</TableCell>
+                  <TableCell>{payment.planName}</TableCell>
+                  <TableCell>{payment.phase === "initial" ? "First period" : payment.phase === "recurring" ? "Renewal" : payment.phase === "project_addon" ? `Extra project${payment.quantity === 1 ? "" : "s"} (${payment.quantity})` : "Earlier payment"}</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap", fontWeight: 750 }}>{money(payment.amountPaise)}</TableCell>
+                  <TableCell sx={{ color: "#15803d", fontWeight: 750 }}>Paid</TableCell>
+                  <TableCell sx={{ fontFamily: "monospace", fontSize: ".8rem" }}>{payment.paymentId}</TableCell>
+                </TableRow>)}
+                {!paymentHistoryBusy && !paymentHistoryError && !paymentHistory?.payments.length &&
+                  <TableRow><TableCell colSpan={6} align="center" sx={{ py: 5, color: "#64748b" }}>No payments yet.</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          {paymentHistory && paymentHistory.total > paymentHistory.pageSize &&
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2, borderTop: "1px solid #e0e7ff" }}>
+              <Typography variant="body2" color="text.secondary">Page {paymentPage} of {Math.ceil(paymentHistory.total / paymentHistory.pageSize)}</Typography>
+              <Stack direction="row" spacing={1}>
+                <Button disabled={paymentHistoryBusy || paymentPage <= 1} onClick={() => { setPaymentHistoryBusy(true); setPaymentPage(page => page - 1); }}>Previous</Button>
+                <Button disabled={paymentHistoryBusy || paymentPage >= Math.ceil(paymentHistory.total / paymentHistory.pageSize)} onClick={() => { setPaymentHistoryBusy(true); setPaymentPage(page => page + 1); }}>Next</Button>
+              </Stack>
+            </Stack>}
+        </Paper>
 
         <Paper elevation={0} sx={{ mt: { xs: 7, md: 10 }, p: { xs: 4, md: 6 }, borderRadius: 5, background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)", color: "white", textAlign: "center" }}><Typography variant="h4" fontWeight={850}>Need help choosing?</Typography><Typography sx={{ opacity: .75, mt: 1, mb: 3 }}>Tell us about your projects and we’ll help you find the right fit.</Typography><Button component="a" href="mailto:admin@getcader.com?subject=CADer%20subscription%20question" variant="contained" sx={{ bgcolor: "white", color: accent, borderRadius: 2.5, px: 4, py: 1.5, textTransform: "none", fontWeight: 800, "&:hover": { bgcolor: "#eef2ff" } }}>Contact our team</Button></Paper>
       </Container>

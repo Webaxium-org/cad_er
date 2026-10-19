@@ -1,11 +1,14 @@
 import { axiosInstance } from "../utils/config";
 
 export const getSubscription = () => axiosInstance.get("/subscriptions/me");
+export const getSubscriptionPaymentHistory = (page = 1) => axiosInstance.get("/subscriptions/me/payments", { params: { page } });
 export const getSubscriptionPlans = () => axiosInstance.get("/subscriptions/plans");
 export const createSubscriptionCheckout = (planCode, quoteKey) => axiosInstance.post("/subscriptions/checkout", { planCode, quoteKey });
 export const verifySubscriptionCheckout = (response) => axiosInstance.post("/subscriptions/verify", response);
 export const setupSubscriptionAutopay = (subscriptionRecordId) => axiosInstance.post("/subscriptions/autopay", { subscriptionRecordId });
 export const cancelSubscription = () => axiosInstance.post("/subscriptions/cancel");
+export const createProjectAddOnCheckout = (quantity) => axiosInstance.post("/subscriptions/projects/checkout", { quantity });
+export const verifyProjectAddOnCheckout = (response) => axiosInstance.post("/subscriptions/projects/verify", response);
 
 export const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
   if (window.Razorpay) return resolve(window.Razorpay);

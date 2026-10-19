@@ -11,6 +11,7 @@ import { getCheckoutKey, razorpayRequest, verifyCheckoutSignature, verifyWebhook
 import { getOrCreateRazorpayPlan } from "../services/razorpayPlans.js";
 import { verifyOrderSignature } from "../services/razorpay.js";
 import { hasInitialAccess, needsAutopaySetup, recordInitialPayment, reconcileInitialOrder } from "../services/initialSubscriptionPayment.js";
+import { PROJECT_ADD_ON_QUOTE, projectAddOnQuote, captureProjectAddOn, reconcileProjectAddOns, refundProjectAddOn } from "../services/projectAddOn.js";
 
 const fromUnix = (seconds) => seconds ? new Date(seconds * 1000) : null;
 
@@ -35,7 +36,7 @@ const syncPaidSubscription = async (record, remote) => {
   if (periodChanged) {
     const reset = await Subscription.updateOne(
       { ...monotonic, periodStart: record.periodStart },
-      { $set: { ...update, projectCount: 0 } },
+      { $set: { ...update, projectCount: 0, projectLimit: record.pricingSnapshot?.projectLimit ?? record.projectLimit, projectAddOnOrders: [] } },
     );
     if (!reset.modifiedCount) await Subscription.updateOne({ ...monotonic, periodStart: { $lte: currentStart } }, { $set: update });
   } else {
@@ -64,6 +65,8 @@ export const getSubscription = async (req, res, next) => {
       if (pendingCheckout.initialPaidAt) pendingCheckout = null;
     }
     const subscription = await getCurrentSubscription(req.user.userId);
+    if (subscription.kind === "paid" && hasSubscriptionAccess(subscription)) await reconcileProjectAddOns(subscription);
+    const current = await Subscription.findById(subscription._id);
     res.json({
       subscription: {
         id: subscription._id,
@@ -77,8 +80,8 @@ export const getSubscription = async (req, res, next) => {
         status: subscription.status,
         periodStart: subscription.periodStart,
         periodEnd: subscription.periodEnd,
-        projectLimit: subscription.projectLimit,
-        projectCount: subscription.projectCount,
+        projectLimit: current.projectLimit,
+        projectCount: current.projectCount,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || ["cancelled", "completed", "expired"].includes(subscription.status),
         autopaySetupRequired: needsAutopaySetup(subscription),
         initialPeriodEnd: subscription.initialPeriodEnd,
@@ -86,9 +89,73 @@ export const getSubscription = async (req, res, next) => {
         canCancelRenewal: Boolean(subscription.razorpaySubscriptionId && ["created", "authenticated", "active", "pending", "halted", "paused"].includes(subscription.status)),
       },
       hasAccess: hasSubscriptionAccess(subscription),
+      projectAddOnQuote: PROJECT_ADD_ON_QUOTE,
       pendingCheckout: pendingCheckout ? { planCode: pendingCheckout.planCode, status: pendingCheckout.status,
         pricingSnapshot: pendingCheckout.pricingSnapshot, expiresAt: pendingCheckout.checkoutExpiresAt } : null,
     });
+  } catch (error) { next(error); }
+};
+
+export const getPaymentHistory = async (req, res, next) => {
+  try {
+    if (req.user.type !== "Professional") throw createHttpError(403, "Professional account required");
+    const page = Math.max(1, Math.min(100000, Number.parseInt(req.query.page, 10) || 1));
+    const pageSize = 10;
+    const filter = { userId: req.user.userId, purpose: "SUBSCRIPTION", status: "SUCCESS",
+      currency: "INR", razorpayPaymentId: { $exists: true, $ne: null } };
+    const [total, rows] = await Promise.all([
+      Payment.countDocuments(filter),
+      Payment.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize)
+        .select("subscriptionId planVersionId billingPhase addOnQuantity amount createdAt razorpayPaymentId")
+        .populate("subscriptionId", "planCode pricingSnapshot")
+        .populate("planVersionId", "name")
+        .lean(),
+    ]);
+    res.set("Cache-Control", "no-store").json({ page, pageSize, total,
+      payments: rows.map(row => ({ id: row._id,
+        planName: row.subscriptionId?.pricingSnapshot?.name || row.planVersionId?.name ||
+          row.subscriptionId?.planCode?.replaceAll("_", " ") || "Subscription",
+        phase: row.billingPhase || "legacy", quantity: row.addOnQuantity || 1, amountPaise: row.amount, createdAt: row.createdAt,
+        paymentId: row.razorpayPaymentId, status: "SUCCESS",
+      })) });
+  } catch (error) { next(error); }
+};
+
+export const createProjectAddOnCheckout = async (req, res, next) => {
+  let lockToken;
+  try {
+    if (req.user.type !== "Professional") throw createHttpError(403, "Professional account required");
+    const quantity = req.body?.quantity;
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100) throw createHttpError(400, "Choose between 1 and 100 projects");
+    lockToken = await acquireBillingLock(req.user.userId);
+    const subscription = await getCurrentSubscription(req.user.userId);
+    if (subscription.kind !== "paid" || !hasSubscriptionAccess(subscription)) throw createHttpError(409, "An active paid plan is required");
+    const quote = projectAddOnQuote(quantity);
+    const order = await razorpayRequest("POST", "/orders", { amount: quote.totalPaise,
+      currency: "INR", partial_payment: false, receipt: crypto.randomUUID(),
+      notes: { purpose: "project_addon", userId: String(req.user.userId), subscriptionId: String(subscription._id), quantity: String(quantity) } });
+    if (!order.id || order.amount !== quote.totalPaise || order.currency !== "INR") {
+      throw createHttpError(502, "Payment provider did not confirm the project price");
+    }
+    await Payment.create({ userId: req.user.userId, subscriptionId: subscription._id,
+      planVersionId: subscription.planVersionId, addOnPeriodStart: subscription.periodStart, addOnQuantity: quantity,
+      razorpayOrderId: order.id, billingPhase: "project_addon", amount: quote.totalPaise,
+      currency: "INR", purpose: "SUBSCRIPTION", status: "CREATED" });
+    res.json({ keyId: getCheckoutKey(), orderId: order.id, amountPaise: quote.totalPaise, quantity, currency: "INR" });
+  } catch (error) { next(error); }
+  finally { if (lockToken) await CheckoutLock.deleteOne({ userId: req.user.userId, token: lockToken }); }
+};
+
+export const verifyProjectAddOnCheckout = async (req, res, next) => {
+  try {
+    const { razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body || {};
+    const order = await Payment.findOne({ userId: req.user.userId, razorpayOrderId: orderId, billingPhase: "project_addon" });
+    if (!order || typeof paymentId !== "string" || !verifyOrderSignature(orderId, paymentId, signature)) {
+      throw createHttpError(400, "Invalid project payment confirmation");
+    }
+    const payment = await razorpayRequest("GET", `/payments/${encodeURIComponent(paymentId)}`);
+    const captured = await captureProjectAddOn(order, payment);
+    res.json({ captured });
   } catch (error) { next(error); }
 };
 
@@ -143,24 +210,24 @@ export const createCheckout = async (req, res, next) => {
     if (req.body.quoteKey !== pricing.quoteKey) throw createHttpError(409, "Pricing or offer availability changed. Refresh and review the current price");
     if (pricing.firstPaymentAmountPaise != null) {
       const order = await razorpayRequest("POST", "/orders", {
-        amount: pricing.firstPaymentAmountPaise, currency: "INR", partial_payment: false,
+        amount: pricing.checkout.totalPaise, currency: "INR", partial_payment: false,
         receipt: crypto.randomUUID(),
         notes: { purpose: "subscription_initial", userId: String(req.user.userId), planVersionId: String(plan._id) },
       });
-      if (!order.id || order.amount !== pricing.firstPaymentAmountPaise || order.currency !== "INR") throw createHttpError(502, "Payment provider did not confirm the initial amount");
+      if (!order.id || order.amount !== pricing.checkout.totalPaise || order.currency !== "INR") throw createHttpError(502, "Payment provider did not confirm the initial amount");
       const now = new Date();
       const record = await Subscription.create({ userId: req.user.userId, kind: "paid", planCode: plan.code,
         planVersionId: plan._id, pricingSnapshot: pricing, razorpayOrderId: order.id,
         checkoutExpiresAt: new Date(Date.now() + 30 * 60000), status: "created", periodStart: now, periodEnd: now,
-        projectLimit: plan.projectLimit, projectCount: 0, amountPaise: plan.amountPaise, billingInterval: plan.interval,
+        projectLimit: plan.projectLimit, projectCount: 0, amountPaise: pricing.renewalCheckout.totalPaise, billingInterval: plan.interval,
       });
       return res.json(initialCheckoutResponse(record));
     }
     const offer = activeOffer(plan);
-    if (offer && offer.razorpayKeyId !== getCheckoutKey()) throw createHttpError(503, "This offer is not configured for the current payment environment");
+    if (offer) throw createHttpError(409, "This legacy offer cannot include the updated checkout charges. Choose a current plan price");
     const checkoutExpiresAt = new Date(Math.min(Date.now() + 30 * 60 * 1000, offer ? new Date(offer.endsAt).getTime() : Infinity));
     if (checkoutExpiresAt.getTime() - Date.now() < 60000) throw createHttpError(409, "This offer is ending. Refresh in a minute for current pricing");
-    const planId = await getOrCreateRazorpayPlan(plan);
+    const planId = await getOrCreateRazorpayPlan(plan, pricing.renewalCheckout.totalPaise);
     const remote = await razorpayRequest("POST", "/subscriptions", {
       plan_id: planId,
       ...(offer ? { offer_id: offer.razorpayOfferId } : {}),
@@ -188,13 +255,13 @@ export const createCheckout = async (req, res, next) => {
       periodEnd: now,
       projectLimit: plan.projectLimit,
       projectCount: 0,
-      amountPaise: plan.amountPaise,
+      amountPaise: pricing.renewalCheckout.totalPaise,
       billingInterval: plan.interval,
       razorpayPlanId: planId,
       razorpaySubscriptionId: remote.id,
     });
     unsavedRemoteId = null;
-    res.json({ keyId: getCheckoutKey(), subscriptionId: remote.id, planCode: requestedCode, pricing });
+    res.json({ keyId: getCheckoutKey(), subscriptionId: remote.id, amountPaise: pricing.checkout.totalPaise, planCode: requestedCode, pricing });
   } catch (error) {
     if (unsavedRemoteId) {
       try { await razorpayRequest("POST", `/subscriptions/${encodeURIComponent(unsavedRemoteId)}/cancel`, { cancel_at_cycle_end: false }); }
@@ -251,7 +318,7 @@ export const cancelSubscription = async (req, res, next) => {
 };
 
 const initialCheckoutResponse = record => ({ type: "initial", keyId: getCheckoutKey(), orderId: record.razorpayOrderId,
-  amountPaise: record.pricingSnapshot.firstPaymentAmountPaise, currency: "INR", pricing: record.pricingSnapshot,
+  amountPaise: record.pricingSnapshot.checkout?.totalPaise ?? record.pricingSnapshot.firstPaymentAmountPaise, currency: "INR", pricing: record.pricingSnapshot,
   subscriptionRecordId: record._id });
 
 const acquireBillingLock = async userId => {
@@ -282,11 +349,11 @@ export const setupAutopay = async (req, res, next) => {
       if (record.status !== "created") throw createHttpError(409, "Auto pay is already authorized or this mandate has ended. Refresh your subscription");
     } else {
       const plan = await PlanVersion.findById(record.planVersionId).lean();
-      if (!plan || plan.amountPaise !== record.amountPaise || plan.interval !== record.billingInterval) throw createHttpError(409, "Purchased pricing could not be verified");
+      if (!plan || (plan.amountPaise !== record.amountPaise && record.pricingSnapshot?.renewalCheckout?.totalPaise !== record.amountPaise) || plan.interval !== record.billingInterval) throw createHttpError(409, "Purchased pricing could not be verified");
       const startAt = Math.floor(record.initialPeriodEnd.getTime() / 1000);
       // Leave time to finish authorisation; never schedule a retroactive first debit.
       if (startAt <= Date.now() / 1000 + 3600) throw createHttpError(409, "This period is ending. Choose a new plan after it ends");
-      const planId = await getOrCreateRazorpayPlan(plan);
+      const planId = await getOrCreateRazorpayPlan(plan, record.amountPaise);
       const remote = await razorpayRequest("POST", "/subscriptions", {
         plan_id: planId, start_at: startAt, expire_by: startAt - 60,
         total_count: plan.interval === "monthly" ? 119 : 9, quantity: 1, customer_notify: true,
@@ -320,6 +387,12 @@ export const razorpayWebhook = async (req, res, next) => {
     const event = JSON.parse(req.body.toString("utf8"));
     const eventPayment = event.payload?.payment?.entity;
     if (eventPayment?.order_id && ["payment.captured", "order.paid", "payment.refunded"].includes(event.event)) {
+      const addOnOrder = await Payment.findOne({ razorpayOrderId: eventPayment.order_id, billingPhase: "project_addon" });
+      if (addOnOrder) {
+        const payment = await razorpayRequest("GET", `/payments/${encodeURIComponent(eventPayment.id)}`);
+        if (payment.amount_refunded >= payment.amount) await refundProjectAddOn(addOnOrder, payment);
+        else if (payment.status === "captured") await captureProjectAddOn(addOnOrder, payment);
+      }
       const initialRecord = await Subscription.findOne({ razorpayOrderId: eventPayment.order_id });
       if (initialRecord) {
         const payment = await razorpayRequest("GET", `/payments/${encodeURIComponent(eventPayment.id)}`);

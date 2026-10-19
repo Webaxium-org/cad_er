@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import createHttpError from "http-errors";
 import PlanVersion from "../models/planVersion.js";
 import Subscription from "../models/subscription.js";
+import { checkoutPricing } from "./checkoutPricing.js";
 
 // Migration seeds only. Runtime prices are always read from MongoDB.
 export const SUBSCRIPTION_PLANS = Object.freeze({
@@ -50,6 +51,8 @@ export const quotePlan = (plan, now = new Date()) => {
     id: String(plan._id), code: plan.code, version: plan.version, name: plan.name,
     amountPaise: plan.amountPaise, interval: plan.interval, projectLimit: plan.projectLimit,
     firstPaymentAmountPaise: plan.firstPaymentAmountPaise ?? null,
+    checkout: checkoutPricing(plan.firstPaymentAmountPaise ?? (offer?.amountPaise ?? plan.amountPaise)),
+    renewalCheckout: checkoutPricing(plan.amountPaise),
     features: plan.features || [], highlighted: plan.highlighted,
     offer: offer ? { amountPaise: offer.amountPaise, cycles: offer.cycles,
       endsAt: offer.endsAt, paymentMethod: offer.paymentMethod } : null,
@@ -89,5 +92,7 @@ export const validatePlan = (input) => {
 
 export const renewalAmount = (subscription) => {
   const offer = subscription.pricingSnapshot?.offer;
-  return offer && subscription.paidCount < offer.cycles ? offer.amountPaise : subscription.amountPaise;
+  return offer && subscription.paidCount < offer.cycles
+    ? (subscription.pricingSnapshot?.checkout ? checkoutPricing(offer.amountPaise).totalPaise : offer.amountPaise)
+    : subscription.amountPaise;
 };

@@ -76,7 +76,7 @@ const Preloader = ({ onLoadingComplete }) => {
             transform: "translate(-50%, -50%)",
             width: "150px",
             height: "150px",
-            bgcolor: "#6366f1",
+            bgcolor: "#4f46e5",
             filter: "blur(60px)",
             borderRadius: "50%",
             zIndex: -1,
@@ -93,7 +93,7 @@ const Preloader = ({ onLoadingComplete }) => {
             height: 2,
             bgcolor: "rgba(255,255,255,0.1)",
             "& .MuiLinearProgress-bar": {
-              bgcolor: "#6366f1",
+              bgcolor: "#4f46e5",
             },
           }}
         />

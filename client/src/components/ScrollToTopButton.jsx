@@ -103,7 +103,7 @@ const ScrollToTop = () => {
                 cy="32"
                 r="28"
                 fill="transparent"
-                stroke="#6366f1"
+                stroke="#4f46e5"
                 strokeWidth="3"
                 strokeLinecap="round"
                 style={{ pathLength: smoothProgress }}
@@ -116,12 +116,12 @@ const ScrollToTop = () => {
               sx={{
                 width: "48px",
                 height: "48px",
-                bgcolor: "#6366f1",
+                bgcolor: "#4f46e5",
                 color: "white",
                 boxShadow: isHovered
-                  ? "0px 12px 24px rgba(99, 102, 241, 0.4)"
+                  ? "0px 12px 24px rgba(79, 70, 229, 0.4)"
                   : "0px 4px 10px rgba(0,0,0,0.1)",
-                "&:hover": { bgcolor: "#4f46e5" },
+                "&:hover": { bgcolor: "#4338ca" },
               }}
             >
               <motion.div

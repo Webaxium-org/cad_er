@@ -7,11 +7,10 @@ const ScrollToTop = () => {
   useEffect(() => {
     const container = document.getElementById("main-scroll");
 
-    if (container) {
+    if (container && container.scrollHeight > container.clientHeight) {
       container.scrollTo(0, 0);
-    } else {
-      window.scrollTo(0, 0);
     }
+    window.scrollTo(0, 0);
   }, [pathname]);
 
   return null;

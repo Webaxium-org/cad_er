@@ -48,6 +48,12 @@ const menuListDetails = [
     path: "/profile",
   },
   {
+    label: "Subscription",
+    icon: <FiCreditCard />,
+    path: "/subscription",
+    requiredTypes: ["Professional"],
+  },
+  {
     label: "Organizations",
     icon: <GoOrganization />,
     path: "/organizations",

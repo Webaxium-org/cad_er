@@ -16,12 +16,12 @@ const StyledRouterLink = styled(RouterLink)(({ theme }) => ({
     height: "1px",
     bottom: 0,
     left: 0,
-    backgroundColor: "#6366f1",
+    backgroundColor: "#4f46e5",
     transition: "width 0.25s ease",
   },
 
   "&:hover": {
-    color: "#6366f1",
+    color: "#4f46e5",
   },
 
   "&:hover::after": {
