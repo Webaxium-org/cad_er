@@ -1,6 +1,6 @@
 import createHttpError from "http-errors";
 import Subscription from "../models/subscription.js";
-import { ensureTrialSubscription } from "./trialSubscription.js";
+import { ensureTrialSubscription, syncTrialProjectLimit } from "./trialSubscription.js";
 import { hasInitialAccess, initialAccessFilter } from "./initialSubscriptionPayment.js";
 
 export const paidAccessFilter = now => ({ kind: "paid", $or: [
@@ -20,9 +20,9 @@ export const getCurrentSubscription = async (userId) => {
   if (paid) return paid;
 
   const trial = await Subscription.findOne({ userId, kind: "trial" });
-  if (hasSubscriptionAccess(trial, now)) return trial;
+  if (hasSubscriptionAccess(trial, now)) return syncTrialProjectLimit(trial);
   const latest = await Subscription.findOne({ userId }).sort({ createdAt: -1 });
-  return latest || trial || ensureTrialSubscription(userId);
+  return latest ? syncTrialProjectLimit(latest) : trial ? syncTrialProjectLimit(trial) : ensureTrialSubscription(userId);
 };
 
 export const hasSubscriptionAccess = (subscription, now = new Date()) =>

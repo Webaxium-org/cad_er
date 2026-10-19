@@ -5,6 +5,15 @@ const TRIAL_DAYS = 30;
 const configuredLimit = Number(process.env.TRIAL_PROJECT_LIMIT);
 const TRIAL_PROJECT_LIMIT = Number.isInteger(configuredLimit) && configuredLimit > 0 ? configuredLimit : 5;
 
+export const syncTrialProjectLimit = async (subscription, { session } = {}) => {
+  if (!subscription || subscription.kind !== "trial" || subscription.projectLimit === TRIAL_PROJECT_LIMIT) return subscription;
+  return Subscription.findOneAndUpdate(
+    { _id: subscription._id, kind: "trial" },
+    { $set: { projectLimit: TRIAL_PROJECT_LIMIT } },
+    { new: true, ...(session ? { session } : {}) },
+  );
+};
+
 export const ensureTrialSubscription = async (userId, { session } = {}) => {
   const existing = await Subscription.findOne({ userId }).sort({ createdAt: -1 }).session(session || null);
   if (existing) {
@@ -12,7 +21,7 @@ export const ensureTrialSubscription = async (userId, { session } = {}) => {
       await Subscription.updateOne({ _id: existing._id, projectCount: null }, { $set: { projectCount: 0 } }, { session });
       existing.projectCount = 0;
     }
-    return existing;
+    return syncTrialProjectLimit(existing, { session });
   }
 
   // Move trial dates written by the previous dashboard implementation out of User.
