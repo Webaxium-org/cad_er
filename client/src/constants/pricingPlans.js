@@ -1,5 +1,11 @@
 const formatAmount = paise => `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+const previousTier = {
+  executive_monthly: "Junior",
+  director_monthly: "Executive",
+  teams_yearly: "Engineer",
+};
+
 export const offerTerms = (plan) => {
   if (!plan) return "";
   const regular = `${formatAmount(plan.amountPaise)}/${plan.interval === "monthly" ? "month" : "year"}`;
@@ -16,9 +22,11 @@ export const getPricingPlans = (billingCycle, plans = []) => [
     discountLabel: p.firstPaymentAmountPaise != null ? `First ${billingCycle === "monthly" ? "month" : "year"} offer` : p.offer ? `${p.offer.cycles === 1 ? "First cycle" : `First ${p.offer.cycles} cycles`} offer` : undefined,
     duration: billingCycle === "monthly" ? "mo" : "yr",
     renewalText: offerTerms(p),
+    includesTier: previousTier[p.code],
     features: [`${p.projectLimit} new project${p.projectLimit === 1 ? "" : "s"} / ${billingCycle === "monthly" ? "month" : "year"}`, ...p.features],
   })),
   ...(billingCycle === "yearly" ? [{ tier: "Institutions & Enterprise", code: null, price: "Custom", duration: "yr",
+    includesTier: "Proprietor",
     features: ["Custom project capacity", "Multi-user access", "Dedicated account manager", "Custom feature development"],
   }] : []),
 ];

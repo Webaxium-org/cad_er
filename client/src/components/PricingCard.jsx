@@ -14,7 +14,7 @@ export default function PricingCard ({
   discountLabel,
   duration,
   renewalText,
-  includes,
+  includesTier,
   features,
   highlighted = false,
   buttonText = "Contact Sales",
@@ -120,13 +120,13 @@ export default function PricingCard ({
 
       {renewalText && <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>{renewalText}</Typography>}
 
-      {includes && (
+      {includesTier && (
         <Box sx={{ mb: 2 }}>
           <Typography
             variant="subtitle2"
             sx={{ fontWeight: 700, color: "#4f46e5" }}
           >
-            {includes}
+            All features from <Box component="strong">{includesTier}</Box>
           </Typography>
         </Box>
       )}

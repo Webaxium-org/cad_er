@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiCreditCard, FiRefreshCw } from "react-icons/fi";
-import { Alert, Box, Button, Container, LinearProgress, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import { Alert, Box, Button, Container, LinearProgress, Link, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
 import AppHeader from "../../components/AppHeader";
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import PricingCard from "../../components/PricingCard";
@@ -262,6 +262,13 @@ export default function SubscriptionPage() {
             </Box>;
           })}
         </Box>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, textAlign: "center" }}>
+          If you authorize auto pay, your plan renews at the regular price after any introductory period. GST and processing fees are added at checkout.
+          You can cancel renewal at any time; access continues through the paid period. {" "}
+          <Link component={RouterLink} to="/terms" underline="hover">Terms &amp; Conditions</Link> apply. See our {" "}
+          <Link component={RouterLink} to="/privacy" underline="hover">Privacy Policy</Link> for payment data handling.
+        </Typography>
 
         <Paper elevation={0} sx={{ mt: 4, borderRadius: 5, border: "1px solid #e0e7ff", overflow: "hidden" }}>
           <Box sx={{ p: { xs: 2.5, md: 3 } }}>

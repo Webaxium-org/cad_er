@@ -6,6 +6,7 @@ import { useState } from "react";
 import { MdArrowForward, MdOutlineExpandLess, MdOutlineExpandMore } from "react-icons/md";
 import { FiMail, FiPhone } from "react-icons/fi";
 import CaderBrand from "./CaderBrand";
+import footerBackground from "../assets/background-img.png";
 
 const StyledLink = styled(RouterLink)(() => ({
   color: "#626b8b",
@@ -70,30 +71,6 @@ const ContourLines = ({ light = false }) => (
   </Box>
 );
 
-const BannerContours = () => (
-  <Box
-    component="svg"
-    viewBox="0 0 900 360"
-    preserveAspectRatio="xMidYMid slice"
-    aria-hidden="true"
-    sx={{ position: "absolute", inset: "0 0 0 auto", width: { xs: "85%", md: "68%" }, height: "100%", pointerEvents: "none", opacity: { xs: 0.22, md: 0.5 }, maskImage: "linear-gradient(to right, transparent, black 30%)" }}
-  >
-    {Array.from({ length: 13 }, (_, index) => {
-      const offset = index * 18;
-      return (
-        <path
-          key={index}
-          d={`M ${-90 + offset * 0.6} ${380 + offset} C ${80 + offset * 0.5} ${225 + offset}, ${140 + offset * 0.35} ${370 + offset}, ${265 + offset * 0.45} ${235 + offset * 0.8} S ${430 + offset * 0.4} ${250 + offset * 0.55}, ${525 + offset * 0.25} ${125 + offset * 0.8} S ${690 + offset * 0.1} ${150 + offset * 0.55}, ${760 + offset * 0.25} ${40 + offset * 0.6} S ${865 + offset * 0.2} ${60 + offset * 0.4}, ${960 + offset * 0.2} ${-35 + offset * 0.55}`}
-          fill="none"
-          stroke="#c7d2fe"
-          strokeWidth="1.1"
-        />
-      );
-    })}
-    <path d="M 300 350 C 425 250 495 340 580 225 S 725 200 825 95 S 900 100 970 20" fill="none" stroke="#dbe4ff" strokeWidth="1.3" strokeDasharray="7 9" />
-  </Box>
-);
-
 const FooterGroup = ({ title, children }) => (
   <Stack spacing={1.6} alignItems="flex-start">
     <Typography component="h3" sx={{ fontWeight: 800, color: "#111936", fontSize: "1.05rem", mb: 0.5 }}>{title}</Typography>
@@ -112,7 +89,7 @@ const LandingFooter = () => {
       </Box>
       <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
         <Box sx={{ position: "relative", overflow: "hidden", borderRadius: { xs: 4, md: 6 }, px: { xs: 3, sm: 5, md: 8 }, py: { xs: 5, md: 6 }, background: "radial-gradient(circle at 76% 12%, rgba(130, 125, 255, 0.45), transparent 36%), linear-gradient(115deg, #2d36aa 0%, #373ec1 47%, #4f46e5 100%)", color: "#fff", boxShadow: "0 24px 60px rgba(79, 70, 229, 0.16)" }}>
-          <BannerContours />
+          <Box aria-hidden="true" sx={{ position: "absolute", inset: "0 0 0 auto", width: "40%", backgroundImage: `url(${footerBackground})`, backgroundSize: "cover", backgroundPosition: "center", mixBlendMode: "screen", maskImage: "linear-gradient(to right, transparent, black 70%)", opacity: 0.28, pointerEvents: "none" }} />
           <Box sx={{ position: "relative", zIndex: 1, maxWidth: 800 }}>
             <Typography sx={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.22em", mb: 1.5, color: "#e0e7ff" }}>SURVEY SMARTER</Typography>
             <Typography component="h2" sx={{ fontSize: { xs: "2rem", sm: "2.6rem", md: "3.3rem" }, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.1, mb: 1.5 }}>Ready to simplify your surveys?</Typography>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { Alert, Box, Button, CircularProgress, Container, Divider, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Container, Divider, Link, Paper, Stack, Typography } from "@mui/material";
 import { FiArrowLeft, FiArrowRight, FiCheckCircle, FiCreditCard, FiLock, FiPackage } from "react-icons/fi";
 import AppHeader from "../../components/AppHeader";
 import { heroTitleSx } from "../../components/pageHeaderStyles";
@@ -182,6 +182,9 @@ export default function SubscriptionCheckoutPage() {
                 sx={{ bgcolor: accent, mt: 3, py: 1.5, borderRadius: 2, textTransform: "none", fontWeight: 800, fontSize: 16, "&:hover": { bgcolor: "#4338ca" } }}>
                 {busy ? "Preparing checkout…" : `Pay ${money(quote.totalPaise)}`}
               </Button>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1.5, textAlign: "center" }}>
+                Review our <Link component={RouterLink} to="/terms" underline="hover">Terms &amp; Conditions</Link>, including cancellation and refunds, and <Link component={RouterLink} to="/privacy" underline="hover">Privacy Policy</Link> before paying.
+              </Typography>
               <Stack direction="row" justifyContent="center" alignItems="center" spacing={.75} sx={{ mt: 2, color: "#64748b" }}>
                 <FiLock size={14} /><Typography variant="caption">Secure payment powered by Razorpay</Typography>
               </Stack>
