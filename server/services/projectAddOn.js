@@ -1,5 +1,6 @@
 import createHttpError from "http-errors";
 import Payment from "../models/payments.js";
+import { ensurePaymentInvoice } from "./paymentInvoice.js";
 import Subscription from "../models/subscription.js";
 import { razorpayRequest } from "./razorpay.js";
 import { checkoutPricing } from "./checkoutPricing.js";
@@ -25,6 +26,7 @@ export const captureProjectAddOn = async (order, payment) => {
     throw createHttpError(409, "This project's billing period has ended. Contact support about the payment");
   }
   await Payment.updateOne({ _id: order._id }, { $set: { status: "SUCCESS", razorpayPaymentId: payment.id } });
+  await ensurePaymentInvoice({ _id: order._id });
   return true;
 };
 

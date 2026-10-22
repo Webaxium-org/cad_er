@@ -1,4 +1,5 @@
 import { compareProfiles } from "../../utils/surveyGeometry.js";
+import { splitLongitudinalSections } from "../../utils/longitudinalPagination";
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -863,6 +864,7 @@ const PlottingAndQuantityReport = () => {
 
 
   const [selectedLs, setSelectedLs] = useState(null);
+  const lsPages = useMemo(() => selectedLs ? splitLongitudinalSections(selectedLs) : [], [selectedLs]);
 
   const [lsTableData, setLsTableData] = useState([]);
 
@@ -2013,15 +2015,17 @@ const PlottingAndQuantityReport = () => {
         <Typography fontSize="12px" textAlign={"center"} mb={2}>
           L.S
         </Typography>
-        {selectedLs && selectedLs?.series?.length && (
-          <Box className="pdf-chart-item" sx={{ width: "100%" }}>
+        {lsPages.map((page, index) => (
+          <Box key={`${page.start}-${page.end}`} className="pdf-chart-item" sx={{ width: "100%", mb: 2 }}>
+            {lsPages.length > 1 && <Typography fontSize="12px" textAlign="center" sx={{ mb: 1 }}>L.S · Chainage {page.start.toFixed(3)} – {page.end.toFixed(3)} · Part {index + 1} of {lsPages.length}</Typography>}
             <CrossSectionChart
-              selectedCs={selectedLs}
-              chartOptions={chartOptions}
+              showLevelBands
+              selectedCs={page.section}
+              chartOptions={{ ...chartOptions, layout: { ...chartOptions.layout, xaxis: { ...chartOptions.layout.xaxis, autorange: false, range: page.range, dtick: undefined, nticks: 8 } } }}
               drawingScales={{ horizontal: 2400, vertical: 300 }}
             />
           </Box>
-        )}
+        ))}
 
         {/* Footer */}
         <Typography
@@ -2049,6 +2053,7 @@ const PlottingAndQuantityReport = () => {
           allCs.map((cs, key) => (
             <Box key={key} className="pdf-chart-item" sx={{ mb: 4, width: "100%", maxWidth: "100%", minWidth: 0 }}>
               <CrossSectionChartV2
+                showLevelBands
                 selectedCs={cs}
                 chartOptions={cs.specificOptions || chartOptions}
               />

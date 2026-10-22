@@ -3,6 +3,8 @@ import { createLongitudinalPdf } from "../../utils/longitudinalPdf";
 import ExportLoader from "../../components/ExportLoader";
 import SectionScaleInputs from "./components/SectionScaleInputs";
 import { profilePoints, profileLevel, chainageValue } from "../../utils/surveyGeometry";
+import { calculateVolumeReport } from "../../utils/volumeReport";
+import { buildSlopeEdits, previewLongitudinalPurposes, shiftReducedLevels } from "../../utils/longitudinalLevels";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -10,7 +12,7 @@ import { handleFormError } from "../../utils/handleFormError";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import { getSurvey, updateReducedLevels } from "../../services/surveyServices";
 import { showAlert } from "../../redux/alertSlice";
-import { Box, Stack, Typography, Paper, TextField, Button, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableContainer, TableRow } from "@mui/material";
+import { Alert, Box, Stack, Typography, Paper, TextField, Button, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Table, TableBody, TableCell, TableContainer, TableRow } from "@mui/material";
 import BasicInput from "../../components/BasicInput";
 import BasicButton from "../../components/BasicButton";
 import CrossSectionChart from "./components/CrossSectionChart";
@@ -42,6 +44,7 @@ const LEVEL_ORDER = [
 ];
 
 const menuItems = [
+  { label: "Slope", value: "slope" },
   // { label: "v1", value: "v1" },
   // { label: "v2", value: "v2" },
   {
@@ -84,6 +87,8 @@ const LongitudinalSectionReport = () => {
   const [levelEdits, setLevelEdits] = useState({});
   const [savingLevels, setSavingLevels] = useState(false);
   const [openRowId, setOpenRowId] = useState(null);
+  const [slopeDialogOpen, setSlopeDialogOpen] = useState(false);
+  const [slopeForm, setSlopeForm] = useState({ levelIndex: 1, from: "", to: "", denominator: "10", direction: "falling" });
   const canEditLevels = tableData.length === 2 && selectedCs?.series?.length === 2;
   const getRowEditState = (row) => {
     const values = row.sources.flatMap((_, index) => {
@@ -96,11 +101,35 @@ const LongitudinalSectionReport = () => {
     };
   };
   const [drawingScales, setDrawingScales] = useState({ horizontal: 2400, vertical: 300 });
-  const [pdfPageLength, setPdfPageLength] = useState(300);
-  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
-  const validPdfPageLength = Number.isFinite(Number(pdfPageLength)) && Number(pdfPageLength) > 0;
   const [exportProgress, setExportProgress] = useState(null);
   const exportingRef = useRef(false);
+
+  const savedQuantity = useMemo(() => tableData.length === 2
+    ? calculateVolumeReport(survey, tableData[0], tableData[1], state?.rows || [])
+    : null, [survey, tableData, state?.rows]);
+
+  const liveQuantity = useMemo(() => {
+    if (!savedQuantity || !canEditLevels || !selectedCs?.levelRows) return savedQuantity;
+    const purposes = previewLongitudinalPurposes(tableData, selectedCs.levelRows, levelEdits);
+    return calculateVolumeReport(survey, purposes[0], purposes[1], state?.rows || []);
+  }, [savedQuantity, canEditLevels, selectedCs, tableData, levelEdits, survey, state?.rows]);
+  const invalidQuantityEdits = Object.values(levelEdits).some((value) =>
+    String(value).trim() === "" || !Number.isFinite(Number(value)));
+  const quantityIncomplete = liveQuantity?.missingSections?.length > 0;
+
+  const slopePreview = useMemo(() => {
+    if (!slopeDialogOpen || !canEditLevels) return { error: "Slope editing requires exactly two selected levels." };
+    try {
+      return buildSlopeEdits({ rows: selectedCs.levelRows, ...slopeForm, separator: survey?.separator || "/", edits: levelEdits, breakChainages: selectedCs.breakBeforeChainages });
+    } catch (error) { return { error: error.message }; }
+  }, [slopeDialogOpen, canEditLevels, selectedCs, slopeForm, survey?.separator, levelEdits]);
+
+  const handleApplySlope = () => {
+    if (!canEditLevels || savingLevels || slopePreview.error) return;
+    setLevelEdits((previous) => ({ ...previous, ...slopePreview.edits }));
+    setSlopeDialogOpen(false);
+    dispatch(showAlert({ type: "success", message: "Slope preview applied. Review the graph and quantity, then update each affected chainage to save." }));
+  };
 
   const previewCs = useMemo(() => {
     if (!selectedCs || !canEditLevels || !Object.keys(levelEdits).length) return selectedCs;
@@ -143,12 +172,11 @@ const LongitudinalSectionReport = () => {
   }), [chartOptions, previewCs, selectedCs]);
 
   const downloadPDF = async () => {
-    if (!selectedCs || exportingRef.current || !validPdfPageLength) return;
-    setPdfDialogOpen(false);
+    if (!selectedCs || exportingRef.current) return;
     exportingRef.current = true;
     setExportProgress({ percent: 0, message: "Preparing longitudinal pages..." });
     try {
-      const pdf = await createLongitudinalPdf(selectedCs, drawingScales, chartOptions, pdfPageLength, setExportProgress);
+      const pdf = await createLongitudinalPdf(selectedCs, drawingScales, chartOptions, "auto", setExportProgress);
       pdf.save("longitudinal-section.pdf");
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
@@ -159,8 +187,13 @@ const LongitudinalSectionReport = () => {
   };
 
   const handleMenuSelect = (item) => {
+    if (item.value === "slope") {
+      setSlopeForm({ levelIndex: 1, from: selectedCs?.levelRows?.[0]?.chainage || "", to: selectedCs?.levelRows?.at(-1)?.chainage || "", denominator: "10", direction: "falling" });
+      setSlopeDialogOpen(true);
+      return;
+    }
     if (item.value === "download") {
-      if (selectedCs && !exportingRef.current) setPdfDialogOpen(true);
+      if (selectedCs && !exportingRef.current) downloadPDF();
       return;
     }
 
@@ -311,6 +344,7 @@ const LongitudinalSectionReport = () => {
       id,
       type: "ls",
       chainages: safeChainages,
+      breakBeforeChainages: [...breakBeforeChainages],
       series: [],
       allRl: [], // We will only store NUMBERS here
       levelRows: filteredRow.map((row, index) => ({
@@ -402,9 +436,9 @@ const LongitudinalSectionReport = () => {
           return [{
             _id: source.row._id,
             purpose: source.purpose,
-            data: source.row.reducedLevels.map((level, offsetIndex) => ({
+            data: shiftReducedLevels(source.row.reducedLevels, delta).map((level, offsetIndex) => ({
               x: source.row.offsets[offsetIndex],
-              y: (Number(level) + delta).toFixed(3),
+              y: level,
             })),
           }];
         });
@@ -458,32 +492,46 @@ const LongitudinalSectionReport = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }}>
       {exportProgress && <ExportLoader progress={exportProgress.percent} progressMessage={exportProgress.message} />}
-      <Dialog open={pdfDialogOpen} onClose={() => setPdfDialogOpen(false)} fullWidth maxWidth="xs" aria-labelledby="pdf-download-title">
-        <Box component="form" onSubmit={(event) => { event.preventDefault(); downloadPDF(); }}>
-          <DialogTitle id="pdf-download-title">Download longitudinal PDF</DialogTitle>
+      <Dialog open={slopeDialogOpen} onClose={() => setSlopeDialogOpen(false)} fullWidth maxWidth="sm" aria-labelledby="slope-dialog-title">
+        <Box component="form" onSubmit={(event) => { event.preventDefault(); handleApplySlope(); }}>
+          <DialogTitle id="slope-dialog-title" sx={{ color: "#4f46e5", fontWeight: 800 }}>Apply longitudinal slope</DialogTitle>
           <DialogContent>
-            <TextField
-              autoFocus
-              fullWidth
-              label="Range length per page (m)"
-              type="number"
-              size="small"
-              value={pdfPageLength}
-              onChange={(event) => setPdfPageLength(event.target.value)}
-              inputProps={{ min: 0, step: "any" }}
-              error={!validPdfPageLength}
-              helperText={validPdfPageLength
-                ? "Long profiles split automatically. Dense chainages may use shorter pages."
-                : "Enter a range length greater than zero."}
-              sx={{ mt: 1 }}
-            />
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              {!canEditLevels ? <Alert severity="info">Slope editing is available only when the LS report is generated with exactly two levels.</Alert> : <>
+                <TextField select label="Level to adjust" value={slopeForm.levelIndex} onChange={(event) => setSlopeForm((previous) => ({ ...previous, levelIndex: Number(event.target.value) }))} fullWidth>
+                  {selectedCs.series.map((series, index) => <MenuItem key={index} value={index}>{series.name}</MenuItem>)}
+                </TextField>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField select required fullWidth label="From chainage" value={slopeForm.from} onChange={(event) => setSlopeForm((previous) => ({ ...previous, from: event.target.value }))}>
+                    {selectedCs.levelRows.map((row) => <MenuItem key={row.id} value={row.chainage}>{row.chainage}</MenuItem>)}
+                  </TextField>
+                  <TextField select required fullWidth label="To chainage" value={slopeForm.to} onChange={(event) => setSlopeForm((previous) => ({ ...previous, to: event.target.value }))}>
+                    {selectedCs.levelRows.map((row) => <MenuItem key={row.id} value={row.chainage} disabled={chainageValue(row.chainage, survey?.separator || "/") <= chainageValue(slopeForm.from, survey?.separator || "/")}>{row.chainage}</MenuItem>)}
+                  </TextField>
+                </Stack>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField select fullWidth label="Direction" value={slopeForm.direction} onChange={(event) => setSlopeForm((previous) => ({ ...previous, direction: event.target.value }))}>
+                    <MenuItem value="falling">Falling (subtract RL)</MenuItem>
+                    <MenuItem value="rising">Rising (add RL)</MenuItem>
+                  </TextField>
+                  <TextField required fullWidth type="number" label="Slope: 1 in" value={slopeForm.denominator} inputProps={{ min: 0, step: "any" }} onChange={(event) => setSlopeForm((previous) => ({ ...previous, denominator: event.target.value }))} helperText="1 in 10 = 1 m change over 10 m." />
+                </Stack>
+                <Typography variant="body2" color="text.secondary">The slope starts at the current RL at the from-chainage. It sets a straight gradient at existing chainages within the range, keeping each cross-section's shape.</Typography>
+                {slopePreview.error ? <Alert severity="warning">{slopePreview.error}</Alert> : <Box sx={{ p: 2, bgcolor: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 2, color: "#312e81" }}>
+                  <Typography fontWeight={700}>Start RL: {slopePreview.startRl.toFixed(3)} → End RL: {slopePreview.endRl.toFixed(3)}</Typography>
+                  <Typography variant="body2">{Object.keys(slopePreview.edits).length} chainages · {slopeForm.direction === "falling" ? "Fall" : "Rise"}: {Math.abs(slopePreview.endRl - slopePreview.startRl).toFixed(3)} m</Typography>
+                </Box>}
+                <Typography variant="caption" color="text.secondary">Applying previews the changes. Use the Update button at each affected chainage to save.</Typography>
+              </>}
+            </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setPdfDialogOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={!validPdfPageLength} startIcon={<MdDownload />}>Download PDF</Button>
+            <Button onClick={() => setSlopeDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={!canEditLevels || savingLevels || Boolean(slopePreview.error)} sx={{ bgcolor: "#4f46e5", "&:hover": { bgcolor: "#4338ca" } }}>Apply slope</Button>
           </DialogActions>
         </Box>
       </Dialog>
+
       <SmallHeader />
       <PageHeroHeader
         icon={MdOutlineAssessment}
@@ -538,7 +586,35 @@ const LongitudinalSectionReport = () => {
                   <Typography variant="h6" sx={{ color: "#1e293b", fontWeight: 800 }}>Longitudinal profile</Typography>
                   <Typography variant="body2" color="text.secondary">View and adjust the drawing scale</Typography>
                 </Box>
-                <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
+                <Stack spacing={1.5} alignItems={{ xs: "stretch", sm: "flex-end" }}>
+                  <Box sx={{ px: 2, py: 1.25, bgcolor: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: "12px", textAlign: { xs: "left", sm: "right" } }} aria-live="polite" aria-atomic="true">
+                    <Typography variant="caption" sx={{ color: "#4f46e5", fontWeight: 800 }}>Quantity</Typography>
+                    {!liveQuantity ? (
+                      <Typography variant="body2" color="text.secondary">Select exactly two levels to view quantity.</Typography>
+                    ) : invalidQuantityEdits || quantityIncomplete ? (
+                      <Typography variant="body2" color="error.main">
+                        {invalidQuantityEdits ? "Enter valid RL values to calculate quantity." : "Quantity incomplete: missing or invalid section profiles."}
+                      </Typography>
+                    ) : (
+                      <Stack direction={{ xs: "column", md: "row" }} gap={{ xs: 0.5, md: 2 }}>
+                        {[
+                          { label: "Cutting", key: "totalCuttingVolume" },
+                          { label: "Filling", key: "totalFillingVolume" },
+                        ].map(({ label, key }) => {
+                          const value = liveQuantity[key];
+                          const delta = Number((value - savedQuantity[key]).toFixed(3));
+                          return (
+                            <Box key={key}>
+                              <Typography variant="body2" sx={{ color: "#312e81", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{label}: {value.toFixed(3)} m³</Typography>
+                              {delta !== 0 && <Typography variant="caption" sx={{ color: "#4f46e5", fontVariantNumeric: "tabular-nums" }}>{delta > 0 ? "+" : ""}{delta.toFixed(3)} m³ from saved</Typography>}
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                    )}
+                  </Box>
+                  <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
+                </Stack>
               </Stack>
               <WaterWayProposalNotice purposes={tableData} />
               {selectedCs && selectedCs?.series?.length && (

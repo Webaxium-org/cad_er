@@ -1,4 +1,5 @@
 import Payment from "../models/payments.js";
+import { ensurePaymentInvoice } from "../services/paymentInvoice.js";
 import User from "../models/user.js";
 import "../models/subscription.js";
 import "../models/planVersion.js";
@@ -42,7 +43,7 @@ export const adminSubscriptionPayments = async (req, res, next) => {
       const regex = new RegExp(escapeRegex(search), "i");
       const users = await User.find({ $or: [{ name: regex }, { email: regex }] }).select("_id").lean();
       searchFilter = { $and: [base, { $or: [
-        { razorpayPaymentId: regex }, { razorpayOrderId: regex }, { razorpaySubscriptionId: regex },
+        { razorpayPaymentId: regex }, { razorpayOrderId: regex }, { razorpaySubscriptionId: regex }, { invoiceNumber: regex },
         { userId: { $in: users.map(user => user._id) } },
       ] }] };
     }
@@ -51,13 +52,16 @@ export const adminSubscriptionPayments = async (req, res, next) => {
       Payment.aggregate(metricsPipeline),
       Payment.countDocuments(searchFilter),
       Payment.find(searchFilter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * 20).limit(20)
-        .select("userId subscriptionId planVersionId billingPhase amount createdAt razorpayPaymentId razorpayOrderId razorpaySubscriptionId")
+        .select("userId subscriptionId planVersionId billingPhase amount createdAt razorpayPaymentId razorpayOrderId razorpaySubscriptionId invoiceNumber")
         .populate("userId", "name email")
         .populate("subscriptionId", "planCode pricingSnapshot")
         .populate("planVersionId", "name")
         .lean(),
     ]);
 
+    for (const row of rows) {
+      if (!row.invoiceNumber) row.invoiceNumber = await ensurePaymentInvoice({ _id: row._id });
+    }
     res.json({ range, phase, page, pageSize: 20, total,
       metrics: summary[0] || { grossPaise: 0, count: 0, customers: 0,
         initialPaise: 0, initialCount: 0, recurringPaise: 0, recurringCount: 0 },
@@ -66,7 +70,7 @@ export const adminSubscriptionPayments = async (req, res, next) => {
         planName: row.subscriptionId?.pricingSnapshot?.name || row.planVersionId?.name ||
           row.subscriptionId?.planCode?.replaceAll("_", " ") || "Subscription",
         phase: row.billingPhase || "legacy", amountPaise: row.amount, createdAt: row.createdAt,
-        paymentId: row.razorpayPaymentId, orderId: row.razorpayOrderId,
+        paymentId: row.razorpayPaymentId, orderId: row.razorpayOrderId, invoiceNumber: row.invoiceNumber,
         subscriptionId: row.razorpaySubscriptionId,
       })) });
   } catch (error) { next(error); }

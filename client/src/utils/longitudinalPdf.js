@@ -4,6 +4,7 @@ import { splitLongitudinalRanges } from "./longitudinalPagination";
 
 export const createLongitudinalPdf = async (section, scales, chartOptions, pageLength, onProgress) => {
   const ranges = splitLongitudinalRanges(section, pageLength);
+  if (!ranges.length) throw new Error("No chainages are available to export.");
   const pdf = createGraphPdf();
   const plotNode = document.createElement("div");
   const width = 1000;

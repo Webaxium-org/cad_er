@@ -1,4 +1,6 @@
 import Plot from "react-plotly.js";
+import SectionLevelBands from "./SectionLevelBands";
+import useSectionBandLayout from "./useSectionBandLayout";
 import {
   Box,
   Paper,
@@ -11,7 +13,8 @@ import {
   Typography,
 } from "@mui/material";
 
-const CrossSectionChartV2 = ({ selectedCs, chartOptions }) => {
+const CrossSectionChartV2 = ({ selectedCs, chartOptions, showLevelBands = false }) => {
+  const [bandLayout, updateBandLayout] = useSectionBandLayout(showLevelBands);
   return (
     <Box sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
       <Box sx={{ bgcolor: "transparent", width: "100%", minWidth: 0 }}>
@@ -40,6 +43,8 @@ const CrossSectionChartV2 = ({ selectedCs, chartOptions }) => {
                     }}
                   >
                     <Plot
+                      onInitialized={updateBandLayout}
+                      onUpdate={updateBandLayout}
                       data={selectedCs?.series?.map((s) => ({
                         x: s?.data?.map((p) => p.x),
                         y: s?.data?.map((p) => p.y),
@@ -66,6 +71,7 @@ const CrossSectionChartV2 = ({ selectedCs, chartOptions }) => {
             </TableBody>
           </Table>
         </TableContainer>
+        {showLevelBands && <SectionLevelBands section={selectedCs} layout={bandLayout} />}
       </Box>
     </Box>
   );

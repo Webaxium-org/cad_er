@@ -185,7 +185,7 @@ export default function AdminPayments() {
         <TableContainer sx={{ borderTop: "1px solid #e0e7ff" }}>
           <Table sx={{ minWidth: 850 }}>
             <TableHead sx={{ bgcolor: "#f5f6ff" }}><TableRow>
-              {["Date", "Customer", "Plan", "Type", "Payment ID", "Amount"].map(label => <TableCell key={label}
+              {["Date", "Customer", "Plan", "Type", "Invoice number", "Payment ID", "Amount"].map(label => <TableCell key={label}
                 sx={{ color: "#4338ca", fontWeight: 850, fontSize: ".75rem", textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</TableCell>)}
             </TableRow></TableHead>
             <TableBody>
@@ -196,10 +196,11 @@ export default function AdminPayments() {
                 <TableCell sx={{ fontWeight: 700, color: "#1e1b4b" }}>{payment.planName}</TableCell>
                 <TableCell><Chip size="small" label={payment.phase === "initial" ? "First period" : payment.phase === "recurring" ? "Renewal" : "Legacy"}
                   sx={{ bgcolor: "#eef2ff", color: "#4338ca", fontWeight: 750 }} /></TableCell>
+                <TableCell sx={{ fontFamily: "monospace", whiteSpace: "nowrap" }}>{payment.invoiceNumber || "—"}</TableCell>
                 <TableCell sx={{ fontFamily: "monospace", fontSize: ".77rem", color: "#475569" }}>{payment.paymentId || "—"}</TableCell>
                 <TableCell sx={{ fontWeight: 850, color: "#312e81", whiteSpace: "nowrap" }}>{money(payment.amountPaise)}</TableCell>
               </TableRow>)}
-              {data && !data.payments.length && <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6, color: "#64748b" }}>No captured payments match these filters.</TableCell></TableRow>}
+              {data && !data.payments.length && <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6, color: "#64748b" }}>No captured payments match these filters.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </TableContainer>

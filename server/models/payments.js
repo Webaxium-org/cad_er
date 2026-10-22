@@ -13,6 +13,7 @@ const PaymentSchema = new Schema({
   razorpayPaymentId: String,
   razorpaySubscriptionId: String,
   razorpayInvoiceId: String,
+  invoiceNumber: String,
   planVersionId: { type: Types.ObjectId, ref: "PlanVersion" },
   subscriptionId: { type: Types.ObjectId, ref: "Subscription" },
   billingPhase: { type: String, enum: ["initial", "recurring", "project_addon"] },
@@ -39,6 +40,7 @@ const PaymentSchema = new Schema({
 });
 
 PaymentSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
+PaymentSchema.index({ invoiceNumber: 1 }, { unique: true, sparse: true });
 PaymentSchema.index({ razorpayOrderId: 1 }, { unique: true, sparse: true });
 PaymentSchema.index({ purpose: 1, status: 1, currency: 1, createdAt: -1 });
 PaymentSchema.index({ userId: 1, purpose: 1, status: 1, currency: 1, createdAt: -1 });

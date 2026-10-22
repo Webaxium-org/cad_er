@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import Subscription from "../models/subscription.js";
 import RazorpayEvent from "../models/razorpayEvent.js";
 import Payment from "../models/payments.js";
+import { ensurePaymentInvoice } from "../services/paymentInvoice.js";
 import CheckoutLock from "../models/checkoutLock.js";
 import { publicPlans, activeOffer, quotePlanForUser, renewalAmount } from "../services/subscriptionPlans.js";
 import PlanVersion from "../models/planVersion.js";
@@ -106,17 +107,21 @@ export const getPaymentHistory = async (req, res, next) => {
     const [total, rows] = await Promise.all([
       Payment.countDocuments(filter),
       Payment.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize)
-        .select("subscriptionId planVersionId billingPhase addOnQuantity amount createdAt razorpayPaymentId")
+        .select("subscriptionId planVersionId billingPhase addOnQuantity amount createdAt razorpayPaymentId invoiceNumber")
         .populate("subscriptionId", "planCode pricingSnapshot")
         .populate("planVersionId", "name")
         .lean(),
     ]);
+    // Older successful payments receive their number once when first viewed.
+    for (const row of rows) {
+      if (!row.invoiceNumber) row.invoiceNumber = await ensurePaymentInvoice({ _id: row._id });
+    }
     res.set("Cache-Control", "no-store").json({ page, pageSize, total,
       payments: rows.map(row => ({ id: row._id,
         planName: row.subscriptionId?.pricingSnapshot?.name || row.planVersionId?.name ||
           row.subscriptionId?.planCode?.replaceAll("_", " ") || "Subscription",
         phase: row.billingPhase || "legacy", quantity: row.addOnQuantity || 1, amountPaise: row.amount, createdAt: row.createdAt,
-        paymentId: row.razorpayPaymentId, status: "SUCCESS",
+        paymentId: row.razorpayPaymentId, invoiceNumber: row.invoiceNumber, status: "SUCCESS",
       })) });
   } catch (error) { next(error); }
 };
@@ -425,6 +430,7 @@ export const razorpayWebhook = async (req, res, next) => {
               amount: payment.amount, currency: payment.currency, purpose: "SUBSCRIPTION", status: "SUCCESS" } },
             { upsert: true },
           );
+          await ensurePaymentInvoice({ razorpayPaymentId: payment.id });
         }
       } else if (event.payload?.subscription?.entity?.notes?.userId) {
         // Our checkout record may still be committing; request a webhook retry.

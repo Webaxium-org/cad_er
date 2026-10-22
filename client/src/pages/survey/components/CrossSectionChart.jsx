@@ -1,5 +1,7 @@
 import Plot from "react-plotly.js";
 import { useEffect, useState } from "react";
+import SectionLevelBands from "./SectionLevelBands";
+import useSectionBandLayout from "./useSectionBandLayout";
 import {
   Box,
   Paper,
@@ -23,7 +25,9 @@ const CrossSectionChart = ({
   chartOptions,
   pdfRef,
   drawingScales = { horizontal: 150, vertical: 150 },
+  showLevelBands = false,
 }) => {
+  const [bandLayout, updateBandLayout] = useSectionBandLayout(showLevelBands);
   const [width, setWidth] = useState(window.innerWidth);
   const isLs = selectedCs.type === "ls";
   const baseScales = isLs
@@ -133,6 +137,8 @@ const CrossSectionChart = ({
                   maxHeight={"100px"}
                 >
                   <Plot
+                    onInitialized={updateBandLayout}
+                    onUpdate={updateBandLayout}
                     data={selectedCs?.series?.map((s) => ({
                       x: [...(s.data || [])]
                         .sort((a, b) => Number(a.x) - Number(b.x))
@@ -285,6 +291,8 @@ const CrossSectionChart = ({
               <TableCell sx={{ border: "none", p: 0 }}>
                 <Box width="100%" height="250px">
                   <Plot
+                    onInitialized={updateBandLayout}
+                    onUpdate={updateBandLayout}
                     data={selectedCs?.series?.map((s) => ({
                       x: [...(s.data || [])]
                         .sort((a, b) => Number(a.x) - Number(b.x))
@@ -348,6 +356,7 @@ const CrossSectionChart = ({
           </TableBody>
         </Table>
       </TableContainer>
+      {showLevelBands && <SectionLevelBands section={selectedCs} layout={bandLayout} />}
     </>
   );
 };

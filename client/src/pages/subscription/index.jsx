@@ -282,7 +282,7 @@ export default function SubscriptionPage() {
           <TableContainer sx={{ borderTop: "1px solid #e0e7ff" }}>
             <Table sx={{ minWidth: 620 }}>
               <TableHead sx={{ bgcolor: "#f5f6ff" }}><TableRow>
-                {["Date", "Plan", "Type", "Amount", "Status", "Payment ID"].map(label =>
+                {["Date", "Plan", "Type", "Amount", "Status", "Invoice number", "Payment ID"].map(label =>
                   <TableCell key={label} sx={{ color: "#4338ca", fontWeight: 800 }}>{label}</TableCell>)}
               </TableRow></TableHead>
               <TableBody>
@@ -292,10 +292,11 @@ export default function SubscriptionPage() {
                   <TableCell>{payment.phase === "initial" ? "First period" : payment.phase === "recurring" ? "Renewal" : payment.phase === "project_addon" ? `Extra project${payment.quantity === 1 ? "" : "s"} (${payment.quantity})` : "Earlier payment"}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap", fontWeight: 750 }}>{money(payment.amountPaise)}</TableCell>
                   <TableCell sx={{ color: "#15803d", fontWeight: 750 }}>Paid</TableCell>
+                  <TableCell sx={{ fontFamily: "monospace", whiteSpace: "nowrap" }}>{payment.invoiceNumber || "—"}</TableCell>
                   <TableCell sx={{ fontFamily: "monospace", fontSize: ".8rem" }}>{payment.paymentId}</TableCell>
                 </TableRow>)}
                 {!paymentHistoryBusy && !paymentHistoryError && !paymentHistory?.payments.length &&
-                  <TableRow><TableCell colSpan={6} align="center" sx={{ py: 5, color: "#64748b" }}>No payments yet.</TableCell></TableRow>}
+                  <TableRow><TableCell colSpan={7} align="center" sx={{ py: 5, color: "#64748b" }}>No payments yet.</TableCell></TableRow>}
               </TableBody>
             </Table>
           </TableContainer>

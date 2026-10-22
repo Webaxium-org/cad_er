@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { stopLoading } from "../../redux/loadingSlice";
 import { Alert, Box, Button, CircularProgress, Container, Divider, Link, Paper, Stack, Typography } from "@mui/material";
 import { FiArrowLeft, FiArrowRight, FiCheckCircle, FiCreditCard, FiLock, FiPackage } from "react-icons/fi";
 import AppHeader from "../../components/AppHeader";
@@ -12,6 +13,7 @@ const date = value => new Date(value).toLocaleDateString("en-IN", { day: "numeri
 const accent = "#4f46e5";
 
 export default function SubscriptionCheckoutPage() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { user } = useSelector(state => state.user);
@@ -25,6 +27,8 @@ export default function SubscriptionCheckoutPage() {
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
+    dispatch(stopLoading());
+    setLoading(true);
     let live = true;
     Promise.all([getSubscription(), getSubscriptionPlans()]).then(([accountResponse, plansResponse]) => {
       if (!live) return;
@@ -36,7 +40,7 @@ export default function SubscriptionCheckoutPage() {
     }).catch(() => { if (live) setError("Checkout details could not be loaded. Please try again."); })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
-  }, [planCode]);
+  }, [dispatch, planCode]);
 
   const activePaid = account?.hasAccess && account.subscription?.kind === "paid";
   const projectBasePaise = account?.projectAddOnQuote?.basePaise * quantity;
@@ -51,6 +55,10 @@ export default function SubscriptionCheckoutPage() {
     gstPaise: 0, processingFeePaise: 0,
     totalPaise: plan.firstPaymentAmountPaise ?? plan.amountPaise,
   } : null);
+  // Older pending-checkout snapshots contain the combined GST amount only.
+  const cgstPaise = quote?.cgstPaise ?? Math.round((quote?.gstPaise || 0) / 2);
+  const sgstPaise = quote?.sgstPaise ?? (quote?.gstPaise || 0) - cgstPaise;
+  const invoiceTotalPaise = quote?.invoiceTotalPaise ?? (quote?.basePaise || 0) + (quote?.gstPaise || 0);
   const valid = isProject ? activePaid : Boolean(plan && !activePaid);
   const description = isProject ? `${quantity} additional project${quantity === 1 ? "" : "s"}` : `${plan?.name || "Plan"} · ${plan?.interval || ""}`;
 
@@ -167,7 +175,10 @@ export default function SubscriptionCheckoutPage() {
               <Typography variant="body2" color="text.secondary" sx={{ mt: .5, mb: 3 }}>All charges are shown before payment.</Typography>
               <Stack spacing={2.25}>
                 <Stack direction="row" justifyContent="space-between" spacing={2}><Typography color="text.secondary">{isProject ? `Projects (${quantity} × ${money(account.projectAddOnQuote.basePaise)})` : "Plan price"}</Typography><Typography fontWeight={700}>{money(quote.basePaise)}</Typography></Stack>
-                <Stack direction="row" justifyContent="space-between" spacing={2}><Typography color="text.secondary">GST (18%)</Typography><Typography fontWeight={700}>{money(quote.gstPaise)}</Typography></Stack>
+                <Stack direction="row" justifyContent="space-between" spacing={2}><Typography color="text.secondary">CGST (9%)</Typography><Typography fontWeight={700}>{money(cgstPaise)}</Typography></Stack>
+                <Stack direction="row" justifyContent="space-between" spacing={2}><Typography color="text.secondary">SGST (9%)</Typography><Typography fontWeight={700}>{money(sgstPaise)}</Typography></Stack>
+                <Divider />
+                <Stack direction="row" justifyContent="space-between" spacing={2}><Typography fontWeight={800} color="#1e1b4b">Invoice total</Typography><Typography fontWeight={800}>{money(invoiceTotalPaise)}</Typography></Stack>
                 <Stack direction="row" justifyContent="space-between" spacing={2}><Typography color="text.secondary">Processing fee (2%)</Typography><Typography fontWeight={700}>{money(quote.processingFeePaise)}</Typography></Stack>
                 <Divider />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}><Typography fontWeight={850} color="#1e1b4b">Total</Typography><Typography variant="h5" fontWeight={900} color={accent}>{money(quote.totalPaise)}</Typography></Stack>

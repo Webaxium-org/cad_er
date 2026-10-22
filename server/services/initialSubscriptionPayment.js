@@ -1,6 +1,7 @@
 import createHttpError from "http-errors";
 import Subscription from "../models/subscription.js";
 import Payment from "../models/payments.js";
+import { ensurePaymentInvoice } from "./paymentInvoice.js";
 import { razorpayRequest } from "./razorpay.js";
 
 // Calendar billing: Jan 31 -> Feb 28/29, and Feb 29 -> Feb 28 next year.
@@ -48,6 +49,7 @@ export const recordInitialPayment = async (record, payment) => {
     razorpayOrderId: record.razorpayOrderId, razorpayPaymentId: payment.id,
     billingPhase: "initial", amount: payment.amount, currency: payment.currency, purpose: "SUBSCRIPTION", status: "SUCCESS",
   } }, { upsert: true });
+  await ensurePaymentInvoice({ razorpayPaymentId: payment.id });
   await Subscription.updateOne({ userId: record.userId, kind: "trial", periodEnd: { $gt: start } },
     { $set: { periodEnd: start, status: "cancelled" } });
   return updated;
