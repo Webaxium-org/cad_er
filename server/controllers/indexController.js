@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import User from "../models/user.js";
-import OnboardingVerification from "../models/onboardingVerification.js";
+// import OnboardingVerification from "../models/onboardingVerification.js";
 import { normalizePhone } from "../utils/onboardingVerification.js";
 import Company from "../models/company.js";
 import Opening from "../models/opening.js";
@@ -235,14 +235,16 @@ export const registerAccountType = async (req, res, next) => {
     if (!normalizedPhone) {
       throw Object.assign(new Error("Enter a valid phone number including country code"), { statusCode: 400 });
     }
-    const verification = await OnboardingVerification.findOne({
+    // Email verification is temporarily disabled. Phone remains required above.
+    /* const verification = await OnboardingVerification.findOne({
       user: userId, email: user.email, verifiedAt: { $ne: null }, expiresAt: { $gt: new Date() },
     });
     if (!verification) {
       throw Object.assign(new Error("Verify your email before completing setup"), { statusCode: 400 });
     }
-    user.phone = normalizedPhone;
     user.emailVerifiedAt = verification.verifiedAt;
+    */
+    user.phone = normalizedPhone;
 
     const isFilled = (val) => typeof val === "string" && val.trim().length > 0;
 

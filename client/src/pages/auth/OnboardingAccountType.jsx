@@ -21,6 +21,9 @@ import { handleFormError } from "../../utils/handleFormError";
 import { registerAccountType, sendOnboardingCode, verifyOnboardingCode } from "../../services/indexServices";
 import { setUser } from "../../redux/userSlice";
 
+// Temporarily disabled; keep the verification flow available for re-enabling.
+const EMAIL_VERIFICATION_ENABLED = false;
+
 const PHONE_COUNTRIES = [
   { name: "India", code: "+91" },
   { name: "United Arab Emirates", code: "+971" },
@@ -233,7 +236,7 @@ const OnboardingAccountType = () => {
     if (busy) return;
     try {
       const { type, details } = formValues;
-      if (!type || !isStep2Valid() || !validPhone || !verified) {
+      if (!type || !isStep2Valid() || !validPhone || (EMAIL_VERIFICATION_ENABLED && !verified)) {
         throw new Error("Please fill all the required fields");
       }
 
@@ -578,7 +581,7 @@ const OnboardingAccountType = () => {
 
               <Paper elevation={0} sx={{ width: "100%", maxWidth: 400, mx: "auto", mt: 3, p: { xs: 2, sm: 3 }, boxSizing: "border-box", borderRadius: 4, border: "1px solid #c7d2fe", bgcolor: "#eef2ff", "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#4f46e5" }, "& .MuiInputLabel-root.Mui-focused": { color: "#4f46e5" } }}>
                 <Stack spacing={2}>
-                  <Typography variant="h6" sx={{ color: "#4f46e5", fontWeight: 800 }}>Contact and verification</Typography>
+                  <Typography variant="h6" sx={{ color: "#4f46e5", fontWeight: 800 }}>Contact details</Typography>
                   <TextField
                     select required fullWidth label="Country code" value={phoneCode}
                     onChange={(event) => setPhoneCode(event.target.value)} disabled={busy === "submit"}
@@ -598,6 +601,7 @@ const OnboardingAccountType = () => {
                       : "Enter your number without the country code."}
                     sx={{ bgcolor: "white", borderRadius: 1 }}
                   />
+                  {EMAIL_VERIFICATION_ENABLED && <>
                   <Typography variant="body2" sx={{ color: "#475569", overflowWrap: "anywhere" }}>
                     Verify your email{verificationEmail ? `: ${verificationEmail}` : " address"}. Your verification code will be sent by email.
                   </Typography>
@@ -618,6 +622,7 @@ const OnboardingAccountType = () => {
                         {busy === "verify" ? "Verifying..." : "Verify email"}
                       </Button>
                     </>}
+                  </>}
                   </>}
                 </Stack>
               </Paper>
@@ -643,7 +648,7 @@ const OnboardingAccountType = () => {
                 </Button>
                 <Button
                   variant="contained"
-                  disabled={!isStep2Valid() || !validPhone || !verified || Boolean(busy)}
+                  disabled={!isStep2Valid() || !validPhone || (EMAIL_VERIFICATION_ENABLED && !verified) || Boolean(busy)}
                   onClick={handleSubmit}
                   endIcon={<Icons.Arrow />}
                   sx={{

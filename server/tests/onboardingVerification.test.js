@@ -61,7 +61,7 @@ test("email verification rejects invalid, expired and exhausted codes, and accep
   assert.equal(failure.statusCode, 401);
 });
 
-test("account setup rejects missing phone and missing server-side email verification", async (t) => {
+test("account setup still rejects missing phone while email verification is disabled", async (t) => {
   t.mock.method(User, "findById", async () => ({ email: "a@example.com" }));
   t.mock.method(Verification, "findOne", async (filter) => {
     assert.equal(filter.email, "a@example.com");
@@ -75,7 +75,7 @@ test("account setup rejects missing phone and missing server-side email verifica
   assert.match(failure.message, /phone number/);
   req.body.phone = "+919876543210";
   await registerAccountType(req, {}, (error) => { failure = error; });
-  assert.equal(failure.message, "Verify your email before completing setup");
+  assert.equal(failure.message, "All student fields are required");
 });
 
 test("resend cooldown rejects concurrent requests before sending email", async (t) => {
@@ -94,8 +94,7 @@ test("resend cooldown rejects concurrent requests before sending email", async (
   assert.equal(failure.statusCode, 429);
 });
 
-test("verified setup saves the normalized phone and email verification date", async (t) => {
-  const verifiedAt = new Date();
+test("setup saves the required phone without email verification", async (t) => {
   let saved = false;
   const user = {
     _id: "user-a", email: "a@example.com",
@@ -103,7 +102,7 @@ test("verified setup saves the normalized phone and email verification date", as
     toObject: () => ({ phone: user.phone, emailVerifiedAt: user.emailVerifiedAt, type: user.type, password: "private" }),
   };
   t.mock.method(User, "findById", async () => user);
-  t.mock.method(Verification, "findOne", async () => ({ verifiedAt }));
+  t.mock.method(Verification, "findOne", async () => { throw new Error("Email verification should be disabled"); });
   let response;
   let failure;
   const res = { status: () => res, json: (data) => { response = data; } };
@@ -114,6 +113,6 @@ test("verified setup saves the normalized phone and email verification date", as
   assert.equal(failure, undefined);
   assert.equal(saved, true);
   assert.equal(response.user.phone, "+919876543210");
-  assert.equal(response.user.emailVerifiedAt, verifiedAt);
+  assert.equal(response.user.emailVerifiedAt, undefined);
   assert.equal(response.user.password, undefined);
 });
