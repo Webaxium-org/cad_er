@@ -1,5 +1,6 @@
-import { Box, Button, Stack, Typography, Divider } from "@mui/material";
-import { useEffect, useState, useMemo } from "react";
+import { Alert, Box, Button, Stack, Typography, Divider } from "@mui/material";
+import { useEffect, useState } from "react";
+import { createSurveyDeduction, deleteSurveyDeduction, getSurveyDeductions } from "../../../services/surveyServices";
 import BasicSelect from "../../../components/BasicSelect";
 import { IoAdd } from "react-icons/io5";
 import { IoIosRemove } from "react-icons/io";
@@ -21,17 +22,14 @@ const addButtonSx = {
   },
 };
 
-const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
+const DeductionContent = ({ surveyId, purpose, active = true, onCancel, onSubmit }) => {
   const [rows, setRows] = useState([initialRow]);
   const [history, setHistory] = useState([]);
   const [selectableItems, setSelectableItems] = useState([]);
 
-  /* -------------------- Storage Key -------------------- */
-
-  const storageKey = useMemo(() => {
-    const projectId = purpose?.projectId || "default";
-    return `deduction_history_${projectId}`;
-  }, [purpose]);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   /* -------------------- Helpers -------------------- */
 
@@ -97,34 +95,40 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
     setRows((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleRemoveHistory = (id) => {
-    const updated = history.filter((item) => item.id !== id);
-
-    setHistory(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
+  const handleRemoveHistory = async (id) => {
+    if (busy || loading) return;
+    setBusy(true);
+    setError("");
+    try {
+      await deleteSurveyDeduction(surveyId, id);
+      setHistory((previous) => previous.filter((item) => item._id !== id));
+    } catch (failure) {
+      setError(failure.response?.data?.message || "Could not delete this deduction. Please try again.");
+    } finally { setBusy(false); }
   };
 
   /* -------------------- Generate & Save -------------------- */
 
-  const handleGenerate = () => {
-    if (!rows.length) return;
-
-    const newEntry = {
-      id: Date.now(),
-      createdAt: new Date().toISOString(),
-      rows,
-    };
-
-    const updatedHistory = [newEntry, ...history];
-
-    setHistory(updatedHistory);
-    localStorage.setItem(storageKey, JSON.stringify(updatedHistory));
-
-    onSubmit(rows);
+  const handleGenerate = async () => {
+    if (!rows.length || !surveyId || !purpose?._id || busy || loading) return;
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await createSurveyDeduction(surveyId, { purposeId: purpose._id, rows });
+      setHistory((previous) => [data.deduction, ...previous]);
+      onSubmit(data.deduction);
+    } catch (failure) {
+      setError(failure.response?.data?.message || "Could not save these deductions. Please try again.");
+    } finally { setBusy(false); }
   };
 
   const handleSelectHistory = (entry) => {
-    onSubmit(entry.rows);
+    if (busy || loading) return;
+    if (!entry.rows.every((row) => getIndex(row.from) >= 0 && getIndex(row.to) > getIndex(row.from))) {
+      setError("These saved ranges do not match the selected purpose's chainages.");
+      return;
+    }
+    onSubmit(entry);
   };
 
   /* -------------------- Effects -------------------- */
@@ -142,21 +146,26 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
   }, [purpose]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setHistory(Array.isArray(parsed) ? parsed : []);
-      } catch {
-        setHistory([]);
-      }
-    }
-  }, [storageKey]);
+    setHistory([]);
+    setRows([{ ...initialRow }]);
+    setError("");
+    if (!surveyId || !active) return;
+    let live = true;
+    setLoading(true);
+    getSurveyDeductions(surveyId).then(({ data }) => {
+      if (live) setHistory(data.deductions || []);
+    }).catch((failure) => {
+      if (live) setError(failure.response?.data?.message || "Could not load this survey's deductions.");
+    }).finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [surveyId, active]);
 
   /* -------------------- Render -------------------- */
 
   return (
     <Stack spacing={3}>
+      {error && <Alert severity="error">{error}</Alert>}
+      {loading && <Typography variant="body2" color="text.secondary">Loading saved deductions…</Typography>}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Typography
           variant="h2"
@@ -173,6 +182,7 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
           startIcon={<IoAdd size={18} />}
           sx={addButtonSx}
           onClick={handleAddRow}
+          disabled={busy || loading}
         />
       </Stack>
 
@@ -185,7 +195,7 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
           <Stack spacing={1}>
             {history.map((entry) => (
               <Box
-                key={entry.id}
+                key={entry._id}
                 onClick={() => handleSelectHistory(entry)}
                 sx={{
                   p: 1.5,
@@ -212,7 +222,7 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
                 <Box
                   onClick={(e) => {
                     e.stopPropagation(); // 🔥 prevents report generation
-                    handleRemoveHistory(entry.id);
+                    handleRemoveHistory(entry._id);
                   }}
                   sx={{
                     width: 32,
@@ -249,6 +259,7 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
             value={row.from}
             options={getFromOptions(idx)}
             onChange={(e) => handleInputChange(idx, "from", e.target.value)}
+            disabled={busy || loading}
           />
 
           <BasicSelect
@@ -256,16 +267,17 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
             value={row.to}
             options={getToOptions(idx)}
             onChange={(e) => handleInputChange(idx, "to", e.target.value)}
-            disabled={!row.from}
+            disabled={!row.from || busy || loading}
           />
 
           <BasicInput
             label="Remark"
             value={row.remark}
             onChange={(e) => handleInputChange(idx, "remark", e.target.value)}
+            disabled={busy || loading}
           />
 
-          <Box onClick={() => handleRemoveRow(idx)}>
+          <Box onClick={() => { if (!busy && !loading) handleRemoveRow(idx); }}>
             <IoIosRemove />
           </Box>
         </Stack>
@@ -275,8 +287,8 @@ const DeductionContent = ({ purpose, onCancel, onSubmit }) => {
         <Button onClick={onCancel} variant="outlined" sx={{ borderRadius: "12px", borderColor: "#cbd5e1", color: "#475569", fontWeight: 700, textTransform: "none" }}>
           Cancel
         </Button>
-        <Button onClick={handleGenerate} variant="contained" sx={{ borderRadius: "12px", bgcolor: "#6366f1", fontWeight: 800, textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }}>
-          Generate
+        <Button onClick={handleGenerate} disabled={busy || loading || !surveyId || rows.some((row) => !row.from || !row.to)} variant="contained" sx={{ borderRadius: "12px", bgcolor: "#6366f1", fontWeight: 800, textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }}>
+          {busy ? "Saving…" : "Generate"}
         </Button>
       </Stack>
     </Stack>

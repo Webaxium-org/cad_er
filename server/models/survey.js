@@ -36,6 +36,16 @@ const SurveySchema = new Schema(
     hasTechnicalLead: { type: Boolean },
     chainageMultiple: { type: Number },
     separator: { type: String },
+    deductions: [{
+      purposeId: { type: Types.ObjectId, ref: "SurveyPurpose", required: true },
+      createdAt: { type: Date, default: Date.now },
+      rows: [{
+        _id: false,
+        from: { type: String, required: true, trim: true },
+        to: { type: String, required: true, trim: true },
+        remark: { type: String, default: "", trim: true, maxlength: 500 },
+      }],
+    }],
     reducedLevel: { type: String, trim: true },
     createdBy: { type: Types.ObjectId, ref: "User", required: true },
     isSurveyFinish: { type: Boolean, default: false, index: true },

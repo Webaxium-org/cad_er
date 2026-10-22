@@ -4,6 +4,7 @@ import ExportLoader from "../../components/ExportLoader";
 import SectionScaleInputs from "./components/SectionScaleInputs";
 import { profilePoints, profileLevel, chainageValue } from "../../utils/surveyGeometry";
 import { calculateVolumeReport } from "../../utils/volumeReport";
+import { reportDeductions } from "../../utils/surveyDeductions";
 import { buildSlopeEdits, previewLongitudinalPurposes, shiftReducedLevels } from "../../utils/longitudinalLevels";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -105,14 +106,14 @@ const LongitudinalSectionReport = () => {
   const exportingRef = useRef(false);
 
   const savedQuantity = useMemo(() => tableData.length === 2
-    ? calculateVolumeReport(survey, tableData[0], tableData[1], state?.rows || [])
-    : null, [survey, tableData, state?.rows]);
+    ? calculateVolumeReport(survey, tableData[0], tableData[1], reportDeductions(survey, state?.deductionId))
+    : null, [survey, tableData, state?.deductionId]);
 
   const liveQuantity = useMemo(() => {
     if (!savedQuantity || !canEditLevels || !selectedCs?.levelRows) return savedQuantity;
     const purposes = previewLongitudinalPurposes(tableData, selectedCs.levelRows, levelEdits);
-    return calculateVolumeReport(survey, purposes[0], purposes[1], state?.rows || []);
-  }, [savedQuantity, canEditLevels, selectedCs, tableData, levelEdits, survey, state?.rows]);
+    return calculateVolumeReport(survey, purposes[0], purposes[1], reportDeductions(survey, state?.deductionId));
+  }, [savedQuantity, canEditLevels, selectedCs, tableData, levelEdits, survey, state?.deductionId]);
   const invalidQuantityEdits = Object.values(levelEdits).some((value) =>
     String(value).trim() === "" || !Number.isFinite(Number(value)));
   const quantityIncomplete = liveQuantity?.missingSections?.length > 0;

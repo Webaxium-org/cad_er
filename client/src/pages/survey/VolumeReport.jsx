@@ -1,4 +1,5 @@
 import { calculateVolumeReport } from "../../utils/volumeReport";
+import { reportDeductions } from "../../utils/surveyDeductions";
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -351,7 +352,7 @@ const VolumeReport = () => {
       secondaryEntryQuantity: secondaryEntry.quantity,
     };
 
-    return calculateVolumeReport(survey, initialEntry, secondaryEntry, state?.rows || []);
+    return calculateVolumeReport(survey, initialEntry, secondaryEntry, reportDeductions(survey, state?.deductionId));
   }, [survey, state]);
 
   const exportToExcel = async () => {

@@ -230,3 +230,7 @@ export const enterBranch = (surveyId, formData) => {
 export const createBreak = (id, formData) => {
   return axiosInstance.post(`surveys/${id}/rows/break`, formData);
 };
+
+export const getSurveyDeductions = (surveyId) => axiosInstance.get(`surveys/${surveyId}/deductions`);
+export const createSurveyDeduction = (surveyId, payload) => axiosInstance.post(`surveys/${surveyId}/deductions`, payload);
+export const deleteSurveyDeduction = (surveyId, deductionId) => axiosInstance.delete(`surveys/${surveyId}/deductions/${deductionId}`);

@@ -100,6 +100,11 @@ const Report = () => {
     fetchData();
   }, [id]);
 
+  useEffect(() => {
+    setSelectedPurposes([]);
+    setOpen(false);
+  }, [survey?._id]);
+
   const togglePurpose = (purpose) => {
     setSelectedPurposes((prev) =>
       prev.find((p) => p._id === purpose._id)
@@ -147,7 +152,7 @@ const Report = () => {
     return link;
   };
 
-  const generateReport = (rows) => {
+  const generateReport = (deductionId) => {
     try {
       if (
         (reportType === "area" || reportType === "volume") &&
@@ -164,7 +169,7 @@ const Report = () => {
       navigate(link, {
         state: {
           selectedPurposeIds: selectedIds,
-          rows: rows ? structuredClone(rows) : null,
+          deductionId: deductionId || null,
         },
       });
     } catch (error) {
@@ -172,8 +177,8 @@ const Report = () => {
     }
   };
 
-  const generateDeductionReport = (rows) => {
-    generateReport(rows);
+  const generateDeductionReport = (entry) => {
+    generateReport(String(entry._id));
   };
 
   const getFLBLink = (survey, type) => {
@@ -225,6 +230,9 @@ const Report = () => {
     description: "",
     content: (
       <DeductionContent
+        key={survey?._id || "no-survey"}
+        surveyId={survey?._id}
+        active={Boolean(open)}
         purpose={selectedPurposes[0]}
         onCancel={handleClose}
         onSubmit={generateDeductionReport}

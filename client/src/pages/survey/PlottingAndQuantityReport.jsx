@@ -1,4 +1,5 @@
 import { compareProfiles } from "../../utils/surveyGeometry.js";
+import { reportDeductions } from "../../utils/surveyDeductions";
 import { splitLongitudinalSections } from "../../utils/longitudinalPagination";
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -1190,7 +1191,7 @@ const PlottingAndQuantityReport = () => {
   const tableData = useMemo(() => {
     let initialEntry = null;
     let secondaryEntry = null;
-    const deductions = (state && state?.rows) || [];
+    const deductions = reportDeductions(survey, state?.deductionId);
     const isDeduction = deductions.length;
 
     if (state && state?.selectedPurposeIds?.length) {
