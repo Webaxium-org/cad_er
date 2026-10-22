@@ -1,5 +1,6 @@
 import createHttpError from "http-errors";
 import Subscription from "../models/subscription.js";
+import Survey from "../models/survey.js";
 import { ensureTrialSubscription, syncTrialProjectLimit } from "./trialSubscription.js";
 import { hasInitialAccess, initialAccessFilter } from "./initialSubscriptionPayment.js";
 
@@ -50,11 +51,27 @@ export const reserveProjectSlot = async (req, session) => {
   const eligibility = subscription.kind === "trial"
     ? { kind: "trial", status: "active" }
     : paidAccessFilter(now);
+  const projectType = req.body?.type || "Road Survey";
+  const isTrial = subscription.kind === "trial";
+  const trialMessage = "Your free trial includes only one Road Survey and one Water Way (two projects total). Upgrade to create more projects.";
+  if (isTrial) {
+    if (!["Road Survey", "Water Way"].includes(projectType)) throw createHttpError(400, "Choose Road Survey or Water Way for your trial project");
+    // Cover projects created before per-type usage was recorded. Deleted and
+    // completed projects still consume the allowance; branches are not projects.
+    const existing = await Survey.exists({
+      createdBy: req.user.userId, type: projectType,
+      "branchDetails.isBranch": { $ne: true },
+      createdAt: { $gte: subscription.periodStart, $lt: subscription.periodEnd },
+    }).session(session || null);
+    if (existing) throw createHttpError(402, trialMessage);
+  }
   const updated = await Subscription.findOneAndUpdate(
-    { _id: subscription._id, ...eligibility, periodStart: { $lte: now }, periodEnd: { $gt: now }, $expr: { $lt: ["$projectCount", "$projectLimit"] } },
-    { $inc: { projectCount: 1 } },
+    { _id: subscription._id, ...eligibility, periodStart: { $lte: now }, periodEnd: { $gt: now },
+      ...(isTrial ? { trialProjectTypes: { $ne: projectType } } : {}),
+      $expr: { $lt: ["$projectCount", isTrial ? { $min: ["$projectLimit", 2] } : "$projectLimit"] } },
+    { $inc: { projectCount: 1 }, ...(isTrial ? { $addToSet: { trialProjectTypes: projectType } } : {}) },
     { new: true, ...(session ? { session } : {}) },
   );
-  if (!updated) throw createHttpError(402, "Project limit reached for this subscription period");
+  if (!updated) throw createHttpError(402, isTrial ? trialMessage : "Project limit reached for this subscription period");
   return updated;
 };

@@ -1,4 +1,4 @@
-export const autoSplitLongitudinalRanges = (section, { plotWidth = 600, labelSpacing = 16, maxLabels = 35 } = {}) => {
+export const autoSplitLongitudinalRanges = (section, { plotWidth = 600, labelSpacing = 16, maxLabels = 18 } = {}) => {
   if (!(plotWidth > 0) || !(labelSpacing > 0) || !Number.isInteger(maxLabels) || maxLabels < 2) {
     throw new Error("Invalid longitudinal page dimensions.");
   }
@@ -7,23 +7,34 @@ export const autoSplitLongitudinalRanges = (section, { plotWidth = 600, labelSpa
     .map((point) => Number(point.x)).filter(Number.isFinite))].sort((a, b) => a - b);
   if (!chainages.length) return [];
   if (chainages.length === 1) return [{ start: chainages[0], end: chainages[0], range: [chainages[0], chainages[0] + 1] }];
-  const ranges = [];
-  let startIndex = 0;
-  while (startIndex < chainages.length - 1) {
-    let endIndex = startIndex + 1;
-    let closestGap = chainages[endIndex] - chainages[startIndex];
-    for (let index = endIndex + 1; index < chainages.length; index++) {
-      const gap = Math.min(closestGap, chainages[index] - chainages[index - 1]);
-      const span = chainages[index] - chainages[startIndex];
-      // Count alone misses clusters such as 260, 262, 273 on a long profile.
-      if (index - startIndex + 1 > maxLabels || gap / span * plotWidth < labelSpacing) break;
-      closestGap = gap;
-      endIndex = index;
+  // First minimize page count, then minimize squared interval counts. For a
+  // fixed total this balances pages, while still enforcing label clearance.
+  const count = chainages.length;
+  const pageCounts = Array(count).fill(Infinity);
+  const costs = Array(count).fill(Infinity);
+  const next = Array(count).fill(-1);
+  pageCounts[count - 1] = 0;
+  costs[count - 1] = 0;
+  for (let start = count - 2; start >= 0; start--) {
+    let closestGap = Infinity;
+    for (let end = start + 1; end < count && end - start + 1 <= maxLabels; end++) {
+      closestGap = Math.min(closestGap, chainages[end] - chainages[end - 1]);
+      const span = chainages[end] - chainages[start];
+      if (end > start + 1 && closestGap / span * plotWidth < labelSpacing) break;
+      const pages = 1 + pageCounts[end];
+      const cost = (end - start) ** 2 + costs[end];
+      if (pages < pageCounts[start] || (pages === pageCounts[start] && cost <= costs[start])) {
+        pageCounts[start] = pages;
+        costs[start] = cost;
+        next[start] = end;
+      }
     }
-    const start = chainages[startIndex];
-    const end = chainages[endIndex];
+  }
+  const ranges = [];
+  for (let index = 0; index < count - 1; index = next[index]) {
+    const start = chainages[index];
+    const end = chainages[next[index]];
     ranges.push({ start, end, range: [start, end] });
-    startIndex = endIndex;
   }
   return ranges;
 };
@@ -39,7 +50,7 @@ export const splitLongitudinalSections = (section, options) => autoSplitLongitud
   } };
 });
 
-export const splitLongitudinalRanges = (section, pageLength = "auto", maxLabels = 35) => {
+export const splitLongitudinalRanges = (section, pageLength = "auto", maxLabels = 18) => {
   if (pageLength === "auto") return autoSplitLongitudinalRanges(section, { maxLabels });
   const length = Number(pageLength);
   if (!Number.isFinite(length) || length <= 0) {

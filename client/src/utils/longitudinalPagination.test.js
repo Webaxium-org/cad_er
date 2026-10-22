@@ -26,9 +26,21 @@ test("short profiles remain on one page and long profiles retain every interval"
   assert.ok(pages.length > 1);
   assert.deepEqual([...new Set(pages.flatMap(page => page.section.chainages))], values);
   pages.forEach((page, index) => {
-    assert.ok(page.section.chainages.length <= 35);
+    assert.ok(page.section.chainages.length <= 18);
     if (index) assert.equal(page.start, pages[index - 1].end);
   });
+});
+
+test("both exports balance their pages with at most 18 chainages including shared boundaries", () => {
+  for (const [count, expected] of [[18, [18]], [19, [10, 10]], [36, [13, 13, 12]], [50, [18, 17, 17]]]) {
+    const input = section(Array.from({ length: count }, (_, index) => index * 20));
+    const standalone = splitLongitudinalRanges(input);
+    const combined = splitLongitudinalSections(input);
+    assert.deepEqual(standalone.map(page => input.chainages.filter(value => value >= page.start && value <= page.end).length), expected);
+    assert.deepEqual(combined.map(page => page.section.chainages.length), expected);
+    assert.deepEqual(standalone, combined.map(({ start, end, range }) => ({ start, end, range })));
+    assert.deepEqual([...new Set(combined.flatMap(page => page.section.chainages))], input.chainages);
+  }
 });
 
 test("page sections retain null break markers and include offsets from every level", () => {

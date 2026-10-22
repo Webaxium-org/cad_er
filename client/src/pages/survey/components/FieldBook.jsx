@@ -124,8 +124,8 @@ const exportFieldBookPdf = ({ head, tableData, survey, purpose }) => {
     theme: "grid",
     head: [head],
     body: tableData.map((row) => {
-      // If it is Instrument Setup, show the checkbox symbol ▣ in Offset
-      const offsetVal = row.rowType === "Instrument setup" ? "▣" : (row.Offset || "");
+      // Draw the setup marker as PDF geometry below: Helvetica cannot encode ▣.
+      const offsetVal = row.rowType === "Instrument setup" ? "" : (row.Offset || "");
       return [
         row.CH || "",
         row.BS || "",
@@ -172,6 +172,19 @@ const exportFieldBookPdf = ({ head, tableData, survey, purpose }) => {
           data.cell.styles.textColor = rowData.diff === 0 ? [16, 185, 129] : [239, 68, 68];
         }
       }
+    },
+    didDrawCell: (data) => {
+      if (data.section !== "body" || data.column.index !== 6 || tableData[data.row.index]?.rowType !== "Instrument setup") return;
+      const size = Math.min(2, data.cell.width - 1, data.cell.height - 1);
+      const x = data.cell.x + (data.cell.width - size) / 2;
+      const y = data.cell.y + (data.cell.height - size) / 2;
+      doc.saveGraphicsState();
+      doc.setDrawColor(0, 0, 0);
+      doc.setFillColor(0, 0, 0);
+      doc.setLineWidth(0.15);
+      doc.rect(x, y, size, size, "S");
+      doc.rect(x + size * 0.25, y + size * 0.25, size * 0.5, size * 0.5, "F");
+      doc.restoreGraphicsState();
     },
   });
 

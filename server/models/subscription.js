@@ -22,6 +22,7 @@ const SubscriptionSchema = new Schema(
     periodEnd: { type: Date, required: true },
     projectLimit: { type: Number, required: true, min: 0 },
     projectCount: { type: Number, default: 0, min: 0 },
+    trialProjectTypes: { type: [String], enum: ["Road Survey", "Water Way"], default: [] },
     projectAddOnOrders: { type: [String], default: [] },
     amountPaise: Number,
     billingInterval: { type: String, enum: ["trial", "monthly", "yearly"] },

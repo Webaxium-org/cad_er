@@ -209,6 +209,7 @@ export default function SubscriptionPage() {
           <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={3}>
             <Box sx={{ flex: 1 }}>
               <Typography variant="h5" sx={{ fontWeight: 850, mt: .5 }}>{subscription?.kind === "trial" ? "30-day free trial" : subscription?.planName || selectedPlan?.name || (subscription?.planCode ? subscription.planCode.replaceAll("_", " ") : "Loading your plan")}</Typography>
+              {subscription?.kind === "trial" && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Your trial includes one Road Survey and one Water Way project.</Typography>}
               <Typography color="text.secondary" sx={{ mt: .5 }}>{account?.hasAccess ? `Access through ${date(subscription.periodEnd)}` : "Choose a plan to continue using CADer."}{subscription?.cancelAtPeriodEnd && " Renewal is cancelled."}</Typography>
               {activePaid && <Typography sx={{ mt: 1 }}>
                 {subscription.cancelAtPeriodEnd ? "Renewal cancelled" : `${subscription.autopaySetupRequired ? "Next period (auto pay setup required)" : "Next renewal"}: ₹${(subscription.nextAmountPaise / 100).toLocaleString("en-IN")} on ${date(subscription.periodEnd)}`}

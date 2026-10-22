@@ -2,8 +2,7 @@ import Subscription from "../models/subscription.js";
 import User from "../models/user.js";
 
 const TRIAL_DAYS = 30;
-const configuredLimit = Number(process.env.TRIAL_PROJECT_LIMIT);
-const TRIAL_PROJECT_LIMIT = Number.isInteger(configuredLimit) && configuredLimit > 0 ? configuredLimit : 5;
+const TRIAL_PROJECT_LIMIT = 2;
 
 export const syncTrialProjectLimit = async (subscription, { session } = {}) => {
   if (!subscription || subscription.kind !== "trial" || subscription.projectLimit === TRIAL_PROJECT_LIMIT) return subscription;
