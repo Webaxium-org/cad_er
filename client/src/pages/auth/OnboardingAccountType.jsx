@@ -21,11 +21,40 @@ import { handleFormError } from "../../utils/handleFormError";
 import { registerAccountType, sendOnboardingCode, verifyOnboardingCode } from "../../services/indexServices";
 import { setUser } from "../../redux/userSlice";
 
+const PHONE_COUNTRIES = [
+  { name: "India", code: "+91" },
+  { name: "United Arab Emirates", code: "+971" },
+  { name: "Saudi Arabia", code: "+966" },
+  { name: "Qatar", code: "+974" },
+  { name: "Oman", code: "+968" },
+  { name: "Kuwait", code: "+965" },
+  { name: "Bahrain", code: "+973" },
+  { name: "United States / Canada", code: "+1" },
+  { name: "United Kingdom", code: "+44" },
+  { name: "Australia", code: "+61" },
+  { name: "New Zealand", code: "+64" },
+  { name: "Singapore", code: "+65" },
+  { name: "Malaysia", code: "+60" },
+  { name: "Sri Lanka", code: "+94" },
+  { name: "Nepal", code: "+977" },
+  { name: "Bangladesh", code: "+880" },
+  { name: "Pakistan", code: "+92" },
+  { name: "Germany", code: "+49" },
+  { name: "France", code: "+33" },
+  { name: "Italy", code: "+39" },
+  { name: "Spain", code: "+34" },
+  { name: "South Africa", code: "+27" },
+];
+
 const OnboardingAccountType = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.user);
-  const [phone, setPhone] = useState(user?.phone || "");
+  const savedPhone = (user?.phone || "").replace(/[\s()-]/g, "");
+  const savedCountry = [...PHONE_COUNTRIES].sort((a, b) => b.code.length - a.code.length)
+    .find((country) => savedPhone.startsWith(country.code));
+  const [phoneCode, setPhoneCode] = useState(savedCountry?.code || "+91");
+  const [phone, setPhone] = useState(savedCountry ? savedPhone.slice(savedCountry.code.length) : savedPhone);
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -33,8 +62,10 @@ const OnboardingAccountType = () => {
   const [busy, setBusy] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [verificationError, setVerificationError] = useState("");
-  const normalizedPhone = phone.trim().replace(/[\s()-]/g, "");
-  const validPhone = /^\+[1-9]\d{7,14}$/.test(normalizedPhone);
+  const localPhone = phone.trim().replace(/[\s()-]/g, "");
+  const normalizedPhone = `${phoneCode}${localPhone}`;
+  const validPhone = /^\d+$/.test(localPhone) && /^\+[1-9]\d{7,14}$/.test(normalizedPhone)
+    && (phoneCode === "+91" ? /^[6-9]\d{9}$/.test(localPhone) : localPhone.length >= 7);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -549,11 +580,22 @@ const OnboardingAccountType = () => {
                 <Stack spacing={2}>
                   <Typography variant="h6" sx={{ color: "#4f46e5", fontWeight: 800 }}>Contact and verification</Typography>
                   <TextField
-                    required fullWidth label="Phone number" type="tel" autoComplete="tel"
-                    placeholder="+91 98765 43210" value={phone} disabled={busy === "submit"}
+                    select required fullWidth label="Country code" value={phoneCode}
+                    onChange={(event) => setPhoneCode(event.target.value)} disabled={busy === "submit"}
+                    autoComplete="tel-country-code" sx={{ bgcolor: "white", borderRadius: 1 }}
+                  >
+                    {PHONE_COUNTRIES.map((country) => (
+                      <MenuItem key={country.code} value={country.code}>{country.name} ({country.code})</MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    required fullWidth label="Phone number" type="tel" autoComplete="tel-national"
+                    placeholder={phoneCode === "+91" ? "98765 43210" : "Phone number"} value={phone} disabled={busy === "submit"}
                     onChange={(event) => setPhone(event.target.value)}
                     error={phone.length > 0 && !validPhone}
-                    helperText={phone.length > 0 && !validPhone ? "Enter a valid number including country code." : "Include your country code. This number is required."}
+                    helperText={phone.length > 0 && !validPhone
+                      ? phoneCode === "+91" ? "Enter a valid 10-digit Indian mobile number." : "Enter a valid phone number without the country code."
+                      : "Enter your number without the country code."}
                     sx={{ bgcolor: "white", borderRadius: 1 }}
                   />
                   <Typography variant="body2" sx={{ color: "#475569", overflowWrap: "anywhere" }}>
