@@ -41,6 +41,7 @@ const UserSchema = new Schema(
       type: String,
       trim: true,
     },
+    emailVerifiedAt: Date,
     email: {
       type: String,
       required: true,

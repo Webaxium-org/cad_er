@@ -1,4 +1,14 @@
 export const EMAIL_TEMPLATES = {
+  ONBOARDING_CODE: (code) => `
+<div style="font-family:Arial,sans-serif;background:#f8fafc;padding:32px;color:#1e293b;">
+  <div style="max-width:480px;margin:auto;background:white;border-radius:20px;padding:32px;border-top:5px solid #4f46e5;">
+    <h2 style="color:#4f46e5;">Verify your CADer email</h2>
+    <p>Enter this code to complete your account setup:</p>
+    <div style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#4f46e5;background:#eef2ff;padding:20px;text-align:center;border-radius:12px;">${code}</div>
+    <p>This code expires in 10 minutes. Do not share it with anyone.</p>
+    <p>If you did not request this code, you can ignore this email.</p>
+  </div>
+</div>`,
   TICKET_CREATED_ADMIN: (ticket, user) => `
 <div style="font-family: Arial, sans-serif; color: #333;">
   <h2 style="color: #007BFF;">CADer Support Ticket</h2>

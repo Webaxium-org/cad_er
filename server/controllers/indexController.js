@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import User from "../models/user.js";
+import OnboardingVerification from "../models/onboardingVerification.js";
+import { normalizePhone } from "../utils/onboardingVerification.js";
 import Company from "../models/company.js";
 import Opening from "../models/opening.js";
 import jwt from "../utils/jwt.js";
@@ -207,7 +209,7 @@ export const registerUser = async (req, res, next) => {
 export const registerAccountType = async (req, res, next) => {
   try {
     const {
-      body: { type, details },
+      body: { type, details, phone },
       user: { userId, isAuthenticated, type: userType },
     } = req;
 
@@ -224,6 +226,23 @@ export const registerAccountType = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
+
+    if (!user) throw Object.assign(new Error("User not found"), { statusCode: 404 });
+    if (!["Student", "Professional", "Company"].includes(type)) {
+      throw Object.assign(new Error("Select a valid account type"), { statusCode: 400 });
+    }
+    const normalizedPhone = normalizePhone(phone);
+    if (!normalizedPhone) {
+      throw Object.assign(new Error("Enter a valid phone number including country code"), { statusCode: 400 });
+    }
+    const verification = await OnboardingVerification.findOne({
+      user: userId, email: user.email, verifiedAt: { $ne: null }, expiresAt: { $gt: new Date() },
+    });
+    if (!verification) {
+      throw Object.assign(new Error("Verify your email before completing setup"), { statusCode: 400 });
+    }
+    user.phone = normalizedPhone;
+    user.emailVerifiedAt = verification.verifiedAt;
 
     const isFilled = (val) => typeof val === "string" && val.trim().length > 0;
 

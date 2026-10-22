@@ -17,6 +17,8 @@ import {
   scheduleDemoForm,
 } from "../controllers/indexController.js";
 import { careerApplication } from "../controllers/careerController.js";
+import { sendOnboardingCode, verifyOnboardingCode } from "../controllers/onboardingVerificationController.js";
+import { onboardingSendLimiter, onboardingVerifyLimiter } from "../middleware/rateLimiter.js";
 
 const resumeUpload = multer({
   storage: multer.memoryStorage(),
@@ -41,6 +43,8 @@ router.post("/google", loginLimiter, googleLogin);
 router.post("/register", loginLimiter, registerUser);
 
 router.post("/register-account-type", requireAuth, registerAccountType);
+router.post("/onboarding/email/send-code", requireAuth, onboardingSendLimiter, sendOnboardingCode);
+router.post("/onboarding/email/verify-code", requireAuth, onboardingVerifyLimiter, verifyOnboardingCode);
 
 router.get("/logout", logoutUser);
 

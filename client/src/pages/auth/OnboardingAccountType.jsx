@@ -10,19 +10,66 @@ import {
   Container,
   Paper,
   GlobalStyles,
+  Alert,
 } from "@mui/material";
 import { stopLoading } from "../../redux/loadingSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { qualificationOptions } from "../../constants";
 import { handleFormError } from "../../utils/handleFormError";
-import { registerAccountType } from "../../services/indexServices";
+import { registerAccountType, sendOnboardingCode, verifyOnboardingCode } from "../../services/indexServices";
 import { setUser } from "../../redux/userSlice";
 
 const OnboardingAccountType = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.user);
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [code, setCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState(user?.email || "");
+  const [busy, setBusy] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const [verificationError, setVerificationError] = useState("");
+  const normalizedPhone = phone.trim().replace(/[\s()-]/g, "");
+  const validPhone = /^\+[1-9]\d{7,14}$/.test(normalizedPhone);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  const handleSendCode = async () => {
+    if (busy || cooldown > 0 || verified) return;
+    setBusy("send");
+    setVerificationError("");
+    try {
+      const { data } = await sendOnboardingCode();
+      if (!data.success) throw new Error("Could not send verification code");
+      setVerificationEmail(data.email);
+      setCodeSent(true);
+      setCode("");
+      setCooldown(data.retryAfter || 60);
+    } catch (error) {
+      setVerificationError(error.response?.data?.message || error.message);
+    } finally { setBusy(""); }
+  };
+
+  const handleVerifyCode = async () => {
+    if (busy || !/^\d{6}$/.test(code)) return;
+    setBusy("verify");
+    setVerificationError("");
+    try {
+      const { data } = await verifyOnboardingCode(code);
+      if (!data.success) throw new Error("Could not verify code");
+      setVerified(true);
+    } catch (error) {
+      setVerificationError(error.response?.data?.message || error.message);
+    } finally { setBusy(""); }
+  };
 
   const [step, setStep] = useState(1);
   const [formValues, setFormValues] = useState({
@@ -152,13 +199,15 @@ const OnboardingAccountType = () => {
   };
 
   const handleSubmit = async () => {
+    if (busy) return;
     try {
       const { type, details } = formValues;
-      if (!type || !isStep2Valid()) {
+      if (!type || !isStep2Valid() || !validPhone || !verified) {
         throw new Error("Please fill all the required fields");
       }
 
-      const { data } = await registerAccountType({ type, details });
+      setBusy("submit");
+      const { data } = await registerAccountType({ type, details, phone: normalizedPhone });
 
       if (data?.success) {
         dispatch(setUser(data?.user));
@@ -166,8 +215,13 @@ const OnboardingAccountType = () => {
         navigate("/");
       }
     } catch (error) {
+      if (error.response?.data?.message === "Verify your email before completing setup") {
+        setVerified(false);
+        setCodeSent(false);
+        setVerificationError("Your verification expired. Request a new code to continue.");
+      }
       handleFormError(error, null, dispatch, navigate);
-    }
+    } finally { setBusy(""); }
   };
 
   const isStep2Valid = () => {
@@ -454,10 +508,10 @@ const OnboardingAccountType = () => {
                     textTransform: "none",
                     fontSize: "1.1rem",
                     fontWeight: 600,
-                    backgroundColor: "#111827",
+                    backgroundColor: "#4f46e5",
                     boxShadow: "none",
                     "&:hover": {
-                      backgroundColor: "#374151",
+                      backgroundColor: "#4338ca",
                       boxShadow: "none",
                     },
                     "&.Mui-disabled": { backgroundColor: "#e5e7eb" },
@@ -491,6 +545,41 @@ const OnboardingAccountType = () => {
 
               {renderStep2Fields()}
 
+              <Paper elevation={0} sx={{ width: "100%", maxWidth: 400, mx: "auto", mt: 3, p: { xs: 2, sm: 3 }, boxSizing: "border-box", borderRadius: 4, border: "1px solid #c7d2fe", bgcolor: "#eef2ff", "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#4f46e5" }, "& .MuiInputLabel-root.Mui-focused": { color: "#4f46e5" } }}>
+                <Stack spacing={2}>
+                  <Typography variant="h6" sx={{ color: "#4f46e5", fontWeight: 800 }}>Contact and verification</Typography>
+                  <TextField
+                    required fullWidth label="Phone number" type="tel" autoComplete="tel"
+                    placeholder="+91 98765 43210" value={phone} disabled={busy === "submit"}
+                    onChange={(event) => setPhone(event.target.value)}
+                    error={phone.length > 0 && !validPhone}
+                    helperText={phone.length > 0 && !validPhone ? "Enter a valid number including country code." : "Include your country code. This number is required."}
+                    sx={{ bgcolor: "white", borderRadius: 1 }}
+                  />
+                  <Typography variant="body2" sx={{ color: "#475569", overflowWrap: "anywhere" }}>
+                    Verify your email{verificationEmail ? `: ${verificationEmail}` : " address"}. Your verification code will be sent by email.
+                  </Typography>
+                  {verificationError && <Alert severity="error" role="alert">{verificationError}</Alert>}
+                  {verified ? <Alert severity="success">Email verified. You can complete setup.</Alert> : <>
+                    <Button variant="outlined" onClick={handleSendCode} disabled={Boolean(busy) || cooldown > 0}
+                      sx={{ color: "#4f46e5", borderColor: "#a5b4fc", borderRadius: 2, textTransform: "none" }}>
+                      {busy === "send" ? "Sending..." : cooldown > 0 ? `Resend in ${cooldown}s` : codeSent ? "Resend code" : "Send verification code"}
+                    </Button>
+                    {codeSent && <>
+                      <Typography variant="caption" color="text.secondary" role="status">Code sent. Check your inbox and spam folder. It expires in 10 minutes.</Typography>
+                      <TextField required fullWidth label="Email verification code" value={code}
+                        onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                        disabled={Boolean(busy)} autoComplete="one-time-code"
+                        inputProps={{ inputMode: "numeric", maxLength: 6 }} sx={{ bgcolor: "white", borderRadius: 1 }} />
+                      <Button variant="contained" onClick={handleVerifyCode} disabled={Boolean(busy) || !/^\d{6}$/.test(code)}
+                        sx={{ bgcolor: "#4f46e5", "&:hover": { bgcolor: "#4338ca" }, borderRadius: 2, textTransform: "none" }}>
+                        {busy === "verify" ? "Verifying..." : "Verify email"}
+                      </Button>
+                    </>}
+                  </>}
+                </Stack>
+              </Paper>
+
               <Stack
                 direction="row"
                 spacing={2}
@@ -512,7 +601,7 @@ const OnboardingAccountType = () => {
                 </Button>
                 <Button
                   variant="contained"
-                  disabled={!isStep2Valid()}
+                  disabled={!isStep2Valid() || !validPhone || !verified || Boolean(busy)}
                   onClick={handleSubmit}
                   endIcon={<Icons.Arrow />}
                   sx={{
@@ -522,16 +611,16 @@ const OnboardingAccountType = () => {
                     textTransform: "none",
                     fontSize: "1.1rem",
                     fontWeight: 600,
-                    backgroundColor: "#111827",
+                    backgroundColor: "#4f46e5",
                     boxShadow: "none",
                     "&:hover": {
-                      backgroundColor: "#374151",
+                      backgroundColor: "#4338ca",
                       boxShadow: "none",
                     },
                     "&.Mui-disabled": { backgroundColor: "#e5e7eb" },
                   }}
                 >
-                  Complete Setup
+                  {busy === "submit" ? "Completing setup..." : "Complete Setup"}
                 </Button>
               </Stack>
             </Box>
