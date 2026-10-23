@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import User from "../models/user.js";
-// import OnboardingVerification from "../models/onboardingVerification.js";
+import OnboardingVerification from "../models/onboardingVerification.js";
 import { normalizePhone } from "../utils/onboardingVerification.js";
 import Company from "../models/company.js";
 import Opening from "../models/opening.js";
@@ -235,15 +235,16 @@ export const registerAccountType = async (req, res, next) => {
     if (!normalizedPhone) {
       throw Object.assign(new Error("Enter a valid phone number including country code"), { statusCode: 400 });
     }
-    // Email verification is temporarily disabled. Phone remains required above.
-    /* const verification = await OnboardingVerification.findOne({
-      user: userId, email: user.email, verifiedAt: { $ne: null }, expiresAt: { $gt: new Date() },
+    if (await User.exists({ phone: normalizedPhone, _id: { $ne: userId } })) {
+      throw Object.assign(new Error("Phone number already registered. Please use another number."), { statusCode: 409 });
+    }
+    const verification = await OnboardingVerification.findOne({
+      user: userId, phone: normalizedPhone, providerRequestId: { $type: "string" }, verifiedAt: { $ne: null }, expiresAt: { $gt: new Date() },
     });
     if (!verification) {
-      throw Object.assign(new Error("Verify your email before completing setup"), { statusCode: 400 });
+      throw Object.assign(new Error("Verify your phone number before completing setup"), { statusCode: 400 });
     }
-    user.emailVerifiedAt = verification.verifiedAt;
-    */
+    user.phoneVerifiedAt = verification.verifiedAt;
     user.phone = normalizedPhone;
 
     const isFilled = (val) => typeof val === "string" && val.trim().length > 0;
@@ -337,6 +338,9 @@ export const registerAccountType = async (req, res, next) => {
       user: userWithoutPassword,
     });
   } catch (err) {
+    if (err.code === 11000 && (err.keyPattern?.phone || err.keyValue?.phone)) {
+      return next(Object.assign(new Error("Phone number already registered. Please use another number."), { statusCode: 409 }));
+    }
     next(err);
   }
 };

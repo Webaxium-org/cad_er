@@ -41,7 +41,7 @@ const UserSchema = new Schema(
       type: String,
       trim: true,
     },
-    emailVerifiedAt: Date,
+    phoneVerifiedAt: Date,
     email: {
       type: String,
       required: true,
@@ -113,6 +113,9 @@ const UserSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// Empty and missing phone numbers do not reserve a number.
+UserSchema.index({ phone: 1 }, { unique: true, partialFilterExpression: { phone: { $type: "string", $gt: "" } } });
 
 UserSchema.virtual("activityHistory", {
   ref: "History",

@@ -43,8 +43,8 @@ router.post("/google", loginLimiter, googleLogin);
 router.post("/register", loginLimiter, registerUser);
 
 router.post("/register-account-type", requireAuth, registerAccountType);
-router.post("/onboarding/email/send-code", requireAuth, onboardingSendLimiter, sendOnboardingCode);
-router.post("/onboarding/email/verify-code", requireAuth, onboardingVerifyLimiter, verifyOnboardingCode);
+router.post("/onboarding/sms/send-code", requireAuth, onboardingSendLimiter, sendOnboardingCode);
+router.post("/onboarding/sms/verify-code", requireAuth, onboardingVerifyLimiter, verifyOnboardingCode);
 
 router.get("/logout", logoutUser);
 

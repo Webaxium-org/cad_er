@@ -34,7 +34,7 @@ export const loginLimiter = createLimiter(
 
 /* API limiter: 60 requests per minute */
 export const apiLimiter = createLimiter(60 * 1000, 60);
-export const onboardingSendLimiter = createLimiter(15 * 60 * 1000, 5, "Too many verification emails requested. Try again in 15 minutes.");
+export const onboardingSendLimiter = createLimiter(15 * 60 * 1000, 5, "Too many verification SMS messages requested. Try again in 15 minutes.");
 export const onboardingVerifyLimiter = createLimiter(15 * 60 * 1000, 20, "Too many verification attempts. Try again in 15 minutes.");
 
 /* Heavy endpoints: 10 requests per minute */

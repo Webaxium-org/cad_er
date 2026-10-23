@@ -21,9 +21,6 @@ import { handleFormError } from "../../utils/handleFormError";
 import { registerAccountType, sendOnboardingCode, verifyOnboardingCode } from "../../services/indexServices";
 import { setUser } from "../../redux/userSlice";
 
-// Temporarily disabled; keep the verification flow available for re-enabling.
-const EMAIL_VERIFICATION_ENABLED = false;
-
 const PHONE_COUNTRIES = [
   { name: "India", code: "+91" },
   { name: "United Arab Emirates", code: "+971" },
@@ -61,7 +58,6 @@ const OnboardingAccountType = () => {
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
   const [verified, setVerified] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState(user?.email || "");
   const [busy, setBusy] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [verificationError, setVerificationError] = useState("");
@@ -76,14 +72,20 @@ const OnboardingAccountType = () => {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
+  useEffect(() => {
+    setVerified(false);
+    setCodeSent(false);
+    setCode("");
+    setVerificationError("");
+  }, [normalizedPhone]);
+
   const handleSendCode = async () => {
-    if (busy || cooldown > 0 || verified) return;
+    if (busy || cooldown > 0 || verified || !validPhone) return;
     setBusy("send");
     setVerificationError("");
     try {
-      const { data } = await sendOnboardingCode();
+      const { data } = await sendOnboardingCode(normalizedPhone);
       if (!data.success) throw new Error("Could not send verification code");
-      setVerificationEmail(data.email);
       setCodeSent(true);
       setCode("");
       setCooldown(data.retryAfter || 60);
@@ -97,7 +99,7 @@ const OnboardingAccountType = () => {
     setBusy("verify");
     setVerificationError("");
     try {
-      const { data } = await verifyOnboardingCode(code);
+      const { data } = await verifyOnboardingCode(normalizedPhone, code);
       if (!data.success) throw new Error("Could not verify code");
       setVerified(true);
     } catch (error) {
@@ -236,7 +238,7 @@ const OnboardingAccountType = () => {
     if (busy) return;
     try {
       const { type, details } = formValues;
-      if (!type || !isStep2Valid() || !validPhone || (EMAIL_VERIFICATION_ENABLED && !verified)) {
+      if (!type || !isStep2Valid() || !validPhone || !verified) {
         throw new Error("Please fill all the required fields");
       }
 
@@ -249,7 +251,7 @@ const OnboardingAccountType = () => {
         navigate("/");
       }
     } catch (error) {
-      if (error.response?.data?.message === "Verify your email before completing setup") {
+      if (error.response?.data?.message === "Verify your phone number before completing setup") {
         setVerified(false);
         setCodeSent(false);
         setVerificationError("Your verification expired. Request a new code to continue.");
@@ -584,7 +586,7 @@ const OnboardingAccountType = () => {
                   <Typography variant="h6" sx={{ color: "#4f46e5", fontWeight: 800 }}>Contact details</Typography>
                   <TextField
                     select required fullWidth label="Country code" value={phoneCode}
-                    onChange={(event) => setPhoneCode(event.target.value)} disabled={busy === "submit"}
+                    onChange={(event) => setPhoneCode(event.target.value)} disabled={Boolean(busy)}
                     autoComplete="tel-country-code" sx={{ bgcolor: "white", borderRadius: 1 }}
                   >
                     {PHONE_COUNTRIES.map((country) => (
@@ -593,7 +595,7 @@ const OnboardingAccountType = () => {
                   </TextField>
                   <TextField
                     required fullWidth label="Phone number" type="tel" autoComplete="tel-national"
-                    placeholder={phoneCode === "+91" ? "98765 43210" : "Phone number"} value={phone} disabled={busy === "submit"}
+                    placeholder={phoneCode === "+91" ? "98765 43210" : "Phone number"} value={phone} disabled={Boolean(busy)}
                     onChange={(event) => setPhone(event.target.value)}
                     error={phone.length > 0 && !validPhone}
                     helperText={phone.length > 0 && !validPhone
@@ -601,29 +603,29 @@ const OnboardingAccountType = () => {
                       : "Enter your number without the country code."}
                     sx={{ bgcolor: "white", borderRadius: 1 }}
                   />
-                  {EMAIL_VERIFICATION_ENABLED && <>
+                  <>
                   <Typography variant="body2" sx={{ color: "#475569", overflowWrap: "anywhere" }}>
-                    Verify your email{verificationEmail ? `: ${verificationEmail}` : " address"}. Your verification code will be sent by email.
+                    Verify your phone number: {normalizedPhone}. Your verification code will be sent by SMS.
                   </Typography>
                   {verificationError && <Alert severity="error" role="alert">{verificationError}</Alert>}
-                  {verified ? <Alert severity="success">Email verified. You can complete setup.</Alert> : <>
-                    <Button variant="outlined" onClick={handleSendCode} disabled={Boolean(busy) || cooldown > 0}
+                  {verified ? <Alert severity="success">Phone number verified. You can complete setup.</Alert> : <>
+                    <Button variant="outlined" onClick={handleSendCode} disabled={Boolean(busy) || cooldown > 0 || !validPhone}
                       sx={{ color: "#4f46e5", borderColor: "#a5b4fc", borderRadius: 2, textTransform: "none" }}>
                       {busy === "send" ? "Sending..." : cooldown > 0 ? `Resend in ${cooldown}s` : codeSent ? "Resend code" : "Send verification code"}
                     </Button>
                     {codeSent && <>
-                      <Typography variant="caption" color="text.secondary" role="status">Code sent. Check your inbox and spam folder. It expires in 10 minutes.</Typography>
-                      <TextField required fullWidth label="Email verification code" value={code}
+                      <Typography variant="caption" color="text.secondary" role="status">Code sent by SMS. Enter it within 10 minutes.</Typography>
+                      <TextField required fullWidth label="SMS verification code" value={code}
                         onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
                         disabled={Boolean(busy)} autoComplete="one-time-code"
                         inputProps={{ inputMode: "numeric", maxLength: 6 }} sx={{ bgcolor: "white", borderRadius: 1 }} />
                       <Button variant="contained" onClick={handleVerifyCode} disabled={Boolean(busy) || !/^\d{6}$/.test(code)}
                         sx={{ bgcolor: "#4f46e5", "&:hover": { bgcolor: "#4338ca" }, borderRadius: 2, textTransform: "none" }}>
-                        {busy === "verify" ? "Verifying..." : "Verify email"}
+                        {busy === "verify" ? "Verifying..." : "Verify phone number"}
                       </Button>
                     </>}
                   </>}
-                  </>}
+                  </>
                 </Stack>
               </Paper>
 
@@ -648,7 +650,7 @@ const OnboardingAccountType = () => {
                 </Button>
                 <Button
                   variant="contained"
-                  disabled={!isStep2Valid() || !validPhone || (EMAIL_VERIFICATION_ENABLED && !verified) || Boolean(busy)}
+                  disabled={!isStep2Valid() || !validPhone || !verified || Boolean(busy)}
                   onClick={handleSubmit}
                   endIcon={<Icons.Arrow />}
                   sx={{
