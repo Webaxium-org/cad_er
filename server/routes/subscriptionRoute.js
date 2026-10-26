@@ -4,6 +4,8 @@ import { adminPlans, planHistory, publishPlan } from "../controllers/planControl
 import { adminSubscriptionPayments } from "../controllers/adminPaymentController.js";
 import { listPlans, getSubscription, getPaymentHistory, createCheckout, verifyCheckout, cancelSubscription, razorpayWebhook, setupAutopay, createProjectAddOnCheckout, verifyProjectAddOnCheckout } from "../controllers/subscriptionController.js";
 
+import { getMyInvoice } from "../controllers/profileGstController.js";
+
 const router = express.Router();
 
 router.post("/webhook", razorpayWebhook);
@@ -15,6 +17,7 @@ router.get("/admin/plans/:code/history", isAuthorized({ roles: ["Super Admin"] }
 router.post("/admin/plans/:code/versions", isAuthorized({ roles: ["Super Admin"] }), publishPlan);
 router.get("/me", getSubscription);
 router.get("/me/payments", getPaymentHistory);
+router.get("/me/invoices/:id", getMyInvoice);
 router.post("/checkout", createCheckout);
 router.post("/verify", verifyCheckout);
 router.post("/autopay", setupAutopay);

@@ -16,6 +16,8 @@ const schema = new mongoose.Schema({
   name: { type: String, required: true },
   amountPaise: { type: Number, required: true },
   firstPaymentAmountPaise: { type: Number, default: null },
+  ongoingAmountPaise: { type: Number, default: null },
+  ongoingOfferAppliesToFirstPeriod: { type: Boolean, default: false },
   interval: { type: String, enum: ["monthly", "yearly"], required: true },
   projectLimit: { type: Number, required: true },
   features: [String],

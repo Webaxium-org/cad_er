@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import User from "../models/user.js";
+import { invoiceRecipient } from "./gstIdentity.js";
 import Payment from "../models/payments.js";
 import InvoiceCounter from "../models/invoiceCounter.js";
 
@@ -16,6 +18,9 @@ export const ensurePaymentInvoice = async filter => {
       { _id: "payments" }, { $inc: { value: 1 } }, { new: true, session },
     );
     if (!counter) throw new Error("Invoice counter is not initialized");
+    const user = await User.findById(payment.userId).select("name email gstin gstBusinessName gstBusinessAddress gstMobile").session(session).lean();
+    if (!user) throw new Error("Invoice recipient account not found");
+    payment.invoiceRecipient = invoiceRecipient(user);
     payment.invoiceNumber = formatInvoiceNumber(counter.value);
     await payment.save({ session });
     return payment.invoiceNumber;

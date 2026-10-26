@@ -47,7 +47,8 @@ export const recordInitialPayment = async (record, payment) => {
   await Payment.updateOne({ razorpayPaymentId: payment.id }, { $setOnInsert: {
     userId: record.userId, subscriptionId: record._id, planVersionId: record.planVersionId,
     razorpayOrderId: record.razorpayOrderId, razorpayPaymentId: payment.id,
-    billingPhase: "initial", amount: payment.amount, currency: payment.currency, purpose: "SUBSCRIPTION", status: "SUCCESS",
+    billingPhase: "initial", amount: payment.amount, checkoutBreakdown: record.pricingSnapshot?.checkout,
+    currency: payment.currency, purpose: "SUBSCRIPTION", status: "SUCCESS",
   } }, { upsert: true });
   await ensurePaymentInvoice({ razorpayPaymentId: payment.id });
   await Subscription.updateOne({ userId: record.userId, kind: "trial", periodEnd: { $gt: start } },

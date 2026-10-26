@@ -9,6 +9,7 @@ import jwt from "../utils/jwt.js";
 import { send_mail } from "../utils/mailer.js";
 import { EMAIL_TEMPLATES } from "../utils/emails/templates.js";
 import { ensureTrialSubscription } from "../services/trialSubscription.js";
+import { getTotalSubscriptionSavings } from "../services/subscriptionSavings.js";
 import {
   getCurrentSubscription,
   hasSubscriptionAccess,
@@ -402,7 +403,10 @@ export const getDashboard = async (req, res, next) => {
 
     if (type === "Professional" && role !== "Super Admin") {
       // Backfill one trial for Professionals who onboarded before subscriptions existed.
-      const subscription = await getCurrentSubscription(userId);
+      const [subscription, totalSavingsPaise] = await Promise.all([
+        getCurrentSubscription(userId), getTotalSubscriptionSavings(userId),
+      ]);
+      stats.totalSavingsPaise = totalSavingsPaise;
       stats.subscription = {
         kind: subscription.kind,
         planCode: subscription.planCode,

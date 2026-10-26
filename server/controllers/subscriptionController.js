@@ -1,9 +1,11 @@
 import createHttpError from "http-errors";
 import crypto from "node:crypto";
 import Subscription from "../models/subscription.js";
+import Survey from "../models/survey.js";
 import RazorpayEvent from "../models/razorpayEvent.js";
 import Payment from "../models/payments.js";
 import { ensurePaymentInvoice } from "../services/paymentInvoice.js";
+import { invoicePricing } from "../services/invoicePricing.js";
 import CheckoutLock from "../models/checkoutLock.js";
 import { publicPlans, activeOffer, quotePlanForUser, renewalAmount } from "../services/subscriptionPlans.js";
 import PlanVersion from "../models/planVersion.js";
@@ -68,6 +70,12 @@ export const getSubscription = async (req, res, next) => {
     const subscription = await getCurrentSubscription(req.user.userId);
     if (subscription.kind === "paid" && hasSubscriptionAccess(subscription)) await reconcileProjectAddOns(subscription);
     const current = await Subscription.findById(subscription._id);
+    const trialProjectTypes = subscription.kind === "trial" ? [...new Set([
+      ...(current.trialProjectTypes || []),
+      ...await Survey.distinct("type", { createdBy: req.user.userId,
+        "branchDetails.isBranch": { $ne: true },
+        createdAt: { $gte: subscription.periodStart, $lt: subscription.periodEnd } }),
+    ])] : [];
     res.json({
       subscription: {
         id: subscription._id,
@@ -83,6 +91,7 @@ export const getSubscription = async (req, res, next) => {
         periodEnd: subscription.periodEnd,
         projectLimit: current.projectLimit,
         projectCount: current.projectCount,
+        trialProjectTypes,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || ["cancelled", "completed", "expired"].includes(subscription.status),
         autopaySetupRequired: needsAutopaySetup(subscription),
         initialPeriodEnd: subscription.initialPeriodEnd,
@@ -144,7 +153,7 @@ export const createProjectAddOnCheckout = async (req, res, next) => {
     }
     await Payment.create({ userId: req.user.userId, subscriptionId: subscription._id,
       planVersionId: subscription.planVersionId, addOnPeriodStart: subscription.periodStart, addOnQuantity: quantity,
-      razorpayOrderId: order.id, billingPhase: "project_addon", amount: quote.totalPaise,
+      razorpayOrderId: order.id, billingPhase: "project_addon", amount: quote.totalPaise, checkoutBreakdown: quote,
       currency: "INR", purpose: "SUBSCRIPTION", status: "CREATED" });
     res.json({ keyId: getCheckoutKey(), orderId: order.id, amountPaise: quote.totalPaise, quantity, currency: "INR" });
   } catch (error) { next(error); }
@@ -427,7 +436,8 @@ export const razorpayWebhook = async (req, res, next) => {
             { $setOnInsert: { userId: record.userId, razorpaySubscriptionId: subscriptionId, razorpayPaymentId: payment.id,
               razorpayInvoiceId: payment.invoice_id, planVersionId: record.planVersionId,
               subscriptionId: record._id, billingPhase: "recurring",
-              amount: payment.amount, currency: payment.currency, purpose: "SUBSCRIPTION", status: "SUCCESS" } },
+              amount: payment.amount, checkoutBreakdown: invoicePricing({ amount: payment.amount, billingPhase: "recurring" }, record),
+              currency: payment.currency, purpose: "SUBSCRIPTION", status: "SUCCESS" } },
             { upsert: true },
           );
           await ensurePaymentInvoice({ razorpayPaymentId: payment.id });

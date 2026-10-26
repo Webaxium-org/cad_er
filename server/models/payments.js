@@ -14,6 +14,10 @@ const PaymentSchema = new Schema({
   razorpaySubscriptionId: String,
   razorpayInvoiceId: String,
   invoiceNumber: String,
+  invoiceRecipient: {
+    type: new Schema({ name: String, accountName: String, email: String, gstin: String, address: String, mobile: String }, { _id: false }),
+    default: undefined,
+  },
   planVersionId: { type: Types.ObjectId, ref: "PlanVersion" },
   subscriptionId: { type: Types.ObjectId, ref: "Subscription" },
   billingPhase: { type: String, enum: ["initial", "recurring", "project_addon"] },
@@ -22,6 +26,7 @@ const PaymentSchema = new Schema({
   razorpaySignature: String,
 
   amount: Number,
+  checkoutBreakdown: { type: Schema.Types.Mixed, default: undefined },
   currency: { type: String, default: "INR" },
 
   purpose: {

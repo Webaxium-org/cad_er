@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import * as userController from "../controllers/userController.js";
 import {
   isAuthenticated,
@@ -6,9 +7,13 @@ import {
   requireAuth,
 } from "../middleware/auth.js";
 
+import { getMyGstProfile, saveMyGstProfile } from "../controllers/profileGstController.js";
+
 const router = Router();
 
 router.use(requireAuth, isAuthenticated);
+router.get("/me/gst", getMyGstProfile);
+router.put("/me/gst", rateLimit({ windowMs: 60000, limit: 5, keyGenerator: req => String(req.user.userId), message: { message: "Too many GST requests. Please wait a minute" } }), saveMyGstProfile);
 
 router.patch(
   "/quiz",

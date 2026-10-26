@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import mongoose from "mongoose";
+import User from "../models/user.js";
 import Payment from "../models/payments.js";
 import Counter from "../models/invoiceCounter.js";
 import { ensurePaymentInvoice, formatInvoiceNumber } from "../services/paymentInvoice.js";
@@ -25,6 +26,10 @@ test("concurrent retries share one invoice and use the same transaction for coun
   let invoiceNumber;
   let counter = 0;
   const session = {};
+  t.mock.method(User, "findById", () => ({ select: () => ({ session: passed => {
+    assert.equal(passed, session);
+    return { lean: async () => ({ name: "Test user", email: "test@example.com", gstin: "", gstBusinessName: "" }) };
+  } }) }));
   let queue = Promise.resolve();
   t.mock.method(mongoose.connection, "transaction", callback => {
     const result = queue.then(() => callback(session));
@@ -37,6 +42,8 @@ test("concurrent retries share one invoice and use the same transaction for coun
     return { invoiceNumber, async save(options) {
       assert.equal(options.session, session);
       invoiceNumber = this.invoiceNumber;
+      assert.equal(this.invoiceRecipient.name, "Test user");
+      assert.equal(this.invoiceRecipient.gstin, "");
     } };
   } }));
   t.mock.method(Counter, "findOneAndUpdate", async (filter, update, options) => {

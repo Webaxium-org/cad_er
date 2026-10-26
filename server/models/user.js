@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { validGstin } from "../services/gstIdentity.js";
 
 const { Schema, model, Types } = mongoose;
 
@@ -14,6 +15,12 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
+    gstin: { type: String, trim: true, uppercase: true, default: "", validate: { validator: value => !value || validGstin(value), message: "Enter a valid GSTIN" } },
+    gstBusinessName: { type: String, trim: true, maxlength: 160, default: "" },
+    gstBusinessAddress: { type: String, trim: true, maxlength: 1200, default: "" },
+    gstMobile: { type: String, default: "" },
+    gstFetchedAt: Date,
+    gstLookupProvider: String,
     company: {
       type: Types.ObjectId,
       ref: "Company",

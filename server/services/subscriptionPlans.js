@@ -47,12 +47,16 @@ export const activeOffer = (plan, now = new Date()) => plan.offer &&
 
 export const quotePlan = (plan, now = new Date()) => {
   const offer = activeOffer(plan, now);
+  const ongoingAmountPaise = plan.ongoingAmountPaise ?? null;
+  const ongoingOfferAppliesToFirstPeriod = ongoingAmountPaise !== null && plan.ongoingOfferAppliesToFirstPeriod === true;
+  const firstPaymentAmountPaise = ongoingOfferAppliesToFirstPeriod ? ongoingAmountPaise : plan.firstPaymentAmountPaise ?? null;
   const result = {
     id: String(plan._id), code: plan.code, version: plan.version, name: plan.name,
     amountPaise: plan.amountPaise, interval: plan.interval, projectLimit: plan.projectLimit,
-    firstPaymentAmountPaise: plan.firstPaymentAmountPaise ?? null,
-    checkout: checkoutPricing(plan.firstPaymentAmountPaise ?? (offer?.amountPaise ?? plan.amountPaise)),
-    renewalCheckout: checkoutPricing(plan.amountPaise),
+    ongoingAmountPaise, ongoingOfferAppliesToFirstPeriod,
+    firstPaymentAmountPaise,
+    checkout: checkoutPricing(firstPaymentAmountPaise ?? ongoingAmountPaise ?? offer?.amountPaise ?? plan.amountPaise),
+    renewalCheckout: checkoutPricing(ongoingAmountPaise ?? plan.amountPaise),
     features: plan.features || [], highlighted: plan.highlighted,
     offer: offer ? { amountPaise: offer.amountPaise, cycles: offer.cycles,
       endsAt: offer.endsAt, paymentMethod: offer.paymentMethod } : null,
@@ -85,9 +89,18 @@ export const validatePlan = (input) => {
   if (firstPaymentAmountPaise !== null && !integer(firstPaymentAmountPaise, 100, 100000000)) {
     throw createHttpError(400, "First-period price must be between INR 1 and INR 10,00,000");
   }
+  const ongoingAmountPaise = input.ongoingAmountPaise ?? null;
+  const ongoingOfferAppliesToFirstPeriod = input.ongoingOfferAppliesToFirstPeriod ?? false;
+  if (ongoingAmountPaise !== null && (!integer(ongoingAmountPaise, 100, 100000000) || ongoingAmountPaise > input.amountPaise)) {
+    throw createHttpError(400, "Ongoing offer price must be at least INR 1 and no more than the regular price");
+  }
+  if (typeof ongoingOfferAppliesToFirstPeriod !== "boolean" || (ongoingOfferAppliesToFirstPeriod && ongoingAmountPaise === null)) {
+    throw createHttpError(400, "Choose an ongoing offer before applying it to the first period");
+  }
   return { name: input.name.trim(), amountPaise: input.amountPaise, interval: input.interval,
     projectLimit: input.projectLimit, available: input.available, highlighted: input.highlighted,
-    features: input.features.map(f => f.trim()), firstPaymentAmountPaise, offer: null };
+    features: input.features.map(f => f.trim()), firstPaymentAmountPaise,
+    ongoingAmountPaise, ongoingOfferAppliesToFirstPeriod, offer: null };
 };
 
 export const renewalAmount = (subscription) => {
