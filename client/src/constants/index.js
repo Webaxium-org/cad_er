@@ -1,6 +1,8 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+export const SUBSCRIPTION_SAC_CODE = "997331";
+
 export function createPdf({
   fileName = "download.pdf",
   orientation = "p",

@@ -47,6 +47,7 @@ import SubscriptionCheckoutPage from "./pages/subscription/Checkout";
 import AdminPayments from "./pages/subscription/AdminPayments";
 import SettingsRoute from "./routes/SettingsRoute";
 import SubscriptionGate from "./routes/SubscriptionGate";
+import SubscriptionRoute from "./routes/SubscriptionRoute";
 
 function App() {
   return (
@@ -88,7 +89,7 @@ function App() {
               <Route path="settings" element={<SettingsRoute />}>
                 <Route index element={<Settings />} />
               </Route>
-              <Route element={<ProtectedRoute requiredTypes={["Professional"]} />}>
+              <Route element={<SubscriptionRoute />}>
                 <Route path="subscription" element={<SubscriptionPage />} />
                 <Route path="subscription/checkout" element={<SubscriptionCheckoutPage />} />
               </Route>

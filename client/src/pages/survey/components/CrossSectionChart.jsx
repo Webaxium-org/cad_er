@@ -47,6 +47,7 @@ const CrossSectionChart = ({
   };
   const scaledLayout = {
     ...chartOptions.layout,
+    ...(isLs && { showlegend: false }),
     xaxis: {
       ...chartOptions.layout.xaxis,
       range: scaleRange(
@@ -312,7 +313,7 @@ const CrossSectionChart = ({
                   />
                 </Box>
 
-                <Box display="flex" justifyContent={"center"} gap={2} px={2}>
+                {!isLs && <Box display="flex" justifyContent={"center"} gap={2} px={2}>
                   <Typography fontSize="12px" mr={0.5}>
                     Datum: {selectedCs?.datum}
                   </Typography>
@@ -350,7 +351,7 @@ const CrossSectionChart = ({
                       </Box>
                     );
                   })}
-                </Box>
+                </Box>}
               </TableCell>
             </TableRow>
           </TableBody>

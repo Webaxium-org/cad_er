@@ -11,3 +11,6 @@ export const submitQuiz = (payload) => {
 export const updateUserStatus = (id, status) => {
   return axiosInstance.patch(`users/${id}/status`, { status });
 };
+
+export const getMyGstProfile = () => axiosInstance.get("users/me/gst");
+export const saveMyGstProfile = profile => axiosInstance.put("users/me/gst", profile);

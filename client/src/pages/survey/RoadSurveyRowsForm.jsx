@@ -46,6 +46,7 @@ import BasicSelect from "../../components/BasicSelect";
 import BasicCard from "../../components/BasicCard";
 import BasicDivider from "../../components/BasicDevider";
 import EditPreviousReading from "./components/EditPreviousReading";
+import ReadingHistory from "./components/ReadingHistory";
 import SmallHeader from "../../components/SmallHeader";
 import PageHeroHeader from "../../components/PageHeroHeader";
 import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx } from "../../components/bottomIslandStyles";
@@ -2692,6 +2693,7 @@ const RoadSurveyRowsForm = () => {
             </Stack>
           </Activity>
         </Paper>
+        {purpose && <ReadingHistory rows={purpose.rows || []} />}
       </Container>
     </Box>
   );

@@ -1,3 +1,5 @@
+import { createGraphInfoPanel } from "../../utils/graphInfoPanel";
+import { printedGraphScale, graphScaleLabel } from "../../utils/graphScale";
 import { compareProfiles } from "../../utils/surveyGeometry.js";
 import { reportDeductions } from "../../utils/surveyDeductions";
 import { splitLongitudinalSections } from "../../utils/longitudinalPagination";
@@ -32,8 +34,10 @@ import { calculateTableData } from "./components/calculateTableData";
 import CrossSectionChartV2 from "./components/CrossSectionChartV2";
 import { v1ChartOptions } from "../../constants";
 import CrossSectionChart from "./components/CrossSectionChart";
-import html2canvas from "html2canvas";
-import Plotly from "plotly.js/dist/plotly";
+import { createChartCaptureSession } from "../../utils/chartCaptureSession";
+import { canvasJpegBytes, GRAPH_EXPORT_SCALE } from "../../utils/graphCapture";
+import { formatReportNumber } from "../../utils/reportNumber";
+
 import ExportLoader from "../../components/ExportLoader";
 import SmallHeader from "../../components/SmallHeader";
 import PageHeroHeader from "../../components/PageHeroHeader";
@@ -274,80 +278,6 @@ const drawPDFHeader = (doc, surveyInfo, reportDetails, tableData) => {
   doc.text("Executive Engineer", 180, currentY, { align: "center" });
 };
 
-// html2canvas cannot reliably capture Plotly charts (position:sticky/absolute
-// containers, cross-origin fonts from the global Carlito CSS rule).
-// This helper swaps each Plotly chart for Plotly's own rendered image while
-// html2canvas captures the surrounding report, then restores the DOM.
-const captureChartElement = async (el) => {
-  const plotlyEls = [...el.querySelectorAll(".js-plotly-plot")];
-  const replacements = [];
-
-  for (const plotlyEl of plotlyEls) {
-    const rect = plotlyEl.getBoundingClientRect();
-    if (!rect.width || !rect.height) {
-      throw new Error("Chart has no size for PDF export.");
-    }
-    const imageUrl = await Plotly.toImage(plotlyEl, {
-      format: "png",
-      width: Math.round(rect.width),
-      height: Math.round(rect.height),
-      scale: 2,
-    });
-
-    const imgEl = document.createElement("img");
-    imgEl.style.width = `${rect.width}px`;
-    imgEl.style.height = `${rect.height}px`;
-    imgEl.style.display = "block";
-    imgEl.style.background = "#ffffff";
-
-    try {
-      await new Promise((res, rej) => {
-        imgEl.onload = res;
-        imgEl.onerror = rej;
-        imgEl.src = imageUrl;
-      });
-    } catch (error) {
-      throw new Error("Could not render chart for PDF export.", { cause: error });
-    }
-
-    plotlyEl.parentNode.insertBefore(imgEl, plotlyEl);
-    plotlyEl.style.display = "none";
-    replacements.push({ plotlyEl, imgEl });
-  }
-
-  let canvas;
-  try {
-    canvas = await html2canvas(el, {
-    scale: 2,
-    useCORS: true,
-    allowTaint: false,
-    backgroundColor: "#ffffff",
-    logging: false,
-    onclone: (doc) => {
-      // Remove cross-origin font rule so html2canvas can render without tainting
-      [...doc.styleSheets].forEach((ss) => {
-        try {
-          [...ss.cssRules].forEach((rule, idx) => {
-            if (rule.cssText && rule.cssText.includes("fonts.googleapis")) {
-              ss.deleteRule(idx);
-            }
-          });
-        } catch {
-          // cross-origin stylesheet — skip
-        }
-      });
-    },
-    });
-  } finally {
-    for (const { plotlyEl, imgEl } of replacements) {
-      plotlyEl.style.display = "";
-      imgEl.remove();
-    }
-  }
-
-  return canvas;
-};
-
 const exportPdf = async ({
   tableData,
   reportDetails,
@@ -360,6 +290,7 @@ const exportPdf = async ({
   if (setLoading) setLoading(true);
   if (setProgress) setProgress({ percent: 0, message: "Initializing document...", estimatedTimeLeft: null });
 
+  let captureSession;
   try {
     const chartItems = document.querySelectorAll(".pdf-chart-item");
     let totalSteps = 1; // Cover page
@@ -387,12 +318,12 @@ const exportPdf = async ({
       }
     };
 
-    // Optimization 1: Enable internal PDF compression
+    // Skip PDF stream compression; graph JPEGs are already encoded.
     const doc = new jsPDF({
       orientation: "p",
       unit: "mm",
       format: "a4",
-      compress: true,
+      compress: false,
     });
 
     const pageTotalWidth = doc.internal.pageSize.getWidth();
@@ -432,7 +363,7 @@ const exportPdf = async ({
           row.width,
           ...(showArea?.cutting
             ? [
-                row.cuttingAreaSqMtr,
+                formatReportNumber(row.cuttingAreaSqMtr),
                 row.cuttingPrevArea,
                 row.cuttingAvgSqrMtr,
                 row.cuttingVolumeCubicMtr,
@@ -440,7 +371,7 @@ const exportPdf = async ({
             : []),
           ...(showArea?.filling
             ? [
-                row.fillingAreaSqMtr,
+                formatReportNumber(row.fillingAreaSqMtr),
                 row.fillingPrevArea,
                 row.fillingAvgSqrMtr,
                 row.fillingVolumeCubicMtr,
@@ -565,23 +496,23 @@ const exportPdf = async ({
         section.data.forEach((row, idx) => {
           areaBody.push([
             idx + 1,
-            row.offset,
-            row.initialEntryRL,
-            row.secondaryEntryRL,
+            formatReportNumber(row.offset),
+            formatReportNumber(row.initialEntryRL),
+            formatReportNumber(row.secondaryEntryRL),
             ...(showArea?.cutting
               ? [
-                  row.cuttingMtr,
-                  row.cuttingAvgMtr,
-                  row.cuttingWMtr,
-                  row.cuttingAreaSqMtr,
+                  formatReportNumber(row.cuttingMtr),
+                  formatReportNumber(row.cuttingAvgMtr),
+                  formatReportNumber(row.cuttingWMtr),
+                  formatReportNumber(row.cuttingAreaSqMtr),
                 ]
               : []),
             ...(showArea?.filling
               ? [
-                  row.fillingMtr,
-                  row.fillingAvgMtr,
-                  row.fillingWMtr,
-                  row.fillingAreaSqMtr,
+                  formatReportNumber(row.fillingMtr),
+                  formatReportNumber(row.fillingAvgMtr),
+                  formatReportNumber(row.fillingWMtr),
+                  formatReportNumber(row.fillingAreaSqMtr),
                 ]
               : []),
           ]);
@@ -682,84 +613,20 @@ const exportPdf = async ({
     // ===== CHARTS & GRAPHS SECTION =====
     const chartPageMargin = 8;
     const chartContentWidth = pageTotalWidth - chartPageMargin * 2;
-    const chartContentHeight = pageTotalHeight - chartPageMargin * 2;
-    const infoBoxHeight = 42;
+    const graphTop = chartPageMargin + 14;
+    const graphBottom = pageTotalHeight - chartPageMargin;
+    const infoPanel = createGraphInfoPanel(doc, surveyInfo || {}, graphBottom - graphTop);
+    const infoBoxHeight = infoPanel.height;
     const chartGap = 4;
+    const drawGraphInfoSection = bottom => infoPanel.draw(pageTotalWidth - chartPageMargin - infoBoxHeight, bottom);
 
-    const drawGraphInfoSection = (availableTop, availableBottom) => {
-      const L_W = availableBottom - availableTop;
-      const L_H = infoBoxHeight;
-      const mapX = (lx, ly) => pageTotalWidth - chartPageMargin - infoBoxHeight + ly;
-      const mapY = (lx, ly) => availableBottom - lx;
-
-      const labelColWidth = 32;
-      const descColWidth = 55;
-      const approvalStartX = labelColWidth + descColWidth;
-      const remainingWidth = L_W - (labelColWidth + descColWidth);
-
-      const mainApprovalColWidth = remainingWidth / 4;
-      const subColLabelWidth = mainApprovalColWidth * 0.65;
-      const rowHeight = L_H / 5;
-
-      doc.setDrawColor(0).setLineWidth(0.2);
-
-      const drawLine = (x1, y1, x2, y2) => {
-        doc.line(mapX(x1, y1), mapY(x1, y1), mapX(x2, y2), mapY(x2, y2));
-      };
-
-      const drawText = (text, lx, ly, options = {}) => {
-        doc.text(text, mapX(lx, ly), mapY(lx, ly), { ...options, angle: 90 });
-      };
-
-      drawLine(0, 0, L_W, 0); // Top
-      drawLine(0, L_H, L_W, L_H); // Bottom (to separate from page edge or chart)
-      drawLine(labelColWidth, 0, labelColWidth, L_H);
-      drawLine(approvalStartX, 0, approvalStartX, L_H);
-
-      for (let i = 0; i < 4; i++) {
-        const colX = approvalStartX + mainApprovalColWidth * i;
-        if (i > 0) drawLine(colX, 0, colX, L_H);
-        drawLine(colX + subColLabelWidth, 0, colX + subColLabelWidth, L_H);
-      }
-      for (let i = 1; i < 5; i++) {
-        drawLine(0, rowHeight * i, L_W, rowHeight * i);
-      }
-
-      const headers = ["CONTRACTOR", "CONSULTANT", "CSML", "KMRL"];
-      doc.setFont("helvetica", "bold").setFontSize(5.5);
-      headers.forEach((h, i) => {
-        const colX = approvalStartX + mainApprovalColWidth * i;
-        const textWidth = doc.getTextWidth(h);
-        const startX = colX + (subColLabelWidth - textWidth) / 2;
-        drawText(h, startX, rowHeight / 2 + 1);
-      });
-
-      const labels = [
-        { label: "TITLE :", value: String(surveyInfo?.project || "-") },
-        { label: "PROJECT NAME", value: String(surveyInfo?.project || "-") },
-        { label: "CLIENT", value: String(surveyInfo?.client || "-") },
-        { label: "CONSULTANT", value: String(surveyInfo?.consultant || "-") },
-        { label: "CONTRACTOR", value: String(surveyInfo?.contractor || "-") },
-      ];
-
-      labels.forEach((item, i) => {
-        const yPos = rowHeight * i + rowHeight / 2 + 1;
-        doc.setFont("helvetica", "bold").setFontSize(7);
-        drawText(item.label, 2, yPos);
-        doc.setFont("helvetica", "normal");
-        const splitValue = doc.splitTextToSize(item.value, descColWidth - 4);
-        drawText(splitValue, labelColWidth + 2, yPos);
-      });
-    };
-
+    if (chartItems.length) captureSession = await createChartCaptureSession();
     for (let i = 0; i < chartItems.length; i++) {
       const el = chartItems[i];
       updateProgress(`Processing chart ${i + 1} of ${chartItems.length}...`);
 
-      // Give time for charts to render
-      await new Promise((res) => setTimeout(res, 500));
-
-      const canvas = await captureChartElement(el);
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const { canvas, plots } = await captureSession.capture(el);
 
       // Rotate canvas -90 degrees so it fits portrait page vertically
       const rotatedCanvas = document.createElement("canvas");
@@ -770,8 +637,8 @@ const exportPdf = async ({
       ctx.rotate(-Math.PI / 2);
       ctx.drawImage(canvas, 0, 0);
 
-      // Optimization 3: Use JPEG at 0.75 quality instead of PNG
-      const imgData = rotatedCanvas.toDataURL("image/jpeg", 0.75);
+      // Encode at high quality without an extra base64 copy.
+      const imgData = await canvasJpegBytes(rotatedCanvas);
       doc.addPage();
 
       const availableTop = chartPageMargin + 14;
@@ -810,8 +677,15 @@ const exportPdf = async ({
 
       const x = availableLeft + (availableWidth - imgWidth) / 2;
       const y = availableTop + (availableHeight - imgHeight) / 2;
+      const printedScales = plots.map(plot => printedGraphScale(plot.plotArea,
+        imgHeight * plot.plotWidthPx / (canvas.width / GRAPH_EXPORT_SCALE),
+        imgWidth * plot.plotHeightPx / (canvas.height / GRAPH_EXPORT_SCALE)));
+      doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(0);
+      doc.text(printedScales.map(graphScaleLabel).join(" | "), pageTotalWidth / 2, chartPageMargin + 6, { align: "center" });
+      doc.setFontSize(7);
+      doc.text("Print at 100% / Actual size", pageTotalWidth / 2, chartPageMargin + 10, { align: "center" });
 
-      // Optimization 4: Use 'FAST' compression alias
+      // Embed the encoded JPEG without recompressing it.
       doc.addImage(
         imgData,
         "JPEG",
@@ -820,14 +694,15 @@ const exportPdf = async ({
         imgWidth,
         imgHeight,
         undefined,
-        "FAST",
+        "NONE",
       );
 
-      drawGraphInfoSection(availableTop, availableBottom);
+      drawGraphInfoSection(availableBottom);
 
       // Cleanup to free memory
       canvas.width = 0;
       canvas.height = 0;
+      rotatedCanvas.width = rotatedCanvas.height = 0;
     }
 
     if (setProgress) {
@@ -838,6 +713,7 @@ const exportPdf = async ({
     console.error("Export error:", err);
     onError?.(err);
   } finally {
+    captureSession?.dispose();
     if (setLoading) setLoading(false);
   }
 };
@@ -1947,25 +1823,25 @@ const PlottingAndQuantityReport = () => {
                     {row?.data?.map((entry, idx) => (
                       <TableRow className="report-data-row" key={`${index}-${idx}`}>
                         <TableCell>{idx + 1}</TableCell>
-                        <TableCell>{entry.offset}</TableCell>
-                        <TableCell>{entry.initialEntryRL}</TableCell>
-                        <TableCell>{entry.secondaryEntryRL}</TableCell>
+                        <TableCell>{formatReportNumber(entry.offset)}</TableCell>
+                        <TableCell>{formatReportNumber(entry.initialEntryRL)}</TableCell>
+                        <TableCell>{formatReportNumber(entry.secondaryEntryRL)}</TableCell>
 
                         {showArea?.cutting && (
                           <>
-                            <TableCell>{entry.cuttingMtr}</TableCell>
-                            <TableCell>{entry.cuttingAvgMtr}</TableCell>
-                            <TableCell>{entry.cuttingWMtr}</TableCell>
-                            <TableCell>{entry.cuttingAreaSqMtr}</TableCell>
+                            <TableCell>{formatReportNumber(entry.cuttingMtr)}</TableCell>
+                            <TableCell>{formatReportNumber(entry.cuttingAvgMtr)}</TableCell>
+                            <TableCell>{formatReportNumber(entry.cuttingWMtr)}</TableCell>
+                            <TableCell>{formatReportNumber(entry.cuttingAreaSqMtr)}</TableCell>
                           </>
                         )}
 
                         {showArea?.filling && (
                           <>
-                            <TableCell>{entry.fillingMtr}</TableCell>
-                            <TableCell>{entry.fillingAvgMtr}</TableCell>
-                            <TableCell>{entry.fillingWMtr}</TableCell>
-                            <TableCell>{entry.fillingAreaSqMtr}</TableCell>
+                            <TableCell>{formatReportNumber(entry.fillingMtr)}</TableCell>
+                            <TableCell>{formatReportNumber(entry.fillingAvgMtr)}</TableCell>
+                            <TableCell>{formatReportNumber(entry.fillingWMtr)}</TableCell>
+                            <TableCell>{formatReportNumber(entry.fillingAreaSqMtr)}</TableCell>
                           </>
                         )}
                       </TableRow>

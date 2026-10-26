@@ -29,6 +29,7 @@ import {
   FiPlus,
   FiRefreshCw,
   FiSettings,
+  FiTag,
 } from "react-icons/fi";
 import AppHeader from "../../../components/AppHeader";
 import { APP_VERSION } from "../../../constants/appVersion";
@@ -594,6 +595,21 @@ export default function DashboardOverview({ data }) {
         <Container maxWidth="lg">
 
           {data?.subscription?.kind === "trial" && <ProfessionalTrialCountdown subscription={data.subscription} />}
+          <Paper elevation={0} sx={{ ...panelSx, p: { xs: 2, sm: 2.5 }, mb: 1.25 }}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: "#eef2ff", color: PRIMARY_BRAND,
+                display: "grid", placeItems: "center", flexShrink: 0 }}><FiTag size={23} /></Box>
+              <Box>
+                <Typography variant="body2" fontWeight={700} color="#475569">Total savings</Typography>
+                <Typography variant="h5" fontWeight={850} color="#4338ca">
+                  {data?.totalSavingsPaise == null ? "—" : new Intl.NumberFormat("en-IN", {
+                    style: "currency", currency: "INR", minimumFractionDigits: 0, maximumFractionDigits: 2,
+                  }).format(data.totalSavingsPaise / 100)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">Saved on paid subscription periods. Excludes GST and processing fees.</Typography>
+              </Box>
+            </Stack>
+          </Paper>
           {data?.subscription?.kind === "paid" && (
             <Paper elevation={0} sx={{ border: "1px solid #c7d2fe", borderRadius: DASHBOARD_CARD_RADIUS,
               background: "linear-gradient(110deg, #fff 68%, #f3f4ff 100%)", p: { xs: 2, sm: 2.5 }, mb: 1.25,

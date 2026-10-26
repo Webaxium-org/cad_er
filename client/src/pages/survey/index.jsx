@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Box, Stack, Typography, Paper, Container, Button } from "@mui/material";
+import { Alert, Box, Stack, Typography, Paper, Container, Button } from "@mui/material";
 import BasicButton from "../../components/BasicButton";
 import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleShellSx } from "../../components/bottomIslandStyles";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
@@ -15,17 +15,10 @@ import { IoIosArrowForward } from "react-icons/io";
 import { IoCheckmarkCircle } from "react-icons/io5";
 import BigHeader from "../../components/BigHeader";
 import { SlTarget } from "react-icons/sl";
-import SimpleAlert from "../../components/SimpleAlert";
-import { GoAlert } from "react-icons/go";
 import CalibrationModal from "./components/CalibrationModal";
 import { FaLocationArrow } from "react-icons/fa";
 import { FiLayers } from "react-icons/fi";
-
-const alertData = {
-  icon: <GoAlert fontSize="inherit" />,
-  severity: "error",
-  message: "Work in progress!",
-};
+import { getSubscription } from "../../services/subscriptionServices";
 
 const cardData = [
   {
@@ -58,6 +51,11 @@ const Index = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useSelector(state => state.user);
+  const bypassSubscription = user?.role === "Super Admin";
+  const [billing, setBilling] = useState(null);
+  const [billingLoading, setBillingLoading] = useState(!bypassSubscription);
+  const [billingError, setBillingError] = useState("");
 
   const [active, setActive] = useState(0);
   const [isCalibrationOpen, setCalibrationOpen] = useState(
@@ -65,6 +63,25 @@ const Index = () => {
   );
   const heroRef = useRef(null);
   const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
+
+  useEffect(() => {
+    if (bypassSubscription) return;
+    let cancelled = false;
+    getSubscription().then(({ data }) => {
+      if (!cancelled) setBilling(data);
+    }).catch(() => {
+      if (!cancelled) setBillingError("Could not check your survey allowance. Please refresh and try again.");
+    }).finally(() => { if (!cancelled) setBillingLoading(false); });
+    return () => { cancelled = true; };
+  }, [bypassSubscription]);
+
+  const subscription = billing?.subscription;
+  const selectedType = cardData[active].title;
+  const trialError = !bypassSubscription && subscription?.kind === "trial" && active < 2 &&
+    ((subscription.trialProjectTypes || []).includes(selectedType) || subscription.projectCount >= Math.min(subscription.projectLimit, 2))
+    ? "Your free trial includes only one Road Survey and one Water Way (two projects total). Upgrade to create more projects." : "";
+  const selectionError = bypassSubscription ? "" : billingError || trialError ||
+    (billing && !billing.hasAccess ? "An active subscription is required. Choose a plan to continue." : "");
 
   useEffect(() => {
     if (location.state?.openCalibration !== true) return;
@@ -96,6 +113,7 @@ const Index = () => {
   const handleChangeActive = (value) => setActive(value);
 
   const handleSubmit = () => {
+    if ((!bypassSubscription && billingLoading) || selectionError) return;
     if (active === 0) {
       navigate("/survey/road-survey", { state: { type: "Road Survey" } });
     } else if (active === 1) {
@@ -228,6 +246,10 @@ const Index = () => {
       />
 
       <Container maxWidth="sm" sx={{ mt: -8, position: "relative" }}>
+        {selectionError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} action={trialError ?
+          <Button color="inherit" size="small" onClick={() => navigate("/subscription")}>Upgrade</Button> : undefined}>
+          {selectionError}
+        </Alert>}
         <Stack spacing={3}>
           {cardData.map((data, idx) => {
             const isActive = idx === active;
@@ -440,6 +462,7 @@ const Index = () => {
                 },
               }}
               fullWidth={true}
+              disabled={(!bypassSubscription && billingLoading) || Boolean(selectionError)}
               onClick={handleSubmit}
             />
           </motion.div>

@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
-import Plotly from "plotly.js/dist/plotly";
+import { capturePlotCanvas, canvasJpegBytes } from "./graphCapture";
+import { printedGraphScale, graphScaleLabel } from "./graphScale";
 
 const DISTANCE_LABEL_SPACING = 3.5;
 
@@ -7,32 +8,19 @@ export const createGraphPdf = () => new jsPDF({
   orientation: "portrait",
   unit: "mm",
   format: "a4",
-  compress: true,
+  compress: false,
 });
 
 export const capturePlotImage = async (plot) => {
-  if (!plot) throw new Error("The graph is not ready yet.");
-  const bounds = plot.getBoundingClientRect();
-  if (!bounds.width || !bounds.height) throw new Error("The graph has no visible size.");
-  const image = await Plotly.toImage(plot, {
-    format: "jpeg",
-    width: Math.round(bounds.width),
-    height: Math.round(bounds.height),
-    scale: 2,
-  });
-  const plotSize = plot._fullLayout?._size;
-  const plotArea = plotSize && {
-    left: plotSize.l / bounds.width,
-    width: plotSize.w / bounds.width,
-    bottom: (plotSize.t + plotSize.h) / bounds.height,
-    xRange: plot._fullLayout?.xaxis?.range,
-  };
-  return { image, width: bounds.width, height: bounds.height, plotArea };
+  const { canvas, ...capture } = await capturePlotCanvas(plot);
+  try { return { ...capture, image: await canvasJpegBytes(canvas) }; }
+  finally { canvas.width = canvas.height = 0; }
 };
 
-const layoutLevelBands = (pdf, section, lineWidth, xRange) => {
+const layoutLevelBands = (pdf, section, lineWidth, xRange, fontSize) => {
   pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
+  pdf.setFontSize(fontSize);
+  const labelSpacing = Math.max(DISTANCE_LABEL_SPACING, fontSize * 25.4 / 72 * 1.4);
   const series = [...(section.series || [])].reverse();
   const offsets = series.flatMap((item) => item.data || [])
     .map((point) => Number(point.x))
@@ -82,7 +70,7 @@ const layoutLevelBands = (pdf, section, lineWidth, xRange) => {
     // Regressing x - index * spacing keeps displacement small and order intact.
     const groups = [];
     points.forEach((point, index) => {
-      groups.push({ start: index, count: 1, total: point.x - index * DISTANCE_LABEL_SPACING });
+      groups.push({ start: index, count: 1, total: point.x - index * labelSpacing });
       while (groups.length > 1) {
         const right = groups[groups.length - 1];
         const left = groups[groups.length - 2];
@@ -92,11 +80,11 @@ const layoutLevelBands = (pdf, section, lineWidth, xRange) => {
         groups.pop();
       }
     });
-    const maxStart = Math.max(0, lineWidth - (points.length - 1) * DISTANCE_LABEL_SPACING);
+    const maxStart = Math.max(0, lineWidth - (points.length - 1) * labelSpacing);
     groups.forEach(({ start, count, total }) => {
       const position = Math.max(0, Math.min(maxStart, total / count));
       for (let index = start; index < start + count; index++) {
-        points[index].labelX = position + index * DISTANCE_LABEL_SPACING;
+        points[index].labelX = position + index * labelSpacing;
       }
     });
     const labelHeight = Math.max(0, ...points.map(({ textWidth }) => textWidth));
@@ -104,7 +92,7 @@ const layoutLevelBands = (pdf, section, lineWidth, xRange) => {
   });
 };
 
-const drawLevelBands = (pdf, bands, top, lineStart, lineWidth) => {
+const drawLevelBands = (pdf, bands, top, lineStart, lineWidth, fontSize) => {
   let y = top;
   bands.forEach(({ item, points, height }) => {
     const color = {
@@ -123,13 +111,13 @@ const drawLevelBands = (pdf, bands, top, lineStart, lineWidth) => {
     pdf.setTextColor(color);
     pdf.setDrawColor(color);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8);
+    pdf.setFontSize(fontSize);
     pdf.text(label, lineStart - 6, y + 5, { align: "right" });
     pdf.setLineWidth(0.4);
     pdf.line(lineStart, y + 5, lineStart + lineWidth, y + 5);
 
     for (const { value, labelX, textWidth } of points) {
-      pdf.setFontSize(8);
+      pdf.setFontSize(fontSize);
       // Rotated text extends upward: measure its length so every label starts
       // at y + 9, below the band line.
       pdf.text(value, lineStart + labelX + 0.9, y + 9 + textWidth, { angle: 90, align: "left" });
@@ -152,7 +140,9 @@ export const addGraphPage = (pdf, image, section, scales, imageWidth, imageHeigh
     : (pageWidth - availableWidth) / 2;
   const graphHeight = availableWidth * imageHeight / imageWidth;
   const lineWidth = availableWidth * (plotArea?.width ?? 0.8);
-  const bands = hasLevelBands ? layoutLevelBands(pdf, section, lineWidth, plotArea?.xRange) : [];
+  // Convert the graph's source pixel size into PDF points at its printed width.
+  const bandFontSize = (plotArea?.fontSizePx || 12) * availableWidth / imageWidth * 72 / 25.4;
+  const bands = hasLevelBands ? layoutLevelBands(pdf, section, lineWidth, plotArea?.xRange, bandFontSize) : [];
   const bandHeight = bands.reduce((height, band) => height + band.height, 0) + (hasLevelBands ? 5 : 0);
   const graphY = (pageHeight - graphHeight - bandHeight) / 2;
 
@@ -162,12 +152,15 @@ export const addGraphPage = (pdf, image, section, scales, imageWidth, imageHeigh
   pdf.text(title, pageCenter, graphY - 14, { align: "center" });
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
-  pdf.text(`Horizontal scale 1:${scales.horizontal}    Vertical scale 1:${scales.vertical}`, pageCenter, graphY - 8, { align: "center" });
-  pdf.addImage(image, "JPEG", graphLeft, graphY, availableWidth, graphHeight, undefined, "MEDIUM");
+  const printedScale = printedGraphScale(plotArea, lineWidth, graphHeight * plotArea?.height);
+  pdf.text(graphScaleLabel(printedScale), pageCenter, graphY - 8, { align: "center" });
+  pdf.setFontSize(7);
+  pdf.text("Print at 100% / Actual size", pageCenter, graphY - 3.5, { align: "center" });
+  pdf.addImage(image, "JPEG", graphLeft, graphY, availableWidth, graphHeight, undefined, "NONE");
 
   const lineStart = graphLeft + availableWidth * (plotArea?.left ?? 0.16);
   const bandTop = plotArea
     ? graphY + graphHeight * plotArea.bottom + 10
     : graphY + graphHeight + 5;
-  if (hasLevelBands) drawLevelBands(pdf, bands, bandTop, lineStart, lineWidth);
+  if (hasLevelBands) drawLevelBands(pdf, bands, bandTop, lineStart, lineWidth, bandFontSize);
 };

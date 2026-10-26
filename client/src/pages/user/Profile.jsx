@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { stopLoading } from "../../redux/loadingSlice";
+import ProfileGstDetails from "./ProfileGstDetails";
 import BigHeader from "../../components/BigHeader";
 import { heroTitleSx, compactTitleSx } from "../../components/pageHeaderStyles";
 import {
@@ -351,6 +352,8 @@ const Profile = () => {
                   </Grid>
                 </Grid>
               </SectionCard>
+
+              <ProfileGstDetails />
 
               {/* Work & Organization */}
               <SectionCard

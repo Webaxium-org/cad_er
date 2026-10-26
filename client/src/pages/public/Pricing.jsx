@@ -112,7 +112,7 @@ const Pricing = () => {
               <Box component="span" sx={{ color: "#4f46e5" }}>of your career.</Box>
             </Typography>
             <Typography sx={{ ...publicHeroLeadSx, mx: "auto" }}>
-              Shown prices are CADer plan prices. An offer applies to the first month or year; the regular plan price follows.
+              Each plan shows its first-period price and renewal price. Ongoing offers remain fixed for your subscription until cancellation.
             </Typography>
 
             <Stack

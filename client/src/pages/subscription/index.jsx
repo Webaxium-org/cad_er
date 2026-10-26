@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiCreditCard, FiRefreshCw } from "react-icons/fi";
-import { Alert, Box, Button, Container, LinearProgress, Link, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import { FiCopy, FiCreditCard, FiDownload, FiRefreshCw } from "react-icons/fi";
+import { Alert, Box, Button, Container, IconButton, LinearProgress, Link, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from "@mui/material";
+import { downloadSubscriptionInvoice } from "../../utils/subscriptionInvoice";
 import AppHeader from "../../components/AppHeader";
 import AlertDialogSlide from "../../components/AlertDialogSlide";
 import PricingCard from "../../components/PricingCard";
@@ -37,6 +38,22 @@ export default function SubscriptionPage() {
   const [paymentHistoryBusy, setPaymentHistoryBusy] = useState(true);
   const [paymentHistoryError, setPaymentHistoryError] = useState("");
   const [paymentHistoryRefresh, setPaymentHistoryRefresh] = useState(0);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(null);
+  const copyInvoiceNumber = async number => {
+    try {
+      await navigator.clipboard.writeText(number);
+      setNotice("Invoice number copied.");
+    } catch {
+      setError("Invoice number could not be copied. Please try again.");
+    }
+  };
+  const downloadInvoice = async payment => {
+    setDownloadingInvoice(payment.id);
+    setError("");
+    try { await downloadSubscriptionInvoice(payment.id); }
+    catch (error) { setError(error.response?.data?.message || "Invoice could not be downloaded. Please try again."); }
+    finally { setDownloadingInvoice(null); }
+  };
   const heroRef = useRef(null);
   const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
 
@@ -239,7 +256,7 @@ export default function SubscriptionPage() {
         <Box sx={{ textAlign: "center", pt: { xs: 6, md: 8 }, mb: 5 }}>
           <Typography sx={{ color: accent, fontWeight: 800, letterSpacing: 1.5, fontSize: 13, textTransform: "uppercase", mb: 1.5 }}>Pricing plans</Typography>
           <Typography component="h2" sx={{ fontSize: { xs: "2rem", md: "3rem" }, fontWeight: 900, letterSpacing: "-0.03em", color: "#111" }}>Choose your next chapter.</Typography>
-          <Typography color="text.secondary" sx={{ mt: 1, maxWidth: 620, mx: "auto" }}>Shown prices are CADer plan prices. An offer applies to the first month or year; the regular plan price follows.</Typography>
+          <Typography color="text.secondary" sx={{ mt: 1, maxWidth: 620, mx: "auto" }}>Each plan shows its first-period price and renewal price. Ongoing offers remain fixed for your subscription until cancellation.</Typography>
           <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5} sx={{ mt: 3 }}>
             <Typography fontWeight={billingCycle === "monthly" ? 800 : 500} color={billingCycle === "monthly" ? "#111" : "text.secondary"}>Monthly</Typography>
             <Switch checked={billingCycle === "yearly"} onChange={(_, checked) => setBillingCycle(checked ? "yearly" : "monthly")} inputProps={{ "aria-label": "Choose yearly billing" }} sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: accent }, "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: accent } }} />
@@ -265,7 +282,7 @@ export default function SubscriptionPage() {
         </Box>
 
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, textAlign: "center" }}>
-          If you authorize auto pay, your plan renews at the regular price after any introductory period. GST and processing fees are added at checkout.
+          If you authorize auto pay, your plan renews at the renewal price shown when you purchase, including any ongoing offer. GST and processing fees are added at checkout.
           You can cancel renewal at any time; access continues through the paid period. {" "}
           <Link component={RouterLink} to="/terms" underline="hover">Terms &amp; Conditions</Link> apply. See our {" "}
           <Link component={RouterLink} to="/privacy" underline="hover">Privacy Policy</Link> for payment data handling.
@@ -283,21 +300,40 @@ export default function SubscriptionPage() {
           <TableContainer sx={{ borderTop: "1px solid #e0e7ff" }}>
             <Table sx={{ minWidth: 620 }}>
               <TableHead sx={{ bgcolor: "#f5f6ff" }}><TableRow>
-                {["Date", "Plan", "Type", "Amount", "Status", "Invoice number", "Payment ID"].map(label =>
+                {["Date", "Plan", "Amount", "Status", "Invoice number", "Download invoice"].map(label =>
                   <TableCell key={label} sx={{ color: "#4338ca", fontWeight: 800 }}>{label}</TableCell>)}
               </TableRow></TableHead>
               <TableBody>
                 {paymentHistory?.payments.map(payment => <TableRow key={payment.id} hover>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{date(payment.createdAt)}</TableCell>
                   <TableCell>{payment.planName}</TableCell>
-                  <TableCell>{payment.phase === "initial" ? "First period" : payment.phase === "recurring" ? "Renewal" : payment.phase === "project_addon" ? `Extra project${payment.quantity === 1 ? "" : "s"} (${payment.quantity})` : "Earlier payment"}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap", fontWeight: 750 }}>{money(payment.amountPaise)}</TableCell>
                   <TableCell sx={{ color: "#15803d", fontWeight: 750 }}>Paid</TableCell>
-                  <TableCell sx={{ fontFamily: "monospace", whiteSpace: "nowrap" }}>{payment.invoiceNumber || "—"}</TableCell>
-                  <TableCell sx={{ fontFamily: "monospace", fontSize: ".8rem" }}>{payment.paymentId}</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                    <Stack direction="row" spacing={.5} alignItems="center">
+                      <Tooltip title={payment.invoiceNumber || "Pending"}>
+                        <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
+                          {payment.invoiceNumber ? `${payment.invoiceNumber.slice(0, 8)}${payment.invoiceNumber.length > 8 ? "..." : ""}` : "Pending"}
+                        </Typography>
+                      </Tooltip>
+                      {payment.invoiceNumber && <Tooltip title="Copy invoice number">
+                        <IconButton size="small" aria-label={`Copy invoice number ${payment.invoiceNumber}`}
+                          onClick={() => copyInvoiceNumber(payment.invoiceNumber)} sx={{ color: accent }}>
+                          <FiCopy size={15} />
+                        </IconButton>
+                      </Tooltip>}
+                    </Stack>
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                    <Button size="small" startIcon={<FiDownload />} disabled={Boolean(downloadingInvoice)}
+                      onClick={() => downloadInvoice(payment)} aria-label={`Download invoice ${payment.invoiceNumber || payment.paymentId}`}
+                      sx={{ color: accent, textTransform: "none", borderRadius: 2 }}>
+                      {downloadingInvoice === payment.id ? "Downloading..." : "Download PDF"}
+                    </Button>
+                  </TableCell>
                 </TableRow>)}
                 {!paymentHistoryBusy && !paymentHistoryError && !paymentHistory?.payments.length &&
-                  <TableRow><TableCell colSpan={7} align="center" sx={{ py: 5, color: "#64748b" }}>No payments yet.</TableCell></TableRow>}
+                  <TableRow><TableCell colSpan={6} align="center" sx={{ py: 5, color: "#64748b" }}>No payments yet.</TableCell></TableRow>}
               </TableBody>
             </Table>
           </TableContainer>

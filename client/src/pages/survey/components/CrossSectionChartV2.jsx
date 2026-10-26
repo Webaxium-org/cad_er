@@ -25,8 +25,8 @@ const CrossSectionChartV2 = ({ selectedCs, chartOptions, showLevelBands = false 
           alignItems={"end"}
           sx={{ width: "100%", mx: "auto" }}
         >
-          <Typography fontSize="8px">SCALE X- 1:100</Typography>
-          <Typography fontSize="8px">SCALE Y- 1:100</Typography>
+          <Typography data-pdf-scale-label fontSize="8px">SCALE X- 1:100</Typography>
+          <Typography data-pdf-scale-label fontSize="8px">SCALE Y- 1:100</Typography>
         </Stack>
         <TableContainer component={Paper} sx={{ width: "100%", maxWidth: "100%" }}>
           <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>

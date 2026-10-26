@@ -1,3 +1,4 @@
+import { formatReportNumber } from "../../utils/reportNumber";
 import { compareProfiles } from "../../utils/surveyGeometry.js";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -117,25 +118,25 @@ const exportAreaReportPdf = ({ tableData, reportDetails, showArea }) => {
     section.data.forEach((row, idx) => {
       body.push([
         idx + 1,
-        row.offset,
-        row.initialEntryRL,
-        row.secondaryEntryRL,
+        formatReportNumber(row.offset),
+        formatReportNumber(row.initialEntryRL),
+        formatReportNumber(row.secondaryEntryRL),
 
         ...(showArea?.cutting
           ? [
-            row.cuttingMtr,
-            row.cuttingAvgMtr,
-            row.cuttingWMtr,
-            row.cuttingAreaSqMtr,
+            formatReportNumber(row.cuttingMtr),
+            formatReportNumber(row.cuttingAvgMtr),
+            formatReportNumber(row.cuttingWMtr),
+            formatReportNumber(row.cuttingAreaSqMtr),
           ]
           : []),
 
         ...(showArea?.filling
           ? [
-            row.fillingMtr,
-            row.fillingAvgMtr,
-            row.fillingWMtr,
-            row.fillingAreaSqMtr,
+            formatReportNumber(row.fillingMtr),
+            formatReportNumber(row.fillingAvgMtr),
+            formatReportNumber(row.fillingWMtr),
+            formatReportNumber(row.fillingAreaSqMtr),
           ]
           : []),
       ]);
@@ -564,24 +565,24 @@ const AreaReport = () => {
       section.data.forEach((entry, idx) => {
         const dataRow = sheet.addRow([
           idx + 1,
-          entry.offset,
-          entry.initialEntryRL,
-          entry.secondaryEntryRL,
+          formatReportNumber(entry.offset),
+          formatReportNumber(entry.initialEntryRL),
+          formatReportNumber(entry.secondaryEntryRL),
 
           ...(showArea?.cutting
             ? [
-              entry.cuttingMtr,
-              entry.cuttingAvgMtr,
-              entry.cuttingWMtr,
-              entry.cuttingAreaSqMtr,
+              formatReportNumber(entry.cuttingMtr),
+              formatReportNumber(entry.cuttingAvgMtr),
+              formatReportNumber(entry.cuttingWMtr),
+              formatReportNumber(entry.cuttingAreaSqMtr),
             ]
             : []),
           ...(showArea?.filling
             ? [
-              entry.fillingMtr,
-              entry.fillingAvgMtr,
-              entry.fillingWMtr,
-              entry.fillingAreaSqMtr,
+              formatReportNumber(entry.fillingMtr),
+              formatReportNumber(entry.fillingAvgMtr),
+              formatReportNumber(entry.fillingWMtr),
+              formatReportNumber(entry.fillingAreaSqMtr),
             ]
             : []),
         ]);
@@ -732,17 +733,17 @@ const AreaReport = () => {
       section.data.forEach((entry, idx) => {
         values.push([
           idx + 1,
-          entry.offset,
-          entry.initialEntryRL,
-          entry.secondaryEntryRL,
-          entry.cuttingMtr,
-          entry.cuttingAvgMtr,
-          entry.cuttingWMtr,
-          entry.cuttingAreaSqMtr,
-          entry.fillingMtr,
-          entry.fillingAvgMtr,
-          entry.fillingWMtr,
-          entry.fillingAreaSqMtr,
+          formatReportNumber(entry.offset),
+          formatReportNumber(entry.initialEntryRL),
+          formatReportNumber(entry.secondaryEntryRL),
+          formatReportNumber(entry.cuttingMtr),
+          formatReportNumber(entry.cuttingAvgMtr),
+          formatReportNumber(entry.cuttingWMtr),
+          formatReportNumber(entry.cuttingAreaSqMtr),
+          formatReportNumber(entry.fillingMtr),
+          formatReportNumber(entry.fillingAvgMtr),
+          formatReportNumber(entry.fillingWMtr),
+          formatReportNumber(entry.fillingAreaSqMtr),
         ]);
         currentRowIndex++;
       });
@@ -1199,27 +1200,27 @@ const AreaReport = () => {
                         key={`${index}-${idx}`}
                       >
                         <TableCell align="center">{idx + 1}</TableCell>
-                        <TableCell align="center">{entry.offset}</TableCell>
+                        <TableCell align="center">{formatReportNumber(entry.offset)}</TableCell>
                         <TableCell align="center">
-                          {entry.initialEntryRL}
+                          {formatReportNumber(entry.initialEntryRL)}
                         </TableCell>
                         <TableCell align="center">
-                          {entry.secondaryEntryRL}
+                          {formatReportNumber(entry.secondaryEntryRL)}
                         </TableCell>
 
                         {showArea?.cutting && (
                           <>
                             <TableCell align="center">
-                              {entry.cuttingMtr}
+                              {formatReportNumber(entry.cuttingMtr)}
                             </TableCell>
                             <TableCell align="center">
-                              {entry.cuttingAvgMtr}
+                              {formatReportNumber(entry.cuttingAvgMtr)}
                             </TableCell>
                             <TableCell align="center">
-                              {entry.cuttingWMtr}
+                              {formatReportNumber(entry.cuttingWMtr)}
                             </TableCell>
                             <TableCell align="center">
-                              {entry.cuttingAreaSqMtr}
+                              {formatReportNumber(entry.cuttingAreaSqMtr)}
                             </TableCell>
                           </>
                         )}
@@ -1227,16 +1228,16 @@ const AreaReport = () => {
                         {showArea?.filling && (
                           <>
                             <TableCell align="center">
-                              {entry.fillingMtr}
+                              {formatReportNumber(entry.fillingMtr)}
                             </TableCell>
                             <TableCell align="center">
-                              {entry.fillingAvgMtr}
+                              {formatReportNumber(entry.fillingAvgMtr)}
                             </TableCell>
                             <TableCell align="center">
-                              {entry.fillingWMtr}
+                              {formatReportNumber(entry.fillingWMtr)}
                             </TableCell>
                             <TableCell align="center">
-                              {entry.fillingAreaSqMtr}
+                              {formatReportNumber(entry.fillingAreaSqMtr)}
                             </TableCell>
                           </>
                         )}

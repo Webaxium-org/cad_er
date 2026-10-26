@@ -29,9 +29,9 @@ export const createLongitudinalPdf = async (section, scales, chartOptions, pageL
   try {
     for (const [index, page] of ranges.entries()) {
       onProgress?.({ percent: Math.round(index / ranges.length * 100), message: `Rendering page ${index + 1} of ${ranges.length}` });
-      await Plotly.newPlot(plotNode, traces, {
+      await Plotly.react(plotNode, traces, {
         ...chartOptions.layout,
-        title: undefined, width, height, autosize: false,
+        title: undefined, width, height, autosize: false, showlegend: false,
         transition: { duration: 0 },
         xaxis: { ...chartOptions.layout.xaxis, autorange: false, range: page.range, dtick: undefined, nticks: 8 },
         yaxis: { ...chartOptions.layout.yaxis, autorange: false, range: [center - halfSpan, center + halfSpan] },

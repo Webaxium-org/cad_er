@@ -3,7 +3,7 @@ import { getSectionLevelBands } from "../../../utils/sectionLevelBands";
 
 export default function SectionLevelBands({ section, layout }) {
   if (!layout || !section.series?.length) return null;
-  const { width, left, plotWidth, range } = layout;
+  const { width, left, plotWidth, range, fontSize = 12 } = layout;
   const span = range[1] - range[0] || 1;
   let top = 14;
   const bands = getSectionLevelBands(section).map((band) => {
@@ -12,12 +12,12 @@ export default function SectionLevelBands({ section, layout }) {
     // Close offsets use separate vertical tiers rather than overlapping labels.
     const tierEnds = [];
     points.forEach((point) => {
-      let tier = tierEnds.findIndex((lastX) => point.x - lastX >= 11);
+      let tier = tierEnds.findIndex((lastX) => point.x - lastX >= fontSize + 2);
       if (tier < 0) tier = tierEnds.length;
       tierEnds[tier] = point.x;
       point.tier = tier;
     });
-    const tierHeight = Math.max(54, ...points.map((point) => point.label.length * 5.5 + 12));
+    const tierHeight = Math.max(54, ...points.map((point) => point.label.length * fontSize * .6 + 12));
     const height = Math.max(1, tierEnds.length) * tierHeight + 18;
     const result = { ...band, points, top, height, tierHeight };
     top += height;
@@ -29,17 +29,15 @@ export default function SectionLevelBands({ section, layout }) {
         <rect width={width} height={top + 1} fill="white" />
         {bands.map((band, index) => {
           const label = band.name.replace(/^Proposed\s+/i, "Prop. ");
-          const labelWidth = Math.max(1, left - 12);
-          const fitLabel = label.length * 4.7 > labelWidth ? { textLength: labelWidth, lengthAdjust: "spacingAndGlyphs" } : {};
           return <g key={index} fill={band.color}>
             <line x1={left} x2={left + plotWidth} y1={band.top + 5} y2={band.top + 5} stroke={band.color} strokeWidth="1.3" />
-            <text x={left - 8} y={band.top + 5} fontSize="9" textAnchor="end" {...fitLabel}>
+            <text x={left - 8} y={band.top + 5} fontSize={fontSize} textAnchor="end">
               {label}
             </text>
             {band.points.map((point, pointIndex) => {
               const y = band.top + 19 + point.tier * band.tierHeight;
               return <g key={pointIndex}>
-                <text x={point.x} y={y} transform={`rotate(-90 ${point.x} ${y})`} textAnchor="end" fontSize="10">{point.label}</text>
+                <text x={point.x} y={y} transform={`rotate(-90 ${point.x} ${y})`} textAnchor="end" fontSize={fontSize}>{point.label}</text>
               </g>;
             })}
           </g>;

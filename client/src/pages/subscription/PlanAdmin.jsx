@@ -53,6 +53,9 @@ export default function PlanAdmin() {
     setError(""); setNotice("");
     setForm({ ...plan, price: String(plan.amountPaise / 100), featuresText: plan.features.join("\n"),
       hasOffer: plan.firstPaymentAmountPaise != null,
+      hasOngoingOffer: plan.ongoingAmountPaise != null,
+      ongoingPrice: plan.ongoingAmountPaise != null ? String(plan.ongoingAmountPaise / 100) : "",
+      ongoingOfferAppliesToFirstPeriod: plan.ongoingOfferAppliesToFirstPeriod === true,
       offerPrice: plan.firstPaymentAmountPaise != null ? String(plan.firstPaymentAmountPaise / 100) : "" });
   };
   const change = (key, value) => setForm(previous => ({ ...previous, [key]: value }));
@@ -68,6 +71,8 @@ export default function PlanAdmin() {
         projectLimit: Number(form.projectLimit), available: form.available, highlighted: form.highlighted,
         features: form.featuresText.split("\n").map(f => f.trim()).filter(Boolean),
         firstPaymentAmountPaise: form.hasOffer ? toPaise(form.offerPrice) : null,
+        ongoingAmountPaise: form.hasOngoingOffer ? toPaise(form.ongoingPrice) : null,
+        ongoingOfferAppliesToFirstPeriod: form.hasOngoingOffer && form.ongoingOfferAppliesToFirstPeriod,
 
       });
       setForm(null); setNotice("New version published. Existing subscriptions retain their purchased billing terms."); await load();
@@ -104,7 +109,7 @@ export default function PlanAdmin() {
             <FiSettings size={32} style={{ flexShrink: 0 }} />
             <Typography component="h1" sx={heroTitleSx} fontWeight={900} letterSpacing="-.02em">Admin <Box component="span" sx={{ color: "#c7d2fe" }}>Settings</Box></Typography>
           </Stack>
-          <Typography sx={{ opacity: .85, maxWidth: 540, fontWeight: 500 }}>Manage subscription plans, introductory offers, and project allowances.</Typography>
+          <Typography sx={{ opacity: .85, maxWidth: 540, fontWeight: 500 }}>Manage subscription plans, first-period and ongoing offers, and project allowances.</Typography>
         </Box>
       </Container>
     </Box>
@@ -144,7 +149,7 @@ export default function PlanAdmin() {
         <Stack direction="row" spacing={1} alignItems="center" color="#64748b"><FiLayers size={18} /><Typography variant="body2" fontWeight={600}>{plan.projectLimit} new project{plan.projectLimit === 1 ? "" : "s"} per billing cycle</Typography></Stack>
         {plan.highlighted && <Typography variant="caption" color="#4f46e5" fontWeight={700} sx={{ mt: 1 }}>Highlighted on the pricing page</Typography>}
         <Box sx={{ p: 2, my: 3, borderRadius: "12px", bgcolor: plan.firstPaymentAmountPaise != null ? "#eef2ff" : "#f8fafc", border: "1px solid #e2e8f0" }}>
-          <Stack direction="row" alignItems="center" spacing={1} color="#4f46e5" mb={.75}><FiTag size={16} /><Typography variant="body2" fontWeight={800}>{plan.firstPaymentAmountPaise != null ? "First-period offer" : plan.offer ? "Legacy provider offer" : "Standard pricing"}</Typography></Stack>
+          <Stack direction="row" alignItems="center" spacing={1} color="#4f46e5" mb={.75}><FiTag size={16} /><Typography variant="body2" fontWeight={800}>{plan.ongoingAmountPaise != null ? "Ongoing offer" : plan.firstPaymentAmountPaise != null ? "First-period offer" : plan.offer ? "Legacy provider offer" : "Standard pricing"}</Typography></Stack>
           <Typography variant="body2" color="#475569">{offerTerms(plan)}</Typography>
         </Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: "auto" }}><Button variant="contained" startIcon={<FiEdit2 />} disabled={busy} sx={{ ...buttonSx, bgcolor: "#6366f1", boxShadow: "none", "&:hover": { bgcolor: "#4f46e5", boxShadow: "none" } }} onClick={() => edit(plan)}>Edit plan</Button><Button startIcon={<FiClock />} disabled={busy} sx={{ ...buttonSx, color: "#64748b" }} onClick={() => showHistory(plan.code)}>Version history</Button></Stack>
@@ -164,11 +169,18 @@ export default function PlanAdmin() {
           {form.offer && <Alert severity="info">This version uses an older provider offer. Publishing replaces it for new customers with the first-period pricing configured below. Existing purchases keep their original terms.</Alert>}
           <Divider />
           <FormControlLabel control={<Checkbox checked={form.hasOffer} onChange={e => change("hasOffer", e.target.checked)} />} label="Enable first-period offer" />
-          <Typography variant="body2" color="text.secondary">Optional. Applies to a customer's first purchase of this plan. Enable, update, or remove it by publishing a new version. With the offer disabled, new subscribers pay the regular price from the first period.</Typography>
+          <Typography variant="body2" color="text.secondary">Optional. Applies to a customer's first purchase of this plan unless replaced by an ongoing offer below. Existing subscribers keep their purchased pricing.</Typography>
           {form.hasOffer && <>
             <TextField fullWidth required label={`First ${form.interval === "monthly" ? "month" : "year"} price (INR)`} value={form.offerPrice} onChange={e => change("offerPrice", e.target.value)} helperText="Must be between INR 1 and INR 10,00,000. This may be above or below the renewal price." />
-            {Number(form.offerPrice) > 0 && <Alert severity="info">Customers pay {money(Math.round(Number(form.offerPrice) * 100))} for their first {form.interval === "monthly" ? "month" : "year"}, then authorize auto pay at {money(Math.round(Number(form.price) * 100))} per {form.interval === "monthly" ? "month" : "year"}. The regular payments start after the paid first period.</Alert>}
           </>}
+          <Divider />
+          <FormControlLabel control={<Checkbox checked={form.hasOngoingOffer} onChange={e => change("hasOngoingOffer", e.target.checked)} />} label="Enable ongoing offer" />
+          {form.hasOngoingOffer && <>
+            <TextField fullWidth required label={`Ongoing ${form.interval === "monthly" ? "monthly" : "yearly"} price (INR)`} value={form.ongoingPrice} onChange={e => change("ongoingPrice", e.target.value)} helperText="At least INR 1, up to the regular price. Stays fixed for this subscription until cancellation." />
+            <FormControlLabel control={<Checkbox checked={form.ongoingOfferAppliesToFirstPeriod} onChange={e => change("ongoingOfferAppliesToFirstPeriod", e.target.checked)} />} label="Replace the first-period offer with this price" />
+            <Typography variant="body2" color="text.secondary">Leave unchecked to keep the first-period offer. If no first-period offer is enabled, the ongoing price applies from the first period.</Typography>
+          </>}
+          <Alert severity="info">For a new customer: first {form.interval === "monthly" ? "month" : "year"}: {money(Math.round(Number(form.hasOngoingOffer && (form.ongoingOfferAppliesToFirstPeriod || !form.hasOffer) ? form.ongoingPrice : form.hasOffer ? form.offerPrice : form.price) * 100))}. Then {money(Math.round(Number(form.hasOngoingOffer ? form.ongoingPrice : form.price) * 100))} per {form.interval === "monthly" ? "month" : "year"} until cancelled. GST and processing fees are added at checkout.</Alert>
         </Stack></DialogContent>
         <DialogActions sx={{ p: 3, borderTop: "1px solid #e2e8f0" }}><Button sx={buttonSx} disabled={busy} onClick={() => setForm(null)}>Cancel</Button><Button sx={{ ...buttonSx, bgcolor: "#6366f1" }} variant="contained" type="submit" disabled={busy}>{busy ? "Publishing…" : "Publish new version"}</Button></DialogActions>
       </Box>}

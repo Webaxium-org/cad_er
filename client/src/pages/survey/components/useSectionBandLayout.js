@@ -6,9 +6,11 @@ export default function useSectionBandLayout(enabled) {
     if (!enabled) return;
     const full = graph?._fullLayout;
     if (!full?._size || !full.xaxis?.range) return;
-    const next = { width: full.width, left: full._size.l, plotWidth: full._size.w, range: full.xaxis.range.map(Number) };
+    const next = { width: full.width, left: full._size.l, plotWidth: full._size.w, range: full.xaxis.range.map(Number),
+      fontSize: Number(full.xaxis.tickfont?.size || full.font?.size) || 12 };
     setLayout((previous) => previous && previous.width === next.width && previous.left === next.left
-      && previous.plotWidth === next.plotWidth && previous.range.every((value, index) => value === next.range[index]) ? previous : next);
+      && previous.plotWidth === next.plotWidth && previous.fontSize === next.fontSize
+      && previous.range.every((value, index) => value === next.range[index]) ? previous : next);
   }, [enabled]);
   return [layout, updateLayout];
 }

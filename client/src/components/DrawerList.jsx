@@ -52,6 +52,7 @@ const menuListDetails = [
     icon: <FiCreditCard />,
     path: "/subscription",
     requiredTypes: ["Professional"],
+    excludedRoles: ["Super Admin"],
   },
   {
     label: "Organizations",
@@ -142,9 +143,10 @@ const DrawerList = ({ toggleDrawer }) => {
   useEffect(() => {
     if (user) {
       const filteredMenu = menuListDetails.filter((menu) =>
+        !menu.excludedRoles?.includes(user.role) && (
         (!menu.required && !menu.requiredTypes) ||
         menu.required?.includes(menu.label === "Tickets" ? user.type : user.role) ||
-        menu.requiredTypes?.includes(user.type),
+        menu.requiredTypes?.includes(user.type)),
       );
 
       setMenuList(filteredMenu);

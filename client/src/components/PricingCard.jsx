@@ -21,7 +21,11 @@ export default function PricingCard ({
   handleContactSales,
   disabled = false,
   buttonHref,
-}) { return (
+}) {
+  const hasOffer = introductoryPrice != null && introductoryPrice !== "Custom" && price !== "Custom";
+  const discountPercent = hasOffer && Number(price) > 0 && Number(introductoryPrice) >= 0 && Number(introductoryPrice) < Number(price)
+    ? Math.floor((Number(price) - Number(introductoryPrice)) * 100 / Number(price)) : 0;
+  return (
   <Motion.div
     whileHover={{ y: -10 }}
     transition={{ type: "spring", stiffness: 300 }}
@@ -75,21 +79,23 @@ export default function PricingCard ({
         sx={{
           display: "flex",
           alignItems: "baseline",
+          flexWrap: "wrap",
           mb: 0.5,
         }}
       >
         <Typography variant="h3" sx={{ fontWeight: 800, color: "#000" }}>
-          {displayPrice(introductoryPrice || price)}
+          {displayPrice(introductoryPrice ?? price)}
         </Typography>
         <Typography variant="body1" sx={{ color: "text.secondary", ml: 1 }}>
           /{duration}
         </Typography>
+        {discountPercent > 0 && <Box component="span" sx={{ ml: 1, px: 1, py: .5, borderRadius: 1,
+          bgcolor: "#eef2ff", color: "#4f46e5", fontSize: ".75rem", fontWeight: 800, whiteSpace: "nowrap" }}>
+          {discountPercent}% OFF
+        </Box>}
       </Box>
 
-      {introductoryPrice &&
-        introductoryPrice !== price &&
-        introductoryPrice !== "Custom" &&
-        price !== "Custom" && (
+      {hasOffer && introductoryPrice !== price && (
           <Box sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
               variant="body2"

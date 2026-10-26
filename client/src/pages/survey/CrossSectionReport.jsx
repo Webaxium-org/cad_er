@@ -450,7 +450,7 @@ const CrossSectionReport = () => {
               range: scaledRange([minY - 2, maxY + pad], drawingScales.vertical),
             },
           };
-          await Plotly.newPlot(plotNode, traces, layout, { displayModeBar: false, staticPlot: true });
+          await Plotly.react(plotNode, traces, { ...layout, transition: { duration: 0 } }, { displayModeBar: false, staticPlot: true });
           const { image, plotArea } = await capturePlotImage(plotNode);
           if (renderedCount > 0) pdf.addPage();
           addGraphPage(pdf, image, section, drawingScales, graphWidth, graphHeight, undefined, plotArea);

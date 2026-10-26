@@ -13,8 +13,7 @@ import {
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { MdArrowBackIosNew, MdOutlineGridView } from "react-icons/md";
-import { FaLocationArrow } from "react-icons/fa";
-import { FiGrid, FiList, FiLayout } from "react-icons/fi";
+import { FiGrid, FiList, FiLayout, FiSave } from "react-icons/fi";
 import { IoAdd } from "react-icons/io5";
 import { IoIosRemove } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
@@ -829,13 +828,13 @@ export default function ProposeLevel() {
                     alignItems="center"
                     justifyContent="center"
                   >
-                    <FaLocationArrow fontSize="22px" />
+                    <FiSave size={22} aria-hidden="true" />
                     <Typography
                       fontSize="1.05rem"
                       fontWeight={800}
                       letterSpacing="0.05em"
                     >
-                      NEXT
+                      SAVE
                     </Typography>
                   </Stack>
                 }
