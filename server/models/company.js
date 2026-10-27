@@ -11,6 +11,7 @@ const CompanySchema = new Schema(
     },
     email: String,
     website: String,
+    numberOfUsers: { type: Number, min: 1 },
     location: String,
     logo: String,
     status: String,

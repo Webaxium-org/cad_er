@@ -1,3 +1,4 @@
+import { validateOnboardingDetails } from "../services/onboardingDetails.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import User from "../models/user.js";
@@ -248,73 +249,32 @@ export const registerAccountType = async (req, res, next) => {
     user.phoneVerifiedAt = verification.verifiedAt;
     user.phone = normalizedPhone;
 
-    const isFilled = (val) => typeof val === "string" && val.trim().length > 0;
-
-    // 🔒 Validation based on type
-    if (type === "Student") {
-      const { instituteName, qualification, specialization, discoverySource } =
-        details || {};
-
-      if (
-        !isFilled(instituteName) ||
-        !isFilled(qualification) ||
-        !isFilled(specialization) ||
-        !isFilled(discoverySource)
-      ) {
-        throw Object.assign(new Error("All student fields are required"), {
-          statusCode: 400,
-        });
-      }
-
-      // Trim before saving
-      details.instituteName = instituteName.trim();
-      details.qualification = qualification.trim();
-      details.specialization = specialization.trim();
-      details.discoverySource = discoverySource.trim();
-    }
-
-    if (type === "Professional") {
-      const { jobTitle, industry } = details || {};
-
-      if (!isFilled(jobTitle) || !isFilled(industry)) {
-        throw Object.assign(new Error("All professional fields are required"), {
-          statusCode: 400,
-        });
-      }
-
-      details.jobTitle = jobTitle.trim();
-      details.industry = industry.trim();
-    }
-
-    if (type === "Company") {
-      const { companyName, size } = details || {};
-
-      if (!isFilled(companyName) || !isFilled(size)) {
-        throw Object.assign(new Error("All company fields are required"), {
-          statusCode: 400,
-        });
-      }
-
-      const company = await Company.create({
-        name: companyName.trim(),
-        size: size.trim(),
-        createdBy: userId,
-      });
-
-      user.company = company._id;
-
-      details.companyName = companyName.trim();
-      details.size = size.trim();
+    const validatedDetails = validateOnboardingDetails(type, details, user);
+    if (type === "Professional" && !validatedDetails.gstin) {
+      user.gstin = "";
+      user.gstBusinessName = "";
+      user.gstBusinessAddress = "";
+      user.gstMobile = "";
+      user.gstFetchedAt = undefined;
+      user.gstLookupProvider = undefined;
     }
 
     user.type = type;
-    user.details = details;
-    if (type === "Professional") {
+    user.details = validatedDetails;
+    if (["Professional", "Company"].includes(type)) {
       const session = await mongoose.startSession();
       try {
         session.startTransaction();
+        if (type === "Company") {
+          const [company] = await Company.create([{
+            name: validatedDetails.enterpriseName, size: validatedDetails.size,
+            numberOfUsers: validatedDetails.numberOfUsers, website: validatedDetails.website,
+            location: validatedDetails.officialAddress, createdBy: userId,
+          }], { session });
+          user.company = company._id;
+        }
         await user.save({ session });
-        await ensureTrialSubscription(user._id, { session });
+        if (type === "Professional") await ensureTrialSubscription(user._id, { session });
         await session.commitTransaction();
       } catch (error) {
         await session.abortTransaction();

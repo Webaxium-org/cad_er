@@ -13,7 +13,6 @@ export default function PricingCard ({
   introductoryPrice,
   discountLabel,
   duration,
-  renewalText,
   includesTier,
   features,
   highlighted = false,
@@ -89,8 +88,20 @@ export default function PricingCard ({
         <Typography variant="body1" sx={{ color: "text.secondary", ml: 1 }}>
           /{duration}
         </Typography>
-        {discountPercent > 0 && <Box component="span" sx={{ ml: 1, px: 1, py: .5, borderRadius: 1,
-          bgcolor: "#eef2ff", color: "#4f46e5", fontSize: ".75rem", fontWeight: 800, whiteSpace: "nowrap" }}>
+        {discountPercent > 0 && <Box component="span" sx={{ ml: 1, px: 1.5, py: .625, borderRadius: 1,
+          bgcolor: "#eef2ff", color: "#4f46e5", fontSize: ".9375rem", fontWeight: 800, whiteSpace: "nowrap",
+          position: "relative", overflow: "hidden", isolation: "isolate",
+          "&::after": {
+            content: '""', position: "absolute", inset: 0, pointerEvents: "none",
+            background: "linear-gradient(110deg, transparent 25%, rgba(255,255,255,.75) 50%, transparent 75%)",
+            transform: "translateX(-150%)", animation: "offerShine 5s ease-in-out infinite",
+          },
+          "@keyframes offerShine": {
+            "0%, 70%": { transform: "translateX(-150%)" },
+            "90%, 100%": { transform: "translateX(150%)" },
+          },
+          "@media (prefers-reduced-motion: reduce)": { "&::after": { animation: "none" } },
+        }}>
           {discountPercent}% OFF
         </Box>}
       </Box>
@@ -123,8 +134,6 @@ export default function PricingCard ({
       {price !== "Custom" && <Typography variant="caption" sx={{ display: "block", color: "text.secondary", mb: 2.5 }}>
         Excludes GST and processing fee
       </Typography>}
-
-      {renewalText && <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>{renewalText}</Typography>}
 
       {includesTier && (
         <Box sx={{ mb: 2 }}>

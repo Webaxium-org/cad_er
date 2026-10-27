@@ -16,7 +16,8 @@ import { stopLoading } from "../../redux/loadingSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { qualificationOptions } from "../../constants";
+import { identificationErrors } from "../../constants/onboarding";
+import OnboardingIdentification from "./components/OnboardingIdentification";
 import { handleFormError } from "../../utils/handleFormError";
 import { registerAccountType, sendOnboardingCode, verifyOnboardingCode } from "../../services/indexServices";
 import { setUser } from "../../redux/userSlice";
@@ -221,7 +222,7 @@ const OnboardingAccountType = () => {
     {
       key: "Company",
       icon: <Icons.Company />,
-      title: "Company",
+      title: "Enterprise",
       desc: "Enterprise or team use",
       color: "#10b981",
     },
@@ -262,142 +263,16 @@ const OnboardingAccountType = () => {
 
   const isStep2Valid = () => {
     const { type, details } = formValues;
-
-    const isFilled = (val) => val && val.trim().length > 0;
-
-    if (type === "Student") {
-      return (
-        isFilled(details.instituteName) &&
-        isFilled(details.qualification) &&
-        isFilled(details.specialization) &&
-        isFilled(details.discoverySource)
-      );
-    }
-
-    if (type === "Professional") {
-      return isFilled(details.jobTitle) && isFilled(details.industry);
-    }
-
-    if (type === "Company") {
-      return isFilled(details.companyName) && isFilled(details.size);
-    }
-
-    return false;
+    return Object.keys(identificationErrors(type, details)).length === 0 &&
+      (type === "Student" || !details.gstin || details.verifiedGstin === details.gstin);
   };
 
-  const renderStep2Fields = () => {
-    switch (formValues.type) {
-      case "Student":
-        return (
-          <Stack spacing={3} sx={{ width: "100%", maxWidth: 400, mx: "auto" }}>
-            <TextField
-              fullWidth
-              label="School / College / University Name"
-              onChange={(e) =>
-                handleDetailChange("instituteName", e.target.value)
-              }
-            />
-
-            <TextField
-              fullWidth
-              select
-              label="Current Qualification"
-              defaultValue=""
-              onChange={(e) =>
-                handleDetailChange("qualification", e.target.value)
-              }
-            >
-              {qualificationOptions?.map((qualification, idx) => (
-                <MenuItem key={idx} value={qualification.label}>
-                  {qualification.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              fullWidth
-              label="Specialization / Branch"
-              placeholder="e.g. Civil Engineering, Surveying"
-              onChange={(e) =>
-                handleDetailChange("specialization", e.target.value)
-              }
-            />
-
-            <TextField
-              fullWidth
-              select
-              label="How did you hear about us?"
-              defaultValue=""
-              onChange={(e) =>
-                handleDetailChange("discoverySource", e.target.value)
-              }
-            >
-              <MenuItem value="google">Google Search</MenuItem>
-              <MenuItem value="youtube">YouTube</MenuItem>
-              <MenuItem value="social">Instagram / Facebook</MenuItem>
-              <MenuItem value="friend">Friend / Classmate</MenuItem>
-              <MenuItem value="teacher">Teacher / Institute</MenuItem>
-              <MenuItem value="ads">Advertisement</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
-            </TextField>
-          </Stack>
-        );
-      case "Professional":
-        return (
-          <Stack spacing={3} sx={{ width: "100%", maxWidth: 400, mx: "auto" }}>
-            <TextField
-              fullWidth
-              label="Current Job Title"
-              onChange={(e) => handleDetailChange("jobTitle", e.target.value)}
-            />
-            <TextField
-              fullWidth
-              select
-              label="Industry"
-              defaultValue=""
-              onChange={(e) => handleDetailChange("industry", e.target.value)}
-            >
-              <MenuItem value="construction">
-                Construction & Infrastructure
-              </MenuItem>
-              <MenuItem value="architecture">Architecture</MenuItem>
-              <MenuItem value="surveying">Land Surveying</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
-            </TextField>
-          </Stack>
-        );
-      case "Company":
-        return (
-          <Stack spacing={3} sx={{ width: "100%", maxWidth: 400, mx: "auto" }}>
-            <TextField
-              fullWidth
-              label="Company Name"
-              onChange={(e) =>
-                handleDetailChange("companyName", e.target.value)
-              }
-            />
-            <TextField
-              fullWidth
-              select
-              label="Team Size"
-              defaultValue=""
-              onChange={(e) => handleDetailChange("size", e.target.value)}
-            >
-              <MenuItem value="1-10">1-10 employees</MenuItem>
-              <MenuItem value="11-50">11-50 employees</MenuItem>
-              <MenuItem value="51-200">51-200 employees</MenuItem>
-              <MenuItem value="200+">200+ employees</MenuItem>
-            </TextField>
-          </Stack>
-        );
-      default:
-        return null;
-    }
-  };
+  const renderStep2Fields = () => <OnboardingIdentification key={formValues.type}
+    type={formValues.type} details={formValues.details} onChange={handleDetailChange} />;
 
   useEffect(() => {
     dispatch(stopLoading());
-  }, []);
+  }, [dispatch]);
 
   return (
     <Box
@@ -456,7 +331,7 @@ const OnboardingAccountType = () => {
                       elevation={0}
                       key={item.key}
                       onClick={() =>
-                        setFormValues((p) => ({ ...p, type: item.key }))
+                        setFormValues({ type: item.key, details: { officialName: user?.gstin && user?.gstFetchedAt ? user.gstBusinessName || user.name || "" : user?.name || "", preferredEquipment: "Auto level", gstin: user?.gstin || "", verifiedGstin: user?.gstFetchedAt ? user?.gstin || "" : "", officialAddress: user?.gstBusinessAddress || "" } })
                       }
                       sx={{
                         flex: 1,
@@ -576,7 +451,7 @@ const OnboardingAccountType = () => {
                 variant="body1"
                 sx={{ mb: 6, color: "#6b7280", textAlign: "center" }}
               >
-                Help us set up your {formValues.type?.toLowerCase()} workspace.
+                Help us set up your {formValues.type === "Company" ? "enterprise" : formValues.type?.toLowerCase()} workspace.
               </Typography>
 
               {renderStep2Fields()}

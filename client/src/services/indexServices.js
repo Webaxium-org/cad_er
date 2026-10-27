@@ -17,6 +17,7 @@ export const registerAccountType = (formData) => {
 };
 
 export const sendOnboardingCode = (phone) => axiosInstance.post("onboarding/sms/send-code", { phone });
+export const fetchOnboardingGst = gstin => axiosInstance.post("onboarding/gst", { gstin });
 export const verifyOnboardingCode = (phone, code) => axiosInstance.post("onboarding/sms/verify-code", { phone, code });
 
 export const logoutUser = () => {
