@@ -1,4 +1,5 @@
 import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
+import AddLongitudinalChainageDialog from "./components/AddLongitudinalChainageDialog";
 import { createLongitudinalPdf } from "../../utils/longitudinalPdf";
 import ExportLoader from "../../components/ExportLoader";
 import SectionScaleInputs from "./components/SectionScaleInputs";
@@ -109,6 +110,7 @@ const LongitudinalSectionReport = () => {
   const [{ edits: levelEdits, history: editHistory }, dispatchLevelEdit] = useReducer(levelEditReducer, { edits: {}, history: [] });
   const setLevelEdits = (update) => dispatchLevelEdit({ type: "edit", update });
   const [savingLevels, setSavingLevels] = useState(false);
+  const [addChainageOpen, setAddChainageOpen] = useState(false);
 
   const [slopeDialogOpen, setSlopeDialogOpen] = useState(false);
   const [slopeForm, setSlopeForm] = useState({ levelIndex: 1, from: "", to: "", denominator: "10", direction: "falling" });
@@ -243,7 +245,7 @@ const LongitudinalSectionReport = () => {
     };
 
     if (item.value === "v1") {
-      setChartOptions((_) => ({
+      setChartOptions(() => ({
         ...v1ChartOptions,
         layout: {
           ...v1ChartOptions.layout,
@@ -258,7 +260,7 @@ const LongitudinalSectionReport = () => {
       }));
     }
     if (item.value === "v2") {
-      setChartOptions((_) => ({
+      setChartOptions(() => ({
         ...v2ChartOptions,
         layout: {
           ...v2ChartOptions.layout,
@@ -423,7 +425,7 @@ const LongitudinalSectionReport = () => {
     const minX = Math.min(...safeChainages);
     const maxX = Math.max(...safeChainages);
 
-    setChartOptions((prev) => ({
+    setChartOptions(() => ({
       ...v1ChartOptions,
       layout: {
         ...v1ChartOptions.layout,
@@ -675,9 +677,12 @@ const LongitudinalSectionReport = () => {
                   >
                     Undo
                   </Button>
-                <Button variant="outlined" size="small" aria-disabled="true" title="Add chainage — coming soon"
+                <Button variant="outlined" size="small"
+                  disabled={savingLevels || Boolean(Object.keys(levelEdits).length)}
+                  onClick={() => setAddChainageOpen(true)}
+                  title={Object.keys(levelEdits).length ? "Save or undo pending RL edits before adding a chainage" : "Add a new chainage"}
                   startIcon={<span aria-hidden="true">+</span>}
-                  sx={{ flexShrink: 0, textTransform: "none", borderRadius: "10px", borderColor: "#c7d2fe", color: "#4f46e5", fontWeight: 700, bgcolor: "#eef2ff", cursor: "default" }}>
+                  sx={{ flexShrink: 0, textTransform: "none", borderRadius: "10px", borderColor: "#c7d2fe", color: "#4f46e5", fontWeight: 700, bgcolor: "#eef2ff" }}>
                   Add chainage
                 </Button>
                 </Stack>
@@ -687,6 +692,11 @@ const LongitudinalSectionReport = () => {
                     ? "Changing an LS value shifts the cross-section reduced levels at that chainage by the same amount."
                     : "Editing is available only when the LS report is generated with exactly two levels."}
                 </Typography>
+                {Boolean(Object.keys(levelEdits).length) && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", px: 2, pb: 1.5 }}>
+                    Save or undo pending RL edits before adding a new chainage.
+                  </Typography>
+                )}
                 <TableContainer tabIndex={0} role="region" aria-label="Chainage levels, scroll horizontally to view all chainages" sx={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "0 0 16px 16px" }}>
                   <Table size="small" aria-labelledby="ls-chainage-details" sx={{ width: "max-content", minWidth: "100%", "& th, & td": { borderColor: "#e2e8f0", borderRight: "1px solid #e2e8f0" } }}>
                     <TableBody>
@@ -748,6 +758,15 @@ const LongitudinalSectionReport = () => {
           </Box>
         </Paper>
       </Box>
+      <AddLongitudinalChainageDialog
+        open={addChainageOpen} surveyId={id} referencePurposeId={tableData[0]?._id}
+        separator={survey?.separator || "/"} onClose={() => setAddChainageOpen(false)}
+        onAdded={async (chainage) => {
+          setAddChainageOpen(false);
+          await fetchSurvey();
+          dispatch(showAlert({ type: "success", message: `Chainage ${chainage} added to all levels.` }));
+        }}
+      />
     </Box>
   );
 };

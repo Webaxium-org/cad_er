@@ -90,6 +90,7 @@ SurveyPurposeSchema.virtual("rows", {
   ref: "SurveyRow",
   localField: "_id",
   foreignField: "purposeId",
+  options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
 });
 
 // History (linked via unified History model)

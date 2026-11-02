@@ -130,7 +130,7 @@ const getAllSurvey = async (req, res, next) => {
         populate: {
           path: "rows",
           match: { deleted: false },
-          options: { sort: { createdAt: 1 } },
+          options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
         },
       });
 
@@ -666,7 +666,7 @@ const getSurvey = async (req, res, next) => {
       populate: {
         path: "rows",
         match: { deleted: false },
-        options: { sort: { _id: 1, createdAt: 1 } },
+        options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
       },
     });
 
@@ -999,7 +999,7 @@ const getSurveyPurpose = async (req, res, next) => {
             populate: {
               path: "rows",
               match: { deleted: false },
-              options: { sort: { createdAt: 1 } },
+              options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
             },
           },
           {
@@ -1028,7 +1028,7 @@ const getSurveyPurpose = async (req, res, next) => {
                 populate: {
                   path: "rows",
                   match: { deleted: false },
-                  options: { sort: { createdAt: 1 } },
+                  options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
                 },
               },
             ],
@@ -1038,7 +1038,7 @@ const getSurveyPurpose = async (req, res, next) => {
       .populate({
         path: "rows",
         match: { deleted: false },
-        options: { sort: { createdAt: 1 } },
+        options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
       });
 
     if (!purpose) {
@@ -1093,7 +1093,7 @@ const getFieldBook = async (req, res, next) => {
         populate: {
           path: "rows",
           match: { deleted: false },
-          options: { sort: { createdAt: 1 } },
+          options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
         },
       })
       .lean();
@@ -1108,7 +1108,7 @@ const getFieldBook = async (req, res, next) => {
         populate: {
           path: "rows",
           match: { deleted: false },
-          options: { sort: { createdAt: 1 } },
+          options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
         },
       })
       .lean();
@@ -1322,7 +1322,7 @@ const getAllSurveyPurpose = async (req, res, next) => {
       .populate({
         path: "rows",
         match: { deleted: false },
-        options: { sort: { createdAt: 1 } },
+        options: { sort: { readingOrder: 1, createdAt: 1, _id: 1 } },
       })
       .populate({
         path: "history",
@@ -3011,7 +3011,7 @@ const editSurveyPurpose = async (req, res, next) => {
 
     // 1. get full list of rows in correct order
     const rows = await SurveyRow.find({ purposeId })
-      .sort({ createdAt: 1 })
+      .sort({ readingOrder: 1, createdAt: 1, _id: 1 })
       .session(session);
 
     const persistedRowFields = [
@@ -3403,18 +3403,18 @@ const createBranch = async (req, res, next) => {
       purposeId,
       type: { $in: ["Chainage", "Water Level"] },
       deleted: false,
-    }).sort({ createdAt: -1, _id: -1 });
+    }).sort({ readingOrder: -1, createdAt: -1, _id: -1 });
 
     const lastReading = await SurveyRow.findOne({
       purposeId,
       deleted: false,
-    }).sort({ createdAt: -1, _id: -1 });
+    }).sort({ readingOrder: -1, createdAt: -1, _id: -1 });
 
     const lastCpReading = await SurveyRow.findOne({
       purposeId,
       type: "CP",
       deleted: false,
-    }).sort({ createdAt: -1, _id: -1 });
+    }).sort({ readingOrder: -1, createdAt: -1, _id: -1 });
 
     let reducedLevel = 0;
 

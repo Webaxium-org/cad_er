@@ -37,6 +37,9 @@ const SurveyRowSchema = new Schema(
       default: [],
     },
     createdBy: { type: Types.ObjectId, ref: "User", required: true },
+    // Explicit reading order allows intermediate stations without changing creation dates.
+    // New field readings append after the compact order assigned during an insertion.
+    readingOrder: { type: Number, default: () => Date.now() },
 
     // ── Scalar fields (Instrument setup / CP / TBM) ────────────────────────
     backSight: { type: String, trim: true },

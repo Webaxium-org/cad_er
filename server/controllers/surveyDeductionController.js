@@ -29,7 +29,7 @@ export const createSurveyDeduction = async (req, res, next) => {
       throw createHttpError(400, "This purpose does not belong to the selected survey");
     }
     const readings = await SurveyRow.find({ purposeId, deleted: false, type: { $in: ["Chainage", "Water Level"] } })
-      .sort({ _id: 1 }).select("chainage").lean();
+      .sort({ readingOrder: 1, createdAt: 1, _id: 1 }).select("chainage").lean();
     const chainages = [...new Set(readings.map((row) => row.chainage).filter(Boolean))];
     let previousEnd = -1;
     const cleanRows = rows.map((row) => {

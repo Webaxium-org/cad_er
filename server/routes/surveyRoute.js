@@ -33,6 +33,7 @@ import {
 import { isAuthenticated, isAuthorized, requireAuth } from "../middleware/auth.js";
 import { requireProfessionalSubscription } from "../services/subscriptionAccess.js";
 import lookupLocation from "../services/weatherLocationService.js";
+import { previewLongitudinalChainage, createLongitudinalChainage } from "../controllers/longitudinalChainageController.js";
 import { getSurveyDeductions, createSurveyDeduction, deleteSurveyDeduction } from "../controllers/surveyDeductionController.js";
 
 router.use(requireAuth, isAuthenticated, isAuthorized({ types: ["Professional"] }), requireProfessionalSubscription);
@@ -64,6 +65,8 @@ router.get("/:id", getSurvey);
 router.patch("/:id", updateSurvey);
 router.delete("/:id", deleteSurvey);
 router.patch("/:id/reduced-levels/edit", updateReducedLevels);
+router.post("/:id/chainages/preview", previewLongitudinalChainage);
+router.post("/:id/chainages", createLongitudinalChainage);
 router.get("/:id/deductions", getSurveyDeductions);
 router.post("/:id/deductions", createSurveyDeduction);
 router.delete("/:id/deductions/:deductionId", deleteSurveyDeduction);

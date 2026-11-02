@@ -216,6 +216,12 @@ export const updateReducedLevels = (id, payload) => {
   });
 };
 
+export const previewLongitudinalChainage = (id, payload) =>
+  axiosInstance.post(`surveys/${id}/chainages/preview`, payload);
+
+export const createLongitudinalChainage = (id, payload) =>
+  axiosInstance.post(`surveys/${id}/chainages`, payload);
+
 export const createBranch = (surveyId, formData) => {
   return axiosInstance.post(`surveys/${surveyId}/branches`, formData);
 };
