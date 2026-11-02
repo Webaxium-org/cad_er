@@ -1,3 +1,12 @@
+// Reserve room for full band labels without changing their text or font.
+export const withSectionBandLabelMargin = (options, section) => {
+  const layout = options.layout || {};
+  const fontSize = Number(layout.xaxis?.tickfont?.size || layout.font?.size) || 12;
+  const labels = [...(section.series || []).map((series) => series.name.replace(/^Proposed\s+/i, "Prop. ")), section.type === "ls" ? "Chainage" : "Offset"];
+  const labelWidth = Math.ceil(Math.max(...labels.map((label) => label.length * fontSize * 0.65)) + 16);
+  return { ...options, layout: { ...layout, margin: { ...layout.margin, l: Math.max(layout.margin?.l || 0, labelWidth) } } };
+};
+
 export const getSectionLevelBands = (section) => {
   const positions = new Set();
   const bands = [...(section.series || [])].reverse().map((series) => {

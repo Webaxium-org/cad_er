@@ -162,6 +162,14 @@ export const generateSurveyPurpose = async (id, formData) => {
   return response;
 };
 
+export const previewProposalWorkspace = async (id, payload, signal) => {
+  const response = await axiosInstance.post(`surveys/${id}/proposal-workspace/preview`, payload, { signal });
+  if (response.data?.purpose) response.data.purpose = normalizePurpose(response.data.purpose);
+  return response;
+};
+
+export const saveProposalWorkspace = (id, payload) => axiosInstance.post(`surveys/${id}/proposal-workspace`, payload);
+
 export const generateWaterWayProposalPurpose = async (id, formData) => {
   const response = await axiosInstance.post(
     `surveys/${id}/purposes/generate-water-way`,

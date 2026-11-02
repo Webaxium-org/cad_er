@@ -1,6 +1,7 @@
 import * as Yup from "yup";
 import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
+  Alert, LinearProgress, MenuItem, TextField,
   Box,
   Container,
   Grid,
@@ -11,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdArrowBackIosNew, MdOutlineGridView } from "react-icons/md";
 import { FiGrid, FiList, FiLayout, FiSave } from "react-icons/fi";
 import { IoAdd } from "react-icons/io5";
@@ -27,12 +28,18 @@ import SmallHeader from "../../components/SmallHeader";
 import PageHeroHeader from "../../components/PageHeroHeader";
 import { proposalLevels } from "../../constants";
 import {
-  generateSurveyPurpose,
-  generateWaterWayProposalPurpose,
+  previewProposalWorkspace,
+  saveProposalWorkspace,
   getSurvey,
 } from "../../services/surveyServices";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import { handleFormError } from "../../utils/handleFormError";
+
+import ProposalProfileGraph from "./components/ProposalProfileGraph";
+import ProposalDesignControls from "./components/ProposalDesignControls";
+import { initialProposalDesign, proposalGraphSeries, stoppingSightDistance } from "../../utils/proposalWorkspace";
+import { profilePoints, profileLevel } from "../../utils/surveyGeometry";
+import { calculateVolumeReport } from "../../utils/volumeReport";
 
 const alertData = {
   title: "Generate Proposal",
@@ -240,7 +247,7 @@ export default function ProposeLevel() {
   const didMount = useRef(false);
   const { global } = useSelector((state) => state.loading);
 
-  const [activeIsland, setActiveIsland] = useState("cs");
+  const [activeIsland, setActiveIsland] = useState("ls");
   const [survey, setSurvey] = useState(null);
   const [crossSection, setCrossSection] = useState("camper");
   const [entryType, setEntryType] = useState("autoGenerate");
@@ -252,9 +259,16 @@ export default function ProposeLevel() {
   const [rows, setRows] = useState([initialRow]);
   const [openInterpolationSetup, setOpenInterpolationSetup] = useState(false);
   const [inputData, setInputData] = useState(inputDetails);
+  const [design, setDesign] = useState(() => structuredClone(initialProposalDesign));
+  const [preview, setPreview] = useState(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewError, setPreviewError] = useState("");
+  const [selectedChainage, setSelectedChainage] = useState("");
+  const basePurpose = useMemo(() => survey?.purposes?.find((purpose) => purpose.type === formValues.purpose), [survey, formValues.purpose]);
+  const stations = useMemo(() => basePurpose?.rows?.filter((row) => row.type === "Chainage") || [], [basePurpose]);
   const isWaterWay = survey?.type === "Water Way";
 
-  const schema = Yup.object().shape({
+  const schema = useMemo(() => Yup.object().shape({
     project: Yup.string().required("Project name is required"),
     purpose: Yup.string().required("Purpose is required"),
     proposal: Yup.string().required("Proposal is required"),
@@ -315,7 +329,47 @@ export default function ProposeLevel() {
         ? Yup.string().required("Cross section camper is required")
         : Yup.string().nullable(),
     formula: Yup.string().nullable(),
-  });
+  }), [isWaterWay, formValues.proposalMethod, entryType, crossSection]);
+
+  const request = useMemo(() => ({ form: { ...formValues, interpolation: rows }, design }), [formValues, rows, design]);
+  const validateWorkspace = useCallback(async () => {
+    if (design.mode === "manual") {
+      if (!formValues.project || !formValues.purpose || !formValues.proposal) throw Error("Choose the base and proposal levels.");
+      if (!stations.length || stations.some((row) => design.manualLevels[row.chainage] == null || String(design.manualLevels[row.chainage]).trim() === "" || !Number.isFinite(Number(design.manualLevels[row.chainage])))) throw Error("Enter a valid RL for every chainage.");
+      return;
+    }
+    const values = design.mode === "dimensions" ? { ...formValues, quantity: Number(design.dimensions.length) * Number(design.dimensions.width) * Number(design.dimensions.height), width: "Custom", length: "All", bottomWidth: design.dimensions.width } : formValues;
+    await schema.validate(values, { abortEarly: false });
+  }, [design, formValues, schema, stations]);
+
+  useEffect(() => {
+    if (!survey?._id) return;
+    const controller = new AbortController();
+    setPreviewBusy(true); setPreviewError(""); setPreview(null);
+    const timer = setTimeout(async () => {
+      try {
+        await validateWorkspace();
+        const { data } = await previewProposalWorkspace(id, request, controller.signal);
+        if (!controller.signal.aborted) setPreview(data.purpose);
+      } catch (error) {
+        if (!controller.signal.aborted) setPreviewError(error.response?.data?.message || (error.inner?.length ? "Complete the required proposal inputs to see the proposed profile." : error.message));
+      } finally { if (!controller.signal.aborted) setPreviewBusy(false); }
+    }, 600);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [id, survey?._id, request, validateWorkspace]);
+
+  const graphType = activeIsland === "cs" ? "cs" : "ls";
+  const graphSeries = useMemo(() => proposalGraphSeries(basePurpose, preview, graphType, selectedChainage || stations[0]?.chainage, survey?.separator || "/"), [basePurpose, preview, graphType, selectedChainage, stations, survey?.separator]);
+  const previewQuantity = useMemo(() => preview && basePurpose ? calculateVolumeReport(survey, basePurpose, preview) : null, [survey, basePurpose, preview]);
+  const selectMode = (mode) => {
+    setEntryType(mode === "manual" ? "manualEntry" : "autoGenerate");
+    setDesign((previous) => ({ ...previous, mode,
+      ls: { ...previous.ls, enabled: mode === "sloped" },
+      cs: { ...previous.cs, slopeEnabled: mode === "sloped" ? true : mode === "legacy" ? false : previous.cs.slopeEnabled,
+        superelevationEnabled: mode === "legacy" ? false : previous.cs.superelevationEnabled },
+      manualLevels: mode === "manual" ? Object.fromEntries(stations.map((row) => [row.chainage, previous.manualLevels[row.chainage] ?? profileLevel(profilePoints(row.offsets, row.reducedLevels), Number(basePurpose?.pls || 0))?.toFixed(3) ?? ""])) : previous.manualLevels,
+    }));
+  };
 
   const updateInputData = (completedPurposes = [], surveyType = survey?.type) => {
     const isWaterWaySurvey = surveyType === "Water Way";
@@ -431,6 +485,8 @@ export default function ProposeLevel() {
         purpose,
       }));
       setSurvey(surveyDoc);
+      setDesign((previous) => ({ ...previous, template: surveyDoc?.type === "Water Way" ? "water" : surveyDoc?.type === "Rail Way" ? "rail" : "road",
+        ls: { ...previous.ls, quantityType: surveyDoc?.type === "Water Way" ? "cutting" : "filling" } }));
       updateInputData(completedPurposes, surveyDoc?.type);
 
       const selected = surveyDoc?.purposes?.find((p) => p.type === purpose);
@@ -490,15 +546,8 @@ export default function ProposeLevel() {
     setBtnLoading(true);
 
     try {
-      await schema.validate(formValues, { abortEarly: false });
-
-      const generatePurpose = isWaterWay
-        ? generateWaterWayProposalPurpose
-        : generateSurveyPurpose;
-      const { data } = await generatePurpose(id, {
-        ...formValues,
-        interpolation: rows,
-      });
+      await validateWorkspace();
+      const { data } = await saveProposalWorkspace(id, request);
 
       if (data.success) {
         dispatch(startLoading());
@@ -675,7 +724,12 @@ export default function ProposeLevel() {
         onSubmit={() => setOpenInterpolationSetup(false)}
       />
 
-      <Container maxWidth="md" sx={{ mt: -8, position: "relative" }}>
+      <Container maxWidth="lg" sx={{ mt: -8, position: "relative" }}>
+        <ProposalProfileGraph series={graphSeries} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
+        {previewBusy && <LinearProgress sx={{ mb: 1, borderRadius: 2 }} />}
+        {previewError && <Alert severity="info" sx={{ mb: 2 }}>{previewError}</Alert>}
+        {previewQuantity && <Stack direction="row" gap={2} flexWrap="wrap" sx={{ mb: 2 }}><Typography fontWeight={800} color="#b45309">Cutting {previewQuantity.totalCuttingVolume.toFixed(3)} m&sup3;</Typography><Typography fontWeight={800} color="#2878c7">Filling {previewQuantity.totalFillingVolume.toFixed(3)} m&sup3;</Typography>{previewQuantity.missingSections?.length > 0 && <Typography color="error">Quantity incomplete: missing cross-sections.</Typography>}</Stack>}
+        {activeIsland === "cs" && <TextField select size="small" fullWidth sx={{ mb: 2 }} label="Preview chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
         <Paper
           elevation={0}
           sx={{
@@ -737,7 +791,13 @@ export default function ProposeLevel() {
 
           <Stack width={"100% !important"} spacing={4} className="input-wrapper">
             <Grid container spacing={3} columns={12} alignItems={"end"}>
-              {inputData.map(
+              {inputData.filter((input) => {
+                if (["entryType", "proposedLevel"].includes(input.name)) return false;
+                if (design.mode === "manual" && !["project", "purpose", "proposal"].includes(input.name)) return false;
+                if (design.mode === "dimensions" && ["quantity", "width", "length"].includes(input.name)) return false;
+                const csField = ["crossSectionType", "cSection", "csSlop", "csCamper", "proposalMethod", "bottomWidth", "slope", "bermWidth"].includes(input.name);
+                return activeIsland === "cs" ? csField : activeIsland === "ls" ? !csField : false;
+              }).map(
                 ({ hidden, mode, size, ...input }, index) =>
                   !hidden && (
                     <Grid
@@ -814,51 +874,14 @@ export default function ProposeLevel() {
             </Grid>
           </Stack>
 
-          <Stack width={"100%"} gap={2} pt={3}>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              style={{ width: "100%" }}
-            >
-              <BasicButton
-                value={
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <FiSave size={22} aria-hidden="true" />
-                    <Typography
-                      fontSize="1.05rem"
-                      fontWeight={800}
-                      letterSpacing="0.05em"
-                    >
-                      SAVE
-                    </Typography>
-                  </Stack>
-                }
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
-                  color: "white",
-                  height: "60px",
-                  borderRadius: "16px",
-                  border: "none",
-                  boxShadow: "0 10px 25px -5px rgba(99, 102, 241, 0.4)",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #4338ca 0%, #4f46e5 100%)",
-                    boxShadow: "0 15px 30px -5px rgba(99, 102, 241, 0.5)",
-                  },
-                }}
-                fullWidth={true}
-                onClick={preSubmitCheck}
-                loading={btnLoading}
-              />
-            </motion.div>
-          </Stack>
+          <ProposalDesignControls tab={activeIsland} design={design} onChange={setDesign} onModeChange={selectMode} stations={stations}
+            onTemplate={(template) => {
+              setDesign((previous) => ({ ...previous, template, cs: { ...previous.cs,
+                slopeEnabled: template !== "road", superelevationEnabled: template === "rail",
+                bedWidth: previous.cs.bedWidth || formValues.bottomWidth || "",
+              } }));
+              setActiveIsland("cs");
+            }} />
         </Paper>
       </Container>
 
@@ -876,7 +899,7 @@ export default function ProposeLevel() {
           position: "fixed",
           left: "50%",
           zIndex: 1000,
-          ...capsuleWrapperSx(3),
+          ...capsuleWrapperSx(4),
         }}
       >
         <Paper
@@ -890,10 +913,14 @@ export default function ProposeLevel() {
             ...capsuleShellSx,
           }}
         >
-          {islandOptions.map((option) => (
+          {[islandOptions[1], islandOptions[0], islandOptions[2]].map((option) => (
             <Box
               key={option.value}
+              component="button"
+              type="button"
+              aria-pressed={activeIsland === option.value}
               sx={{
+                border: 0,
                 position: "relative",
                 display: "flex",
                 alignItems: "center",
@@ -937,7 +964,7 @@ export default function ProposeLevel() {
 
               <Box
                 sx={{
-                  ...islandButtonContentSx(3, "TEMPLATES"),
+                  ...islandButtonContentSx(4, "TEMPLATES"),
                 }}
               >
                 <Typography
@@ -973,6 +1000,10 @@ export default function ProposeLevel() {
               </Box>
             </Box>
           ))}
+          <BasicButton value="Wrap proposal" startIcon={<FiSave />} loading={btnLoading}
+            disabled={previewBusy || !preview || Boolean(previewError) || Boolean(previewQuantity?.missingSections?.length)}
+            onClick={preSubmitCheck} sx={{ flex: "1 1 0", minWidth: 0, borderRadius: ISLAND_BUTTON_RADIUS, bgcolor: "#595cf2", color: "white", px: { xs: 0.5, sm: 2 }, whiteSpace: "normal", lineHeight: 1.2, fontSize: { xs: "0.7rem", sm: "0.875rem" },
+              "& .MuiButton-startIcon": { display: { xs: "none", sm: "inline-flex" } } }} />
         </Paper>
       </Box>
     </Box>

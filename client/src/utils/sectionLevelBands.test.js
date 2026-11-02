@@ -1,6 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getSectionLevelBands } from "./sectionLevelBands.js";
+import { getSectionLevelBands, withSectionBandLabelMargin } from "./sectionLevelBands.js";
+
+test("full band labels get a wider margin without changing fonts, names or axis ranges", () => {
+  const options = { layout: { margin: { l: 50, r: 30 }, font: { size: 12 }, xaxis: { range: [0, 140] } } };
+  const section = { type: "ls", series: [{ name: "Initial Level" }, { name: "Proposed Level" }, { name: "Final Quarry Muck" }] };
+  const result = withSectionBandLabelMargin(options, section);
+  assert.ok(result.layout.margin.l >= "Final Quarry Muck".length * 12 * 0.65 + 16);
+  assert.equal(result.layout.font, options.layout.font);
+  assert.equal(result.layout.xaxis, options.layout.xaxis);
+  assert.equal(options.layout.margin.l, 50);
+  assert.equal(result.layout.margin.r, 30);
+  assert.equal(section.series[1].name, "Proposed Level");
+});
 
 test("LS bands show every level followed by distinct ordered chainages", () => {
   const bands = getSectionLevelBands({ type: "ls", series: [

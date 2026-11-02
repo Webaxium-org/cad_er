@@ -1,4 +1,7 @@
 import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
+import QuantityDeltaBadge from "./components/QuantityDeltaBadge";
+import { calculateVolumeReport } from "../../utils/volumeReport";
+import { reportDeductions } from "../../utils/surveyDeductions";
 import SectionScaleInputs from "./components/SectionScaleInputs";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -150,6 +153,15 @@ const CrossSectionReport = () => {
   const [maxValue, setMaxValue] = useState("");
 
   const [tableData, setTableData] = useState([]);
+  const savedQuantity = useMemo(() => {
+    if (tableData.length !== 2 || !survey?.purposes) return null;
+    const original = tableData.map((purpose) => survey.purposes.find((entry) => String(entry._id) === String(purpose._id)));
+    return calculateVolumeReport(survey, original[0], original[1], reportDeductions(survey, state?.deductionId));
+  }, [survey, tableData, state?.deductionId]);
+  const invalidQuantityEdits = tableData.some((purpose) => purpose.rows?.some((row) => row.type === "Chainage" && row.reducedLevels?.some((value) => String(value ?? "").trim() === "" || !Number.isFinite(Number(value)))));
+  const liveQuantity = useMemo(() => tableData.length === 2 && !invalidQuantityEdits
+    ? calculateVolumeReport(survey, tableData[0], tableData[1], reportDeductions(survey, state?.deductionId)) : savedQuantity,
+  [survey, tableData, invalidQuantityEdits, savedQuantity, state?.deductionId]);
 
   const [selectedCs, setSelectedCs] = useState(null);
   const [drawingScales, setDrawingScales] = useState({
@@ -864,6 +876,11 @@ const CrossSectionReport = () => {
             message: "Reduced levels updated successfully",
           }),
         );
+        setSurvey((previous) => ({ ...previous, purposes: previous.purposes.map((purpose) => {
+          const edited = tableData.find((entry) => entry._id === purpose._id);
+          return !edited ? purpose : { ...purpose, rows: purpose.rows.map((row) => row.chainage === selectedCs.chainage
+            ? edited.rows.find((entry) => entry._id === row._id) || row : row) };
+        }) }));
       } else {
         throw Error("Failed to fetch survey");
       }
@@ -878,7 +895,8 @@ const CrossSectionReport = () => {
 
   useEffect(() => {
     if (tableData.length) {
-      const row = tableData[0].rows?.find((row) => row.type === "Chainage");
+      const row = tableData[0].rows?.find((row) => row.type === "Chainage" && row.chainage === selectedCs?.chainage)
+        || tableData[0].rows?.find((row) => row.type === "Chainage");
 
       if (row) handleClickCs(row._id, "initial");
     }
@@ -953,6 +971,8 @@ const CrossSectionReport = () => {
                 <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
               </Stack>
               <WaterWayProposalNotice purposes={tableData} />
+              <Box sx={{ position: "relative" }}>
+              <QuantityDeltaBadge saved={savedQuantity} live={liveQuantity} invalid={invalidQuantityEdits} />
               {selectedCs && selectedCs?.series && interactiveChartOptions && (
                 <CrossSectionChart
                   drawingScales={drawingScales}
@@ -961,6 +981,7 @@ const CrossSectionReport = () => {
                   pdfRef={pdfRef}
                 />
               )}
+              </Box>
             </Box>
 
             <Box

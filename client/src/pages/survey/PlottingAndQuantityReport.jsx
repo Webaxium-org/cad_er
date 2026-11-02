@@ -3,6 +3,7 @@ import { printedGraphScale, graphScaleLabel } from "../../utils/graphScale";
 import { calculatePlottingQuantityReport } from "../../utils/plottingQuantityReport.js";
 import { reportDeductions } from "../../utils/surveyDeductions";
 import { splitLongitudinalSections } from "../../utils/longitudinalPagination";
+import { withSectionBandLabelMargin } from "../../utils/sectionLevelBands";
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -680,10 +681,6 @@ const exportPdf = async ({
       const printedScales = plots.map(plot => printedGraphScale(plot.plotArea,
         imgHeight * plot.plotWidthPx / (canvas.width / GRAPH_EXPORT_SCALE),
         imgWidth * plot.plotHeightPx / (canvas.height / GRAPH_EXPORT_SCALE)));
-      doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(0);
-      doc.text(printedScales.map(graphScaleLabel).join(" | "), pageTotalWidth / 2, chartPageMargin + 6, { align: "center" });
-      doc.setFontSize(7);
-      doc.text("Print at 100% / Actual size", pageTotalWidth / 2, chartPageMargin + 10, { align: "center" });
 
       // Embed the encoded JPEG without recompressing it.
       doc.addImage(
@@ -696,6 +693,16 @@ const exportPdf = async ({
         undefined,
         "NONE",
       );
+
+      // The drawing is rotated onto the portrait sheet. Keep its scale in the
+      // upper-left corner inside the frame, with the same reading direction.
+      const scaleLines = printedScales.flatMap(scale => graphScaleLabel(scale).split("    "));
+      scaleLines.push("Print at 100% / Actual size");
+      doc.setFont("helvetica", "normal").setTextColor(0);
+      scaleLines.forEach((line, lineIndex) => {
+        doc.setFontSize(lineIndex === scaleLines.length - 1 ? 7 : 8);
+        doc.text(line, chartPageMargin + 6 + lineIndex * 3.5, availableTop + 32, { angle: 90 });
+      });
 
       drawGraphInfoSection(availableBottom);
 
@@ -1664,7 +1671,7 @@ const PlottingAndQuantityReport = () => {
             <CrossSectionChart
               showLevelBands
               selectedCs={page.section}
-              chartOptions={{ ...chartOptions, layout: { ...chartOptions.layout, xaxis: { ...chartOptions.layout.xaxis, autorange: false, range: page.range, dtick: undefined, nticks: 8 } } }}
+              chartOptions={withSectionBandLabelMargin({ ...chartOptions, layout: { ...chartOptions.layout, xaxis: { ...chartOptions.layout.xaxis, autorange: false, range: page.range, dtick: undefined, nticks: 8 } } }, page.section)}
               drawingScales={{ horizontal: 2400, vertical: 300 }}
             />
           </Box>
@@ -1698,7 +1705,7 @@ const PlottingAndQuantityReport = () => {
               <CrossSectionChartV2
                 showLevelBands
                 selectedCs={cs}
-                chartOptions={cs.specificOptions || chartOptions}
+                chartOptions={withSectionBandLabelMargin(cs.specificOptions || chartOptions, cs)}
               />
             </Box>
           ))}

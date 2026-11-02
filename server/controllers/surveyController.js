@@ -9,6 +9,11 @@ import mongoose from "mongoose";
 import { prepareWaterWaySections } from "../helper/waterWayGeometry.js";
 import { reserveProjectSlot } from "../services/subscriptionAccess.js";
 
+// Preview invokes the same calculation but creates no database documents.
+const createProposalPurpose = async (req, documents, options) => req.proposalPreview === true
+  ? documents.map((document) => new SurveyPurpose(document))
+  : SurveyPurpose.create(documents, options);
+
 const checkSurveyExists = async (req, res, next) => {
   try {
     const survey = await Survey.findOne({
@@ -1814,6 +1819,7 @@ const generateSurveyPurpose = async (req, res, next) => {
     // 🔹 Fetch active survey
     const survey = await Survey.findOne({
       _id: id,
+      createdBy: userId,
       isSurveyFinish: false,
       deleted: false,
     })
@@ -1925,7 +1931,7 @@ const generateSurveyPurpose = async (req, res, next) => {
     );
 
     // 🔹 Create new proposal purpose
-    const [purposeDoc] = await SurveyPurpose.create(
+    const [purposeDoc] = await createProposalPurpose(req,
       [
         {
           surveyId: id,
@@ -2484,6 +2490,14 @@ const generateSurveyPurpose = async (req, res, next) => {
       };
     });
 
+    if (req.proposalPreview === true) {
+      await session.abortTransaction();
+      await session.endSession();
+      return res.status(200).json({ success: true, purpose: {
+        ...purposeDoc.toObject(), rows: bulkOps.map((operation) => operation.insertOne.document),
+      } });
+    }
+
     if (bulkOps.length > 0) {
       await SurveyRow.bulkWrite(bulkOps, { session });
     } else {
@@ -2616,6 +2630,7 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
     const survey = await Survey.findOne({
       _id: id,
       type: "Water Way",
+      createdBy: userId,
       isSurveyFinish: false,
       deleted: false,
     })
@@ -2896,7 +2911,7 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
       }
     }
 
-    const [purposeDoc] = await SurveyPurpose.create(
+    const [purposeDoc] = await createProposalPurpose(req,
       [
         {
           surveyId: id,
@@ -2976,6 +2991,14 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
         },
       };
     });
+
+    if (req.proposalPreview === true) {
+      await session.abortTransaction();
+      await session.endSession();
+      return res.status(200).json({ success: true, purpose: {
+        ...purposeDoc.toObject(), rows: bulkOps.map((operation) => operation.insertOne.document),
+      } });
+    }
 
     await SurveyRow.bulkWrite(bulkOps, { session });
 

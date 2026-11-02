@@ -18,6 +18,7 @@ export const calculateVolumeReport = (survey, initialEntry, secondaryEntry, dedu
   const rows = [];
 
   let prevSection = null;
+  let previousStation = null;
   let currentDeduction = null;
   let isDeductionStarted = false;
   let isDeductionRemarkAdded = false;
@@ -219,6 +220,19 @@ export const calculateVolumeReport = (survey, initialEntry, secondaryEntry, dedu
           : "0.000";
     }
 
+    // New proposal breaks are opt-in and leave legacy deduction/calculation rules intact.
+    if (previousStation && prevSection !== null && secondaryEntry.designSettings?.breaks?.length) {
+      const from = chainageValue(previousStation, survey.separator || "/");
+      const to = chainageValue(row.chainage, survey.separator || "/");
+      const excluded = secondaryEntry.designSettings.breaks.reduce((sum, range) => sum + Math.max(0,
+        Math.min(to, chainageValue(range.to, survey.separator || "/")) - Math.max(from, chainageValue(range.from, survey.separator || "/"))), 0);
+      if (excluded > 0) {
+        difference = Math.max(0, Number(difference) - excluded).toFixed(3);
+        flag = true;
+        deductionMessage = "Proposal break";
+      }
+    }
+
     // --- Average areas ---
     const cuttingAvgSqrMtr = (
       (Number(cuttingAreaSqMtr) + Number(cuttingPrevArea)) /
@@ -281,6 +295,7 @@ export const calculateVolumeReport = (survey, initialEntry, secondaryEntry, dedu
     totals.totalCuttingVolume += Number(cuttingVolumeCubicMtr);
     totals.totalFillingVolume += Number(fillingVolumeCubicMtr);
     prevSection = chainage;
+    previousStation = row.chainage;
     isBreak = false;
     breakMessage = "";
   });

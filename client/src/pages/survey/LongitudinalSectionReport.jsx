@@ -1,4 +1,5 @@
 import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
+import QuantityDeltaBadge from "./components/QuantityDeltaBadge";
 import AddLongitudinalChainageDialog from "./components/AddLongitudinalChainageDialog";
 import { createLongitudinalPdf } from "../../utils/longitudinalPdf";
 import ExportLoader from "../../components/ExportLoader";
@@ -638,6 +639,8 @@ const LongitudinalSectionReport = () => {
                 </Stack>
               </Stack>
               <WaterWayProposalNotice purposes={tableData} />
+              <Box sx={{ position: "relative" }}>
+              <QuantityDeltaBadge saved={savedQuantity} live={liveQuantity} invalid={invalidQuantityEdits || quantityIncomplete} />
               {selectedCs && selectedCs?.series?.length && (
                 <CrossSectionChart
                   drawingScales={drawingScales}
@@ -646,6 +649,7 @@ const LongitudinalSectionReport = () => {
                   pdfRef={pdfRef}
                 />
               )}
+              </Box>
 
             {/* Footer */}
             <Typography
