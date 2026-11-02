@@ -47,7 +47,8 @@ export default function OnboardingIdentification({ type, details, onChange }) {
           htmlInput: field.name === "gstin" ? { maxLength: 15 } : field.inputType === "number" ? { min: field.name === "graduationYear" ? 1900 : 1, step: 1 } : { maxLength: field.name === "officialAddress" ? 1200 : 200 } }}
         multiline={field.name === "officialAddress"} minRows={field.name === "officialAddress" ? 2 : undefined}
         helperText={field.name === "gstin" ? type === "Company" ? "Required. Fetch your registered name and address before continuing." : "Optional. Fetch your registered name and address if providing GSTIN."
-          : field.name === "website" ? "Optional. Include https://" : field.name === "officialName" && details.gstin ? "Fetched from GST records." : undefined}>
+          : field.name === "website" ? "Optional. Include https://" : ["officialName", "officialAddress"].includes(field.name) && details.gstin
+            ? gstVerified ? "Fetched from GST records." : "Fetch GST details to fill the registered name and address." : undefined}>
         {field.options?.map(option => <MenuItem key={option} value={option}>{option}</MenuItem>)}
       </TextField>
       {field.name === "gstin" && <>

@@ -4,6 +4,7 @@ import { Activity, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { handleFormError } from "../../utils/handleFormError";
+import { applyChainageDefaults } from "../../utils/chainageDefaults";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
 import {
   Box,
@@ -225,6 +226,7 @@ const RoadSurveyRowsForm = () => {
 
   const [purpose, setPurpose] = useState(null);
   const [formValues, setFormValues] = useState(initialFormValues);
+  const [chainageDefaults, setChainageDefaults] = useState({ roadWidth: "", spacing: "" });
   const [formErrors, setFormErrors] = useState({});
   const [formWarnings, setFormWarnings] = useState({});
   const [inputData, setInputData] = useState([]);
@@ -347,7 +349,8 @@ const RoadSurveyRowsForm = () => {
         then: (schema) =>
           schema
             .typeError("Spacing is required")
-            .required("Spacing is required"),
+            .required("Spacing is required")
+            .moreThan(0, "Spacing must be greater than zero"),
         otherwise: (schema) => schema.nullable(),
       }),
 
@@ -694,9 +697,9 @@ const RoadSurveyRowsForm = () => {
     setRowType(type);
   };
 
-  const calculateOffset = () => {
-    const roadWidth = Number(formValues.roadWidth || 0);
-    const spacing = Number(formValues.spacing || 0);
+  const calculateOffset = (entryValues) => {
+    const roadWidth = Number(entryValues.roadWidth);
+    const spacing = Number(entryValues.spacing);
 
     const intermediateOffsets = ["0.000"];
 
@@ -721,11 +724,11 @@ const RoadSurveyRowsForm = () => {
       if (value >= halfWidth) break;
     }
 
-    const updatedRows = [...formValues.intermediateOffsets].filter(
+    const updatedRows = [...entryValues.intermediateOffsets].filter(
       (o) => o.intermediateSight.length,
     );
 
-    const defaultMode = formValues.basis === "Soundings" ? "S" : "R";
+    const defaultMode = entryValues.basis === "Soundings" ? "S" : "R";
 
     intermediateOffsets
       ?.sort((a, b) => a - b)
@@ -830,7 +833,12 @@ const RoadSurveyRowsForm = () => {
     }
 
     try {
-      await Yup.reach(schema, name).validate(value);
+      if (rowType === "Chainage" && (name === "roadWidth" || name === "spacing")) {
+        const entryValues = applyChainageDefaults({ ...formValues, type: rowType, [name]: value }, chainageDefaults);
+        await schema.validateAt(name, entryValues);
+      } else {
+        await Yup.reach(schema, name).validate(value);
+      }
 
       setFormErrors({ ...formErrors, [target]: null });
     } catch (error) {
@@ -863,6 +871,7 @@ const RoadSurveyRowsForm = () => {
   };
 
   const getNewChainage = (purpose) => {
+    setChainageDefaults({ roadWidth: "", spacing: "" });
     try {
       const isProposal = purpose.phase === "Proposal";
 
@@ -903,10 +912,14 @@ const RoadSurveyRowsForm = () => {
         }
 
         if (currentReading) {
+          setChainageDefaults({
+            roadWidth: currentReading?.roadWidth ?? "",
+            spacing: currentReading?.spacing ?? "",
+          });
           const updatedValues = {
             chainage: currentReading?.chainage || "",
-            roadWidth: currentReading?.roadWidth || "",
-            spacing: currentReading?.spacing || "",
+            roadWidth: "",
+            spacing: "",
             basis: currentReading?.basis || "Readings",
           };
 
@@ -924,6 +937,8 @@ const RoadSurveyRowsForm = () => {
           setFormValues((prev) => ({
             ...prev,
             chainage: `0${purpose?.surveyId?.separator || "/"}000`,
+            roadWidth: "",
+            spacing: "",
           }));
         } else {
           const lastChainage = purpose?.rows
@@ -952,11 +967,15 @@ const RoadSurveyRowsForm = () => {
             nextNumber % 1000,
           ).padStart(3, "0")}`;
 
+          setChainageDefaults({
+            roadWidth: lastChainage?.roadWidth ?? "",
+            spacing: lastChainage?.spacing ?? "",
+          });
           setFormValues((prev) => ({
             ...prev,
             chainage: nextChainage,
-            roadWidth: Number(lastChainage?.roadWidth) || "",
-            spacing: lastChainage?.spacing || "",
+            roadWidth: "",
+            spacing: "",
             basis: lastChainage?.basis || "Readings",
           }));
         }
@@ -972,12 +991,18 @@ const RoadSurveyRowsForm = () => {
     setBtnLoading(true);
     try {
       if (rowType === "Chainage" && page === 0) {
-        const pickItems = ["chainage", "roadWidth", "spacing"];
+        const pickItems = ["type", "chainage", "roadWidth", "spacing"];
+        const entryValues = applyChainageDefaults({ ...formValues, type: rowType }, chainageDefaults);
 
         const isProposal = purpose.phase === "Proposal";
 
         const partialSchema = schema.pick(pickItems);
-        await partialSchema.validate(formValues, { abortEarly: false });
+        await partialSchema.validate(entryValues, { abortEarly: false });
+        setFormValues((prev) => ({
+          ...prev,
+          roadWidth: entryValues.roadWidth,
+          spacing: entryValues.spacing,
+        }));
 
         if (formValues.intermediateOffsets?.length === 1) {
           if (isProposal) {
@@ -1017,7 +1042,7 @@ const RoadSurveyRowsForm = () => {
           }
         }
 
-        calculateOffset();
+        calculateOffset(entryValues);
         setBtnLoading(false);
         return setPage(1);
       }
@@ -1976,7 +2001,13 @@ const RoadSurveyRowsForm = () => {
                         ) : (
                           <BasicInput
                             {...input}
-                            value={formValues[input.name] || ""}
+                            value={formValues[input.name] ?? ""}
+                            placeholder={chainageDefaults[input.name] !== undefined
+                              ? String(chainageDefaults[input.name])
+                              : input.placeholder}
+                            helperText={rowType === "Chainage" && hasValue(chainageDefaults[input.name])
+                              ? `Leave blank to use ${chainageDefaults[input.name]}, or enter a different value.`
+                              : ""}
                             error={(formErrors && formErrors[input.name]) || ""}
                             warning={
                               (formWarnings && formWarnings[input.name]) || ""

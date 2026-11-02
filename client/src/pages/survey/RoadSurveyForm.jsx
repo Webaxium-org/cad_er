@@ -229,7 +229,7 @@ const initialFormValues = {
   contractor: "",
   instrumentNo: "",
   backSight: "",
-  remark: "TBM - 1",
+  remark: "",
   reducedLevel: "",
   chainageMultiple: "",
   separator: "",
@@ -381,10 +381,10 @@ const RoadSurveyForm = () => {
   const [savingSettingsEdit, setSavingSettingsEdit] = useState(false);
   const [staffDefaults, setStaffDefaults] = useState(null);
   const agreementByCategory = useRef({});
+  const [defaultRemark] = useState(getDefaultRemark);
   const [formValues, setFormValues] = useState(() => ({
     ...initialFormValues,
     type: locationState?.type || "Road Survey",
-    remark: getDefaultRemark(),
   }));
   const [formErrors, setFormErrors] = useState(null);
   const [queueValues, setQueueValues] = useState(initialQueueValues);
@@ -696,7 +696,12 @@ const RoadSurveyForm = () => {
   const handleSubmit = async () => {
     setBtnLoading(true);
     try {
-      await step2Schema.validate(formValues, { abortEarly: false });
+      // Keep the input as the user's note; compose the saved remark only here.
+      const submissionValues = {
+        ...formValues,
+        remark: [defaultRemark, formValues.remark.trim()].filter(Boolean).join(" - "),
+      };
+      await step2Schema.validate(submissionValues, { abortEarly: false });
 
       let data;
       if (existingSurveyId) {
@@ -709,13 +714,13 @@ const RoadSurveyForm = () => {
           instrumentModel: formValues.instrumentModel,
           reducedLevel: formValues.reducedLevel,
           backSight: formValues.backSight,
-          remark: formValues.remark,
+          remark: submissionValues.remark,
           chainageMultiple: formValues.chainageMultiple,
           separator: formValues.separator,
         }));
       } else {
         // Brand-new survey (all fields together)
-        ({ data } = await createSurvey(formValues));
+        ({ data } = await createSurvey(submissionValues));
       }
 
       if (data.success) {
@@ -1028,6 +1033,10 @@ const RoadSurveyForm = () => {
           <BasicInput
             {...input}
             value={formValues[input.name] || ""}
+            placeholder={input.name === "remark" ? defaultRemark : input.placeholder}
+            helperText={input.name === "remark"
+              ? "Your note will be added after the TBM label and timestamp."
+              : ""}
             error={(formErrors && formErrors[input.name]) || ""}
             sx={{ width: "100%" }}
             onChange={handleInputChange}
@@ -1388,7 +1397,7 @@ const RoadSurveyForm = () => {
                   animate="center"
                   exit="exit"
                 >
-                  <Grid container spacing={3} columns={12} alignItems="end">
+                  <Grid container spacing={3} columns={12} alignItems="start">
                     {step2Fields.map((field, idx) => renderField(field, idx))}
                   </Grid>
                 </motion.div>
