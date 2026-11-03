@@ -8,6 +8,7 @@ import { profilePoints, profileLevel, chainageValue } from "../../utils/surveyGe
 import { calculateVolumeReport } from "../../utils/volumeReport";
 import { reportDeductions } from "../../utils/surveyDeductions";
 import { buildSlopeEdits, previewLongitudinalPurposes, shiftReducedLevels } from "../../utils/longitudinalLevels";
+import { chainageTableViewport } from "../../utils/chainageTableViewport";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -20,8 +21,6 @@ import BasicInput from "../../components/BasicInput";
 import BasicButton from "../../components/BasicButton";
 import CrossSectionChart from "./components/CrossSectionChart";
 import { v1ChartOptions, v2ChartOptions } from "../../constants";
-import BasicMenu from "../../components/BasicMenu";
-import { BsThreeDots } from "react-icons/bs";
 import { MdDownload, MdOutlineAssessment, MdUpdate, MdUndo } from "react-icons/md";
 import SmallHeader from "../../components/SmallHeader";
 import PageHeroHeader from "../../components/PageHeroHeader";
@@ -46,20 +45,21 @@ const LEVEL_ORDER = [
   "Final Level",
 ];
 
-const menuItems = [
-  { label: "Slope", value: "slope" },
-  // { label: "v1", value: "v1" },
-  // { label: "v2", value: "v2" },
-  {
-    label: (
-      <Stack direction={"row"} alignItems={"center"} gap={0.5}>
-        PDF
-        <MdDownload />
-      </Stack>
-    ),
-    value: "download",
-  },
-];
+const shortLevelLabel = (name) => {
+  if (name === "Initial Level") return "IL";
+  if (name === "Proposed Level") return "PL";
+  if (name === "Final Level") return "FL";
+  return name.replace(/^Proposed /, "PL ").replace(/^Initial /, "IL ").replace(/^Final /, "FL ");
+};
+
+const headerActionSx = {
+  minWidth: { xs: 44, sm: 64 }, height: 40, px: { xs: 1, sm: 1.5 },
+  color: "white", borderColor: "rgba(255,255,255,0.45)",
+  bgcolor: "rgba(255,255,255,0.12)", borderRadius: "10px",
+  textTransform: "none", fontWeight: 700, fontSize: { xs: "0.75rem", sm: "0.875rem" },
+  "&:hover": { bgcolor: "rgba(255,255,255,0.24)", borderColor: "white" },
+  "&.Mui-disabled": { color: "rgba(255,255,255,0.45)", borderColor: "rgba(255,255,255,0.2)" },
+};
 
 const colors = {
   Initial: "green",
@@ -108,6 +108,26 @@ const LongitudinalSectionReport = () => {
   const [tableData, setTableData] = useState([]);
 
   const [selectedCs, setSelectedCs] = useState(null);
+  const chainageTableRef = useRef(null);
+  const tableScrollFrame = useRef(null);
+  const [tableViewport, setTableViewport] = useState(null);
+  const [followChainageTable, setFollowChainageTable] = useState(false);
+  useEffect(() => {
+    const table = chainageTableRef.current;
+    if (!table || !followChainageTable) return;
+    const update = () => {
+      cancelAnimationFrame(tableScrollFrame.current);
+      tableScrollFrame.current = requestAnimationFrame(() => {
+        const range = chainageTableViewport(selectedCs?.chainages || [], table.scrollLeft, table.clientWidth);
+        setTableViewport((previous) => previous?.[0] === range?.[0] && previous?.[1] === range?.[1] ? previous : range);
+      });
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(table);
+    table.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => { observer.disconnect(); table.removeEventListener("scroll", update); cancelAnimationFrame(tableScrollFrame.current); };
+  }, [selectedCs, followChainageTable]);
   const [{ edits: levelEdits, history: editHistory }, dispatchLevelEdit] = useReducer(levelEditReducer, { edits: {}, history: [] });
   const setLevelEdits = (update) => dispatchLevelEdit({ type: "edit", update });
   const [savingLevels, setSavingLevels] = useState(false);
@@ -560,21 +580,19 @@ const LongitudinalSectionReport = () => {
         title="LS Profile"
         subtitle="View the survey profile along the chainage."
         action={
-          <BasicMenu
-            label={<BsThreeDots />}
-            items={menuItems}
-            onSelect={handleMenuSelect}
-            sx={{
-              width: 44,
-              height: 44,
-              minWidth: 44,
-              p: 1,
-              color: "white",
-              borderColor: "rgba(255, 255, 255, 0.45)",
-              bgcolor: "rgba(255, 255, 255, 0.16)",
-              "&:hover": { bgcolor: "rgba(255, 255, 255, 0.26)", borderColor: "white" },
-            }}
-          />
+          <Stack direction="row" spacing={0.75}>
+            <Button variant="outlined" aria-label="Undo last unsaved chainage edit" title="Undo last unsaved edit"
+              disabled={savingLevels || !editHistory.length}
+              onClick={() => dispatchLevelEdit({ type: "undo" })} sx={headerActionSx}>
+              <MdUndo size={20} /><Box component="span" sx={{ display: { xs: "none", sm: "inline" }, ml: 0.5 }}>Undo</Box>
+            </Button>
+            <Button variant="outlined" disabled={!canEditLevels || savingLevels} onClick={() => handleMenuSelect({ value: "slope" })}
+              aria-label="Apply longitudinal slope" sx={headerActionSx}>Slope</Button>
+            <Button variant="outlined" disabled={!selectedCs || Boolean(exportProgress)} onClick={downloadPDF}
+              aria-label="Download LS profile PDF" sx={headerActionSx}>
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline-flex" }, mr: 0.5 }}><MdDownload size={18} /></Box>PDF
+            </Button>
+          </Stack>
         }
       />
       <Box sx={{ maxWidth: "1200px", margin: "0 auto", p: { xs: 2, md: 4 }, pt: 0, mt: -12, position: "relative", zIndex: 1 }}>
@@ -609,8 +627,18 @@ const LongitudinalSectionReport = () => {
                   <Typography variant="body2" color="text.secondary">View and adjust the drawing scale</Typography>
                 </Box>
                 <Stack spacing={1.5} alignItems={{ xs: "stretch", sm: "flex-end" }}>
-                  <Box sx={{ px: 2, py: 1.25, bgcolor: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: "12px", textAlign: { xs: "left", sm: "right" } }} aria-live="polite" aria-atomic="true">
-                    <Typography variant="caption" sx={{ color: "#4f46e5", fontWeight: 800 }}>Quantity</Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: { xs: "flex-start", sm: "flex-end" }, gap: 1, textAlign: "left" }} aria-live="polite" aria-atomic="true">
+                    <Typography variant="caption" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 1.5, py: 0.65, color: "#635bdf", fontWeight: 800, bgcolor: "#eeecff", border: "1px solid #cfcbff", borderRadius: "999px" }}>
+                      <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#7165ec", flexShrink: 0,
+                        animation: "quantityDotPulse 1.8s ease-out infinite",
+                        "@keyframes quantityDotPulse": {
+                          "0%": { boxShadow: "0 0 0 0 rgba(113,101,236,0.4)", opacity: 1 },
+                          "70%": { boxShadow: "0 0 0 5px rgba(113,101,236,0)", opacity: 0.65 },
+                          "100%": { boxShadow: "0 0 0 0 rgba(113,101,236,0)", opacity: 1 },
+                        },
+                        "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+                      }} />Quantity
+                    </Typography>
                     {!liveQuantity ? (
                       <Typography variant="body2" color="text.secondary">Select exactly two levels to view quantity.</Typography>
                     ) : invalidQuantityEdits || quantityIncomplete ? (
@@ -618,7 +646,7 @@ const LongitudinalSectionReport = () => {
                         {invalidQuantityEdits ? "Enter valid RL values to calculate quantity." : "Quantity incomplete: missing or invalid section profiles."}
                       </Typography>
                     ) : (
-                      <Stack direction={{ xs: "column", md: "row" }} gap={{ xs: 0.5, md: 2 }}>
+                      <Stack direction="row" flexWrap="wrap" gap={1}>
                         {[
                           { label: "Cutting", key: "totalCuttingVolume" },
                           { label: "Filling", key: "totalFillingVolume" },
@@ -626,7 +654,7 @@ const LongitudinalSectionReport = () => {
                           const value = liveQuantity[key];
                           const delta = Number((value - savedQuantity[key]).toFixed(3));
                           return (
-                            <Box key={key}>
+                            <Box key={key} sx={{ display: "inline-flex", flexDirection: "column", justifyContent: "center", px: 1.5, py: 0.65, bgcolor: "#eeecff", border: "1px solid #cfcbff", borderRadius: "999px", "& > p": { color: "#635bdf", fontSize: "0.8rem", whiteSpace: "nowrap" } }}>
                               <Typography variant="body2" sx={{ color: "#312e81", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{label}: {value.toFixed(3)} m³</Typography>
                               {delta !== 0 && <Typography variant="caption" sx={{ color: "#4f46e5", fontVariantNumeric: "tabular-nums" }}>{delta > 0 ? "+" : ""}{delta.toFixed(3)} m³ from saved</Typography>}
                             </Box>
@@ -635,10 +663,17 @@ const LongitudinalSectionReport = () => {
                       </Stack>
                     )}
                   </Box>
-                  <SectionScaleInputs scales={drawingScales} onChange={setDrawingScales} />
+                  <SectionScaleInputs scales={drawingScales} onChange={(scales) => {
+                    if (scales.horizontal !== drawingScales.horizontal) { setFollowChainageTable(false); setTableViewport(null); }
+                    setDrawingScales(scales);
+                  }} />
                 </Stack>
               </Stack>
               <WaterWayProposalNotice purposes={tableData} />
+              {followChainageTable && tableViewport && <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1 }}>
+                <Typography variant="caption" color="text.secondary">Graph follows the visible chainage columns</Typography>
+                <Button size="small" onClick={() => { setFollowChainageTable(false); setTableViewport(null); }}>Full profile</Button>
+              </Stack>}
               <Box sx={{ position: "relative" }}>
               <QuantityDeltaBadge saved={savedQuantity} live={liveQuantity} invalid={invalidQuantityEdits || quantityIncomplete} />
               {selectedCs && selectedCs?.series?.length && (
@@ -646,6 +681,7 @@ const LongitudinalSectionReport = () => {
                   drawingScales={drawingScales}
                   selectedCs={previewCs}
                   chartOptions={interactiveChartOptions}
+                  viewportRange={tableViewport}
                   pdfRef={pdfRef}
                 />
               )}
@@ -670,26 +706,6 @@ const LongitudinalSectionReport = () => {
                 >
                   Chainage details
                 </Typography>
-                <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" justifyContent="flex-end">
-                  <Button
-                    size="small"
-                    startIcon={<MdUndo size={18} />}
-                    aria-label="Undo last unsaved chainage edit"
-                    disabled={savingLevels || !editHistory.length}
-                    onClick={() => dispatchLevelEdit({ type: "undo" })}
-                    sx={{ textTransform: "none", color: "#4f46e5", borderRadius: "10px" }}
-                  >
-                    Undo
-                  </Button>
-                <Button variant="outlined" size="small"
-                  disabled={savingLevels || Boolean(Object.keys(levelEdits).length)}
-                  onClick={() => setAddChainageOpen(true)}
-                  title={Object.keys(levelEdits).length ? "Save or undo pending RL edits before adding a chainage" : "Add a new chainage"}
-                  startIcon={<span aria-hidden="true">+</span>}
-                  sx={{ flexShrink: 0, textTransform: "none", borderRadius: "10px", borderColor: "#c7d2fe", color: "#4f46e5", fontWeight: 700, bgcolor: "#eef2ff" }}>
-                  Add chainage
-                </Button>
-                </Stack>
                 </Stack>
                 <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1.5 }}>
                   {canEditLevels
@@ -701,18 +717,28 @@ const LongitudinalSectionReport = () => {
                     Save or undo pending RL edits before adding a new chainage.
                   </Typography>
                 )}
-                <TableContainer tabIndex={0} role="region" aria-label="Chainage levels, scroll horizontally to view all chainages" sx={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "0 0 16px 16px" }}>
-                  <Table size="small" aria-labelledby="ls-chainage-details" sx={{ width: "max-content", minWidth: "100%", "& th, & td": { borderColor: "#e2e8f0", borderRight: "1px solid #e2e8f0" } }}>
+                <TableContainer ref={chainageTableRef} onScroll={() => { if (!followChainageTable) setFollowChainageTable(true); }} tabIndex={0} role="region" aria-label="Chainage levels, scroll horizontally to view all chainages" sx={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "0 0 16px 16px" }}>
+                  <Table size="small" aria-labelledby="ls-chainage-details" sx={{ width: 88 + selectedCs.levelRows.length * 104, tableLayout: "fixed", "& th, & td": { borderColor: "#e2e8f0", borderRight: "1px solid #e2e8f0" }, "& th:first-of-type": { width: 88, minWidth: 88, maxWidth: 88, boxSizing: "border-box", px: 1, whiteSpace: "normal", overflowWrap: "anywhere" } }}>
+                    <colgroup><col style={{ width: 88 }} />{selectedCs.levelRows.map((row) => <col key={row.id} style={{ width: 104 }} />)}</colgroup>
                     <TableBody>
                       <TableRow>
-                        <TableCell component="th" scope="row" sx={{ position: "sticky", left: 0, zIndex: 2, bgcolor: "#eef2ff", minWidth: 160, fontWeight: 800, color: "#4338ca" }}>Chainage</TableCell>
+                        <TableCell component="th" scope="row" sx={{ position: "sticky", left: 0, zIndex: 2, bgcolor: "#eef2ff", fontWeight: 800, color: "#4338ca" }}>
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Box component="span" title="Chainage" aria-label="Chainage">Ch</Box>
+                            <Button variant="outlined" size="small" aria-label="Add chainage"
+                              disabled={savingLevels || Boolean(Object.keys(levelEdits).length)}
+                              onClick={() => setAddChainageOpen(true)}
+                              title={Object.keys(levelEdits).length ? "Save or undo pending RL edits before adding a chainage" : "Add a new chainage"}
+                              sx={{ minWidth: 36, width: 36, height: 36, p: 0, borderRadius: "8px", borderColor: "#c7d2fe", color: "#4f46e5", fontSize: "1.4rem", fontWeight: 700, bgcolor: "white" }}>+</Button>
+                          </Stack>
+                        </TableCell>
                         {selectedCs.levelRows.map((row) => (
-                          <TableCell component="th" scope="col" key={row.id} align="center" sx={{ minWidth: 150, bgcolor: "#eef2ff", color: "#4338ca", fontWeight: 800, whiteSpace: "nowrap", py: 2 }}>{row.chainage}</TableCell>
+                          <TableCell component="th" scope="col" key={row.id} align="center" sx={{ px: 1, bgcolor: "#eef2ff", color: "#4338ca", fontWeight: 800, whiteSpace: "nowrap", py: 1 }}>{row.chainage}</TableCell>
                         ))}
                       </TableRow>
                       {selectedCs.series.map((series, levelIndex) => (
                         <TableRow key={levelIndex}>
-                          <TableCell component="th" scope="row" sx={{ position: "sticky", left: 0, zIndex: 1, bgcolor: "#f8fafc", color: series.color, fontWeight: 700 }}>{series.name} (RL)</TableCell>
+                          <TableCell component="th" scope="row" sx={{ position: "sticky", left: 0, zIndex: 1, bgcolor: "#f8fafc", color: series.color, fontWeight: 700 }} title={`${series.name} (RL)`} aria-label={`${series.name} (RL)`}>{shortLevelLabel(series.name)}</TableCell>
                           {selectedCs.levelRows.map((row) => {
                             const level = row.levels[levelIndex];
                             const key = `${row.id}-${levelIndex}`;
@@ -722,14 +748,14 @@ const LongitudinalSectionReport = () => {
                               && sourceLevels.every((entry) => String(entry ?? "").trim() !== "" && Number.isFinite(Number(entry)));
                             const invalid = editable && (String(value).trim() === "" || !Number.isFinite(Number(value)));
                             return (
-                              <TableCell key={row.id} sx={{ p: 1 }}>
+                              <TableCell key={row.id} sx={{ px: 0.5, py: 0.75 }}>
                                 <BasicInput
                                   type={editable ? "number" : "text"}
                                   value={value}
                                   disabled={!editable || savingLevels}
                                   error={invalid ? "Enter a valid level" : ""}
                                   inputProps={{ step: "0.001", "aria-label": `${series.name} at chainage ${row.chainage}` }}
-                                  sx={{ minWidth: 120, color: series.color, borderColor: { green: "#bbf7d0", blue: "#bfdbfe", red: "#fecaca" }[series.color] }}
+                                  sx={{ minWidth: 0, boxSizing: "border-box", px: 0.75, py: 1, color: series.color, borderColor: { green: "#bbf7d0", blue: "#bfdbfe", red: "#fecaca" }[series.color] }}
                                   onChange={(event) => setLevelEdits((previous) => ({ ...previous, [key]: event.target.value }))}
                                 />
                               </TableCell>
@@ -741,14 +767,14 @@ const LongitudinalSectionReport = () => {
                         <TableRow>
                           <TableCell component="th" scope="row" sx={{ position: "sticky", left: 0, zIndex: 1, bgcolor: "#f8fafc", fontWeight: 700 }}>Save changes</TableCell>
                           {selectedCs.levelRows.map((row) => (
-                            <TableCell key={row.id} sx={{ p: 1 }}>
+                            <TableCell key={row.id} sx={{ px: 0.5, py: 0.75 }}>
                               <BasicButton
                                 value="Update"
                                 fullWidth
                                 startIcon={<MdUpdate size={18} />}
                                 disabled={savingLevels || getRowEditState(row).invalid || !getRowEditState(row).dirty}
                                 onClick={() => handleUpdateLevels(row)}
-                                sx={{ bgcolor: "#6366f1", color: "white", "&:hover": { bgcolor: "#4f46e5" } }}
+                                sx={{ bgcolor: "#6366f1", color: "white", px: 0.5, fontSize: "0.75rem", "& .MuiButton-startIcon": { mr: 0.5, ml: 0 }, "&:hover": { bgcolor: "#4f46e5" } }}
                               />
                             </TableCell>
                           ))}

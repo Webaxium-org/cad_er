@@ -14,6 +14,7 @@ import surveyRouter from "./routes/surveyRoute.js";
 import ticketRouter from "./routes/ticketRoute.js";
 import openingRouter from "./routes/openingRoute.js";
 import subscriptionRouter from "./routes/subscriptionRoute.js";
+import pdfExportRouter from "./routes/pdfExportRoute.js";
 
 const app = express();
 
@@ -32,7 +33,7 @@ if (process.env.NODE_ENV === "development") {
 
 // 3. Parsers
 app.use("/api/subscriptions/webhook", express.raw({ type: "application/json", limit: "256kb" }));
-app.use(express.json());
+app.use((req, res, next) => req.path === "/api/pdf-exports" && req.method === "POST" ? next() : express.json()(req, res, next));
 app.use(cookieParser());
 
 // 4. Rate Limiting
@@ -46,6 +47,7 @@ app.use("/api/surveys", surveyRouter);
 app.use("/api/tickets", ticketRouter);
 app.use("/api/openings", openingRouter);
 app.use("/api/subscriptions", subscriptionRouter);
+app.use("/api/pdf-exports", pdfExportRouter);
 app.use("/api", indexRouter);
 
 // 6. Error Handling

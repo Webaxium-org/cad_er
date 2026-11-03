@@ -26,6 +26,7 @@ const CrossSectionChart = ({
   pdfRef,
   drawingScales = { horizontal: 150, vertical: 150 },
   showLevelBands = false,
+  viewportRange,
 }) => {
   const [bandLayout, updateBandLayout] = useSectionBandLayout(showLevelBands);
   const [width, setWidth] = useState(window.innerWidth);
@@ -55,6 +56,7 @@ const CrossSectionChart = ({
         drawingScales?.horizontal ?? baseScales.horizontal,
         baseScales.horizontal,
       ),
+      ...(viewportRange && { autorange: false, range: viewportRange }),
     },
     yaxis: {
       ...chartOptions.layout.yaxis,

@@ -4,10 +4,11 @@ import Preloader from "./Preloader";
 import CustomSnackbar from "../components/CustomSnackbar";
 import { Outlet } from "react-router-dom";
 import BasicBottomNavigation from "../components/BasicBottomNavigation";
+import PdfExportProvider from "../components/PdfExportProvider";
 
 const RootLayout = () => {
   return (
-    <>
+    <PdfExportProvider>
       <Preloader />
 
       <Box width={"100%"}>
@@ -21,7 +22,7 @@ const RootLayout = () => {
 
         {/* <BasicBottomNavigation /> */}
       </Box>
-    </>
+    </PdfExportProvider>
   );
 };
 

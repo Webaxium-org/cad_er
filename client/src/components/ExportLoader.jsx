@@ -7,6 +7,7 @@ import {
   LinearProgress,
   Paper,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import { keyframes } from "@emotion/react";
 
@@ -69,6 +70,7 @@ const ExportLoader = ({
   progress = null,
   progressMessage = "",
   estimatedTimeLeft = null,
+  onMinimize,
 }) => {
   const [timeLeft, setTimeLeft] = React.useState(duration);
 
@@ -112,6 +114,7 @@ const ExportLoader = ({
           overflow: "hidden",
         }}
       >
+        {onMinimize && <Button onClick={onMinimize} aria-label="Minimize PDF export" sx={{ position: "absolute", right: 8, top: 8, color: "white", zIndex: 1 }}>Minimize</Button>}
         <Stack spacing={3} alignItems="center" sx={{ width: "100%" }}>
           {/* Animated Icon Container */}
           <Box

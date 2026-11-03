@@ -48,12 +48,14 @@ import AdminPayments from "./pages/subscription/AdminPayments";
 import SettingsRoute from "./routes/SettingsRoute";
 import SubscriptionGate from "./routes/SubscriptionGate";
 import SubscriptionRoute from "./routes/SubscriptionRoute";
+import PlottingPdfRenderer from "./pages/survey/PlottingPdfRenderer";
 
 function App() {
   return (
     <>
       <BrowserRouter>
         <Routes>
+          <Route path="/pdf-export-render" element={<PlottingPdfRenderer />} />
           <Route element={<PublicAppBarLayout />}>
             <Route path="/our-team" element={<OurTeam />} />
             <Route path="/about" element={<About />} />

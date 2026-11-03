@@ -10,6 +10,8 @@ import User from "./models/user.js";
 import OnboardingVerification from "./models/onboardingVerification.js";
 import InvoiceCounter from "./models/invoiceCounter.js";
 import { seedPlans } from "./services/subscriptionPlans.js";
+import PdfExport from "./models/pdfExport.js";
+import { startPdfExportWorker } from "./services/pdfExportWorker.js";
 
 const startServer = async () => {
   try {
@@ -17,6 +19,8 @@ const startServer = async () => {
     await connectDB();
     await Promise.all([User.init(), Subscription.init(), CheckoutLock.init(), RazorpayEvent.init(), Payment.init(), RazorpayPlan.init(), OnboardingVerification.init()]);
     await seedPlans();
+    await PdfExport.init();
+    startPdfExportWorker();
     await InvoiceCounter.updateOne({ _id: "payments" }, { $setOnInsert: { value: 0 } }, { upsert: true });
 
     const PORT = process.env.PORT || 5000;
