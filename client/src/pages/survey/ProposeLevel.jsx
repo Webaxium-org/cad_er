@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { motion } from "framer-motion";
+import { createTheme, ThemeProvider, useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import { FiGrid, FiList, FiLayout, FiCornerUpLeft, FiCornerUpRight, FiFolder } from "react-icons/fi";
@@ -82,7 +83,10 @@ const historyActionSx = {
 const designGroupSx = {
   m: 0, px: { xs: 1.25, sm: 2 }, pt: 1, pb: 1.5, minWidth: 0,
   border: "1px solid #dce0ef", borderRadius: "14px",
-  "& legend": { px: 0.75, color: "#334155", fontSize: "0.85rem", fontWeight: 600 },
+  "& .MuiInputBase-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" }, px: { xs: 1, sm: 1.75 }, minHeight: 40 },
+  "& .MuiSelect-select": { paddingRight: "22px !important" },
+  "& .MuiSelect-icon": { right: 4 },
+  "& > legend": { px: 0.75, color: "#334155", fontSize: "0.85rem", fontWeight: 600 },
 };
 
 const inputDetails = [
@@ -259,6 +263,10 @@ const islandOptions = [
 ];
 
 export default function ProposeLevel() {
+  const outerTheme = useTheme();
+  const proposalTheme = useMemo(() => createTheme(outerTheme, {
+    palette: { primary: { main: "#6366f1", light: "#a5b4fc", dark: "#4f46e5", contrastText: "#ffffff" } },
+  }), [outerTheme]);
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -754,6 +762,7 @@ setFormValues((prev) => ({
   }, [id]);
 
   return (
+    <ThemeProvider theme={proposalTheme}>
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 12, md: 14 } }}>
       <SmallHeader />
       <PageHeroHeader title="Propose Level" subtitle={`Live ${activeIsland === "templates" ? "template" : activeIsland.toUpperCase()} Design level preview`} onCompactHeightChange={setCompactHeroHeight}
@@ -806,8 +815,8 @@ setFormValues((prev) => ({
           {lengthError && <Alert severity="error">{lengthError}</Alert>}
         </Stack>} />
 
-      <Container maxWidth="lg" sx={{ mt: -8, position: "relative" }}>
-        <ProposalProfileGraph totals={activeIsland === "ls" ? previewQuantity : null} sx={{ position: "sticky", top: { xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }, zIndex: 1001, boxShadow: "0 8px 24px rgba(20,32,72,0.08)" }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
+      <Container maxWidth="lg" sx={{ mt: -8, position: "relative", px: { xs: 1, sm: 3 } }}>
+        <ProposalProfileGraph totals={activeIsland === "ls" ? previewQuantity : null} stickyTop={{ xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
         {activeIsland === "templates" && design.templateId && <Alert severity="info" sx={{ mb: 2 }}>Illustrative profile: 1 m side height and an arbitrary 100 m datum. Edit the CS dimensions for your project; the actual proposal uses surveyed levels.</Alert>}
         {previewBusy && <LinearProgress sx={{ mb: 1, borderRadius: 2 }} />}
         {previewError && !previewValidation && <Alert severity="warning" sx={{ mb: 2 }}>{preview ? "Showing the last calculated profile. " : ""}{previewError}</Alert>}
@@ -816,7 +825,7 @@ setFormValues((prev) => ({
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 3, md: 5 },
+            p: { xs: 2, md: 5 },
             borderRadius: "28px",
             bgcolor: "#ffffff",
             boxShadow: "0 20px 40px -15px rgba(0,0,0,0.05)",
@@ -846,7 +855,7 @@ setFormValues((prev) => ({
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 1 }}>
                   {["quantity", "length", "width"].map(name => {
                     const input = inputData.find(item => item.name === name);
-                    const placeholder = name === "quantity" ? "Quantity (m?)" : name === "length" ? "Length (m)" : "Width (m)";
+                    const placeholder = name === "quantity" ? "Quantity (m³)" : name === "length" ? "Length (m)" : "Width (m)";
                     const props = { name, placeholder, value: formValues[name] ?? "", onChange: handleInputChange,
                       error: formErrors?.[name] || "", inputProps: { "aria-label": placeholder } };
                     return <Box key={name} sx={{ minWidth: 0 }}>{input?.mode === "select"
@@ -952,7 +961,7 @@ setFormValues((prev) => ({
             </Grid>
           </Stack>
 
-          <ProposalDesignControls previewValidation={previewValidation} previewBusy={previewBusy} previewError={previewError} startRl={preview ? graphSeries[1]?.points.find(Boolean)?.y : null} startChainage={preview?.rows?.find(row => row.type === "Chainage")?.chainage || stations[0]?.chainage} isWaterWay={isWaterWay} crossSection={crossSection} tab={activeIsland} design={design} onChange={setDesign} stations={stations}
+          <ProposalDesignControls profileName={formValues.proposal} previewValidation={previewValidation} previewBusy={previewBusy} previewError={previewError} startRl={preview ? graphSeries[1]?.points.find(Boolean)?.y : null} startChainage={preview?.rows?.find(row => row.type === "Chainage")?.chainage || stations[0]?.chainage} isWaterWay={isWaterWay} crossSection={crossSection} tab={activeIsland} design={design} onChange={setDesign} stations={stations}
             onTemplate={(preset) => {
               setCrossSection("slop");
               setDesign(previous => applyExampleTemplate(previous, preset));
@@ -1106,5 +1115,6 @@ setFormValues((prev) => ({
         </Paper>
       </Box>
     </Box>
+    </ThemeProvider>
   );
 }

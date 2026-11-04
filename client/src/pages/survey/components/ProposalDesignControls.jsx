@@ -1,21 +1,27 @@
 import { proposalTemplates } from "../../../utils/proposalTemplates";
 import { useState } from "react";
 import AlertDialogSlide from "../../../components/AlertDialogSlide";
-import { Alert, Box, Button, FormControlLabel, Grid, IconButton, InputAdornment, LinearProgress, MenuItem, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, FormControlLabel, Grid, IconButton, LinearProgress, MenuItem, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import { FiPlus, FiTrash2, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
+import { gradeToSlopeRatio, slopeRatioToGrade } from "../../../utils/slopeRatio";
 import { stoppingSightDistance } from "../../../utils/proposalWorkspace";
 
-export default function ProposalDesignControls({ tab, crossSection, isWaterWay, design, onChange, stations, onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
+export default function ProposalDesignControls({ tab, crossSection, isWaterWay, design, onChange, stations, profileName = "", onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
   const [transportSystem, setTransportSystem] = useState(design.template || "road");
   const [customOpen, setCustomOpen] = useState(false);
   const [complianceOpen, setComplianceOpen] = useState(false);
   const [customDraft, setCustomDraft] = useState([]);
   const [customError, setCustomError] = useState("");
+  const [lsRatioDraft, setLsRatioDraft] = useState(null);
+  const [magnitudeDraft, setMagnitudeDraft] = useState(null);
+  const magnitude = design.ls.grade === "" ? "" : String(Math.abs(Number(design.ls.grade)));
+  const magnitudeRatio = magnitudeDraft?.grade === magnitude ? magnitudeDraft.ratio : gradeToSlopeRatio(magnitude);
+  const lsRatio = lsRatioDraft?.grade === design.ls.grade ? lsRatioDraft.ratio : gradeToSlopeRatio(design.ls.grade);
   const openCustom = () => {
     const saved = design.ls.custom;
-    setCustomDraft(saved?.segments?.map(segment => ({ ...segment })) || (saved?.from ? [{ from: saved.from, to: saved.to,
-      grade: String((saved.direction === "falling" ? -1 : 1) * 100 / Number(saved.denominator)) }]
-      : [{ from: stations[0]?.chainage || "", to: stations[1]?.chainage || "", grade: "0" }]));
+    setCustomDraft(saved?.segments?.map(segment => ({ ...segment, ratio: gradeToSlopeRatio(Math.abs(Number(segment.grade))), direction: Number(segment.grade) < 0 ? "fall" : "rise" })) || (saved?.from ? [{ from: saved.from, to: saved.to,
+      ratio: `${saved.denominator}:1`, direction: saved.direction === "falling" ? "fall" : "rise" }]
+      : [{ from: stations[0]?.chainage || "", to: stations[1]?.chainage || "", ratio: "1:0", direction: "rise" }]));
     setCustomError(""); setCustomOpen(true);
   };
   const update = (group, key, value) => onChange({ ...design, [group]: { ...design[group], [key]: value } });
@@ -37,16 +43,47 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
       <Box>
         <FormControlLabel control={<Switch checked={design.ls.enabled} onChange={(event) => update("ls", "enabled", event.target.checked)} />} label="Grade optimisation" />
         {design.ls.enabled && <Stack spacing={1.5} sx={{ mt: 1 }}>
-          {!["custom", "quantity"].includes(design.ls.strategy) && field("ls", "grade", "LS grade (%)", { helperText: "Positive rises with chainage; negative falls. 1% = 1 in 100." })}
-          <TextField select fullWidth size="small" label="Set profile elevation" value={design.ls.strategy} onChange={(event) => { if (event.target.value === "custom") openCustom(); else { update("ls", "strategy", event.target.value); if (event.target.value === "quantity") setComplianceOpen(true); } }}>
-            <MenuItem value="minimum">Quantity optimisation</MenuItem><MenuItem value="quantity">Quantity compliance</MenuItem><MenuItem value="anchor">Set start level</MenuItem><MenuItem value="custom">Custom slope</MenuItem>
+          <TextField select fullWidth size="small" label="Set profile elevation" slotProps={{ select: { renderValue: value => ({ minimum: "Quantity optimisation", quantity: "Quantity compliance", anchor: "Set start level", custom: "Custom" }[value] || value) } }} value={design.ls.strategy} onChange={(event) => { if (event.target.value === "custom") openCustom(); else { update("ls", "strategy", event.target.value); if (event.target.value === "quantity") setComplianceOpen(true); } }}>
+            <MenuItem value="minimum" sx={{ whiteSpace: "normal" }}>
+              <Box>
+                <Typography component="span" sx={{ display: "block", fontSize: "inherit" }}>Quantity optimisation</Typography>
+                <Typography component="span" variant="caption" color="text.secondary" sx={{ display: "block", maxWidth: 280 }}>Default: minimises total earthwork volume (cut + fill).</Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="quantity">Quantity compliance</MenuItem>
+            {design.ls.strategy === "anchor" && <MenuItem value="anchor" sx={{ display: "none" }}>Set start level</MenuItem>}
+            <MenuItem value="custom">Custom</MenuItem>
           </TextField>
+          {!["custom", "quantity"].includes(design.ls.strategy) && <Box>
+            <Typography sx={{ mb: 1, fontSize: "0.875rem", fontWeight: 600, color: "#334155" }}>LS grade (H:V)</Typography>
+            <Stack direction="row" alignItems="center" spacing={0.75}>
+              {["H", "V"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                {part === 1 && <Typography aria-hidden="true">:</Typography>}
+                <TextField type="number" size="small" label={label} value={lsRatio.split(":")[part] ?? ""}
+                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { step: "any", ...(part === 0 ? { min: 0 } : {}), "aria-label": `LS grade ${part === 0 ? "horizontal run" : "vertical rise"}` } }}
+                  onChange={event => {
+                    const parts = lsRatio.split(":");
+                    parts[part] = event.target.value;
+                    const ratio = parts.join(":");
+                    const parsed = slopeRatioToGrade(ratio);
+                    const grade = Number.isFinite(parsed) ? String(parsed) : "";
+                    setLsRatioDraft({ ratio, grade });
+                    update("ls", "grade", grade);
+                  }}
+                  sx={{ width: 60, "& input": { px: 0.75, MozAppearance: "textfield" }, "& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button": { WebkitAppearance: "none", margin: 0 } }} />
+              </Box>)}
+            </Stack>
+            <Typography variant="caption" color="text.secondary">H:V = horizontal run : vertical rise. Use 200:1 to rise, 200:-1 to fall, or 1:0 for level.</Typography>
+          </Box>}
           {design.ls.strategy === "quantity" && <>
             <Button variant="outlined" onClick={() => setComplianceOpen(true)} sx={{ alignSelf: "flex-start", borderRadius: "12px", textTransform: "none", color: "#4f46e5", borderColor: "#c7d2fe" }}>Edit quantity compliance</Button>
             <AlertDialogSlide open={complianceOpen} title="Quantity compliance" submitButtonText="Done"
               onCancel={() => setComplianceOpen(false)} onSubmit={() => setComplianceOpen(false)}
-              paperSx={{ borderRadius: "24px", border: "1px solid #e0e7ff" }}
-              content={<Box sx={{ p: { xs: 2, sm: 2.5 }, border: "1px solid #e0e7ff", borderRadius: "20px", bgcolor: "#ffffff",
+              paperSx={{ borderRadius: "20px", border: "1px solid #e0e7ff", m: { xs: 1.5, sm: 4 }, width: { xs: "calc(100% - 24px)", sm: "calc(100% - 64px)" }, maxHeight: "calc(100dvh - 24px)",
+                "& .MuiDialogTitle-root": { px: { xs: 2, sm: 4 }, pt: 2, fontSize: "1.2rem" },
+                "& .MuiDialogContent-root": { px: { xs: 2, sm: 4 }, pb: 2 },
+                "& .MuiDialogActions-root": { px: { xs: 2, sm: 4 }, pb: 2 } }}
+              content={<Box sx={{ p: { xs: 1.5, sm: 2.5 }, border: "1px solid #e0e7ff", borderRadius: "16px", bgcolor: "#ffffff",
             "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: "#f8f9fe", "& fieldset": { borderColor: "#dce0ef" }, "&.Mui-focused fieldset": { borderColor: "#6366f1" } } }}>
             <Stack spacing={1.5}>
             {previewBusy && <LinearProgress aria-label="Calculating start RL" sx={{ borderRadius: 1 }} />}
@@ -60,18 +97,31 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
                   slotProps={{ input: { readOnly: true }, htmlInput: { "aria-label": "Calculated start RL", style: { fontVariantNumeric: "tabular-nums" } } }} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography component="label" htmlFor="compliance-slope" sx={{ display: "block", mb: 1, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Slope magnitude (%)</Typography>
-                <TextField id="compliance-slope" fullWidth size="small" type="number" value={design.ls.grade === "" ? "" : Math.abs(Number(design.ls.grade))}
-                  onChange={event => update("ls", "grade", event.target.value === "" ? "" : `${downward ? "-" : ""}${Math.abs(Number(event.target.value))}`)}
-                  slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }, htmlInput: { min: 0, step: "any", "aria-label": "Slope magnitude (%)" } }} />
+                <Typography sx={{ mb: 1.5, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Slope magnitude (H:V)</Typography>
+                <Stack direction="row" alignItems="center" spacing={1} role="group" aria-label="Slope magnitude (H:V)">
+                  {["H", "V"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1, minWidth: 0 }}>
+                    {part === 1 && <Typography aria-hidden="true" fontWeight={700}>:</Typography>}
+                    <TextField fullWidth size="small" type="number" label={label} value={magnitudeRatio.split(":")[part] ?? ""}
+                      slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: 0, step: "any", "aria-label": `Slope magnitude ${part === 0 ? "horizontal run" : "vertical rise"}` } }}
+                      onChange={event => {
+                        const parts = magnitudeRatio.split(":");
+                        parts[part] = event.target.value;
+                        const ratio = parts.join(":");
+                        const parsed = slopeRatioToGrade(ratio);
+                        const grade = Number.isFinite(parsed) && parsed >= 0 ? String(parsed) : "";
+                        setMagnitudeDraft({ ratio, grade });
+                        update("ls", "grade", grade === "" ? "" : `${downward ? "-" : ""}${grade}`);
+                      }} />
+                  </Box>)}
+                </Stack>
               </Grid>
               <Grid size={12}>
                 <Typography sx={{ mb: 1, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Gradient direction</Typography>
                 <Stack role="group" aria-label="Gradient direction" direction="row" spacing={1.5}>
-                  {[{ negative: false, label: "Upward (+)", icon: <FiTrendingUp /> }, { negative: true, label: "Downward (-)", icon: <FiTrendingDown /> }].map(option => {
+                  {[{ negative: false, label: "+Rise", icon: <FiTrendingUp /> }, { negative: true, label: "-Fall", icon: <FiTrendingDown /> }].map(option => {
                     const selected = downward === option.negative;
                     return <Button key={option.label} fullWidth disableElevation aria-pressed={selected} startIcon={option.icon}
-                      onClick={() => update("ls", "grade", `${option.negative ? "-" : ""}${Math.abs(Number(design.ls.grade) || 0)}`)}
+                      onClick={() => update("ls", "grade", design.ls.grade === "" ? "" : `${option.negative ? "-" : ""}${Math.abs(Number(design.ls.grade) || 0)}`)}
                       sx={{ minWidth: 0, py: 1.25, px: 1, borderRadius: "12px", textTransform: "none", fontWeight: 600,
                         border: "1px solid", borderColor: selected ? "#6366f1" : "#dce0ef", bgcolor: selected ? "#eef2ff" : "#f8f9fe",
                         color: selected ? "#4f46e5" : "#64748b", "&:hover": { bgcolor: "#e0e7ff", borderColor: "#6366f1" } }}>{option.label}</Button>;
@@ -84,7 +134,7 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
           </>}
           {design.ls.strategy === "anchor" && field("ls", "anchorRl", "Start RL (m)")}
           {design.ls.strategy === "custom" && <Button onClick={openCustom}>Edit custom slope</Button>}
-          <AlertDialogSlide open={customOpen} title="Custom profile" cancelButtonText="Cancel" submitButtonText="Apply slopes"
+          <AlertDialogSlide open={customOpen} title={`Custom profile - ${profileName || "Select a proposal level"}`} cancelButtonText="Cancel" submitButtonText="Apply slopes"
             paperSx={{ maxWidth: "760px", borderRadius: "24px", border: "1px solid #e0e7ff" }}
             onCancel={() => setCustomOpen(false)} onSubmit={() => {
               let previousEnd = -1;
@@ -92,12 +142,12 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
               for (const [index, segment] of customDraft.entries()) {
                 const from = stations.findIndex(row => row.chainage === segment.from);
                 const to = stations.findIndex(row => row.chainage === segment.to);
-                if (from < 0 || to <= from || from < previousEnd || String(segment.grade).trim() === "" || !Number.isFinite(Number(segment.grade))) {
-                  setCustomError(`Segment ${index + 1}: choose increasing chainages in order, without overlap, and enter a valid slope.`); return;
+                if (from < 0 || to <= from || from < previousEnd || (!Number.isFinite(slopeRatioToGrade(segment.ratio)) || slopeRatioToGrade(segment.ratio) < 0)) {
+                  setCustomError(`Segment ${index + 1}: choose increasing chainages in order, without overlap, and enter a valid H:V slope (e.g. 200:1; choose Rise or Fall separately).`); return;
                 }
                 previousEnd = to;
               }
-              onChange({ ...design, ls: { ...design.ls, strategy: "custom", custom: { segments: customDraft.map(segment => ({ ...segment })) } } });
+              onChange({ ...design, ls: { ...design.ls, strategy: "custom", custom: { segments: customDraft.map(segment => ({ from: segment.from, to: segment.to, grade: String((segment.direction === "fall" ? -1 : 1) * slopeRatioToGrade(segment.ratio)) })) } } });
               setCustomOpen(false);
             }} content={<Stack spacing={2} sx={{ mt: 1 }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
@@ -105,30 +155,49 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
                 <Button variant="contained" disableElevation startIcon={<FiPlus />} disabled={customDraft.length >= 100} onClick={() => {
                   const last = customDraft.at(-1);
                   const next = last ? stations.findIndex(row => row.chainage === last.to) : 0;
-                  setCustomDraft(previous => [...previous, { from: stations[next]?.chainage || "", to: stations[next + 1]?.chainage || "", grade: "0" }]);
+                  setCustomDraft(previous => [...previous, { from: stations[next]?.chainage || "", to: stations[next + 1]?.chainage || "", ratio: "1:0", direction: "rise" }]);
                   setCustomError("");
                 }} sx={{ flexShrink: 0, bgcolor: "#6366f1", borderRadius: "10px", textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }}>Add segment</Button>
               </Stack>
               <TableContainer sx={{ border: "1px solid #e0e7ff", borderRadius: "14px", maxHeight: 360 }}>
-                <Table size="small" stickyHeader sx={{ minWidth: 480, "& th": { bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 700 }, "& td": { borderColor: "#eef2ff", py: 1.5 } }}>
-                  <TableHead><TableRow><TableCell>Start</TableCell><TableCell>End</TableCell><TableCell>Slope (%)</TableCell><TableCell align="right">Action</TableCell></TableRow></TableHead>
+                <Table size="small" stickyHeader sx={{ minWidth: 620, "& th": { bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 700 }, "& td": { borderColor: "#eef2ff", py: 1.5 } }}>
+                  <TableHead><TableRow><TableCell>Start</TableCell><TableCell>End</TableCell><TableCell>Slope (H:V)</TableCell><TableCell>Direction</TableCell><TableCell align="right">Action</TableCell></TableRow></TableHead>
                   <TableBody>{customDraft.map((segment, index) => <TableRow key={index}>
-                    {["from", "to"].map(key => <TableCell key={key}><TextField select size="small" fullWidth value={segment[key]} slotProps={{ htmlInput: { "aria-label": `Segment ${index + 1} ${key === "from" ? "start" : "end"} chainage` } }}
+                    {["from", "to"].map(key => <TableCell key={key}><TextField select size="small" fullWidth value={segment[key]} slotProps={{ select: { displayEmpty: true }, htmlInput: { "aria-label": `Segment ${index + 1} ${key === "from" ? "start" : "end"} chainage` } }}
                       onChange={event => { setCustomDraft(previous => previous.map((row, i) => i === index ? { ...row, [key]: event.target.value } : row)); setCustomError(""); }}
                       sx={{ minWidth: 120, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }}>
+                      <MenuItem value="" disabled>Select chainage</MenuItem>
                       {stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}
                     </TextField></TableCell>)}
-                    <TableCell><TextField type="number" size="small" value={segment.grade} slotProps={{ htmlInput: { step: "any", "aria-label": `Segment ${index + 1} slope (%)` } }}
-                      onChange={event => { setCustomDraft(previous => previous.map((row, i) => i === index ? { ...row, grade: event.target.value } : row)); setCustomError(""); }}
-                      sx={{ width: 100, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }} /></TableCell>
+                    <TableCell><Stack direction="row" alignItems="center" spacing={0.75} role="group" aria-label={`Segment ${index + 1} slope (H:V)`}>
+                      {["H", "V"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                        {part === 1 && <Typography aria-hidden="true" sx={{ color: "#64748b", fontWeight: 700 }}>:</Typography>}
+                        <TextField type="number" size="small" label={label} value={segment.ratio.split(":")[part] ?? ""}
+                          slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: part === 0 ? "0.000001" : "0", step: "any", "aria-label": `Segment ${index + 1} ${part === 0 ? "horizontal run" : "vertical rise"}` } }}
+                          onChange={event => {
+                            const parts = segment.ratio.split(":");
+                            parts[part] = event.target.value;
+                            setCustomDraft(previous => previous.map((row, i) => i === index ? { ...row, ratio: parts.join(":") } : row));
+                            setCustomError("");
+                          }}
+                          sx={{ width: 44, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" }, "& input": { px: 0.5, MozAppearance: "textfield" }, "& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button": { WebkitAppearance: "none", margin: 0 } }} />
+                      </Box>)}
+                    </Stack></TableCell>
+                    <TableCell><Stack direction="row" spacing={0.5} role="group" aria-label={`Segment ${index + 1} direction`}>
+                      {[{ value: "rise", label: "+Rise" }, { value: "fall", label: "-Fall" }].map(option => <Button key={option.value}
+                        size="small" variant={segment.direction === option.value ? "contained" : "outlined"} disableElevation
+                        aria-pressed={segment.direction === option.value}
+                        onClick={() => { setCustomDraft(previous => previous.map((row, i) => i === index ? { ...row, direction: option.value } : row)); setCustomError(""); }}
+                        sx={{ minWidth: 58, borderRadius: "8px", textTransform: "none", whiteSpace: "nowrap" }}>{option.label}</Button>)}
+                    </Stack></TableCell>
                     <TableCell align="right"><IconButton color="error" aria-label={`Delete segment ${index + 1}`} onClick={() => { setCustomDraft(previous => previous.filter((_, i) => i !== index)); setCustomError(""); }}><FiTrash2 /></IconButton></TableCell>
                   </TableRow>)}</TableBody>
                 </Table>
               </TableContainer>
-              <Typography variant="caption" color="text.secondary">Positive slopes rise; negative slopes fall. Connected segments continue from the previous end level. Levels outside the selected segments stay unchanged.</Typography>
+              <Typography variant="caption" color="text.secondary">H:V = horizontal run : vertical rise. Enter a positive ratio such as 200:1 and choose +Rise or -Fall. Use 1:0 for level. Connected segments continue from the previous end level. Levels outside the selected segments stay unchanged.</Typography>
               {customError && <Alert severity="error">{customError}</Alert>}
             </Stack>} />
-          {design.ls.strategy === "minimum" && <Typography variant="caption" color="text.secondary">Balances cutting and filling to minimise total earthwork for the entered grade and cross-section shape. Review the resulting cutting and filling before wrapping.</Typography>}
+          {design.ls.strategy === "minimum" && <Typography variant="caption" color="text.secondary">Minimises total earthwork volume (cut + fill) for the entered grade and cross-section shape. Review the resulting cutting and filling before wrapping.</Typography>}
         </Stack>}
       </Box>
       <Box>
