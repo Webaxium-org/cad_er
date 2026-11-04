@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { compactTitleSx, heroTitleSx } from "./pageHeaderStyles";
 
 /** Shared Settings-style page hero with a compact header after half the hero scrolls away. */
-export default function PageHeroHeader({ icon: Icon, title, subtitle, action, compactTitle, onBack, onCompactHeightChange, enableCompact = true }) {
+export default function PageHeroHeader({ icon: Icon, title, subtitle, action, compactTitle, compactSubtitle, onBack, backButtonSx = {}, onCompactHeightChange, enableCompact = true }) {
   const heroRef = useRef(null);
   const compactRef = useRef(null);
   const [compact, setCompact] = useState(false);
@@ -36,7 +36,7 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action, co
     return () => observer.disconnect();
   }, [compact, onCompactHeightChange]);
 
-  const icon = onBack ? <IconButton onClick={onBack} aria-label="Go back" sx={{ color: "inherit", bgcolor: "rgba(255,255,255,0.12)", flexShrink: 0, "&:hover": { bgcolor: "rgba(255,255,255,0.22)" } }}><MdArrowBackIosNew size={22} /></IconButton>
+  const icon = onBack ? <IconButton onClick={onBack} aria-label="Go back" sx={{ color: "inherit", bgcolor: "rgba(255,255,255,0.12)", flexShrink: 0, "&:hover": { bgcolor: "rgba(255,255,255,0.22)" }, ...backButtonSx }}><MdArrowBackIosNew size={22} /></IconButton>
     : Icon && <Icon size={32} style={{ flexShrink: 0, opacity: 0.9 }} />;
   return (
     <>
@@ -61,9 +61,10 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action, co
               <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ minWidth: 0 }}>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0, flex: 1 }}>
                   {icon && <Box sx={{ display: action && !onBack ? { xs: "none", sm: "flex" } : "flex" }}>{icon}</Box>}
-                  <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px">
-                    {compactTitle || title}
-                  </Typography>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px">{compactTitle || title}</Typography>
+                    {compactSubtitle && <Typography variant="body2" sx={{ mt: 0.25, opacity: 0.85, lineHeight: 1.3 }}>{compactSubtitle}</Typography>}
+                  </Box>
                 </Stack>
                 {action && <Box sx={{ flexShrink: 0 }}>{action}</Box>}
               </Stack>

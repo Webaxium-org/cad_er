@@ -10,6 +10,35 @@ const fixture = (levels = [10, 10, 10]) => ({ pls: 0, quantity: 80, rows: ["0/00
 })) });
 const normalize = (purpose) => ({ ...purpose, rows: purpose.rows.map((row) => ({ ...row, offsets: row.intermediateOffsets.map((point) => point.offset) })) });
 
+test("custom segments join continuously, preserve cross-section shape and leave outside rows unchanged", () => {
+  const base = fixture(), seed = fixture([10, 11, 12]);
+  seed.rows.push({ ...structuredClone(seed.rows[0]), chainage: "0/030" });
+  base.rows.push({ ...structuredClone(base.rows[0]), chainage: "0/030" });
+  const copy = structuredClone(seed);
+  const result = applyProposalWorkspace(survey, base, seed, { ls: { enabled: true, strategy: "custom", custom: { segments: [
+    { from: "0/000", to: "0/010", grade: 2.5 },
+    { from: "0/010", to: "0/020", grade: -1.8 },
+  ] } } });
+  assert.deepEqual(result.rows.map(row => row.reducedLevels[1]), ["11.000", "11.250", "11.070", "11.000"]);
+  assert.deepEqual(result.rows[2].reducedLevels, ["10.070", "11.070", "12.070"]);
+  assert.deepEqual(seed, copy);
+});
+
+test("custom segments validate ranges, slopes, overlaps and breaks while supporting legacy slopes", () => {
+  const base = fixture(), seed = fixture([11, 11, 11]);
+  const apply = (segments, extra = {}) => applyProposalWorkspace(survey, base, seed, { ...extra, ls: { enabled: true, strategy: "custom", custom: { segments } } });
+  const segment = { from: "0/000", to: "0/020", grade: 1 };
+  assert.throws(() => apply([]), /between 1 and 100/);
+  assert.throws(() => apply([{ ...segment, grade: "" }]), /valid custom slope/);
+  assert.throws(() => apply([{ ...segment, grade: "abc" }]), /valid custom slope/);
+  assert.throws(() => apply([{ ...segment, to: "0/015" }]), /within the proposal/);
+  assert.throws(() => apply([{ ...segment, from: "0/020", to: "0/000" }]), /increasing order/);
+  assert.throws(() => apply([segment, { ...segment, from: "0/010" }]), /without overlap/);
+  assert.throws(() => apply([segment], { breaks: [{ from: "0/010", to: "0/020" }] }), /cannot cross/);
+  const legacy = applyProposalWorkspace(survey, base, seed, { ls: { enabled: true, strategy: "custom", custom: { from: "0/010", to: "0/020", denominator: "100", direction: "falling" } } });
+  assert.deepEqual(legacy.rows.map(row => row.reducedLevels[1]), ["11.000", "11.000", "10.900"]);
+});
+
 test("optional solver matches volume report for road, channel and fixed bed geometry", () => {
   for (const type of ["Road", "Water Way"]) for (const method of [undefined, "Bottom Width Fixed"]) {
     const base = fixture([11, 10, 9]);

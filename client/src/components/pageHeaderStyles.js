@@ -12,3 +12,17 @@ export const compactTitleSx = {
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 };
+
+export const surveyBackButtonSx = {
+  bgcolor: "#f1f5f9",
+  color: "#475569",
+  borderRadius: "16px",
+  width: 48,
+  height: 48,
+  transition: "all 0.2s ease",
+  "&:hover": {
+    bgcolor: "#e2e8f0",
+    color: "#1e293b",
+    transform: "translateX(-2px)",
+  },
+};

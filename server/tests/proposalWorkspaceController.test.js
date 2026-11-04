@@ -6,6 +6,7 @@ import Purpose from "../models/surveyPurpose.js";
 import Row from "../models/surveyRows.js";
 import { generateSurveyPurpose, generateWaterWayProposalPurpose } from "../controllers/surveyController.js";
 import { previewProposalWorkspace, saveProposalWorkspace } from "../controllers/proposalWorkspaceController.js";
+import { initialProposalDesign, proposalGraphSeries } from "../../client/src/utils/proposalWorkspace.js";
 
 const id = "000000000000000000000001", owner = "000000000000000000000002", baseId = "000000000000000000000003";
 const response = () => ({ status(code) { this.code = code; return this; }, json(value) { this.data = value; } });
@@ -36,6 +37,48 @@ const setup = (t, type = "Road") => {
 };
 const invoke = async (handler, req) => { const res = response(); await handler(req, res, (error) => { throw error; }); return res; };
 const geometry = (rows) => rows.map(({ chainage, reducedLevels, intermediateOffsets, roadWidth }) => ({ chainage, reducedLevels, intermediateOffsets, roadWidth }));
+
+test("quantity compliance recalculates slopes from database-backed base rows", async t => {
+  const mocks = setup(t);
+  mocks.base.rows = mocks.base.rows.map(row => new Row(row));
+  mocks.base.toObject = () => ({ ...mocks.base, rows: mocks.base.rows.map(row => row.toObject()), toObject: undefined });
+  mocks.req.body.design = structuredClone(initialProposalDesign);
+  mocks.req.body.design.ls.strategy = "quantity";
+  const original = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  assert.equal(original.rows.length, 3);
+  mocks.req.body.design.ls.enabled = true;
+  for (const grade of ["2", "5", "-2"]) {
+    mocks.req.body.design.ls.grade = grade;
+    const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+    const startRl = Number(preview.rows[0].reducedLevels[1]);
+    const endRl = Number(preview.rows.at(-1).reducedLevels[1]);
+    assert.ok(Number.isFinite(startRl));
+    assert.ok(Math.abs(endRl - startRl - Number(grade) / 100 * 20) < 0.002);
+  }
+});
+
+for (const type of ["Road", "Water Way"]) test(`${type}: enabling grade optimisation with default settings keeps both graph series`, async t => {
+  const mocks = setup(t, type);
+  mocks.req.body.design = structuredClone(initialProposalDesign);
+  mocks.req.body.design.ls.quantityType = type === "Water Way" ? "cutting" : "filling";
+  const original = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  mocks.req.body.design.ls.enabled = true;
+  for (const grade of ["0", "2", "-2"]) {
+    mocks.req.body.design.ls.grade = grade;
+    const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+    // Match the row normalization performed by surveyServices before graphing.
+    const forGraph = purpose => ({ ...purpose, rows: purpose.rows.map(row => ({ ...row, offsets: row.intermediateOffsets.map(point => point.offset) })) });
+    const series = proposalGraphSeries(forGraph(mocks.base), forGraph(preview), "ls");
+    assert.equal(series.length, 2);
+    assert.equal(series[0].points.filter(Boolean).length, 3);
+    assert.equal(series[1].points.filter(Boolean).length, 3);
+    const [start, end] = [series[1].points[0], series[1].points.at(-1)];
+    assert.ok(Math.abs((end.y - start.y) - Number(grade) / 100 * (end.x - start.x)) < 0.002);
+  }
+  mocks.req.body.design.ls.enabled = false;
+  const restored = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  assert.deepEqual(geometry(restored.rows), geometry(original.rows));
+});
 
 for (const type of ["Road", "Water Way"]) test(`${type}: workspace preview and save preserve the existing generator's exact geometry`, async (t) => {
   const mocks = setup(t, type);

@@ -4,7 +4,7 @@ import { FiMaximize, FiMinus, FiPlus, FiRefreshCw, FiX, FiRotateCw } from "react
 import { graphTicks } from "../../../utils/proposalWorkspace";
 import QuantityDeltaBadge from "./QuantityDeltaBadge";
 
-function GraphViewport({ series, height, ssd, quantities }) {
+function GraphViewport({ series, height, ssd, quantities, totals, fullScreen, onToggleFullScreen }) {
   const scroller = useRef(null);
   const [size, setSize] = useState({ width: 640, height: 260 });
   const [scroll, setScroll] = useState({ x: 0, y: 0 });
@@ -41,15 +41,6 @@ function GraphViewport({ series, height, ssd, quantities }) {
   const axisWidth = Math.max(44, ...[bounds.y0, bounds.y1].map((value) => value.toFixed(3).length * 6 + 8));
   const changeZoom = (value) => setZoom(Math.min(8, Math.max(1, value)));
   return <>
-    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1, pb: 1 }}>
-      <Typography variant="caption" color="text.secondary">Drag or scroll to pan · Ctrl + wheel to zoom</Typography>
-      <Stack direction="row" alignItems="center" spacing={0.5}>
-        <IconButton size="small" aria-label="Zoom out" onClick={() => changeZoom(zoom / 1.3)} disabled={zoom <= 1}><FiMinus /></IconButton>
-        <Typography variant="caption" sx={{ minWidth: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</Typography>
-        <IconButton size="small" aria-label="Zoom in" onClick={() => changeZoom(zoom * 1.3)} disabled={zoom >= 8}><FiPlus /></IconButton>
-        <IconButton size="small" aria-label="Reset graph view" onClick={() => { changeZoom(1); scroller.current?.scrollTo(0, 0); }}><FiRefreshCw /></IconButton>
-      </Stack>
-    </Stack>
     <Box sx={{ position: "relative", display: "grid", gridTemplateColumns: `${axisWidth}px minmax(0,1fr)`, gridTemplateRows: "30px minmax(0,1fr)", height, bgcolor: "white", overflow: "hidden" }}>
       <Box sx={{ fontSize: 10, color: "#667795", display: "grid", placeItems: "center", bgcolor: "#f8f9fd" }}>RL (m)</Box>
       <svg width="100%" height="30" style={{ background: "#f8f9fd" }} aria-label="Horizontal scale in metres">
@@ -68,33 +59,46 @@ function GraphViewport({ series, height, ssd, quantities }) {
           {series.map((entry) => {
             let pen = false;
             const path = entry.points.map((point) => { if (!point) { pen = false; return ""; } const command = pen ? "L" : "M"; pen = true; return `${command}${x(point.x)},${y(point.y)}`; }).join(" ");
-            return <path key={entry.name} d={path} fill="none" stroke={entry.color} strokeWidth="2" strokeOpacity="0.5" />;
+            return <path key={entry.name} d={path} fill="none" stroke={entry.color} strokeWidth="2" strokeOpacity="0.85" />;
           })}
           {ssd > 0 && <g><path d={`M8 20 H${Math.min(width - 8, x(bounds.x0 + ssd))}`} stroke="#d18b1b" strokeWidth="2" strokeDasharray="5 4" /><text x="10" y="14" fill="#966010" fontSize="11">SSD {ssd.toFixed(2)} m</text></g>}
         </svg>
       </Box>
+      {totals && <Stack direction="column" alignItems="flex-end" aria-label="Earthwork quantities" aria-live="polite" spacing={0.5} sx={{ position: "absolute", right: 8, top: 38, pointerEvents: "none" }}>
+        {[["Cutting", "totalCuttingVolume", "#b45309"], ["Filling", "totalFillingVolume", "#2878c7"]].map(([label, key, color]) => <Box key={key} sx={{ px: 1, py: 0.5, borderRadius: 1, border: "1px solid", borderColor: color, bgcolor: "rgba(255,255,255,0.95)", color, fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{label} {Number(totals[key]).toFixed(3)} m&sup3;</Box>)}
+      </Stack>}
       {quantities && <QuantityDeltaBadge saved={quantities.saved} live={quantities.live} invalid={quantities.invalid} />}
     </Box>
+    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1, pt: 1, mt: 1, borderTop: "1px solid #e2e8f0", gap: 1, flexWrap: "wrap" }}>
+      <Stack direction="row" alignItems="center" gap={1.5} flexWrap="wrap">
+        {series.map(entry => <Typography key={entry.name} variant="caption" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: entry.color, fontWeight: 600 }}><Box component="span" aria-hidden="true" sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: entry.color }} />{entry.name}</Typography>)}
+        <Typography variant="caption" color="text.secondary">Drag or scroll to pan ? Ctrl + wheel to zoom</Typography>
+      </Stack>
+      <Stack direction="row" alignItems="center" spacing={0.5}>
+        <IconButton size="small" aria-label="Zoom out" onClick={() => changeZoom(zoom / 1.3)} disabled={zoom <= 1}><FiMinus /></IconButton>
+        <Typography variant="caption" sx={{ minWidth: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</Typography>
+        <IconButton size="small" aria-label="Zoom in" onClick={() => changeZoom(zoom * 1.3)} disabled={zoom >= 8}><FiPlus /></IconButton>
+        <IconButton size="small" aria-label="Reset graph view" onClick={() => { changeZoom(1); scroller.current?.scrollTo(0, 0); }}><FiRefreshCw /></IconButton>
+        <IconButton size="small" aria-label={fullScreen ? "Close full screen" : "Open full-screen graph"} onClick={onToggleFullScreen}>{fullScreen ? <FiX /> : <FiMaximize />}</IconButton>
+      </Stack>
+    </Stack>
   </>;
 }
 
-export default function ProposalProfileGraph({ series = [], type = "ls", title, ssd, quantities, sx }) {
+export default function ProposalProfileGraph({ series = [], type = "ls", title, ssd, quantities, totals, sx }) {
   const [fullScreen, setFullScreen] = useState(false);
   const mobile = useMediaQuery("(max-width:900px)");
   const landscape = useMediaQuery("(orientation: landscape)");
-  const header = <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-    <Box><Typography fontWeight={800} color="#142048">{title || (type === "cs" ? "Live CS preview" : "Live LS preview")}</Typography>
-      <Stack direction="row" gap={1.5} flexWrap="wrap">{series.map((entry) => <Typography key={entry.name} variant="caption" color={entry.color}>● {entry.name}</Typography>)}</Stack></Box>
-    <IconButton aria-label={fullScreen ? "Close full screen" : "Open full-screen graph"} onClick={() => setFullScreen(!fullScreen)}>{fullScreen ? <FiX /> : <FiMaximize />}</IconButton>
-  </Stack>;
-  return <Box role="region" aria-label="Live proposal graph" sx={{ bgcolor: "white", border: "1px solid #e2e8f5", borderRadius: "20px", p: { xs: 1.5, sm: 2 }, mb: 2, ...sx }}>
-    {header}<GraphViewport series={series} height={{ xs: 180, sm: 220 }} ssd={ssd} quantities={quantities} />
+  return <>
+    <Box role="region" aria-label={title || (type === "cs" ? "Live CS preview" : "Live LS preview")} sx={{ bgcolor: "white", border: "1px solid #e2e8f5", borderRadius: "20px", p: { xs: 1.5, sm: 2 }, mb: 2, ...sx }}>
+    <GraphViewport series={series} height={{ xs: "clamp(150px, 28dvh, 220px)", sm: 240 }} ssd={ssd} quantities={quantities} totals={totals} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />
+    </Box>
     <Dialog fullScreen open={fullScreen} onClose={() => setFullScreen(false)}>
-      <Box sx={{ p: 1.5, height: "100dvh", boxSizing: "border-box" }}>{header}
+      <Box sx={{ p: 1.5, height: "100dvh", boxSizing: "border-box" }}>
         {mobile && !landscape ? <Stack sx={{ height: "75vh" }} justifyContent="center" alignItems="center" spacing={2}>
           <FiRotateCw size={40} color="#595cf2" /><Typography>Rotate your phone to landscape to view the full-screen graph.</Typography><Button onClick={() => setFullScreen(false)}>Close graph</Button>
-        </Stack> : <GraphViewport series={series} height="calc(100dvh - 110px)" ssd={ssd} quantities={quantities} />}
+        </Stack> : <GraphViewport series={series} height="calc(100dvh - 110px)" ssd={ssd} quantities={quantities} totals={totals} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />}
       </Box>
     </Dialog>
-  </Box>;
+  </>;
 }

@@ -106,25 +106,43 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
     crossGrade = v / h;
   }
   const seedStart = interpolateGround(groundProfile(rows[0]), center);
-  let custom;
+  const customSegments = [];
   if (customSlope) {
     const input = settings.ls.custom || {};
-    const start = rows.find(row => row.chainage === input.from), end = rows.find(row => row.chainage === input.to);
-    if (!start || !end) throw Error("Custom slope endpoints must be within the proposal chainages.");
-    const from = chainageMetres(input.from, separator), to = chainageMetres(input.to, separator);
-    const denominator = number(input.denominator, "slope ratio");
-    if (to <= from || denominator <= 0 || !["rising", "falling"].includes(input.direction)) throw Error("Invalid custom slope range, direction or ratio.");
-    if (breaks.some(range => chainageMetres(range.from, separator) < to && chainageMetres(range.to, separator) > from)) throw Error("Custom slope cannot cross a proposal break.");
-    custom = { from, to, start: interpolateGround(groundProfile(start), center), grade: (input.direction === "falling" ? -1 : 1) / denominator };
+    let segments = input.segments;
+    if (segments === undefined) {
+      const denominator = number(input.denominator, "slope ratio");
+      if (denominator <= 0 || !["rising", "falling"].includes(input.direction)) throw Error("Invalid custom slope range, direction or ratio.");
+      segments = [{ from: input.from, to: input.to, grade: (input.direction === "falling" ? -1 : 1) * 100 / denominator }];
+    }
+    if (!Array.isArray(segments) || !segments.length || segments.length > 100) throw Error("Enter between 1 and 100 custom slope segments.");
+    for (const segment of segments) {
+      if (!segment || typeof segment !== "object") throw Error("Invalid custom slope segment.");
+      const start = rows.find(row => row.chainage === segment.from), end = rows.find(row => row.chainage === segment.to);
+      if (!start || !end) throw Error("Custom slope endpoints must be within the proposal chainages.");
+      const from = chainageMetres(segment.from, separator), to = chainageMetres(segment.to, separator);
+      const grade = number(segment.grade, "custom slope") / 100;
+      const previous = customSegments.at(-1);
+      if (to <= from || (previous && from < previous.to)) throw Error("Custom slope segments must be in increasing order without overlap.");
+      const startIndex = base.rows.findIndex(row => row.type === "Chainage" && row.chainage === segment.from);
+      const endIndex = base.rows.findIndex(row => row.type === "Chainage" && row.chainage === segment.to);
+      if (breaks.some(range => chainageMetres(range.from, separator) < to && chainageMetres(range.to, separator) > from)
+        || base.rows.slice(startIndex + 1, endIndex).some(row => row.type === "Break")) throw Error("Custom slope cannot cross a proposal break.");
+      const startLevel = previous && from === previous.to
+        ? previous.start + previous.grade * (previous.to - previous.from)
+        : interpolateGround(groundProfile(start), center);
+      customSegments.push({ from, to, start: startLevel, grade });
+    }
   }
   rows.forEach((row) => {
     const oldCenter = interpolateGround(groundProfile(row), center);
     let target = oldCenter;
     if (settings.mode === "manual") target = number(settings.manualLevels?.[row.chainage], `RL at ${row.chainage}`);
     if (slopeEnabled && !customSlope) target = (anchor ?? seedStart) + grade * (chainageMetres(row.chainage, separator) - first);
-    if (custom) {
+    if (customSlope) {
       const position = chainageMetres(row.chainage, separator);
-      if (position >= custom.from && position <= custom.to) target = custom.start + custom.grade * (position - custom.from);
+      const segment = customSegments.find(entry => position >= entry.from && position <= entry.to);
+      if (segment) target = segment.start + segment.grade * (position - segment.from);
     }
     row.reducedLevels = row.reducedLevels.map((value, index) => {
       const offset = Number(row.intermediateOffsets[index].offset) - center;

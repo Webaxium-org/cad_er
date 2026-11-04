@@ -1,23 +1,28 @@
 import { proposalTemplates } from "../../../utils/proposalTemplates";
 import { useState } from "react";
 import AlertDialogSlide from "../../../components/AlertDialogSlide";
-import { Alert, Box, Button, FormControlLabel, Grid, MenuItem, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { Alert, Box, Button, FormControlLabel, Grid, IconButton, InputAdornment, LinearProgress, MenuItem, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { FiPlus, FiTrash2, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import { stoppingSightDistance } from "../../../utils/proposalWorkspace";
 
-export default function ProposalDesignControls({ tab, crossSection, isWaterWay, design, onChange, stations, onTemplate }) {
+export default function ProposalDesignControls({ tab, crossSection, isWaterWay, design, onChange, stations, onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
   const [transportSystem, setTransportSystem] = useState(design.template || "road");
   const [customOpen, setCustomOpen] = useState(false);
-  const [customDraft, setCustomDraft] = useState({});
+  const [complianceOpen, setComplianceOpen] = useState(false);
+  const [customDraft, setCustomDraft] = useState([]);
   const [customError, setCustomError] = useState("");
   const openCustom = () => {
-    setCustomDraft(design.ls.custom || { from: stations[0]?.chainage || "", to: stations.at(-1)?.chainage || "", denominator: "10", direction: "falling" });
+    const saved = design.ls.custom;
+    setCustomDraft(saved?.segments?.map(segment => ({ ...segment })) || (saved?.from ? [{ from: saved.from, to: saved.to,
+      grade: String((saved.direction === "falling" ? -1 : 1) * 100 / Number(saved.denominator)) }]
+      : [{ from: stations[0]?.chainage || "", to: stations[1]?.chainage || "", grade: "0" }]));
     setCustomError(""); setCustomOpen(true);
   };
   const update = (group, key, value) => onChange({ ...design, [group]: { ...design[group], [key]: value } });
   const field = (group, key, label, extra = {}) => <TextField size="small" fullWidth type="number" label={label} value={design[group][key]}
     onChange={(event) => update(group, key, event.target.value)} inputProps={{ step: "any" }} {...extra} />;
   const ssd = stoppingSightDistance(design.ssd);
+  const downward = String(design.ls.grade).startsWith("-");
   return <Stack spacing={2.5} sx={{ mt: 2.5 }}>
     {design.mode === "dimensions" && <Box>
       <Grid container spacing={1.5}>{[["length", "Length (m)"], ["width", "Width (m)"], ["height", "Height (m)"]].map(([key, label]) => <Grid key={key} size={{ xs: 12, sm: 4 }}>{field("dimensions", key, label, { inputProps: { min: 0, step: "any" } })}</Grid>)}</Grid>
@@ -30,40 +35,100 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
         </TableBody></Table>
       </TableContainer>}
       <Box>
-        <FormControlLabel control={<Switch checked={design.ls.enabled} onChange={(event) => update("ls", "enabled", event.target.checked)} />} label="Apply LS slope" />
+        <FormControlLabel control={<Switch checked={design.ls.enabled} onChange={(event) => update("ls", "enabled", event.target.checked)} />} label="Grade optimisation" />
         {design.ls.enabled && <Stack spacing={1.5} sx={{ mt: 1 }}>
-          {design.ls.strategy !== "custom" && field("ls", "grade", "LS grade (%)", { helperText: "Positive rises with chainage; negative falls. 1% = 1 in 100." })}
-          <TextField select fullWidth size="small" label="Set profile elevation" value={design.ls.strategy} onChange={(event) => { if (event.target.value === "custom") openCustom(); else update("ls", "strategy", event.target.value); }}>
-            <MenuItem value="minimum">Minimise total cutting + filling</MenuItem><MenuItem value="anchor">Match target quantity</MenuItem><MenuItem value="custom">Custom</MenuItem>
+          {!["custom", "quantity"].includes(design.ls.strategy) && field("ls", "grade", "LS grade (%)", { helperText: "Positive rises with chainage; negative falls. 1% = 1 in 100." })}
+          <TextField select fullWidth size="small" label="Set profile elevation" value={design.ls.strategy} onChange={(event) => { if (event.target.value === "custom") openCustom(); else { update("ls", "strategy", event.target.value); if (event.target.value === "quantity") setComplianceOpen(true); } }}>
+            <MenuItem value="minimum">Quantity optimisation</MenuItem><MenuItem value="quantity">Quantity compliance</MenuItem><MenuItem value="anchor">Set start level</MenuItem><MenuItem value="custom">Custom slope</MenuItem>
           </TextField>
+          {design.ls.strategy === "quantity" && <>
+            <Button variant="outlined" onClick={() => setComplianceOpen(true)} sx={{ alignSelf: "flex-start", borderRadius: "12px", textTransform: "none", color: "#4f46e5", borderColor: "#c7d2fe" }}>Edit quantity compliance</Button>
+            <AlertDialogSlide open={complianceOpen} title="Quantity compliance" submitButtonText="Done"
+              onCancel={() => setComplianceOpen(false)} onSubmit={() => setComplianceOpen(false)}
+              paperSx={{ borderRadius: "24px", border: "1px solid #e0e7ff" }}
+              content={<Box sx={{ p: { xs: 2, sm: 2.5 }, border: "1px solid #e0e7ff", borderRadius: "20px", bgcolor: "#ffffff",
+            "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: "#f8f9fe", "& fieldset": { borderColor: "#dce0ef" }, "&.Mui-focused fieldset": { borderColor: "#6366f1" } } }}>
+            <Stack spacing={1.5}>
+            {previewBusy && <LinearProgress aria-label="Calculating start RL" sx={{ borderRadius: 1 }} />}
+            {previewError && !previewValidation && <Alert severity="warning">{Number.isFinite(startRl) ? "Showing the last calculated start RL. " : "Start RL is unavailable. "}{previewError}</Alert>}
+            {!previewBusy && !previewError && !Number.isFinite(startRl) && <Alert severity="info">Select both design layers and complete the dimensions to calculate the start RL.</Alert>}
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography component="label" htmlFor="compliance-start-rl" sx={{ display: "block", mb: 1, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Start RL{startChainage ? ` @ ${startChainage}` : ""} (m)</Typography>
+                <TextField id="compliance-start-rl" fullWidth size="small" value={Number.isFinite(startRl) ? startRl.toFixed(3) : ""} placeholder={previewBusy ? "Calculating..." : "Awaiting valid inputs"}
+                  helperText={Number.isFinite(startRl) && (previewBusy || previewError) ? "Last calculated start RL" : undefined}
+                  slotProps={{ input: { readOnly: true }, htmlInput: { "aria-label": "Calculated start RL", style: { fontVariantNumeric: "tabular-nums" } } }} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography component="label" htmlFor="compliance-slope" sx={{ display: "block", mb: 1, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Slope magnitude (%)</Typography>
+                <TextField id="compliance-slope" fullWidth size="small" type="number" value={design.ls.grade === "" ? "" : Math.abs(Number(design.ls.grade))}
+                  onChange={event => update("ls", "grade", event.target.value === "" ? "" : `${downward ? "-" : ""}${Math.abs(Number(event.target.value))}`)}
+                  slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }, htmlInput: { min: 0, step: "any", "aria-label": "Slope magnitude (%)" } }} />
+              </Grid>
+              <Grid size={12}>
+                <Typography sx={{ mb: 1, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Gradient direction</Typography>
+                <Stack role="group" aria-label="Gradient direction" direction="row" spacing={1.5}>
+                  {[{ negative: false, label: "Upward (+)", icon: <FiTrendingUp /> }, { negative: true, label: "Downward (-)", icon: <FiTrendingDown /> }].map(option => {
+                    const selected = downward === option.negative;
+                    return <Button key={option.label} fullWidth disableElevation aria-pressed={selected} startIcon={option.icon}
+                      onClick={() => update("ls", "grade", `${option.negative ? "-" : ""}${Math.abs(Number(design.ls.grade) || 0)}`)}
+                      sx={{ minWidth: 0, py: 1.25, px: 1, borderRadius: "12px", textTransform: "none", fontWeight: 600,
+                        border: "1px solid", borderColor: selected ? "#6366f1" : "#dce0ef", bgcolor: selected ? "#eef2ff" : "#f8f9fe",
+                        color: selected ? "#4f46e5" : "#64748b", "&:hover": { bgcolor: "#e0e7ff", borderColor: "#6366f1" } }}>{option.label}</Button>;
+                  })}
+                </Stack>
+              </Grid>
+            </Grid>
+            </Stack>
+          </Box>} />
+          </>}
           {design.ls.strategy === "anchor" && field("ls", "anchorRl", "Start RL (m)")}
           {design.ls.strategy === "custom" && <Button onClick={openCustom}>Edit custom slope</Button>}
-          <AlertDialogSlide open={customOpen} title="Apply longitudinal slope" cancelButtonText="Cancel" submitButtonText="Apply slope"
+          <AlertDialogSlide open={customOpen} title="Custom profile" cancelButtonText="Cancel" submitButtonText="Apply slopes"
+            paperSx={{ maxWidth: "760px", borderRadius: "24px", border: "1px solid #e0e7ff" }}
             onCancel={() => setCustomOpen(false)} onSubmit={() => {
-              const from = stations.findIndex(row => row.chainage === customDraft.from);
-              const to = stations.findIndex(row => row.chainage === customDraft.to);
-              if (from < 0 || to <= from || !Number.isFinite(Number(customDraft.denominator)) || Number(customDraft.denominator) <= 0) {
-                setCustomError("Choose an increasing chainage range and a positive slope ratio."); return;
+              let previousEnd = -1;
+              if (!customDraft.length) { setCustomError("Add at least one chainage segment."); return; }
+              for (const [index, segment] of customDraft.entries()) {
+                const from = stations.findIndex(row => row.chainage === segment.from);
+                const to = stations.findIndex(row => row.chainage === segment.to);
+                if (from < 0 || to <= from || from < previousEnd || String(segment.grade).trim() === "" || !Number.isFinite(Number(segment.grade))) {
+                  setCustomError(`Segment ${index + 1}: choose increasing chainages in order, without overlap, and enter a valid slope.`); return;
+                }
+                previousEnd = to;
               }
-              onChange({ ...design, ls: { ...design.ls, strategy: "custom", custom: customDraft } });
+              onChange({ ...design, ls: { ...design.ls, strategy: "custom", custom: { segments: customDraft.map(segment => ({ ...segment })) } } });
               setCustomOpen(false);
-            }} content={<Stack spacing={2} sx={{ mt: 2 }}>
-              <Typography>Level to adjust: Proposed level</Typography>
-              <Stack direction="row" spacing={2}>
-                {["from", "to"].map(key => <TextField key={key} select fullWidth label={key === "from" ? "From chainage" : "To chainage"} value={customDraft[key] || ""} onChange={event => setCustomDraft(previous => ({ ...previous, [key]: event.target.value }))}>
-                  {stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}
-                </TextField>)}
+            }} content={<Stack spacing={2} sx={{ mt: 1 }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                <Typography fontWeight={600} color="#334155">Chainage segments &amp; slopes</Typography>
+                <Button variant="contained" disableElevation startIcon={<FiPlus />} disabled={customDraft.length >= 100} onClick={() => {
+                  const last = customDraft.at(-1);
+                  const next = last ? stations.findIndex(row => row.chainage === last.to) : 0;
+                  setCustomDraft(previous => [...previous, { from: stations[next]?.chainage || "", to: stations[next + 1]?.chainage || "", grade: "0" }]);
+                  setCustomError("");
+                }} sx={{ flexShrink: 0, bgcolor: "#6366f1", borderRadius: "10px", textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }}>Add segment</Button>
               </Stack>
-              <Stack direction="row" spacing={2}>
-                <TextField select fullWidth label="Direction" value={customDraft.direction || "falling"} onChange={event => setCustomDraft(previous => ({ ...previous, direction: event.target.value }))}>
-                  <MenuItem value="falling">Falling</MenuItem><MenuItem value="rising">Rising</MenuItem>
-                </TextField>
-                <TextField fullWidth type="number" label="Slope: 1 in" value={customDraft.denominator || ""} inputProps={{ min: 0, step: "any" }} onChange={event => setCustomDraft(previous => ({ ...previous, denominator: event.target.value }))} helperText="1 in 10 = 1 m change over 10 m." />
-              </Stack>
-              <Typography variant="body2">Starts at the proposed RL at the From chainage and preserves each cross-section?s shape. Changes are saved when you wrap the proposal.</Typography>
+              <TableContainer sx={{ border: "1px solid #e0e7ff", borderRadius: "14px", maxHeight: 360 }}>
+                <Table size="small" stickyHeader sx={{ minWidth: 480, "& th": { bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 700 }, "& td": { borderColor: "#eef2ff", py: 1.5 } }}>
+                  <TableHead><TableRow><TableCell>Start</TableCell><TableCell>End</TableCell><TableCell>Slope (%)</TableCell><TableCell align="right">Action</TableCell></TableRow></TableHead>
+                  <TableBody>{customDraft.map((segment, index) => <TableRow key={index}>
+                    {["from", "to"].map(key => <TableCell key={key}><TextField select size="small" fullWidth value={segment[key]} slotProps={{ htmlInput: { "aria-label": `Segment ${index + 1} ${key === "from" ? "start" : "end"} chainage` } }}
+                      onChange={event => { setCustomDraft(previous => previous.map((row, i) => i === index ? { ...row, [key]: event.target.value } : row)); setCustomError(""); }}
+                      sx={{ minWidth: 120, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }}>
+                      {stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}
+                    </TextField></TableCell>)}
+                    <TableCell><TextField type="number" size="small" value={segment.grade} slotProps={{ htmlInput: { step: "any", "aria-label": `Segment ${index + 1} slope (%)` } }}
+                      onChange={event => { setCustomDraft(previous => previous.map((row, i) => i === index ? { ...row, grade: event.target.value } : row)); setCustomError(""); }}
+                      sx={{ width: 100, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }} /></TableCell>
+                    <TableCell align="right"><IconButton color="error" aria-label={`Delete segment ${index + 1}`} onClick={() => { setCustomDraft(previous => previous.filter((_, i) => i !== index)); setCustomError(""); }}><FiTrash2 /></IconButton></TableCell>
+                  </TableRow>)}</TableBody>
+                </Table>
+              </TableContainer>
+              <Typography variant="caption" color="text.secondary">Positive slopes rise; negative slopes fall. Connected segments continue from the previous end level. Levels outside the selected segments stay unchanged.</Typography>
               {customError && <Alert severity="error">{customError}</Alert>}
             </Stack>} />
-          {design.ls.strategy === "minimum" && <Typography variant="caption" color="text.secondary">Optimises elevation for the entered grade and cross-section shape. Review the resulting cutting and filling before wrapping.</Typography>}
+          {design.ls.strategy === "minimum" && <Typography variant="caption" color="text.secondary">Balances cutting and filling to minimise total earthwork for the entered grade and cross-section shape. Review the resulting cutting and filling before wrapping.</Typography>}
         </Stack>}
       </Box>
       <Box>

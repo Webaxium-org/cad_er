@@ -1,8 +1,9 @@
+import { surveyBackButtonSx } from "../../components/pageHeaderStyles";
 import { applyExampleTemplate, exampleTemplateSeries } from "../../utils/proposalTemplates";
 import * as Yup from "yup";
 import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
-  Alert, Button, LinearProgress, MenuItem, TextField,
+  Alert, Button, IconButton, Tooltip, LinearProgress, MenuItem, TextField,
   Box,
   Container,
   Grid,
@@ -12,9 +13,9 @@ import {
   Typography,
 } from "@mui/material";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
-import { FiGrid, FiList, FiLayout } from "react-icons/fi";
+import { FiGrid, FiList, FiLayout, FiCornerUpLeft, FiCornerUpRight, FiFolder } from "react-icons/fi";
 import { FaLocationArrow } from "react-icons/fa";
 import { IoAdd } from "react-icons/io5";
 import { IoIosRemove } from "react-icons/io";
@@ -39,6 +40,8 @@ import { handleFormError } from "../../utils/handleFormError";
 import ProposalProfileGraph from "./components/ProposalProfileGraph";
 import ProposalDesignControls from "./components/ProposalDesignControls";
 import { initialProposalDesign, proposalGraphSeries, stoppingSightDistance } from "../../utils/proposalWorkspace";
+
+import { initialPreviewState, proposalPreviewReducer } from "../../utils/proposalPreviewState";
 
 import { calculateVolumeReport } from "../../utils/volumeReport";
 
@@ -66,6 +69,20 @@ const addButtonSx = {
   "&:hover": {
     bgcolor: "primary.100",
   },
+};
+
+const historyActionSx = {
+  width: 34, height: 34, p: 0.75, flexShrink: 0,
+  color: "white", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "10px",
+  "& svg": { width: 18, height: 18 },
+  "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
+  "&.Mui-disabled": { color: "rgba(255,255,255,0.35)" },
+};
+
+const designGroupSx = {
+  m: 0, px: { xs: 1.25, sm: 2 }, pt: 1, pb: 1.5, minWidth: 0,
+  border: "1px solid #dce0ef", borderRadius: "14px",
+  "& legend": { px: 0.75, color: "#334155", fontSize: "0.85rem", fontWeight: 600 },
 };
 
 const inputDetails = [
@@ -248,6 +265,7 @@ export default function ProposeLevel() {
   const didMount = useRef(false);
   const { global } = useSelector((state) => state.loading);
 
+  const [compactHeroHeight, setCompactHeroHeight] = useState(0);
   const [activeIsland, setActiveIsland] = useState("ls");
   const [survey, setSurvey] = useState(null);
   const [crossSection, setCrossSection] = useState("camper");
@@ -269,10 +287,33 @@ export default function ProposeLevel() {
   };
   const [inputData, setInputData] = useState(inputDetails);
   const [design, setDesign] = useState(() => structuredClone(initialProposalDesign));
-  const [preview, setPreview] = useState(null);
-  const [previewBusy, setPreviewBusy] = useState(false);
-  const [previewError, setPreviewError] = useState("");
+  const [{ purpose: preview, busy: previewBusy, error: previewError, validation: previewValidation }, dispatchPreview] = useReducer(proposalPreviewReducer, initialPreviewState);
   const [selectedChainage, setSelectedChainage] = useState("");
+  const proposalSnapshot = JSON.stringify({ formValues, design, crossSection, entryType, rows });
+  const [editHistory, setEditHistory] = useState({ survey: null, past: [], present: null, future: [] });
+  useEffect(() => {
+    if (!survey) return;
+    setEditHistory(previous => {
+      if (previous.survey !== survey) return { survey, past: [], present: proposalSnapshot, future: [] };
+      if (previous.present === proposalSnapshot) return previous;
+      return { survey, past: [...previous.past, previous.present].slice(-100), present: proposalSnapshot, future: [] };
+    });
+  }, [proposalSnapshot, survey]);
+  const restoreProposal = (direction) => {
+    const source = direction === "undo" ? editHistory.past : editHistory.future;
+    if (!source.length) return;
+    const snapshot = source.at(-1);
+    const restored = JSON.parse(snapshot);
+    setFormValues(restored.formValues);
+    setDesign(restored.design);
+    setCrossSection(restored.crossSection);
+    setEntryType(restored.entryType);
+    setRows(restored.rows);
+    setFormErrors(null);
+    setEditHistory(previous => direction === "undo"
+      ? { ...previous, past: previous.past.slice(0, -1), present: snapshot, future: [...previous.future, previous.present] }
+      : { ...previous, past: [...previous.past, previous.present], present: snapshot, future: previous.future.slice(0, -1) });
+  };
   const basePurpose = useMemo(() => survey?.purposes?.find((purpose) => purpose.type === formValues.purpose), [survey, formValues.purpose]);
   const stations = useMemo(() => basePurpose?.rows?.filter((row) => row.type === "Chainage") || [], [basePurpose]);
   const isWaterWay = survey?.type === "Water Way";
@@ -361,15 +402,19 @@ export default function ProposeLevel() {
   useEffect(() => {
     if (!survey?._id) return;
     const controller = new AbortController();
-    setPreviewBusy(true); setPreviewError(""); setPreview(null);
+    const context = JSON.stringify([id, request.form.purpose, request.form.proposal]);
+    dispatchPreview({ type: "start", context });
     const timer = setTimeout(async () => {
       try {
         await validateWorkspace();
         const { data } = await previewProposalWorkspace(id, request, controller.signal);
-        if (!controller.signal.aborted) setPreview(data.purpose);
+        if (!controller.signal.aborted) dispatchPreview({ type: "success", context, purpose: data.purpose });
       } catch (error) {
-        if (!controller.signal.aborted) setPreviewError(error.response?.data?.message || (error.inner?.length ? "Complete the required proposal inputs to see the proposed profile." : error.message));
-      } finally { if (!controller.signal.aborted) setPreviewBusy(false); }
+        if (!controller.signal.aborted) {
+          const message = error.response?.data?.message || (error.inner?.length ? [...new Set(error.inner.map(issue => issue.message))].join(" ") : error.message);
+          dispatchPreview({ type: "failure", context, validation: error.name === "ValidationError", error: message || "Unable to calculate the proposal. Check the design inputs." });
+        }
+      }
     }, 600);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [id, survey?._id, request, validateWorkspace]);
@@ -485,13 +530,11 @@ export default function ProposeLevel() {
         surveyDoc?.purposes
           ?.filter((p) => p.phase === "Proposal")
           .map((p) => p.type) || [];
-      const purpose =
-        completedPurposes?.length ? completedPurposes?.at(-1) : "Initial Level";
-
-      setFormValues((prev) => ({
+setFormValues((prev) => ({
         ...prev,
         project: surveyDoc?.project || "",
-        purpose,
+        purpose: "",
+        proposal: "",
       }));
       setSurvey(surveyDoc);
       setCrossSection(surveyDoc?.type === "Water Way" ? "slop" : "camper");
@@ -499,15 +542,7 @@ export default function ProposeLevel() {
         ls: { ...previous.ls, quantityType: surveyDoc?.type === "Water Way" ? "cutting" : "filling" } }));
       updateInputData(completedPurposes, surveyDoc?.type);
 
-      const selected = surveyDoc?.purposes?.find((p) => p.type === purpose);
-      const items =
-        selected?.rows
-          ?.filter((r) => r.type === "Chainage" || r.type === "Water Level")
-          ?.map((s) => ({
-            label: s.chainage,
-            value: s.chainage,
-          })) || [];
-      setSelectableItems(items);
+      setSelectableItems([]);
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     } finally {
@@ -721,9 +756,15 @@ export default function ProposeLevel() {
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 12, md: 14 } }}>
       <SmallHeader />
-      <PageHeroHeader title="Propose Level" subtitle="Please fill in the required details accurately" enableCompact={false}
-        compactTitle={`Propose Level - ${activeIsland === "templates" ? "Templates" : activeIsland === "cs" ? "Live CS" : "Live LS"}`}
-        action={activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 140, sm: 200 }, bgcolor: "white", borderRadius: 2, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1 } }} label="Preview chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
+      <PageHeroHeader title="Propose Level" subtitle={`Live ${activeIsland === "templates" ? "template" : activeIsland.toUpperCase()} Design level preview`} onCompactHeightChange={setCompactHeroHeight}
+        compactTitle="Propose Level"
+        compactSubtitle={`Live ${activeIsland === "templates" ? "template" : activeIsland.toUpperCase()} Design level preview`}
+        backButtonSx={surveyBackButtonSx}
+        action={<Stack direction="row" alignItems="center" spacing={0.5}>
+          <Tooltip title="Undo"><span><IconButton size="small" aria-label="Undo proposal change" disabled={!editHistory.past.length || btnLoading} onClick={() => restoreProposal("undo")} sx={historyActionSx}><FiCornerUpLeft /></IconButton></span></Tooltip>
+          <Tooltip title="Redo"><span><IconButton size="small" aria-label="Redo proposal change" disabled={!editHistory.future.length || btnLoading} onClick={() => restoreProposal("redo")} sx={historyActionSx}><FiCornerUpRight /></IconButton></span></Tooltip>
+          {activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 140, sm: 200 }, bgcolor: "white", borderRadius: 2, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1 } }} label="Preview chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
+        </Stack>}
         onBack={() => navigate(-1)} />
 
       <AlertDialogSlide
@@ -766,11 +807,11 @@ export default function ProposeLevel() {
         </Stack>} />
 
       <Container maxWidth="lg" sx={{ mt: -8, position: "relative" }}>
-        <ProposalProfileGraph sx={{ position: "sticky", top: { xs: 57, md: 73 }, zIndex: 1001, boxShadow: "0 8px 24px rgba(20,32,72,0.08)" }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
+        <ProposalProfileGraph totals={activeIsland === "ls" ? previewQuantity : null} sx={{ position: "sticky", top: { xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }, zIndex: 1001, boxShadow: "0 8px 24px rgba(20,32,72,0.08)" }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
         {activeIsland === "templates" && design.templateId && <Alert severity="info" sx={{ mb: 2 }}>Illustrative profile: 1 m side height and an arbitrary 100 m datum. Edit the CS dimensions for your project; the actual proposal uses surveyed levels.</Alert>}
         {previewBusy && <LinearProgress sx={{ mb: 1, borderRadius: 2 }} />}
-        {previewError && previewError !== "Complete the required proposal inputs to see the proposed profile." && <Alert severity="info" sx={{ mb: 2 }}>{previewError}</Alert>}
-        {previewQuantity && <Stack direction="row" gap={2} flexWrap="wrap" sx={{ mb: 2 }}><Typography fontWeight={800} color="#b45309">Cutting {previewQuantity.totalCuttingVolume.toFixed(3)} m&sup3;</Typography><Typography fontWeight={800} color="#2878c7">Filling {previewQuantity.totalFillingVolume.toFixed(3)} m&sup3;</Typography>{previewQuantity.missingSections?.length > 0 && <Typography color="error">Quantity incomplete: missing cross-sections.</Typography>}</Stack>}
+        {previewError && !previewValidation && <Alert severity="warning" sx={{ mb: 2 }}>{preview ? "Showing the last calculated profile. " : ""}{previewError}</Alert>}
+        {previewQuantity && (activeIsland !== "ls" || previewQuantity.missingSections?.length > 0) && <Stack direction="row" gap={2} flexWrap="wrap" sx={{ mb: 2 }}><Typography fontWeight={800} color="#b45309">Cutting {previewQuantity.totalCuttingVolume.toFixed(3)} m&sup3;</Typography><Typography fontWeight={800} color="#2878c7">Filling {previewQuantity.totalFillingVolume.toFixed(3)} m&sup3;</Typography>{previewQuantity.missingSections?.length > 0 && <Typography color="error">Quantity incomplete: missing cross-sections.</Typography>}</Stack>}
 
         <Paper
           elevation={0}
@@ -788,46 +829,42 @@ export default function ProposeLevel() {
           <Box sx={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", bgcolor: "#6366f1" }} />
 
           <Stack width={"100% !important"} spacing={4} className="input-wrapper">
-            {activeIsland === "ls" && <Box sx={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) minmax(0, 1fr)", alignItems: "center", gap: 1 }}>
-              <Typography fontWeight={600}>Layer</Typography>
-              {["purpose", "proposal"].map((name) => (
-                <BasicSelect key={name} name={name} options={inputData.find((input) => input.name === name)?.options || []}
-                  placeholder="Select layer" displayEmpty
-                  inputProps={{ "aria-label": name === "purpose" ? "Base layer" : "Proposal layer" }}
-                  value={formValues[name] || ""} onChange={handleInputChange}
-                  error={formErrors?.[name] || ""} sx={{ minWidth: 0 }} />
-              ))}
-            </Box>}
-            {activeIsland === "ls" && <Box sx={{ overflowX: "auto", pb: 0.5 }}>
-              <Box role="group" aria-label="Dimensions" sx={{ display: "grid", gridTemplateColumns: "auto repeat(3, minmax(110px, 1fr))", alignItems: "center", gap: 1 }}>
-                <Typography fontWeight={600}>Dimensions</Typography>
-
-                {["quantity", "length", "width"].map((name) => {
-                  const input = inputData.find((item) => item.name === name);
-                  const placeholder = name === "quantity" ? "Quantity (m³)" : name === "length" ? "Length" : "Width";
-                  const props = {
-                    name, placeholder, value: formValues[name] ?? "",
-                    onChange: handleInputChange, error: formErrors?.[name] || "",
-                    inputProps: { "aria-label": placeholder },
-                  };
-                  return <Box key={name} sx={{ minWidth: 0 }}>
-                    {input?.mode === "select"
-                      ? <BasicSelect {...props} options={input.options} displayEmpty />
-                      : <BasicInput {...props} type="number" />}
-                  </Box>;
-                })}
+            {activeIsland === "ls" && <Stack spacing={2}>
+              <Box component="fieldset" sx={designGroupSx}>
+                <Box component="legend">Select design layer</Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 1.5 }}>
+                  {["purpose", "proposal"].map(name => <BasicSelect key={name} name={name}
+                    options={inputData.find(input => input.name === name)?.options || []}
+                    placeholder="Select layer" displayEmpty
+                    inputProps={{ "aria-label": name === "purpose" ? "Base layer" : "Proposal layer" }}
+                    value={formValues[name] || ""} onChange={handleInputChange}
+                    error={formErrors?.[name] || ""} sx={{ minWidth: 0 }} />)}
+                </Box>
               </Box>
-            </Box>}
-            {activeIsland === "ls" && <Box sx={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", alignItems: "center", gap: 1 }}>
-              <Typography fontWeight={600}>Quantity type</Typography>
-                <BasicSelect
-                  value={design.ls.quantityType}
-                  options={[{ label: "Cutting", value: "cutting" }, { label: "Filling", value: "filling" }]}
-                  inputProps={{ "aria-label": "Quantity type" }}
-                  sx={{ minWidth: 0 }}
-                  onChange={(event) => setDesign(previous => ({ ...previous, ls: { ...previous.ls, quantityType: event.target.value } }))}
-                />
-            </Box>}
+              <Box component="fieldset" sx={designGroupSx}>
+                <Box component="legend">Mark dimensions</Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 1 }}>
+                  {["quantity", "length", "width"].map(name => {
+                    const input = inputData.find(item => item.name === name);
+                    const placeholder = name === "quantity" ? "Quantity (m?)" : name === "length" ? "Length (m)" : "Width (m)";
+                    const props = { name, placeholder, value: formValues[name] ?? "", onChange: handleInputChange,
+                      error: formErrors?.[name] || "", inputProps: { "aria-label": placeholder } };
+                    return <Box key={name} sx={{ minWidth: 0 }}>{input?.mode === "select"
+                      ? <BasicSelect {...props} options={input.options} displayEmpty />
+                      : <BasicInput {...props} type="number" />}</Box>;
+                  })}
+                </Box>
+              </Box>
+              <Box component="fieldset" sx={designGroupSx}>
+                <Box component="legend">Design condition</Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 1.5 }}>
+                  <BasicSelect value={design.ls.quantityType} displayEmpty placeholder="Filling / Cutting"
+                    options={[{ label: "Filling", value: "filling" }, { label: "Cutting", value: "cutting" }]}
+                    inputProps={{ "aria-label": "Design condition" }} sx={{ minWidth: 0 }}
+                    onChange={event => setDesign(previous => ({ ...previous, ls: { ...previous.ls, quantityType: event.target.value } }))} />
+                </Box>
+              </Box>
+            </Stack>}
             {activeIsland === "ls" && formValues.length === "Custom" && <Box>
               <Button onClick={openCustomLength} sx={{ textTransform: "none" }}>
                 Length: {formValues.chainageRange?.from} ? {formValues.chainageRange?.to} ? Edit
@@ -915,15 +952,30 @@ export default function ProposeLevel() {
             </Grid>
           </Stack>
 
-          <ProposalDesignControls isWaterWay={isWaterWay} crossSection={crossSection} tab={activeIsland} design={design} onChange={setDesign} stations={stations}
+          <ProposalDesignControls previewValidation={previewValidation} previewBusy={previewBusy} previewError={previewError} startRl={preview ? graphSeries[1]?.points.find(Boolean)?.y : null} startChainage={preview?.rows?.find(row => row.type === "Chainage")?.chainage || stations[0]?.chainage} isWaterWay={isWaterWay} crossSection={crossSection} tab={activeIsland} design={design} onChange={setDesign} stations={stations}
             onTemplate={(preset) => {
               setCrossSection("slop");
               setDesign(previous => applyExampleTemplate(previous, preset));
             }} />
         </Paper>
-        <Paper elevation={0} sx={{ mt: 2, p: { xs: 3, md: 4 }, borderRadius: "28px", border: "1px solid rgba(226, 232, 240, 0.8)", bgcolor: "#ffffff" }}>
-          <Typography variant="body2" color="text.secondary">Project name</Typography>
-          <Typography sx={{ mt: 0.5, overflowWrap: "anywhere" }} fontWeight={600}>{formValues.project || "—"}</Typography>
+        <Paper component="section" aria-label="Project details" elevation={0} sx={{
+          mt: 2.5, p: { xs: 2.5, md: 3 }, borderRadius: "24px",
+          background: "linear-gradient(120deg, #4f46e5 0%, #6366f1 70%, #7775f5 100%)",
+          color: "white", border: "1px solid rgba(255,255,255,0.2)",
+          boxShadow: "0 10px 28px -12px rgba(79,70,229,0.4)",
+        }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Box aria-hidden="true" sx={{ width: { xs: 44, sm: 52 }, height: { xs: 44, sm: 52 },
+              display: "grid", placeItems: "center", flexShrink: 0, borderRadius: "14px",
+              bgcolor: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.22)" }}>
+              <FiFolder size={24} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>Project name</Typography>
+              <Typography sx={{ mt: 0.5, overflowWrap: "anywhere", fontWeight: 700,
+                fontSize: { xs: "1.1rem", sm: "1.3rem" }, lineHeight: 1.35 }}>{formValues.project || "?"}</Typography>
+            </Box>
+          </Stack>
         </Paper>
       </Container>
 

@@ -1,3 +1,4 @@
+import { surveyBackButtonSx } from "../../components/pageHeaderStyles";
 import * as Yup from "yup";
 import { islandButtonContentSx, ISLAND_BUTTON_RADIUS, capsuleWrapperSx, capsuleShellSx } from "../../components/bottomIslandStyles";
 import {
@@ -1329,19 +1330,7 @@ const RoadSurveyForm = () => {
             <IconButton
               onClick={handleGoBack}
               aria-label="Go back"
-              sx={{
-                bgcolor: "#f1f5f9",
-                color: "#475569",
-                borderRadius: "16px",
-                width: 48,
-                height: 48,
-                transition: "all 0.2s ease",
-                "&:hover": {
-                  bgcolor: "#e2e8f0",
-                  color: "#1e293b",
-                  transform: "translateX(-2px)",
-                },
-              }}
+              sx={surveyBackButtonSx}
             >
               <MdArrowBackIosNew size={22} />
             </IconButton>

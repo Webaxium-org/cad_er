@@ -2,7 +2,7 @@ import { chainageValue, profileLevel, profilePoints } from "./surveyGeometry.js"
 
 export const initialProposalDesign = {
   mode: "legacy", template: "road",
-  ls: { enabled: false, grade: "0", strategy: "anchor", quantityType: "filling", anchorRl: "" },
+  ls: { enabled: false, grade: "0", strategy: "minimum", quantityType: "filling", anchorRl: "" },
   cs: { fixedBottomEnabled: false, bottomWidth: "", fixedLhs: "1:1", fixedRhs: "1:1", lhs: "1:1", rhs: "1:1", berm: "0", slopeEnabled: false, horizontal: "1", vertical: "0", bedWidth: "", superelevationEnabled: false, superelevation: "0" },
   dimensions: { length: "", width: "", height: "" }, manualLevels: {}, breaks: [],
   ssd: { enabled: false, speed: "", reaction: "2.5", deceleration: "3.4", grade: "0" },

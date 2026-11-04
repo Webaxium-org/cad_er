@@ -18,7 +18,10 @@ const calculate = async (req) => {
   if (!base) throw createHttpError(400, "Choose a base level from this survey.");
   if (!SurveyPurpose.schema.path("type").enumValues.includes(form.proposal)) throw createHttpError(400, "Choose a valid proposal level.");
   if (survey.purposes.some((purpose) => purpose.type === form.proposal)) throw createHttpError(409, "This proposal level already exists.");
-  const scopedBase = { ...base.toObject(), rows: proposalLengthRows(base.rows, form, survey.separator) };
+  // Keep nested rows plain as well: spreading a Mongoose row in the solver
+  // drops schema getters such as reducedLevels.
+  const plainBase = base.toObject();
+  const scopedBase = { ...plainBase, rows: proposalLengthRows(plainBase.rows, form, survey.separator) };
   const settings = { ...design, chainageRange: form.length === "Custom" ? form.chainageRange : undefined };
   let seed;
   if (design.mode === "manual") {
