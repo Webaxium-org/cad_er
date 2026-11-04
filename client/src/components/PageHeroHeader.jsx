@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { compactTitleSx, heroTitleSx } from "./pageHeaderStyles";
 
 /** Shared Settings-style page hero with a compact header after half the hero scrolls away. */
-export default function PageHeroHeader({ icon: Icon, title, subtitle, action, compactTitle, onBack, onCompactHeightChange }) {
+export default function PageHeroHeader({ icon: Icon, title, subtitle, action, compactTitle, onBack, onCompactHeightChange, enableCompact = true }) {
   const heroRef = useRef(null);
   const compactRef = useRef(null);
   const [compact, setCompact] = useState(false);
@@ -13,7 +13,7 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action, co
   useEffect(() => {
     const update = () => {
       const halfway = (heroRef.current?.offsetHeight || 0) / 2;
-      setCompact(halfway > 0 && window.scrollY >= halfway);
+      setCompact(enableCompact && halfway > 0 && window.scrollY >= halfway);
     };
     update();
     window.addEventListener("scroll", update, { passive: true });
@@ -22,7 +22,7 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action, co
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, []);
+  }, [enableCompact]);
 
   useEffect(() => {
     if (!onCompactHeightChange) return;

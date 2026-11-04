@@ -721,7 +721,7 @@ export default function ProposeLevel() {
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 12, md: 14 } }}>
       <SmallHeader />
-      <PageHeroHeader title="Propose Level" subtitle="Please fill in the required details accurately"
+      <PageHeroHeader title="Propose Level" subtitle="Please fill in the required details accurately" enableCompact={false}
         compactTitle={`Propose Level - ${activeIsland === "templates" ? "Templates" : activeIsland === "cs" ? "Live CS" : "Live LS"}`}
         action={activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 140, sm: 200 }, bgcolor: "white", borderRadius: 2, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1 } }} label="Preview chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
         onBack={() => navigate(-1)} />
@@ -766,10 +766,10 @@ export default function ProposeLevel() {
         </Stack>} />
 
       <Container maxWidth="lg" sx={{ mt: -8, position: "relative" }}>
-        <ProposalProfileGraph sx={{ boxShadow: "0 8px 24px rgba(20,32,72,0.08)" }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
+        <ProposalProfileGraph sx={{ position: "sticky", top: { xs: 57, md: 73 }, zIndex: 1001, boxShadow: "0 8px 24px rgba(20,32,72,0.08)" }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
         {activeIsland === "templates" && design.templateId && <Alert severity="info" sx={{ mb: 2 }}>Illustrative profile: 1 m side height and an arbitrary 100 m datum. Edit the CS dimensions for your project; the actual proposal uses surveyed levels.</Alert>}
         {previewBusy && <LinearProgress sx={{ mb: 1, borderRadius: 2 }} />}
-        {previewError && <Alert severity="info" sx={{ mb: 2 }}>{previewError}</Alert>}
+        {previewError && previewError !== "Complete the required proposal inputs to see the proposed profile." && <Alert severity="info" sx={{ mb: 2 }}>{previewError}</Alert>}
         {previewQuantity && <Stack direction="row" gap={2} flexWrap="wrap" sx={{ mb: 2 }}><Typography fontWeight={800} color="#b45309">Cutting {previewQuantity.totalCuttingVolume.toFixed(3)} m&sup3;</Typography><Typography fontWeight={800} color="#2878c7">Filling {previewQuantity.totalFillingVolume.toFixed(3)} m&sup3;</Typography>{previewQuantity.missingSections?.length > 0 && <Typography color="error">Quantity incomplete: missing cross-sections.</Typography>}</Stack>}
 
         <Paper
@@ -922,8 +922,8 @@ export default function ProposeLevel() {
             }} />
         </Paper>
         <Paper elevation={0} sx={{ mt: 2, p: { xs: 3, md: 4 }, borderRadius: "28px", border: "1px solid rgba(226, 232, 240, 0.8)", bgcolor: "#ffffff" }}>
-          <BasicInput label="Project name*" name="project" type="text" value={formValues.project || ""}
-            error={formErrors?.project || ""} onChange={handleInputChange} />
+          <Typography variant="body2" color="text.secondary">Project name</Typography>
+          <Typography sx={{ mt: 0.5, overflowWrap: "anywhere" }} fontWeight={600}>{formValues.project || "—"}</Typography>
         </Paper>
       </Container>
 
@@ -940,7 +940,7 @@ export default function ProposeLevel() {
         sx={{
           position: "fixed",
           left: "50%",
-          zIndex: 1000,
+          zIndex: 1002,
           ...capsuleWrapperSx(4),
         }}
       >
