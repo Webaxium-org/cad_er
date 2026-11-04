@@ -1,3 +1,4 @@
+import { proposalLengthRows } from "../helper/proposalLength.js";
 import Survey from "../models/survey.js";
 import SurveyPurpose from "../models/surveyPurpose.js";
 import SurveyRow from "../models/surveyRows.js";
@@ -1869,7 +1870,7 @@ const generateSurveyPurpose = async (req, res, next) => {
     const relation = basePurpose._id;
 
     // 🔹 Filter chainage rows from base purpose
-    const readingsToCreate = basePurpose.rows?.filter(
+    const readingsToCreate = proposalLengthRows(basePurpose.rows || [], req.body, survey.separator).filter(
       (r) => r.type === "Chainage",
     );
 
@@ -2674,7 +2675,7 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
       throw createHttpError(404, `Survey purpose "${purpose}" not found.`);
     }
 
-    const readingsToCreate = basePurpose.rows?.filter(
+    const readingsToCreate = proposalLengthRows(basePurpose.rows || [], req.body, survey.separator).filter(
       (r) => r.type === "Chainage",
     );
 

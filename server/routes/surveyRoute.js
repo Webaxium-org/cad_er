@@ -34,6 +34,7 @@ import { isAuthenticated, isAuthorized, requireAuth } from "../middleware/auth.j
 import { requireProfessionalSubscription } from "../services/subscriptionAccess.js";
 import lookupLocation from "../services/weatherLocationService.js";
 import { previewProposalWorkspace, saveProposalWorkspace } from "../controllers/proposalWorkspaceController.js";
+import { saveLongitudinalSlope } from "../controllers/longitudinalSlopeController.js";
 import { previewLongitudinalChainage, createLongitudinalChainage } from "../controllers/longitudinalChainageController.js";
 import { getSurveyDeductions, createSurveyDeduction, deleteSurveyDeduction } from "../controllers/surveyDeductionController.js";
 
@@ -66,6 +67,7 @@ router.get("/:id", getSurvey);
 router.patch("/:id", updateSurvey);
 router.delete("/:id", deleteSurvey);
 router.patch("/:id/reduced-levels/edit", updateReducedLevels);
+router.patch("/:id/longitudinal-slope", saveLongitudinalSlope);
 router.post("/:id/proposal-workspace/preview", previewProposalWorkspace);
 router.post("/:id/proposal-workspace", saveProposalWorkspace);
 router.post("/:id/chainages/preview", previewLongitudinalChainage);

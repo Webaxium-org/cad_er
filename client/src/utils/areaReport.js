@@ -1,9 +1,14 @@
-import { compareProfiles } from "./surveyGeometry.js";
+import { compareProfiles, chainageValue } from "./surveyGeometry.js";
 
 // Shared by the standalone Area Report and the plotting report, including its PDF.
 export const calculateAreaReport = (survey, initialEntry, secondaryEntry) => {
   if (!survey || !initialEntry || !secondaryEntry) return [];
-  const initialRows = initialEntry?.rows ?? [];
+  const range = secondaryEntry.designSettings?.chainageRange;
+  const initialRows = (initialEntry?.rows ?? []).filter(row => {
+    if (!range) return true;
+    const value = chainageValue(row.chainage, survey.separator);
+    return value >= chainageValue(range.from, survey.separator) && value <= chainageValue(range.to, survey.separator);
+  });
   const proposedRows = secondaryEntry?.rows ?? [];
   const rows = [];
 
@@ -21,7 +26,7 @@ export const calculateAreaReport = (survey, initialEntry, secondaryEntry) => {
 
       let prevReadings = [];
 
-      const data = survey.type === "Water Way" && secondaryEntry?.proposalMethod !== "Bottom Width Fixed"
+      const data = secondaryEntry.csGeometry || (survey.type === "Water Way" && secondaryEntry?.proposalMethod !== "Bottom Width Fixed")
         ? compareProfiles(row, proposedRow) : (proposedRow?.offsets ?? []).map((entry, idx) => {
         const initialEntryRL = row?.reducedLevels?.[idx] ?? 0;
         const secondaryEntryRL = proposedRow?.reducedLevels?.[idx] ?? 0;

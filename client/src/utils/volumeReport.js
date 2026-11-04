@@ -6,15 +6,20 @@ export const calculateVolumeReport = (survey, initialEntry, secondaryEntry, dedu
   let isBreak = false;
   let breakMessage = "";
   const isDeduction = deductions.length;
-  const initialRows = initialEntry?.rows ?? [];
+  const range = secondaryEntry.designSettings?.chainageRange;
+  const initialRows = (initialEntry?.rows ?? []).filter(row => {
+    if (!range) return true;
+    const value = chainageValue(row.chainage, survey.separator);
+    return value >= chainageValue(range.from, survey.separator) && value <= chainageValue(range.to, survey.separator);
+  });
   const secondaryRows = secondaryEntry?.rows ?? [];
   const isBottomWidthFixed =
-    secondaryEntry?.proposalMethod === "Bottom Width Fixed";
+    !secondaryEntry?.csGeometry && secondaryEntry?.proposalMethod === "Bottom Width Fixed";
   const fixedBottomWidth = Number(
     secondaryEntry?.bottomWidth ?? secondaryEntry?.width,
   );
   const missingSections = [];
-  const useChannelGeometry = survey.type === "Water Way" && !isBottomWidthFixed;
+  const useChannelGeometry = secondaryEntry.csGeometry || (survey.type === "Water Way" && !isBottomWidthFixed);
   const rows = [];
 
   let prevSection = null;

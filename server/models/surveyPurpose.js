@@ -76,6 +76,7 @@ const SurveyPurposeSchema = new Schema(
     leftBankOffset: Number,
     rightBankOffset: Number,
     geometryVersion: Number,
+      csGeometry: Boolean,
     designSettings: { type: Schema.Types.Mixed },
     bufferDirection: { type: String, trim: true },
     isPurposeFinish: { type: Boolean, default: false, index: true },

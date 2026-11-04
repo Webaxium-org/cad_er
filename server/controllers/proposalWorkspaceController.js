@@ -1,3 +1,4 @@
+import { proposalLengthRows } from "../helper/proposalLength.js";
 import mongoose from "mongoose";
 import createHttpError from "http-errors";
 import Survey from "../models/survey.js";
@@ -17,6 +18,8 @@ const calculate = async (req) => {
   if (!base) throw createHttpError(400, "Choose a base level from this survey.");
   if (!SurveyPurpose.schema.path("type").enumValues.includes(form.proposal)) throw createHttpError(400, "Choose a valid proposal level.");
   if (survey.purposes.some((purpose) => purpose.type === form.proposal)) throw createHttpError(409, "This proposal level already exists.");
+  const scopedBase = { ...base.toObject(), rows: proposalLengthRows(base.rows, form, survey.separator) };
+  const settings = { ...design, chainageRange: form.length === "Custom" ? form.chainageRange : undefined };
   let seed;
   if (design.mode === "manual") {
     seed = { type: form.proposal, phase: "Proposal", relation: String(base._id), pls: base.pls, quantity: 0,
@@ -47,10 +50,10 @@ const calculate = async (req) => {
   }
   try {
     const plainSeed = JSON.parse(JSON.stringify(seed));
-    const changed = design.mode === "manual" || design.ls?.enabled || design.cs?.slopeEnabled || design.cs?.superelevationEnabled;
+    const changed = design.mode === "manual" || design.ls?.enabled || design.cs?.fixedBottomEnabled || design.cs?.slopeEnabled || design.cs?.superelevationEnabled;
     const purpose = changed || design.breaks?.length
-      ? applyProposalWorkspace(survey.toObject(), base.toObject(), plainSeed, design)
-      : { ...plainSeed, designSettings: design };
+      ? applyProposalWorkspace(survey.toObject(), scopedBase, plainSeed, settings)
+      : { ...plainSeed, designSettings: settings };
     return { survey, base, purpose };
   } catch (error) { throw createHttpError(400, error.message); }
 };

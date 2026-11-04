@@ -55,3 +55,16 @@ test("incomplete channels are flagged and invalid drafts never become zero RLs",
   proposed.rows.pop();
   assert.deepEqual(calculateVolumeReport({ ...survey, type: "Water Way" }, initial, proposed).missingSections, ["0/010"]);
 });
+
+test("custom chainage range excludes outside sections without reporting them missing", () => {
+  const { initial, proposed, survey } = fixture();
+  initial.rows.unshift(section("outside-before", "0/000", 10));
+  initial.rows[1] = section("range-start", "0/005", 10);
+  initial.rows.push(section("outside-after", "0/020", 10));
+  proposed.rows[0] = section("proposal-start", "0/005", 9);
+  proposed.designSettings = { chainageRange: { from: "0/005", to: "0/010" } };
+  const report = calculateVolumeReport(survey, initial, proposed);
+  assert.equal(report.totalCuttingVolume, 20);
+  assert.deepEqual(report.missingSections, []);
+  assert.deepEqual(report.rows.map(row => row.section), ["5.000", "10.000"]);
+});

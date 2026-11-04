@@ -86,3 +86,37 @@ test("ownership and changed base readings are checked before proposal writes", a
   t.mock.method(Survey, "findOne", () => query(null));
   await assert.rejects(invoke(previewProposalWorkspace, mocks.req), /Active survey not found/);
 });
+
+for (const type of ["Road", "Water Way"]) test(type + ": custom length scopes preview and saved rows", async (t) => {
+  const mocks = setup(t, type);
+  mocks.req.body.form.length = "Custom";
+  mocks.req.body.form.chainageRange = { from: "0/010", to: "0/020" };
+  const preview = await invoke(previewProposalWorkspace, mocks.req);
+  assert.deepEqual(preview.data.purpose.rows.map(row => row.chainage), ["0/010", "0/020"]);
+  assert.deepEqual(preview.data.purpose.designSettings.chainageRange, mocks.req.body.form.chainageRange);
+  await invoke(saveProposalWorkspace, mocks.req);
+  assert.deepEqual(geometry(mocks.rowsCreate.mock.calls[0].arguments[0]), geometry(preview.data.purpose.rows));
+});
+test("custom length rejects missing, reversed and identical endpoints before writes", async (t) => {
+  const mocks = setup(t);
+  mocks.req.body.form.length = "Custom";
+  for (const chainageRange of [undefined, { from: "0/000", to: "0/999" }, { from: "0/020", to: "0/000" }, { from: "0/010", to: "0/010" }]) {
+    mocks.req.body.form.chainageRange = chainageRange;
+    await assert.rejects(invoke(saveProposalWorkspace, mocks.req), /chainage/);
+  }
+  assert.equal(mocks.purposeWrite.mock.callCount(), 0);
+});
+
+test("custom slope anchors at its from-chainage, preserves outside rows and saves preview geometry", async t => {
+  const mocks = setup(t);
+  const original = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  mocks.req.body.design.ls = { enabled: true, strategy: "custom", custom: { from: "0/010", to: "0/020", denominator: "100", direction: "falling" } };
+  const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  assert.deepEqual(preview.rows[0].reducedLevels, original.rows[0].reducedLevels);
+  assert.deepEqual(preview.rows[1].reducedLevels, original.rows[1].reducedLevels);
+  for (let i = 0; i < 3; i++) assert.ok(Math.abs(Number(preview.rows[2].reducedLevels[i]) - Number(original.rows[1].reducedLevels[i]) + 0.1) < 0.001);
+  await invoke(saveProposalWorkspace, mocks.req);
+  assert.deepEqual(geometry(mocks.rowsCreate.mock.calls[0].arguments[0]), geometry(preview.rows));
+  mocks.req.body.design.ls.custom.denominator = "0";
+  await assert.rejects(invoke(previewProposalWorkspace, mocks.req), /Invalid custom slope/);
+});

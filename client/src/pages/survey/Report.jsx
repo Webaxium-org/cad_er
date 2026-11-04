@@ -287,7 +287,13 @@ const Report = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }}>
       <SmallHeader />
-      <PageHeroHeader icon={HiOutlineDocumentReport} title="Explore your library!" subtitle="Choose a report category from the footer navigation." />
+      <PageHeroHeader icon={HiOutlineDocumentReport} title="Explore your library!" subtitle="Choose a report category from the footer navigation."
+        action={(survey?._id || id) && <Button
+          variant="outlined" aria-label="Add proposed level"
+          onClick={() => navigate(`/survey/${survey?._id || id}/propose-level`)}
+          sx={{ color: "white", borderColor: "rgba(255,255,255,0.45)", bgcolor: "rgba(255,255,255,0.16)", borderRadius: "12px", minWidth: 64, px: 2, py: 1, fontWeight: 800, textTransform: "none", "&:hover": { bgcolor: "rgba(255,255,255,0.26)", borderColor: "white" } }}
+        >+PL</Button>}
+      />
       <AlertDialogSlide {...deleteAlertData} open={deleteAlertOpen} />
       <AlertDialogSlide {...alertData} open={open} />
 

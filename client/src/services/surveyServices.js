@@ -1,5 +1,7 @@
 import { axiosInstance } from "../utils/config";
 
+export const saveLongitudinalSlope = (id, payload) => axiosInstance.patch(`surveys/${id}/longitudinal-slope`, payload);
+
 const normalizeRow = (row) => {
   if (!row) return row;
   

@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { handleFormError } from "../../utils/handleFormError";
 import { startLoading, stopLoading } from "../../redux/loadingSlice";
-import { getSurvey, updateReducedLevels } from "../../services/surveyServices";
+import { getSurvey, updateReducedLevels, saveLongitudinalSlope } from "../../services/surveyServices";
 import { showAlert } from "../../redux/alertSlice";
 import { Alert, Box, Stack, Typography, Paper, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Table, TableBody, TableCell, TableContainer, TableRow } from "@mui/material";
 import BasicInput from "../../components/BasicInput";
@@ -170,11 +170,33 @@ const LongitudinalSectionReport = () => {
     } catch (error) { return { error: error.message }; }
   }, [slopeDialogOpen, canEditLevels, selectedCs, slopeForm, survey?.separator, levelEdits]);
 
-  const handleApplySlope = () => {
+  const handleApplySlope = async () => {
     if (!canEditLevels || savingLevels || slopePreview.error) return;
-    setLevelEdits((previous) => ({ ...previous, ...slopePreview.edits }));
-    setSlopeDialogOpen(false);
-    dispatch(showAlert({ type: "success", message: "Slope preview applied. Review the graph and quantity, then update each affected chainage to save." }));
+    const levelIndex = slopeForm.levelIndex;
+    const edits = slopePreview.edits;
+    const changes = selectedCs.levelRows.flatMap((row) => {
+      const value = edits[`${row.id}-${levelIndex}`];
+      if (value === undefined) return [];
+      const source = row.sources[levelIndex];
+      return [{ rowId: source.row._id, chainage: row.chainage, expectedLevels: source.row.reducedLevels,
+        offsets: source.row.offsets, reducedLevels: shiftReducedLevels(source.row.reducedLevels, Number(value) - row.levels[levelIndex]) }];
+    });
+    setSavingLevels(true);
+    try {
+      const { data } = await saveLongitudinalSlope(id, { purposeId: tableData[levelIndex]._id, changes });
+      if (!data.success) throw Error("The slope could not be saved.");
+      const rows = new Map(data.rows.map((row) => [String(row._id), row]));
+      const updatePurpose = (purpose) => ({ ...purpose, rows: purpose.rows?.map((row) => {
+        const saved = rows.get(String(row._id));
+        return saved ? { ...row, ...saved, offsets: saved.intermediateOffsets.map((point) => point.offset), intermediateSight: saved.intermediateOffsets.map((point) => point.is) } : row;
+      }) });
+      setTableData((previous) => previous.map(updatePurpose));
+      setSurvey((previous) => ({ ...previous, purposes: previous.purposes.map(updatePurpose) }));
+      dispatchLevelEdit({ type: "saved", keys: Object.keys(edits) });
+      setSlopeDialogOpen(false);
+      dispatch(showAlert({ type: "success", message: `Slope saved to the project across ${data.updated} chainages.` }));
+    } catch (error) { handleFormError(error, null, dispatch, navigate); }
+    finally { setSavingLevels(false); }
   };
 
   const previewCs = useMemo(() => {
@@ -534,10 +556,10 @@ const LongitudinalSectionReport = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }}>
       {exportProgress && <ExportLoader progress={exportProgress.percent} progressMessage={exportProgress.message} />}
-      <Dialog open={slopeDialogOpen} onClose={() => setSlopeDialogOpen(false)} fullWidth maxWidth="sm" aria-labelledby="slope-dialog-title">
+      <Dialog open={slopeDialogOpen} onClose={() => { if (!savingLevels) setSlopeDialogOpen(false); }} fullWidth maxWidth="sm" aria-labelledby="slope-dialog-title">
         <Box component="form" onSubmit={(event) => { event.preventDefault(); handleApplySlope(); }}>
           <DialogTitle id="slope-dialog-title" sx={{ color: "#4f46e5", fontWeight: 800 }}>Apply longitudinal slope</DialogTitle>
-          <DialogContent>
+          <DialogContent inert={savingLevels ? true : undefined}>
             <Stack spacing={2} sx={{ pt: 1 }}>
               {!canEditLevels ? <Alert severity="info">Slope editing is available only when the LS report is generated with exactly two levels.</Alert> : <>
                 <TextField select label="Level to adjust" value={slopeForm.levelIndex} onChange={(event) => setSlopeForm((previous) => ({ ...previous, levelIndex: Number(event.target.value) }))} fullWidth>
@@ -563,13 +585,13 @@ const LongitudinalSectionReport = () => {
                   <Typography fontWeight={700}>Start RL: {slopePreview.startRl.toFixed(3)} → End RL: {slopePreview.endRl.toFixed(3)}</Typography>
                   <Typography variant="body2">{Object.keys(slopePreview.edits).length} chainages · {slopeForm.direction === "falling" ? "Fall" : "Rise"}: {Math.abs(slopePreview.endRl - slopePreview.startRl).toFixed(3)} m</Typography>
                 </Box>}
-                <Typography variant="caption" color="text.secondary">Applying previews the changes. Use the Update button at each affected chainage to save.</Typography>
+                <Typography variant="caption" color="text.secondary">Apply &amp; save updates this level at every chainage in the selected range together. Other unsaved edits remain unchanged. Saved changes cannot be undone with the unsaved-edit Undo button.</Typography>
               </>}
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setSlopeDialogOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={!canEditLevels || savingLevels || Boolean(slopePreview.error)} sx={{ bgcolor: "#4f46e5", "&:hover": { bgcolor: "#4338ca" } }}>Apply slope</Button>
+            <Button disabled={savingLevels} onClick={() => setSlopeDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={!canEditLevels || savingLevels || Boolean(slopePreview.error)} sx={{ bgcolor: "#4f46e5", "&:hover": { bgcolor: "#4338ca" } }}>{savingLevels ? "Saving slope…" : "Apply & save slope"}</Button>
           </DialogActions>
         </Box>
       </Dialog>

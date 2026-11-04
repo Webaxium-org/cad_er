@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Container, Stack, Typography } from "@mui/material";
+import { Box, Container, IconButton, Stack, Typography } from "@mui/material";
+import { MdArrowBackIosNew } from "react-icons/md";
 import { AnimatePresence, motion } from "framer-motion";
 import { compactTitleSx, heroTitleSx } from "./pageHeaderStyles";
 
 /** Shared Settings-style page hero with a compact header after half the hero scrolls away. */
-export default function PageHeroHeader({ icon: Icon, title, subtitle, action }) {
+export default function PageHeroHeader({ icon: Icon, title, subtitle, action, compactTitle, onBack, onCompactHeightChange }) {
   const heroRef = useRef(null);
+  const compactRef = useRef(null);
   const [compact, setCompact] = useState(false);
 
   useEffect(() => {
@@ -22,12 +24,26 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action }) 
     };
   }, []);
 
-  const icon = Icon && <Icon size={32} style={{ flexShrink: 0, opacity: 0.9 }} />;
+  useEffect(() => {
+    if (!onCompactHeightChange) return;
+    if (!compact) { onCompactHeightChange(0); return; }
+    const node = compactRef.current;
+    if (!node) return;
+    const update = () => onCompactHeightChange(node.offsetHeight);
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    update();
+    return () => observer.disconnect();
+  }, [compact, onCompactHeightChange]);
+
+  const icon = onBack ? <IconButton onClick={onBack} aria-label="Go back" sx={{ color: "inherit", bgcolor: "rgba(255,255,255,0.12)", flexShrink: 0, "&:hover": { bgcolor: "rgba(255,255,255,0.22)" } }}><MdArrowBackIosNew size={22} /></IconButton>
+    : Icon && <Icon size={32} style={{ flexShrink: 0, opacity: 0.9 }} />;
   return (
     <>
       <AnimatePresence>
         {compact && (
           <Box
+            ref={compactRef}
             component={motion.div}
             initial={{ opacity: 0, y: -24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -44,9 +60,9 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action }) 
             <Container maxWidth="lg">
               <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ minWidth: 0 }}>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0, flex: 1 }}>
-                  {icon && <Box sx={{ display: action ? { xs: "none", sm: "flex" } : "flex" }}>{icon}</Box>}
+                  {icon && <Box sx={{ display: action && !onBack ? { xs: "none", sm: "flex" } : "flex" }}>{icon}</Box>}
                   <Typography fontWeight={900} sx={compactTitleSx} letterSpacing="-0.5px">
-                    {title}
+                    {compactTitle || title}
                   </Typography>
                 </Stack>
                 {action && <Box sx={{ flexShrink: 0 }}>{action}</Box>}

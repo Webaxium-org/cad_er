@@ -33,7 +33,9 @@ if (process.env.NODE_ENV === "development") {
 
 // 3. Parsers
 app.use("/api/subscriptions/webhook", express.raw({ type: "application/json", limit: "256kb" }));
-app.use((req, res, next) => req.path === "/api/pdf-exports" && req.method === "POST" ? next() : express.json()(req, res, next));
+app.use((req, res, next) => req.path === "/api/pdf-exports" && req.method === "POST" ? next() : express.json({
+  limit: req.method === "PATCH" && /^\/api\/surveys\/[a-f\d]{24}\/longitudinal-slope$/i.test(req.path) ? "4mb" : "100kb",
+})(req, res, next));
 app.use(cookieParser());
 
 // 4. Rate Limiting

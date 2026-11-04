@@ -1,3 +1,4 @@
+import { csSection, csRatio } from "./proposalCsGeometry.js";
 import { chainageMetres, groundProfile, interpolateGround } from "./waterWayGeometry.js";
 
 const number = (value, name) => {
@@ -32,7 +33,7 @@ export const proposalDesignQuantity = (survey, base, proposal, breaks = []) => {
     if (!row) { previous = null; continue; }
     const ground = normalized(source), design = normalized(row);
     let cut = 0, fill = 0;
-    const channel = survey.type === "Water Way" && proposal.proposalMethod !== "Bottom Width Fixed";
+    const channel = proposal.csGeometry || (survey.type === "Water Way" && proposal.proposalMethod !== "Bottom Width Fixed");
     if (channel) {
       const gp = groundProfile(source), dp = groundProfile(row);
       const xs = [...new Set([...gp, ...dp].map((point) => point.x).filter((x) => x >= dp[0].x && x <= dp.at(-1).x))].sort((a, b) => a - b);
@@ -87,23 +88,44 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
   const rows = draft.rows.filter((row) => row.type === "Chainage");
   if (!rows.length) throw Error("No chainage sections are available.");
   const center = Number(base.pls || 0);
+  if (settings.cs?.fixedBottomEnabled && settings.cs?.slopeEnabled) throw Error("Choose either Fixed bottom width or CS slope.");
+  const waterTemplate = settings.template ? settings.template === "water" : survey.type === "Water Way";
+  const csGeometry = Boolean(settings.cs?.fixedBottomEnabled || (settings.cs?.slopeEnabled && settings.cs?.lhs != null));
+  const sourceRows = new Map(base.rows.map(row => [row.chainage, row]));
+  if (csGeometry) draft.csGeometry = true;
   const first = chainageMetres(rows[0].chainage, separator);
   const slopeEnabled = Boolean(settings.ls?.enabled);
-  const grade = slopeEnabled ? number(settings.ls.grade, "LS grade") / 100 : 0;
+  const customSlope = slopeEnabled && settings.ls.strategy === "custom";
+  const grade = slopeEnabled && !customSlope ? number(settings.ls.grade, "LS grade") / 100 : 0;
   const anchor = slopeEnabled && settings.ls.strategy === "anchor" ? number(settings.ls.anchorRl, "start RL") : null;
   const superElevation = settings.cs?.superelevationEnabled ? number(settings.cs.superelevation, "superelevation") / 100 : 0;
   let crossGrade = null;
-  if (settings.cs?.slopeEnabled) {
+  if (settings.cs?.slopeEnabled && !csGeometry) {
     const h = number(settings.cs.horizontal, "horizontal CS slope"), v = number(settings.cs.vertical, "vertical CS slope");
     if (h <= 0 || v < 0) throw Error("CS slope must have positive horizontal run and non-negative rise, starting at 1:0.");
     crossGrade = v / h;
   }
   const seedStart = interpolateGround(groundProfile(rows[0]), center);
+  let custom;
+  if (customSlope) {
+    const input = settings.ls.custom || {};
+    const start = rows.find(row => row.chainage === input.from), end = rows.find(row => row.chainage === input.to);
+    if (!start || !end) throw Error("Custom slope endpoints must be within the proposal chainages.");
+    const from = chainageMetres(input.from, separator), to = chainageMetres(input.to, separator);
+    const denominator = number(input.denominator, "slope ratio");
+    if (to <= from || denominator <= 0 || !["rising", "falling"].includes(input.direction)) throw Error("Invalid custom slope range, direction or ratio.");
+    if (breaks.some(range => chainageMetres(range.from, separator) < to && chainageMetres(range.to, separator) > from)) throw Error("Custom slope cannot cross a proposal break.");
+    custom = { from, to, start: interpolateGround(groundProfile(start), center), grade: (input.direction === "falling" ? -1 : 1) / denominator };
+  }
   rows.forEach((row) => {
     const oldCenter = interpolateGround(groundProfile(row), center);
     let target = oldCenter;
     if (settings.mode === "manual") target = number(settings.manualLevels?.[row.chainage], `RL at ${row.chainage}`);
-    if (slopeEnabled) target = (anchor ?? seedStart) + grade * (chainageMetres(row.chainage, separator) - first);
+    if (slopeEnabled && !customSlope) target = (anchor ?? seedStart) + grade * (chainageMetres(row.chainage, separator) - first);
+    if (custom) {
+      const position = chainageMetres(row.chainage, separator);
+      if (position >= custom.from && position <= custom.to) target = custom.start + custom.grade * (position - custom.from);
+    }
     row.reducedLevels = row.reducedLevels.map((value, index) => {
       const offset = Number(row.intermediateOffsets[index].offset) - center;
       let next = Number(value) + target - oldCenter;
@@ -115,12 +137,26 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
       return next + offset * superElevation;
     });
   });
-  const shift = (amount) => ({ ...draft, rows: draft.rows.map((row) => row.type !== "Chainage" ? row : { ...row, reducedLevels: row.reducedLevels.map((value) => Number(value) + amount) }) });
-  if (slopeEnabled && settings.ls.strategy !== "anchor") {
+  if (csGeometry) rows.forEach(row => Object.assign(row, csSection(sourceRows.get(row.chainage), row, center, interpolateGround(groundProfile(row), center), settings.cs, waterTemplate, superElevation)));
+  const shift = (amount) => ({ ...draft, rows: draft.rows.map((row) => row.type !== "Chainage" ? row : csGeometry ? csSection(sourceRows.get(row.chainage), row, center, interpolateGround(groundProfile(row), center) + amount, settings.cs, waterTemplate, superElevation) : { ...row, reducedLevels: row.reducedLevels.map((value) => Number(value) + amount) }) });
+  if (slopeEnabled && !customSlope && settings.ls.strategy !== "anchor") {
     const groundLevels = base.rows.filter((row) => row.type === "Chainage").flatMap((row) => row.reducedLevels.map(Number));
     const designLevels = rows.flatMap((row) => row.reducedLevels);
     let low = Math.min(...groundLevels) - Math.max(...designLevels) - 100;
     let high = Math.max(...groundLevels) - Math.min(...designLevels) + 100;
+    if (csGeometry && !settings.cs.fixedBottomEnabled) {
+      const sign = waterTemplate ? 1 : -1;
+      const lhs = csRatio(settings.cs.lhs, "LHS slope"), rhs = csRatio(settings.cs.rhs, "RHS slope");
+      for (const row of rows) {
+        const gp = groundProfile(sourceRows.get(row.chainage));
+        const left = gp[0].x + Number(settings.cs.berm || 0), right = gp.at(-1).x - Number(settings.cs.berm || 0);
+        const l = interpolateGround(gp, left), r = interpolateGround(gp, right), current = interpolateGround(groundProfile(row), center);
+        const minimum = sign > 0 ? Math.max(l-(center-left)*lhs, r-(right-center)*rhs) : Math.max(l,r);
+        const maximum = sign > 0 ? Math.min(l,r) : Math.min(l+(center-left)*lhs, r+(right-center)*rhs);
+        low = Math.max(low, minimum-current); high = Math.min(high, maximum-current);
+      }
+      if (low > high) throw Error("No profile elevation fits the selected side slopes and berm.");
+    }
     const quantity = settings.ls.strategy === "minimum" ? 0 : number(settings.targetQuantity ?? seed.quantity, "target quantity");
     if (settings.ls.strategy === "quantity" && quantity < 0) throw Error("Target quantity must not be negative.");
     if (settings.ls.strategy === "quantity") {
