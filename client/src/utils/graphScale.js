@@ -1,4 +1,11 @@
 // Survey coordinates are metres; PDF dimensions are millimetres.
+export const graphSpanAtScale = (sizeMm, denominator) => {
+  if (!(Number(sizeMm) > 0) || !(Number(denominator) > 0) || !Number.isFinite(Number(sizeMm)) || !Number.isFinite(Number(denominator))) {
+    throw new Error("Enter positive drawing dimensions and print scales.");
+  }
+  return Number(sizeMm) * Number(denominator) / 1000;
+};
+
 export const printedGraphScale = (area, widthMm, heightMm) => {
   const span = range => Array.isArray(range) && range.length === 2 &&
     range.every(value => value !== null && value !== "" && Number.isFinite(Number(value)))

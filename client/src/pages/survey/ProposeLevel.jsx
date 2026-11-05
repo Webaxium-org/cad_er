@@ -170,7 +170,7 @@ const inputDetails = [
     name: "width",
     mode: "select",
     options: [
-      { label: "Full width", value: "Full width" },
+      { label: "All", value: "Full width" },
       { label: "Custom", value: "Custom" },
     ],
     for: "autoGenerate",
@@ -815,8 +815,9 @@ setFormValues((prev) => ({
           {lengthError && <Alert severity="error">{lengthError}</Alert>}
         </Stack>} />
 
-      <Container maxWidth="lg" sx={{ mt: -8, position: "relative", px: { xs: 1, sm: 3 } }}>
-        <ProposalProfileGraph totals={activeIsland === "ls" ? previewQuantity : null} stickyTop={{ xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
+      <Box sx={{ mt: -8, position: "relative", width: "100%", minWidth: 0 }}>
+        <ProposalProfileGraph totals={activeIsland === "ls" ? previewQuantity ?? { totalCuttingVolume: 0, totalFillingVolume: 0 } : null} stickyTop={{ xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
+        <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 3 } }}>
         {activeIsland === "templates" && design.templateId && <Alert severity="info" sx={{ mb: 2 }}>Illustrative profile: 1 m side height and an arbitrary 100 m datum. Edit the CS dimensions for your project; the actual proposal uses surveyed levels.</Alert>}
         {previewBusy && <LinearProgress sx={{ mb: 1, borderRadius: 2 }} />}
         {previewError && !previewValidation && <Alert severity="warning" sx={{ mb: 2 }}>{preview ? "Showing the last calculated profile. " : ""}{previewError}</Alert>}
@@ -879,7 +880,7 @@ setFormValues((prev) => ({
                 Length: {formValues.chainageRange?.from} ? {formValues.chainageRange?.to} ? Edit
               </Button>
             </Box>}
-            <Grid container spacing={3} columns={12} alignItems={"end"}>
+            <Grid container spacing={3} columns={12} alignItems={"end"} sx={{ "&:empty": { display: "none" } }}>
               {inputData.filter((input) => {
                 if (["project", "purpose", "proposal", "quantity", "length", "width", "entryType", "proposedLevel"].includes(input.name)) return false;
                 if (design.mode === "manual" && !["project", "purpose", "proposal"].includes(input.name)) return false;
@@ -961,7 +962,7 @@ setFormValues((prev) => ({
             </Grid>
           </Stack>
 
-          <ProposalDesignControls profileName={formValues.proposal} previewValidation={previewValidation} previewBusy={previewBusy} previewError={previewError} startRl={preview ? graphSeries[1]?.points.find(Boolean)?.y : null} startChainage={preview?.rows?.find(row => row.type === "Chainage")?.chainage || stations[0]?.chainage} isWaterWay={isWaterWay} crossSection={crossSection} tab={activeIsland} design={design} onChange={setDesign} stations={stations}
+          <ProposalDesignControls designLayerSelected={Boolean(formValues.purpose && formValues.proposal)} profileName={formValues.proposal} previewValidation={previewValidation} previewBusy={previewBusy} previewError={previewError} startRl={preview ? graphSeries[1]?.points.find(Boolean)?.y : null} startChainage={preview?.rows?.find(row => row.type === "Chainage")?.chainage || stations[0]?.chainage} isWaterWay={isWaterWay} crossSection={crossSection} tab={activeIsland} design={design} onChange={setDesign} stations={stations}
             onTemplate={(preset) => {
               setCrossSection("slop");
               setDesign(previous => applyExampleTemplate(previous, preset));
@@ -986,7 +987,8 @@ setFormValues((prev) => ({
             </Box>
           </Stack>
         </Paper>
-      </Container>
+        </Container>
+      </Box>
 
       <Box
         component={motion.div}

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { compactTitleSx, heroTitleSx } from "./pageHeaderStyles";
 
 /** Shared Settings-style page hero with a compact header after half the hero scrolls away. */
-export default function PageHeroHeader({ icon: Icon, title, subtitle, action, compactTitle, compactSubtitle, onBack, backButtonSx = {}, onCompactHeightChange, enableCompact = true }) {
+export default function PageHeroHeader({ icon: Icon, title, subtitle, action, compactTitle, compactSubtitle, onBack, backButtonSx = {}, onCompactHeightChange, enableCompact = true, keepActionInline = false }) {
   const heroRef = useRef(null);
   const compactRef = useRef(null);
   const [compact, setCompact] = useState(false);
@@ -82,7 +82,7 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action, co
         }}
       >
         <Container maxWidth="lg">
-          <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+          <Stack direction="row" alignItems={keepActionInline ? "flex-start" : "center"} justifyContent="space-between" flexWrap={keepActionInline ? "nowrap" : "wrap"} gap={2}>
             <Box sx={{
               minWidth: 0,
               opacity: compact ? 0 : 1,
@@ -100,7 +100,7 @@ export default function PageHeroHeader({ icon: Icon, title, subtitle, action, co
                 {subtitle}
               </Typography>
             </Box>
-            {action && <Box sx={{ visibility: compact ? "hidden" : "visible" }}>{action}</Box>}
+            {action && <Box sx={{ flexShrink: 0, visibility: compact ? "hidden" : "visible" }}>{action}</Box>}
           </Stack>
         </Container>
       </Box>

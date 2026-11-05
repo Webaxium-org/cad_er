@@ -6,10 +6,15 @@ import { FiPlus, FiTrash2, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import { gradeToSlopeRatio, slopeRatioToGrade } from "../../../utils/slopeRatio";
 import { stoppingSightDistance } from "../../../utils/proposalWorkspace";
 
-export default function ProposalDesignControls({ tab, crossSection, isWaterWay, design, onChange, stations, profileName = "", onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
+export default function ProposalDesignControls({ tab, crossSection, isWaterWay, design, onChange, stations, profileName = "", designLayerSelected = false, onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
   const [transportSystem, setTransportSystem] = useState(design.template || "road");
   const [customOpen, setCustomOpen] = useState(false);
+  const [layerWarningOpen, setLayerWarningOpen] = useState(false);
   const [complianceOpen, setComplianceOpen] = useState(false);
+  const openCompliance = () => {
+    if (!designLayerSelected) { setLayerWarningOpen(true); return; }
+    setComplianceOpen(true);
+  };
   const [customDraft, setCustomDraft] = useState([]);
   const [customError, setCustomError] = useState("");
   const [lsRatioDraft, setLsRatioDraft] = useState(null);
@@ -18,6 +23,7 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
   const magnitudeRatio = magnitudeDraft?.grade === magnitude ? magnitudeDraft.ratio : gradeToSlopeRatio(magnitude);
   const lsRatio = lsRatioDraft?.grade === design.ls.grade ? lsRatioDraft.ratio : gradeToSlopeRatio(design.ls.grade);
   const openCustom = () => {
+    if (!designLayerSelected) { setLayerWarningOpen(true); return; }
     const saved = design.ls.custom;
     setCustomDraft(saved?.segments?.map(segment => ({ ...segment, ratio: gradeToSlopeRatio(Math.abs(Number(segment.grade))), direction: Number(segment.grade) < 0 ? "fall" : "rise" })) || (saved?.from ? [{ from: saved.from, to: saved.to,
       ratio: `${saved.denominator}:1`, direction: saved.direction === "falling" ? "fall" : "rise" }]
@@ -29,7 +35,10 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
     onChange={(event) => update(group, key, event.target.value)} inputProps={{ step: "any" }} {...extra} />;
   const ssd = stoppingSightDistance(design.ssd);
   const downward = String(design.ls.grade).startsWith("-");
-  return <Stack spacing={2.5} sx={{ mt: 2.5 }}>
+  return <Stack spacing={2.5} sx={{ mt: tab === "ls" ? 1.5 : 2.5 }}>
+    <AlertDialogSlide open={layerWarningOpen} title="Select design layer" submitButtonText="OK"
+      onCancel={() => setLayerWarningOpen(false)} onSubmit={() => setLayerWarningOpen(false)}
+      content={<Alert severity="warning">Select design layer</Alert>} />
     {design.mode === "dimensions" && <Box>
       <Grid container spacing={1.5}>{[["length", "Length (m)"], ["width", "Width (m)"], ["height", "Height (m)"]].map(([key, label]) => <Grid key={key} size={{ xs: 12, sm: 4 }}>{field("dimensions", key, label, { inputProps: { min: 0, step: "any" } })}</Grid>)}</Grid>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Target quantity: {Object.values(design.dimensions).every((value) => Number(value) > 0) ? (Number(design.dimensions.length) * Number(design.dimensions.width) * Number(design.dimensions.height)).toFixed(3) : "—"} m³. This volume is passed to the current proposal generator.</Typography>
@@ -43,7 +52,7 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
       <Box>
         <FormControlLabel control={<Switch checked={design.ls.enabled} onChange={(event) => update("ls", "enabled", event.target.checked)} />} label="Grade optimisation" />
         {design.ls.enabled && <Stack spacing={1.5} sx={{ mt: 1 }}>
-          <TextField select fullWidth size="small" label="Set profile elevation" slotProps={{ select: { renderValue: value => ({ minimum: "Quantity optimisation", quantity: "Quantity compliance", anchor: "Set start level", custom: "Custom" }[value] || value) } }} value={design.ls.strategy} onChange={(event) => { if (event.target.value === "custom") openCustom(); else { update("ls", "strategy", event.target.value); if (event.target.value === "quantity") setComplianceOpen(true); } }}>
+          <TextField select fullWidth size="small" label="Set profile elevation" slotProps={{ select: { renderValue: value => ({ minimum: "Quantity optimisation", quantity: "Quantity compliance", anchor: "Set start level", custom: "Custom" }[value] || value) } }} value={design.ls.strategy} onChange={(event) => { if (event.target.value === "custom") openCustom(); else { update("ls", "strategy", event.target.value); if (event.target.value === "quantity") openCompliance(); } }}>
             <MenuItem value="minimum" sx={{ whiteSpace: "normal" }}>
               <Box>
                 <Typography component="span" sx={{ display: "block", fontSize: "inherit" }}>Quantity optimisation</Typography>
@@ -76,19 +85,20 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
             <Typography variant="caption" color="text.secondary">H:V = horizontal run : vertical rise. Use 200:1 to rise, 200:-1 to fall, or 1:0 for level.</Typography>
           </Box>}
           {design.ls.strategy === "quantity" && <>
-            <Button variant="outlined" onClick={() => setComplianceOpen(true)} sx={{ alignSelf: "flex-start", borderRadius: "12px", textTransform: "none", color: "#4f46e5", borderColor: "#c7d2fe" }}>Edit quantity compliance</Button>
+            <Button variant="outlined" onClick={openCompliance} sx={{ alignSelf: "flex-start", borderRadius: "12px", textTransform: "none", color: "#4f46e5", borderColor: "#c7d2fe" }}>Edit quantity compliance</Button>
             <AlertDialogSlide open={complianceOpen} title="Quantity compliance" submitButtonText="Done"
               onCancel={() => setComplianceOpen(false)} onSubmit={() => setComplianceOpen(false)}
-              paperSx={{ borderRadius: "20px", border: "1px solid #e0e7ff", m: { xs: 1.5, sm: 4 }, width: { xs: "calc(100% - 24px)", sm: "calc(100% - 64px)" }, maxHeight: "calc(100dvh - 24px)",
-                "& .MuiDialogTitle-root": { px: { xs: 2, sm: 4 }, pt: 2, fontSize: "1.2rem" },
-                "& .MuiDialogContent-root": { px: { xs: 2, sm: 4 }, pb: 2 },
-                "& .MuiDialogActions-root": { px: { xs: 2, sm: 4 }, pb: 2 } }}
-              content={<Box sx={{ p: { xs: 1.5, sm: 2.5 }, border: "1px solid #e0e7ff", borderRadius: "16px", bgcolor: "#ffffff",
+              paperSx={{ borderRadius: "20px", border: "1px solid #e0e7ff", maxHeight: "calc(100dvh - 24px)" }}
+              content={<Paper component="section" aria-label="Quantity compliance details" elevation={0}
+            sx={{ p: { xs: 1.5, sm: 2.5 }, border: "1px solid #e0e7ff", borderRadius: "16px", bgcolor: "#ffffff",
             "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: "#f8f9fe", "& fieldset": { borderColor: "#dce0ef" }, "&.Mui-focused fieldset": { borderColor: "#6366f1" } } }}>
             <Stack spacing={1.5}>
+            <Typography variant="body2" color="text.secondary">Set the slope and gradient direction. The starting level at the first chainage is calculated to meet the target quantity and Cutting/Filling condition entered above.</Typography>
+            {!designLayerSelected && <Alert severity="warning">Select design layer</Alert>}
             {previewBusy && <LinearProgress aria-label="Calculating start RL" sx={{ borderRadius: 1 }} />}
             {previewError && !previewValidation && <Alert severity="warning">{Number.isFinite(startRl) ? "Showing the last calculated start RL. " : "Start RL is unavailable. "}{previewError}</Alert>}
             {!previewBusy && !previewError && !Number.isFinite(startRl) && <Alert severity="info">Select both design layers and complete the dimensions to calculate the start RL.</Alert>}
+            <Box component="fieldset" disabled={!designLayerSelected} sx={{ border: 0, p: 0, m: 0, minWidth: 0 }}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography component="label" htmlFor="compliance-start-rl" sx={{ display: "block", mb: 1, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Start RL{startChainage ? ` @ ${startChainage}` : ""} (m)</Typography>
@@ -129,8 +139,9 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
                 </Stack>
               </Grid>
             </Grid>
+            </Box>
             </Stack>
-          </Box>} />
+          </Paper>} />
           </>}
           {design.ls.strategy === "anchor" && field("ls", "anchorRl", "Start RL (m)")}
           {design.ls.strategy === "custom" && <Button onClick={openCustom}>Edit custom slope</Button>}

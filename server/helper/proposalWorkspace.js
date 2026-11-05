@@ -157,7 +157,10 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
   });
   if (csGeometry) rows.forEach(row => Object.assign(row, csSection(sourceRows.get(row.chainage), row, center, interpolateGround(groundProfile(row), center), settings.cs, waterTemplate, superElevation)));
   const shift = (amount) => ({ ...draft, rows: draft.rows.map((row) => row.type !== "Chainage" ? row : csGeometry ? csSection(sourceRows.get(row.chainage), row, center, interpolateGround(groundProfile(row), center) + amount, settings.cs, waterTemplate, superElevation) : { ...row, reducedLevels: row.reducedLevels.map((value) => Number(value) + amount) }) });
-  if (slopeEnabled && !customSlope && settings.ls.strategy !== "anchor") {
+  const conditionQuantity = settings.mode !== "manual" && !slopeEnabled && settings.ls?.quantityType
+    && settings.ls.quantityType !== (survey.type === "Water Way" ? "cutting" : "filling");
+  const strategy = conditionQuantity ? "quantity" : settings.ls?.strategy;
+  if (conditionQuantity || (slopeEnabled && !customSlope && strategy !== "anchor")) {
     const groundLevels = base.rows.filter((row) => row.type === "Chainage").flatMap((row) => row.reducedLevels.map(Number));
     const designLevels = rows.flatMap((row) => row.reducedLevels);
     let low = Math.min(...groundLevels) - Math.max(...designLevels) - 100;
@@ -175,15 +178,15 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
       }
       if (low > high) throw Error("No profile elevation fits the selected side slopes and berm.");
     }
-    const quantity = settings.ls.strategy === "minimum" ? 0 : number(settings.targetQuantity ?? seed.quantity, "target quantity");
-    if (settings.ls.strategy === "quantity" && quantity < 0) throw Error("Target quantity must not be negative.");
-    if (settings.ls.strategy === "quantity") {
+    const quantity = strategy === "minimum" ? 0 : number(settings.targetQuantity ?? seed.quantity, "target quantity");
+    if (strategy === "quantity" && quantity < 0) throw Error("Target quantity must not be negative.");
+    if (strategy === "quantity") {
       const key = settings.ls.quantityType === "cutting" ? "cutting" : "filling";
       const endQuantities = [proposalDesignQuantity(survey, base, shift(low), breaks)[key], proposalDesignQuantity(survey, base, shift(high), breaks)[key]];
       if (quantity > Math.max(...endQuantities)) throw Error("Target quantity cannot be reached within the available sections and proposal breaks.");
     }
     for (let iteration = 0; iteration < 65; iteration++) {
-      if (settings.ls.strategy === "minimum") {
+      if (strategy === "minimum") {
         const a = low + (high - low) / 3, b = high - (high - low) / 3;
         const qa = proposalDesignQuantity(survey, base, shift(a), breaks), qb = proposalDesignQuantity(survey, base, shift(b), breaks);
         if (qa.cutting + qa.filling < qb.cutting + qb.filling) high = b; else low = a;

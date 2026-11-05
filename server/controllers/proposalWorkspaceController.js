@@ -53,7 +53,7 @@ const calculate = async (req) => {
   }
   try {
     const plainSeed = JSON.parse(JSON.stringify(seed));
-    const changed = design.mode === "manual" || design.ls?.enabled || design.cs?.fixedBottomEnabled || design.cs?.slopeEnabled || design.cs?.superelevationEnabled;
+    const changed = design.mode === "manual" || design.ls?.quantityType || design.ls?.enabled || design.cs?.fixedBottomEnabled || design.cs?.slopeEnabled || design.cs?.superelevationEnabled;
     const purpose = changed || design.breaks?.length
       ? applyProposalWorkspace(survey.toObject(), scopedBase, plainSeed, settings)
       : { ...plainSeed, designSettings: settings };

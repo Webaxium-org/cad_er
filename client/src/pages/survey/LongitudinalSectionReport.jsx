@@ -1,7 +1,7 @@
 import WaterWayProposalNotice from "./components/WaterWayProposalNotice";
 import QuantityDeltaBadge from "./components/QuantityDeltaBadge";
 import AddLongitudinalChainageDialog from "./components/AddLongitudinalChainageDialog";
-import { createLongitudinalPdf } from "../../utils/longitudinalPdf";
+import { createLongitudinalPdf, fittedLongitudinalScales } from "../../utils/longitudinalPdf";
 import ExportLoader from "../../components/ExportLoader";
 import SectionScaleInputs from "./components/SectionScaleInputs";
 import { profilePoints, profileLevel, chainageValue } from "../../utils/surveyGeometry";
@@ -109,25 +109,78 @@ const LongitudinalSectionReport = () => {
 
   const [selectedCs, setSelectedCs] = useState(null);
   const chainageTableRef = useRef(null);
-  const tableScrollFrame = useRef(null);
+  const graphScrollRef = useRef(null);
+  const graphInteractionRef = useRef(null);
+  const [tableScrollSize, setTableScrollSize] = useState({ width: 0, content: 0 });
   const [tableViewport, setTableViewport] = useState(null);
-  const [followChainageTable, setFollowChainageTable] = useState(false);
   useEffect(() => {
     const table = chainageTableRef.current;
-    if (!table || !followChainageTable) return;
+    if (!table) return;
+    let frame;
     const update = () => {
-      cancelAnimationFrame(tableScrollFrame.current);
-      tableScrollFrame.current = requestAnimationFrame(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setTableScrollSize(previous => previous.width === table.clientWidth && previous.content === table.scrollWidth
+          ? previous : { width: table.clientWidth, content: table.scrollWidth });
+        if (graphScrollRef.current && Math.abs(graphScrollRef.current.scrollLeft - table.scrollLeft) > 1) graphScrollRef.current.scrollLeft = table.scrollLeft;
         const range = chainageTableViewport(selectedCs?.chainages || [], table.scrollLeft, table.clientWidth);
-        setTableViewport((previous) => previous?.[0] === range?.[0] && previous?.[1] === range?.[1] ? previous : range);
+        setTableViewport(previous => previous?.[0] === range?.[0] && previous?.[1] === range?.[1] ? previous : range);
       });
     };
     const observer = new ResizeObserver(update);
     observer.observe(table);
     table.addEventListener("scroll", update, { passive: true });
     update();
-    return () => { observer.disconnect(); table.removeEventListener("scroll", update); cancelAnimationFrame(tableScrollFrame.current); };
-  }, [selectedCs, followChainageTable]);
+    return () => { observer.disconnect(); table.removeEventListener("scroll", update); cancelAnimationFrame(frame); };
+  }, [selectedCs]);
+  useEffect(() => {
+    const graph = graphInteractionRef.current;
+    if (!graph) return;
+    let touch;
+    const wheel = event => {
+      // Leave ordinary vertical scrolling and Ctrl+wheel zoom with the chart.
+      if (event.ctrlKey || event.metaKey) return;
+      const delta = event.shiftKey ? event.deltaY || event.deltaX : event.deltaX;
+      const table = chainageTableRef.current;
+      if (!delta || !table || table.scrollWidth <= table.clientWidth) return;
+      event.preventDefault();
+      event.stopPropagation();
+      table.scrollLeft += delta * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? table.clientWidth : 1);
+    };
+    const start = event => {
+      const table = chainageTableRef.current;
+      touch = event.touches.length === 1 && table
+        ? { x: event.touches[0].clientX, y: event.touches[0].clientY, left: table.scrollLeft, horizontal: false } : null;
+    };
+    const move = event => {
+      if (!touch || event.touches.length !== 1) return;
+      const dx = event.touches[0].clientX - touch.x;
+      const dy = event.touches[0].clientY - touch.y;
+      if (!touch.horizontal && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.25) touch.horizontal = true;
+      const table = chainageTableRef.current;
+      if (!touch.horizontal || !table || table.scrollWidth <= table.clientWidth) return;
+      event.preventDefault();
+      event.stopPropagation();
+      table.scrollLeft = touch.left - dx;
+    };
+    const end = () => { touch = null; };
+    graph.addEventListener("wheel", wheel, { capture: true, passive: false });
+    graph.addEventListener("touchstart", start, { capture: true, passive: true });
+    graph.addEventListener("touchmove", move, { capture: true, passive: false });
+    graph.addEventListener("touchend", end, true);
+    graph.addEventListener("touchcancel", end, true);
+    return () => {
+      graph.removeEventListener("wheel", wheel, true);
+      graph.removeEventListener("touchstart", start, true);
+      graph.removeEventListener("touchmove", move, true);
+      graph.removeEventListener("touchend", end, true);
+      graph.removeEventListener("touchcancel", end, true);
+    };
+  }, []);
+  const [compactHeroHeight, setCompactHeroHeight] = useState(0);
+  const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
+  const [printPreviewUrl, setPrintPreviewUrl] = useState(null);
+  useEffect(() => () => { if (printPreviewUrl) URL.revokeObjectURL(printPreviewUrl); }, [printPreviewUrl]);
   const [{ edits: levelEdits, history: editHistory }, dispatchLevelEdit] = useReducer(levelEditReducer, { edits: {}, history: [] });
   const setLevelEdits = (update) => dispatchLevelEdit({ type: "edit", update });
   const [savingLevels, setSavingLevels] = useState(false);
@@ -224,14 +277,17 @@ const LongitudinalSectionReport = () => {
       displayModeBar: true,
       scrollZoom: true,
       doubleClick: "reset",
-      modeBarButtonsToRemove: ["select2d", "lasso2d", "toggleSpikelines", "toImage"],
+      modeBarButtonsToRemove: ["pan2d", "select2d", "lasso2d", "toggleSpikelines", "toImage"],
     },
     layout: {
       ...chartOptions.layout,
-      dragmode: "pan",
+      dragmode: "zoom",
+      xaxis: { ...chartOptions.layout?.xaxis, fixedrange: true },
+      yaxis: { ...chartOptions.layout?.yaxis, fixedrange: false },
       ...(previewCs !== selectedCs && previewCs?.allRl?.length ? {
         yaxis: {
           ...chartOptions.layout?.yaxis,
+          fixedrange: false,
           autorange: false,
           range: [Math.min(...previewCs.allRl) - 1, Math.max(...previewCs.allRl) + (Math.max(...previewCs.allRl) - Math.min(...previewCs.allRl)) * 0.2 + 1],
         },
@@ -239,19 +295,28 @@ const LongitudinalSectionReport = () => {
     },
   }), [chartOptions, previewCs, selectedCs]);
 
-  const downloadPDF = async () => {
+  const downloadPDF = async (preview = false, scales = drawingScales) => {
     if (!selectedCs || exportingRef.current) return;
     exportingRef.current = true;
     setExportProgress({ percent: 0, message: "Preparing longitudinal pages..." });
     try {
-      const pdf = await createLongitudinalPdf(selectedCs, drawingScales, chartOptions, "auto", setExportProgress);
-      pdf.save("longitudinal-section.pdf");
+      const pdf = await createLongitudinalPdf(selectedCs, scales, chartOptions, "auto", setExportProgress);
+      if (preview) setPrintPreviewUrl(URL.createObjectURL(pdf.output("blob")));
+      else pdf.save("longitudinal-section.pdf");
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
     } finally {
       exportingRef.current = false;
       setExportProgress(null);
     }
+  };
+
+  const fitPrintPreview = () => {
+    if (!selectedCs || exportingRef.current) return;
+    const scales = fittedLongitudinalScales(selectedCs, chartOptions);
+    setDrawingScales(scales);
+    setPrintPreviewUrl(null);
+    downloadPDF(true, scales);
   };
 
   const handleMenuSelect = (item) => {
@@ -596,11 +661,27 @@ const LongitudinalSectionReport = () => {
         </Box>
       </Dialog>
 
+      <Dialog open={printPreviewOpen} onClose={() => setPrintPreviewOpen(false)} fullWidth maxWidth="lg"
+        sx={{ "& .MuiDialog-paper": { height: "90dvh", maxHeight: "90dvh", m: { xs: 1, sm: 4 }, width: { xs: "calc(100% - 16px)", sm: "calc(100% - 64px)" } } }}>
+        <DialogTitle>LS print preview</DialogTitle>
+        <DialogContent sx={{ pt: "12px !important", display: "flex", overflow: "hidden" }}>
+          <Stack spacing={1.5} sx={{ flex: 1, minWidth: 0, minHeight: 0, "& > .MuiStack-root": { flexShrink: 0 } }}>
+            <SectionScaleInputs scales={drawingScales} onChange={(scales) => { setDrawingScales(scales); setPrintPreviewUrl(null); }} />
+            <Stack direction="row" spacing={1}>
+              <Button onClick={() => downloadPDF(true)} disabled={Boolean(exportProgress)}>Update preview</Button>
+              <Button onClick={fitPrintPreview} disabled={Boolean(exportProgress)}>Fit profile</Button>
+            </Stack>
+            {printPreviewUrl ? <Box key={printPreviewUrl} component="iframe" title="LS PDF print preview" src={`${printPreviewUrl}#view=Fit&navpanes=0`} sx={{ width: "100%", flex: 1, minHeight: 0, border: "1px solid #e2e8f0" }} /> : <Alert severity="info">Update the preview to view the selected print scales.</Alert>}
+          </Stack>
+        </DialogContent>
+        <DialogActions><Button onClick={() => setPrintPreviewOpen(false)}>Close</Button><Button onClick={() => downloadPDF()} disabled={Boolean(exportProgress)}>Download PDF</Button></DialogActions>
+      </Dialog>
       <SmallHeader />
       <PageHeroHeader
         icon={MdOutlineAssessment}
+        onCompactHeightChange={setCompactHeroHeight}
         title="LS Profile"
-        subtitle="View the survey profile along the chainage."
+        subtitle="Graph follows the visible chainage columns"
         action={
           <Stack direction="row" spacing={0.75}>
             <Button variant="outlined" aria-label="Undo last unsaved chainage edit" title="Undo last unsaved edit"
@@ -610,8 +691,8 @@ const LongitudinalSectionReport = () => {
             </Button>
             <Button variant="outlined" disabled={!canEditLevels || savingLevels} onClick={() => handleMenuSelect({ value: "slope" })}
               aria-label="Apply longitudinal slope" sx={headerActionSx}>Slope</Button>
-            <Button variant="outlined" disabled={!selectedCs || Boolean(exportProgress)} onClick={downloadPDF}
-              aria-label="Download LS profile PDF" sx={headerActionSx}>
+            <Button variant="outlined" disabled={!selectedCs || Boolean(exportProgress)} onClick={() => { setPrintPreviewOpen(true); fitPrintPreview(); }}
+              aria-label="Open LS print preview" sx={headerActionSx}>
               <Box component="span" sx={{ display: { xs: "none", sm: "inline-flex" }, mr: 0.5 }}><MdDownload size={18} /></Box>PDF
             </Button>
           </Stack>
@@ -628,12 +709,17 @@ const LongitudinalSectionReport = () => {
             border: "1px solid rgba(226, 232, 240, 0.8)",
             borderLeftColor: "#6366f1",
             position: "relative",
-            overflow: "hidden",
+            overflow: "visible",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              borderRadius: "inherit",
+              background: "linear-gradient(to right, #6366f1 6px, transparent 6px)",
+              pointerEvents: "none",
+            },
           }}
         >
-          {/* Indigo left accent */}
-          <Box sx={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", bgcolor: "#6366f1" }} />
-
           <Box
             sx={{
               textAlign: "center",
@@ -642,116 +728,47 @@ const LongitudinalSectionReport = () => {
               alignItems: "center",
             }}
           >
-            <Box sx={{ width: "100%", p: { xs: 2, md: 3 }, border: "1px solid #e2e8f0", borderRadius: "20px", bgcolor: "#fff" }}>
-              <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
-                <Box textAlign="left">
-                  <Typography variant="h6" sx={{ color: "#1e293b", fontWeight: 800 }}>Longitudinal profile</Typography>
-                  <Typography variant="body2" color="text.secondary">View and adjust the drawing scale</Typography>
-                </Box>
-                <Stack spacing={1.5} alignItems={{ xs: "stretch", sm: "flex-end" }}>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: { xs: "flex-start", sm: "flex-end" }, gap: 1, textAlign: "left" }} aria-live="polite" aria-atomic="true">
-                    <Typography variant="caption" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 1.5, py: 0.65, color: "#635bdf", fontWeight: 800, bgcolor: "#eeecff", border: "1px solid #cfcbff", borderRadius: "999px" }}>
-                      <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#7165ec", flexShrink: 0,
-                        animation: "quantityDotPulse 1.8s ease-out infinite",
-                        "@keyframes quantityDotPulse": {
-                          "0%": { boxShadow: "0 0 0 0 rgba(113,101,236,0.4)", opacity: 1 },
-                          "70%": { boxShadow: "0 0 0 5px rgba(113,101,236,0)", opacity: 0.65 },
-                          "100%": { boxShadow: "0 0 0 0 rgba(113,101,236,0)", opacity: 1 },
-                        },
-                        "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-                      }} />Quantity
-                    </Typography>
-                    {!liveQuantity ? (
-                      <Typography variant="body2" color="text.secondary">Select exactly two levels to view quantity.</Typography>
-                    ) : invalidQuantityEdits || quantityIncomplete ? (
-                      <Typography variant="body2" color="error.main">
-                        {invalidQuantityEdits ? "Enter valid RL values to calculate quantity." : "Quantity incomplete: missing or invalid section profiles."}
-                      </Typography>
-                    ) : (
-                      <Stack direction="row" flexWrap="wrap" gap={1}>
-                        {[
-                          { label: "Cutting", key: "totalCuttingVolume" },
-                          { label: "Filling", key: "totalFillingVolume" },
-                        ].map(({ label, key }) => {
-                          const value = liveQuantity[key];
-                          const delta = Number((value - savedQuantity[key]).toFixed(3));
-                          return (
-                            <Box key={key} sx={{ display: "inline-flex", flexDirection: "column", justifyContent: "center", px: 1.5, py: 0.65, bgcolor: "#eeecff", border: "1px solid #cfcbff", borderRadius: "999px", "& > p": { color: "#635bdf", fontSize: "0.8rem", whiteSpace: "nowrap" } }}>
-                              <Typography variant="body2" sx={{ color: "#312e81", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{label}: {value.toFixed(3)} m³</Typography>
-                              {delta !== 0 && <Typography variant="caption" sx={{ color: "#4f46e5", fontVariantNumeric: "tabular-nums" }}>{delta > 0 ? "+" : ""}{delta.toFixed(3)} m³ from saved</Typography>}
-                            </Box>
-                          );
-                        })}
-                      </Stack>
-                    )}
-                  </Box>
-                  <SectionScaleInputs scales={drawingScales} onChange={(scales) => {
-                    if (scales.horizontal !== drawingScales.horizontal) { setFollowChainageTable(false); setTableViewport(null); }
-                    setDrawingScales(scales);
-                  }} />
-                </Stack>
-              </Stack>
+            <Box sx={{ display: "contents" }}>
               <WaterWayProposalNotice purposes={tableData} />
-              {followChainageTable && tableViewport && <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1 }}>
-                <Typography variant="caption" color="text.secondary">Graph follows the visible chainage columns</Typography>
-                <Button size="small" onClick={() => { setFollowChainageTable(false); setTableViewport(null); }}>Full profile</Button>
-              </Stack>}
-              <Box sx={{ position: "relative" }}>
-              <QuantityDeltaBadge saved={savedQuantity} live={liveQuantity} invalid={invalidQuantityEdits || quantityIncomplete} />
+              <Box ref={graphInteractionRef} sx={{ touchAction: "pan-y pinch-zoom", width: "100%", position: "sticky", top: { xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }, zIndex: 10, bgcolor: "white", boxShadow: "0 8px 20px rgba(20,32,72,0.08)" }}>
+              <QuantityDeltaBadge showTotals saved={savedQuantity} live={liveQuantity} invalid={invalidQuantityEdits || quantityIncomplete} />
               {selectedCs && selectedCs?.series?.length && (
                 <CrossSectionChart
-                  drawingScales={drawingScales}
+                  drawingScales={{ horizontal: 2400, vertical: 300 }}
                   selectedCs={previewCs}
                   chartOptions={interactiveChartOptions}
                   viewportRange={tableViewport}
                   pdfRef={pdfRef}
                 />
               )}
+              {tableScrollSize.content > tableScrollSize.width && <Box ref={graphScrollRef} tabIndex={0} role="region" aria-label="Scroll graph and chainage table horizontally"
+                onScroll={event => { const table = chainageTableRef.current; if (table && Math.abs(table.scrollLeft - event.currentTarget.scrollLeft) > 1) table.scrollLeft = event.currentTarget.scrollLeft; }}
+                sx={{ width: tableScrollSize.width, maxWidth: "100%", mx: "auto", overflowX: "scroll", overflowY: "hidden", height: 20, touchAction: "pan-x", scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}>
+                <Box sx={{ width: tableScrollSize.content, height: 1 }} />
+              </Box>}
               </Box>
 
-            {/* Footer */}
-            <Typography
-              variant="caption"
-              sx={{ display: "block", mt: 2, color: "text.secondary" }}
-            >
-              [Hor Scale 1:{drawingScales.horizontal} : Ver Scale 1:{drawingScales.vertical}]
-            </Typography>
             </Box>
             {selectedCs?.levelRows?.length > 0 && (
-              <Box sx={{ width: "100%", mt: 2, textAlign: "left" }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}
-                  sx={{ px: 2, py: 1.5, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "16px 16px 0 0" }}>
-                <Typography
-                  id="ls-chainage-details"
-                  component="h2"
-                  sx={{ fontWeight: 700, fontSize: "0.875rem", color: "#1e293b" }}
-                >
-                  Chainage details
-                </Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1.5 }}>
-                  {canEditLevels
-                    ? "Changing an LS value shifts the cross-section reduced levels at that chainage by the same amount."
-                    : "Editing is available only when the LS report is generated with exactly two levels."}
-                </Typography>
+              <Box sx={{ width: "100%", minWidth: 0, mt: 2, textAlign: "left" }}>
                 {Boolean(Object.keys(levelEdits).length) && (
                   <Typography variant="caption" color="text.secondary" sx={{ display: "block", px: 2, pb: 1.5 }}>
                     Save or undo pending RL edits before adding a new chainage.
                   </Typography>
                 )}
-                <TableContainer ref={chainageTableRef} onScroll={() => { if (!followChainageTable) setFollowChainageTable(true); }} tabIndex={0} role="region" aria-label="Chainage levels, scroll horizontally to view all chainages" sx={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "0 0 16px 16px" }}>
-                  <Table size="small" aria-labelledby="ls-chainage-details" sx={{ width: 88 + selectedCs.levelRows.length * 104, tableLayout: "fixed", "& th, & td": { borderColor: "#e2e8f0", borderRight: "1px solid #e2e8f0" }, "& th:first-of-type": { width: 88, minWidth: 88, maxWidth: 88, boxSizing: "border-box", px: 1, whiteSpace: "normal", overflowWrap: "anywhere" } }}>
+                <TableContainer ref={chainageTableRef} tabIndex={0} role="region" aria-label="Chainage levels, scroll horizontally to view all chainages" sx={{ width: "100%", maxWidth: "100%", minWidth: 0, overflowX: "auto", scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" }, touchAction: "pan-x pan-y", border: "1px solid #e2e8f0", borderRadius: "16px" }}>
+                  <Table size="small" aria-label="Chainage levels" sx={{ width: 88 + selectedCs.levelRows.length * 104, tableLayout: "fixed", "& th, & td": { borderColor: "#e2e8f0", borderRight: "1px solid #e2e8f0" }, "& th:first-of-type": { width: 88, minWidth: 88, maxWidth: 88, boxSizing: "border-box", px: 1, whiteSpace: "normal", overflowWrap: "anywhere" } }}>
                     <colgroup><col style={{ width: 88 }} />{selectedCs.levelRows.map((row) => <col key={row.id} style={{ width: 104 }} />)}</colgroup>
                     <TableBody>
                       <TableRow>
                         <TableCell component="th" scope="row" sx={{ position: "sticky", left: 0, zIndex: 2, bgcolor: "#eef2ff", fontWeight: 800, color: "#4338ca" }}>
                           <Stack direction="row" alignItems="center" spacing={0.5}>
-                            <Box component="span" title="Chainage" aria-label="Chainage">Ch</Box>
+                            <Box component="span" title="Chainage" aria-label="Chainage">CH</Box>
                             <Button variant="outlined" size="small" aria-label="Add chainage"
                               disabled={savingLevels || Boolean(Object.keys(levelEdits).length)}
                               onClick={() => setAddChainageOpen(true)}
                               title={Object.keys(levelEdits).length ? "Save or undo pending RL edits before adding a chainage" : "Add a new chainage"}
-                              sx={{ minWidth: 36, width: 36, height: 36, p: 0, borderRadius: "8px", borderColor: "#c7d2fe", color: "#4f46e5", fontSize: "1.4rem", fontWeight: 700, bgcolor: "white" }}>+</Button>
+                              sx={{ minWidth: 24, width: 24, height: 24, p: 0, borderRadius: "8px", borderColor: "#c7d2fe", color: "#4f46e5", fontSize: "1.1rem", fontWeight: 700, bgcolor: "white" }}>+</Button>
                           </Stack>
                         </TableCell>
                         {selectedCs.levelRows.map((row) => (

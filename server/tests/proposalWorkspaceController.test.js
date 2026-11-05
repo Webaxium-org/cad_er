@@ -7,6 +7,7 @@ import Row from "../models/surveyRows.js";
 import { generateSurveyPurpose, generateWaterWayProposalPurpose } from "../controllers/surveyController.js";
 import { previewProposalWorkspace, saveProposalWorkspace } from "../controllers/proposalWorkspaceController.js";
 import { initialProposalDesign, proposalGraphSeries } from "../../client/src/utils/proposalWorkspace.js";
+import { calculateVolumeReport } from "../../client/src/utils/volumeReport.js";
 
 const id = "000000000000000000000001", owner = "000000000000000000000002", baseId = "000000000000000000000003";
 const response = () => ({ status(code) { this.code = code; return this; }, json(value) { this.data = value; } });
@@ -37,6 +38,24 @@ const setup = (t, type = "Road") => {
 };
 const invoke = async (handler, req) => { const res = response(); await handler(req, res, (error) => { throw error; }); return res; };
 const geometry = (rows) => rows.map(({ chainage, reducedLevels, intermediateOffsets, roadWidth }) => ({ chainage, reducedLevels, intermediateOffsets, roadWidth }));
+
+test("switching design condition without grade optimisation updates preview quantities and saved levels", async t => {
+  const mocks = setup(t);
+  mocks.req.body.design = structuredClone(initialProposalDesign);
+  const filling = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  mocks.req.body.design.ls.quantityType = "cutting";
+  const cutting = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  const forReport = purpose => ({ ...purpose, rows: purpose.rows.map(row => ({ ...row, offsets: row.intermediateOffsets.map(point => point.offset) })) });
+  const report = calculateVolumeReport(mocks.survey, forReport(mocks.base), forReport(cutting));
+  assert.ok(Math.abs(report.totalCuttingVolume - 40) < 0.2);
+  assert.equal(report.totalFillingVolume, 0);
+  assert.notDeepEqual(geometry(cutting.rows), geometry(filling.rows));
+  await invoke(saveProposalWorkspace, mocks.req);
+  assert.deepEqual(geometry(mocks.rowsCreate.mock.calls[0].arguments[0]), geometry(cutting.rows));
+  mocks.req.body.design.ls.quantityType = "filling";
+  const restored = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  assert.deepEqual(geometry(restored.rows), geometry(filling.rows));
+});
 
 test("quantity compliance recalculates slopes from database-backed base rows", async t => {
   const mocks = setup(t);

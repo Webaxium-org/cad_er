@@ -287,7 +287,7 @@ const Report = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }}>
       <SmallHeader />
-      <PageHeroHeader icon={HiOutlineDocumentReport} title="Explore your library!" subtitle="Choose a report category from the footer navigation."
+      <PageHeroHeader keepActionInline icon={HiOutlineDocumentReport} title="Explore your library!" subtitle="Choose a report category from the footer navigation."
         action={(survey?._id || id) && <Button
           variant="outlined" aria-label="Add proposed level"
           onClick={() => navigate(`/survey/${survey?._id || id}/propose-level`)}
