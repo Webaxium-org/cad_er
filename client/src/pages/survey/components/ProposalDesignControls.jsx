@@ -21,6 +21,7 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
   const [magnitudeDraft, setMagnitudeDraft] = useState(null);
   const magnitude = design.ls.grade === "" ? "" : String(Math.abs(Number(design.ls.grade)));
   const magnitudeRatio = magnitudeDraft?.grade === magnitude ? magnitudeDraft.ratio : gradeToSlopeRatio(magnitude);
+  const steepComplianceSlope = slopeRatioToGrade(magnitudeRatio) > 100;
   const lsRatio = lsRatioDraft?.grade === design.ls.grade ? lsRatioDraft.ratio : gradeToSlopeRatio(design.ls.grade);
   const openCustom = () => {
     if (!designLayerSelected) { setLayerWarningOpen(true); return; }
@@ -126,6 +127,8 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
                 </Stack>
               </Grid>
               <Grid size={12}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>H = horizontal distance; V = vertical change. For a 1-in-5000 gradient, enter H = 5000 and V = 1.</Typography>
+                {steepComplianceSlope && <Alert severity="warning" sx={{ mb: 1.5 }}>Check the slope ratio: the vertical change is greater than the horizontal distance. H and V may be reversed. For a 1-in-5000 gradient, enter H = 5000 and V = 1, then choose Rise or Fall. A slope this steep can produce an unusually large Start RL.</Alert>}
                 <Typography sx={{ mb: 1, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Gradient direction</Typography>
                 <Stack role="group" aria-label="Gradient direction" direction="row" spacing={1.5}>
                   {[{ negative: false, label: "+Rise", icon: <FiTrendingUp /> }, { negative: true, label: "-Fall", icon: <FiTrendingDown /> }].map(option => {
