@@ -8,14 +8,19 @@ import { stoppingSightDistance } from "../../../utils/proposalWorkspace";
 
 export default function ProposalDesignControls({ tab, crossSection, isWaterWay, design, onChange, stations, profileName = "", designLayerSelected = false, onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
   const [transportSystem, setTransportSystem] = useState(design.template || "road");
-  const [customOpen, setCustomOpen] = useState(false);
   const [layerWarningOpen, setLayerWarningOpen] = useState(false);
   const [complianceOpen, setComplianceOpen] = useState(false);
   const openCompliance = () => {
     if (!designLayerSelected) { setLayerWarningOpen(true); return; }
     setComplianceOpen(true);
   };
-  const [customDraft, setCustomDraft] = useState([]);
+  const customSegments = () => {
+    const saved = design.ls.custom;
+    return saved?.segments?.map(segment => ({ ...segment, ratio: gradeToSlopeRatio(Math.abs(Number(segment.grade))), direction: Number(segment.grade) < 0 ? "fall" : "rise" })) || (saved?.from ? [{ from: saved.from, to: saved.to,
+      ratio: `${saved.denominator}:1`, direction: saved.direction === "falling" ? "fall" : "rise" }]
+      : [{ from: stations[0]?.chainage || "", to: stations[1]?.chainage || "", ratio: "1:0", direction: "rise" }]);
+  };
+  const [customDraft, setCustomDraft] = useState(customSegments);
   const [customError, setCustomError] = useState("");
   const [lsRatioDraft, setLsRatioDraft] = useState(null);
   const [magnitudeDraft, setMagnitudeDraft] = useState(null);
@@ -25,11 +30,23 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
   const lsRatio = lsRatioDraft?.grade === design.ls.grade ? lsRatioDraft.ratio : gradeToSlopeRatio(design.ls.grade);
   const openCustom = () => {
     if (!designLayerSelected) { setLayerWarningOpen(true); return; }
-    const saved = design.ls.custom;
-    setCustomDraft(saved?.segments?.map(segment => ({ ...segment, ratio: gradeToSlopeRatio(Math.abs(Number(segment.grade))), direction: Number(segment.grade) < 0 ? "fall" : "rise" })) || (saved?.from ? [{ from: saved.from, to: saved.to,
-      ratio: `${saved.denominator}:1`, direction: saved.direction === "falling" ? "fall" : "rise" }]
-      : [{ from: stations[0]?.chainage || "", to: stations[1]?.chainage || "", ratio: "1:0", direction: "rise" }]));
-    setCustomError(""); setCustomOpen(true);
+    setCustomDraft(customSegments());
+    setCustomError("");
+    update("ls", "strategy", "custom");
+  };
+  const applyCustom = () => {
+    let previousEnd = -1;
+    if (!customDraft.length) { setCustomError("Add at least one chainage segment."); return; }
+    for (const [index, segment] of customDraft.entries()) {
+      const from = stations.findIndex(row => row.chainage === segment.from);
+      const to = stations.findIndex(row => row.chainage === segment.to);
+      if (from < 0 || to <= from || from < previousEnd || (!Number.isFinite(slopeRatioToGrade(segment.ratio)) || slopeRatioToGrade(segment.ratio) < 0)) {
+        setCustomError(`Segment ${index + 1}: choose increasing chainages in order, without overlap, and enter a valid H:V slope (e.g. 200:1; choose Rise or Fall separately).`); return;
+      }
+      previousEnd = to;
+    }
+    onChange({ ...design, ls: { ...design.ls, strategy: "custom", custom: { segments: customDraft.map(segment => ({ from: segment.from, to: segment.to, grade: String((segment.direction === "fall" ? -1 : 1) * slopeRatioToGrade(segment.ratio)) })) } } });
+    setCustomError("");
   };
   const update = (group, key, value) => onChange({ ...design, [group]: { ...design[group], [key]: value } });
   const field = (group, key, label, extra = {}) => <TextField size="small" fullWidth type="number" label={label} value={design[group][key]}
@@ -60,9 +77,19 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
                 <Typography component="span" variant="caption" color="text.secondary" sx={{ display: "block", maxWidth: 280 }}>Default: minimises total earthwork volume (cut + fill).</Typography>
               </Box>
             </MenuItem>
-            <MenuItem value="quantity">Quantity compliance</MenuItem>
+            <MenuItem value="quantity" sx={{ whiteSpace: "normal" }}>
+              <Box>
+                <Typography component="span" sx={{ display: "block", fontSize: "inherit" }}>Quantity compliance</Typography>
+                <Typography component="span" variant="caption" color="text.secondary" sx={{ display: "block", maxWidth: 280 }}>Enforcing a gradient according to the start Design RL at chainage 0.000 with the slope &amp; gradient vector.</Typography>
+              </Box>
+            </MenuItem>
             {design.ls.strategy === "anchor" && <MenuItem value="anchor" sx={{ display: "none" }}>Set start level</MenuItem>}
-            <MenuItem value="custom">Custom</MenuItem>
+            <MenuItem value="custom" sx={{ whiteSpace: "normal" }}>
+              <Box>
+                <Typography component="span" sx={{ display: "block", fontSize: "inherit" }}>Custom</Typography>
+                <Typography component="span" variant="caption" color="text.secondary" sx={{ display: "block", maxWidth: 280 }}>Customise your design level</Typography>
+              </Box>
+            </MenuItem>
           </TextField>
           {!["custom", "quantity"].includes(design.ls.strategy) && <Box>
             <Typography sx={{ mb: 1, fontSize: "0.875rem", fontWeight: 600, color: "#334155" }}>LS grade (H:V)</Typography>
@@ -147,23 +174,11 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
           </Paper>} />
           </>}
           {design.ls.strategy === "anchor" && field("ls", "anchorRl", "Start RL (m)")}
-          {design.ls.strategy === "custom" && <Button onClick={openCustom}>Edit custom slope</Button>}
-          <AlertDialogSlide open={customOpen} title={`Custom profile - ${profileName || "Select a proposal level"}`} cancelButtonText="Cancel" submitButtonText="Apply slopes"
-            paperSx={{ maxWidth: "760px", borderRadius: "24px", border: "1px solid #e0e7ff" }}
-            onCancel={() => setCustomOpen(false)} onSubmit={() => {
-              let previousEnd = -1;
-              if (!customDraft.length) { setCustomError("Add at least one chainage segment."); return; }
-              for (const [index, segment] of customDraft.entries()) {
-                const from = stations.findIndex(row => row.chainage === segment.from);
-                const to = stations.findIndex(row => row.chainage === segment.to);
-                if (from < 0 || to <= from || from < previousEnd || (!Number.isFinite(slopeRatioToGrade(segment.ratio)) || slopeRatioToGrade(segment.ratio) < 0)) {
-                  setCustomError(`Segment ${index + 1}: choose increasing chainages in order, without overlap, and enter a valid H:V slope (e.g. 200:1; choose Rise or Fall separately).`); return;
-                }
-                previousEnd = to;
-              }
-              onChange({ ...design, ls: { ...design.ls, strategy: "custom", custom: { segments: customDraft.map(segment => ({ from: segment.from, to: segment.to, grade: String((segment.direction === "fall" ? -1 : 1) * slopeRatioToGrade(segment.ratio)) })) } } });
-              setCustomOpen(false);
-            }} content={<Stack spacing={2} sx={{ mt: 1 }}>
+          {design.ls.strategy === "custom" && <Paper component="section" aria-label="Custom profile" variant="outlined" sx={{ p: { xs: 1.5, sm: 2.5 }, borderRadius: "20px", borderColor: "#e0e7ff", minWidth: 0 }}>
+            <Stack spacing={2}>
+              <Typography fontWeight={700} color="#334155">Custom profile - {profileName || "Select a proposal level"}</Typography>
+              <Stack spacing={2}>
+
               <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
                 <Typography fontWeight={600} color="#334155">Chainage segments &amp; slopes</Typography>
                 <Button variant="contained" disableElevation startIcon={<FiPlus />} disabled={customDraft.length >= 100} onClick={() => {
@@ -210,7 +225,10 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
               </TableContainer>
               <Typography variant="caption" color="text.secondary">H:V = horizontal run : vertical rise. Enter a positive ratio such as 200:1 and choose +Rise or -Fall. Use 1:0 for level. Connected segments continue from the previous end level. Levels outside the selected segments stay unchanged.</Typography>
               {customError && <Alert severity="error">{customError}</Alert>}
-            </Stack>} />
+              <Button variant="contained" onClick={applyCustom} sx={{ alignSelf: "flex-start", borderRadius: "10px", textTransform: "none" }}>Apply slopes</Button>
+              </Stack>
+            </Stack>
+          </Paper>}
           {design.ls.strategy === "minimum" && <Typography variant="caption" color="text.secondary">Minimises total earthwork volume (cut + fill) for the entered grade and cross-section shape. Review the resulting cutting and filling before wrapping.</Typography>}
         </Stack>}
       </Box>

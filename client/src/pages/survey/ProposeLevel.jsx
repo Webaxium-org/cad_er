@@ -815,9 +815,9 @@ setFormValues((prev) => ({
           {lengthError && <Alert severity="error">{lengthError}</Alert>}
         </Stack>} />
 
-      <Box sx={{ mt: -8, position: "relative", width: "100%", minWidth: 0 }}>
+      <Container maxWidth="lg" disableGutters sx={{ mt: -8, position: "relative", width: "100%", minWidth: 0, px: { lg: 3 } }}>
         <ProposalProfileGraph totals={activeIsland === "ls" ? previewQuantity ?? { totalCuttingVolume: 0, totalFillingVolume: 0 } : null} stickyTop={{ xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
-        <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 3 } }}>
+        <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 3, lg: 0 } }}>
         {activeIsland === "templates" && design.templateId && <Alert severity="info" sx={{ mb: 2 }}>Illustrative profile: 1 m side height and an arbitrary 100 m datum. Edit the CS dimensions for your project; the actual proposal uses surveyed levels.</Alert>}
         {previewBusy && <LinearProgress sx={{ mb: 1, borderRadius: 2 }} />}
         {previewError && !previewValidation && <Alert severity="warning" sx={{ mb: 2 }}>{preview ? "Showing the last calculated profile. " : ""}{previewError}</Alert>}
@@ -988,7 +988,7 @@ setFormValues((prev) => ({
           </Stack>
         </Paper>
         </Container>
-      </Box>
+      </Container>
 
       <Box
         component={motion.div}
