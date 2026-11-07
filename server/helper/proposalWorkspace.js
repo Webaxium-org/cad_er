@@ -90,6 +90,9 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
   const center = Number(base.pls || 0);
   if (settings.cs?.fixedBottomEnabled && settings.cs?.slopeEnabled) throw Error("Choose either Fixed bottom width or CS slope.");
   const waterTemplate = settings.template ? settings.template === "water" : survey.type === "Water Way";
+  // A fixed-width water section can represent either an excavated channel or
+  // a filled embankment. The design condition determines the side direction.
+  const channelShape = waterTemplate && !(settings.cs?.fixedBottomEnabled && settings.ls?.quantityType === "filling");
   const csGeometry = Boolean(settings.cs?.fixedBottomEnabled || (settings.cs?.slopeEnabled && settings.cs?.lhs != null));
   const camber = settings.cs?.camberEnabled ? number(settings.cs.camber, "camber") / 100 : 0;
   const sectionSettings = row => {
@@ -124,7 +127,7 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
   };
   const shapeSection = (row, target) => {
     const cs = sectionSettings(row);
-    if (cs) return csSection(sourceRows.get(row.chainage), row, center, target, cs, waterTemplate, superElevation);
+    if (cs) return csSection(sourceRows.get(row.chainage), row, center, target, cs, channelShape, superElevation);
     const amount = target - interpolateGround(groundProfile(row), center);
     return { ...row, reducedLevels: row.reducedLevels.map(value => Number(value) + amount) };
   };
@@ -139,7 +142,7 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
   let crossGrade = null;
   if (settings.cs?.slopeEnabled && !csGeometry) {
     const h = number(settings.cs.horizontal, "horizontal CS slope"), v = number(settings.cs.vertical, "vertical CS slope");
-    if (h <= 0 || v < 0) throw Error("CS slope must have positive horizontal run and non-negative rise, starting at 1:0.");
+    if (h <= 0 || v < 0) throw Error("CS slope must have positive horizontal run and non-negative rise, starting at V:H = 0:1.");
     crossGrade = v / h;
   }
   const seedStart = interpolateGround(groundProfile(rows[0]), center);

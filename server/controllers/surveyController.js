@@ -2617,7 +2617,7 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
     ) {
       throw createHttpError(
         400,
-        "Slope must be in H:V ratio format, e.g. 0.75:1.",
+        "Slope must be in V:H ratio format, e.g. 1:0.75.",
       );
     }
 

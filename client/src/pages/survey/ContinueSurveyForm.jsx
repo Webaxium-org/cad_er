@@ -1,3 +1,4 @@
+import { reverseSlopeRatio } from "../../utils/slopeRatio";
 import * as Yup from "yup";
 import {
   Box,
@@ -213,7 +214,7 @@ const inputDetails = [
     for: "bottomWidthFixed",
   },
   {
-    label: "Side slope ratio (H:V)*",
+    label: "Side slope ratio (V:H)*",
     name: "slope",
     type: "text",
     hidden: true,
@@ -390,7 +391,7 @@ const ContinueSurveyForm = () => {
       type && isWaterWay
         ? Yup.string().required("Side slope ratio is required").matches(
             /^(\d+(?:\.\d+)?|\.\d+)\s*[:/?]\s*(\d+(?:\.\d+)?|\.\d+)$/,
-            "Enter a positive H:V ratio, e.g. 1:1",
+            "Enter a positive V:H ratio, e.g. 1:1",
           )
         : Yup.string().nullable(),
     bermWidth: type && isWaterWay && formValues.proposalMethod === "With Respect to Berm"
@@ -405,7 +406,7 @@ const ContinueSurveyForm = () => {
 
     setFormValues((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "slope" ? reverseSlopeRatio(value) : value,
     }));
 
     if (name === "purpose") {
@@ -962,7 +963,7 @@ const ContinueSurveyForm = () => {
                       ) : (
                         <BasicInput
                           {...input}
-                          value={formValues[input.name] || ""}
+                          value={input.name === "slope" ? reverseSlopeRatio(formValues.slope) : formValues[input.name] || ""}
                           error={(formErrors && formErrors[input.name]) || ""}
                           sx={{ width: "100%" }}
                           onChange={(e) => handleInputChange(e)}

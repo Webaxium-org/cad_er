@@ -5,7 +5,7 @@ const finite = (value, name) => {
 };
 export const csRatio = (value, name) => {
   const parts = String(value ?? "").trim().split(":");
-  if (parts.length !== 2) throw Error(name + " must be H:V, for example 2:1.");
+  if (parts.length !== 2) throw Error(name + " must be V:H, for example 1:2.");
   const h = finite(parts[0], name), v = finite(parts[1], name);
   if (h <= 0 || v < 0) throw Error(name + " requires positive H and non-negative V.");
   return v / h;

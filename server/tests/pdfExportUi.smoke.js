@@ -19,10 +19,10 @@ const storeJobs=jobs=>localStorage.setItem('pdf-test-jobs',JSON.stringify(jobs))
 window.completeExport=()=>{storeJobs(load().map(job=>({...job,status:'completed',progress:100,message:'PDF ready to download'})));document.dispatchEvent(new Event('visibilitychange'));};
 axiosInstance.defaults.adapter=async config=>{
  let jobs=load(),data;
- if(config.method==='post') {const job={id:String(Date.now()),title:'Mock survey PDF',status:'queued',message:'Queued for PDF generation...',progress:0,expiresAt:new Date(Date.now()+86400000).toISOString()};jobs.push(job);storeJobs(jobs);data={job};}
+ if(config.method==='post') {localStorage.setItem('pdf-test-posts',String(Number(localStorage.getItem('pdf-test-posts')||0)+1));const job={requestKey:JSON.parse(config.data).requestKey,id:String(Date.now()),title:'Mock survey PDF',status:'queued',message:'Queued for PDF generation...',progress:0,expiresAt:new Date(Date.now()+86400000).toISOString()};jobs.push(job);storeJobs(jobs);if(localStorage.getItem('pdf-test-timeout')==='yes'){localStorage.removeItem('pdf-test-timeout');throw Object.assign(new Error('Gateway timeout'),{response:{status:504}});}data={job};}
  else if(config.method==='patch'){const action=JSON.parse(config.data).action;jobs=action==='dismissed'?jobs.filter(job=>!config.url.includes(job.id)):jobs.map(job=>config.url.includes(job.id)?{...job,downloadedAt:new Date().toISOString()}:job);storeJobs(jobs);data={success:true};}
  else if(config.url.endsWith('/download')){localStorage.setItem('pdf-test-downloads',String(Number(localStorage.getItem('pdf-test-downloads')||0)+1));data=new Blob(['%PDF-1.7 test'],{type:'application/pdf'});}
- else data={jobs};
+ else data={jobs:config.params?.requestKey?jobs.filter(job=>job.requestKey===config.params.requestKey):jobs};
  return {data,status:200,statusText:'OK',headers:{},config};
 };
 function Start(){const {startExport}=usePdfExports();return <><button onClick={()=>startExport('survey',{})}>Start PDF</button><Link to='/other'>Another page</Link></>;}
@@ -70,8 +70,15 @@ try {
   await reopened.goto(url);
   await reopened.waitForFunction(() => Number(localStorage.getItem("pdf-test-downloads")) === 2);
   assert.equal(await reopened.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await reopened.waitForFunction(() => JSON.parse(localStorage.getItem("pdf-test-jobs"))[0].downloadedAt);
+  const beforePosts = await reopened.evaluate(() => Number(localStorage.getItem("pdf-test-posts")));
+  await reopened.evaluate(() => { localStorage.setItem("pdf-test-timeout", "yes"); [...document.querySelectorAll("button")].find(button => button.textContent.trim() === "Start PDF").click(); });
+  await reopened.waitForFunction(() => document.body.innerText.includes("PREMIERING PROJECT") && JSON.parse(localStorage.getItem("pdf-test-jobs")).some(job => job.status === "queued"));
+  assert.equal(await reopened.evaluate(() => Number(localStorage.getItem("pdf-test-posts"))), beforePosts + 1);
+  await reopened.evaluate(() => window.completeExport());
+  await reopened.waitForFunction(() => Number(localStorage.getItem("pdf-test-downloads")) === 3);
   assert.deepEqual(errors, []);
-  console.log("PASS: original modal, minimize/expand, navigation, automatic download, reload deduplication, reopening, mobile width; no browser errors.");
+  console.log("PASS: original modal, minimize/expand, navigation, automatic download, reload deduplication, reopening, mobile width, recovery from a 504 without duplicate submissions; no browser errors.");
 } catch (error) {
   if (testPage && !testPage.isClosed()) console.error(await testPage.evaluate(() => ({ url: location.href, body: document.body.innerText.slice(0, 1500), jobs: localStorage.getItem("pdf-test-jobs") })));
   throw error;

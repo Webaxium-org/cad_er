@@ -55,6 +55,33 @@ test("water workspace previews and saves using switch inputs without legacy CS f
   }
 });
 
+test("fixed-width water filling produces a flat top and cutting produces a flat bed", async t => {
+  const mocks = setup(t, "Water Way");
+  const design = structuredClone(initialProposalDesign);
+  design.template = "water";
+  Object.assign(design.cs, { fixedBottomEnabled: true, bottomWidth: "0.5", fixedLhs: "1:1", fixedRhs: "1:1" });
+  const normalized = p => ({ ...p, rows: p.rows.map(row => ({ ...row, offsets: row.intermediateOffsets.map(p => p.offset) })) });
+  for (const condition of ["filling", "cutting", "filling"]) {
+    design.ls.quantityType = condition;
+    mocks.req.body = proposalWorkspaceRequest(mocks.req.body.form, design, [], true);
+    const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+    const row = preview.rows[0];
+    const xs = row.intermediateOffsets.map(p => Number(p.offset));
+    const levels = row.reducedLevels.map(Number);
+    const left = xs.indexOf(-0.25), center = xs.indexOf(0), right = xs.indexOf(0.25);
+    assert.equal(levels[left], levels[center]);
+    assert.equal(levels[right], levels[center]);
+    assert.equal(levels[center] > levels[0], condition === "filling");
+    assert.equal(levels[center] > levels.at(-1), condition === "filling");
+    assert.ok(Math.abs(Math.abs(levels[center] - levels[0]) - 3.75) < 0.001);
+    const report = calculateVolumeReport(mocks.survey, normalized(mocks.base), normalized(preview));
+    const quantity = condition === "filling" ? report.totalFillingVolume : report.totalCuttingVolume;
+    assert.ok(Math.abs(quantity - 40) < 0.2);
+    await invoke(saveProposalWorkspace, mocks.req);
+    assert.deepEqual(geometry(mocks.rowsCreate.mock.calls.at(-1).arguments[0]), geometry(preview.rows));
+  }
+});
+
 test("water switch preview follows varying surveyed levels without requiring a common bed RL", async t => {
   const mocks = setup(t, "Water Way");
   mocks.base.rows.forEach((row, i) => { row.reducedLevels = Array(3).fill(String(10 - i * 6)); });

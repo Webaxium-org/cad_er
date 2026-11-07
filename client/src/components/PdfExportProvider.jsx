@@ -5,6 +5,7 @@ import { saveAs } from "file-saver";
 import { axiosInstance } from "../utils/config";
 import ExportLoader from "./ExportLoader";
 import { PdfExportContext } from "../utils/pdfExportContext";
+import { queuePdfExport } from "../utils/queuePdfExport";
 
 export default function PdfExportProvider({ children }) {
   const user = useSelector((state) => state.user?.user);
@@ -13,6 +14,7 @@ export default function PdfExportProvider({ children }) {
   const [jobs, setJobs] = useState([]);
   const [modalId, setModalId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingSubmission, setCheckingSubmission] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [connectionError, setConnectionError] = useState("");
   const [downloadError, setDownloadError] = useState("");
@@ -79,15 +81,18 @@ export default function PdfExportProvider({ children }) {
     const existing = jobs.find((job) => ["queued", "running"].includes(job.status));
     if (existing) { setModalId(existing.id); setMinimized(false); return; }
     submittingRef.current = true;
+    setCheckingSubmission(false);
     setSubmitting(true); setMinimized(false); setDownloadError("");
     try {
-      const { data } = await axiosInstance.post("pdf-exports", { surveyId, snapshot, requestKey: crypto.randomUUID() });
+      const job = await queuePdfExport(axiosInstance, { surveyId, snapshot, requestKey: crypto.randomUUID() }, {
+        onRecovery: () => { if (owner.current === userId) setCheckingSubmission(true); },
+      });
       if (owner.current !== userId) return;
       revision.current++;
-      setJobs((previous) => [data.job, ...previous.filter((job) => job.id !== data.job.id)]);
-      setModalId(data.job.id);
+      setJobs((previous) => [job, ...previous.filter((item) => item.id !== job.id)]);
+      setModalId(job.id);
       refresh.current();
-    } finally { submittingRef.current = false; if (owner.current === userId) setSubmitting(false); }
+    } finally { submittingRef.current = false; if (owner.current === userId) { setSubmitting(false); setCheckingSubmission(false); } }
   };
   const dismiss = async (job) => {
     try {
@@ -101,7 +106,7 @@ export default function PdfExportProvider({ children }) {
   return <PdfExportContext.Provider value={{ startExport }}>
     {children}
     <ExportLoader open={Boolean(showModal)} progress={submitting ? 0 : selected?.progress ?? 0}
-      progressMessage={submitting ? "Sending report to server. Keep the app open until it is queued..." : connectionError || selected?.message || ""}
+      progressMessage={submitting ? checkingSubmission ? "The server response was delayed. Checking whether your PDF was queued..." : "Sending report to server. Keep the app open until it is queued..." : connectionError || selected?.message || ""}
       estimatedTimeLeft={selected?.estimatedTimeLeft ?? null} onMinimize={() => setMinimized(true)} />
     {!showModal && (submitting || jobs.length > 0) && <Stack spacing={1} aria-live="polite" sx={{ position: "fixed", right: 12, bottom: 88, zIndex: 1600, width: { xs: "calc(100% - 24px)", sm: 340 }, maxHeight: "55vh", overflowY: "auto" }}>
       {connectionError && <Alert severity="warning">{connectionError}</Alert>}

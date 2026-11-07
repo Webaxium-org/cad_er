@@ -148,7 +148,7 @@ const inputDetails = [
     for: "bottomWidthFixed",
   },
   {
-    label: "Side slope ratio (H:V)*",
+    label: "Side slope ratio (V:H)*",
     name: "slope",
     type: "text",
     for: "waterWaySlope",

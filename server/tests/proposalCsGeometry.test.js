@@ -2,9 +2,22 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { applyProposalWorkspace, proposalDesignQuantity } from "../helper/proposalWorkspace.js";
 import { calculateVolumeReport } from "../../client/src/utils/volumeReport.js";
+import { reverseSlopeRatio, slopeRatioToGrade } from "../../client/src/utils/slopeRatio.js";
 const fixture = level => ({ pls: 0, rows: ["0/000","0/010"].map(chainage => ({ type:"Chainage", chainage, roadWidth:10, reducedLevels:[level,level,level], intermediateOffsets:[-5,0,5].map(offset=>({offset})) })) });
 const normalized = p => ({...p, rows:p.rows.map(r=>({...r, offsets:r.intermediateOffsets.map(p=>Number(p.offset))}))});
 const survey={type:"Water Way",separator:"/"};
+test("V:H inputs preserve the stored CS geometry and signed LS gradient", () => {
+ const base = fixture(12), seed = fixture(10);
+ const oldCs = { fixedBottomEnabled:true, bottomWidth:4, fixedLhs:"2:1", fixedRhs:"1:1" };
+ const displayed = reverseSlopeRatio(oldCs.fixedLhs);
+ assert.equal(displayed, "1:2");
+ const editedCs = { ...oldCs, fixedLhs:reverseSlopeRatio(displayed) };
+ assert.deepEqual(applyProposalWorkspace(survey,base,seed,{cs:editedCs}), applyProposalWorkspace(survey,base,seed,{cs:oldCs}));
+ const falling = applyProposalWorkspace(survey,base,seed,{cs:editedCs,ls:{enabled:true,strategy:"anchor",anchorRl:10,grade:slopeRatioToGrade("-1:2000")}});
+ const centerRl = row => Number(row.reducedLevels[row.intermediateOffsets.findIndex(p => Number(p.offset) === 0)]);
+ assert.equal(centerRl(falling.rows[0]), 10);
+ assert.equal(centerRl(falling.rows[1]), 9.995);
+});
 test("fixed width preserves flat bed and independently applies both side ratios",()=>{
  const base=fixture(12), seed=fixture(10);
  const result=applyProposalWorkspace(survey,base,seed,{cs:{fixedBottomEnabled:true,bottomWidth:4,fixedLhs:"2:1",fixedRhs:"1:1"}});

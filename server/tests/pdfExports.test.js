@@ -52,6 +52,21 @@ test("idempotent retries return the existing job and owner-scoped lists never di
   assert.ok(!("snapshot" in listed[0]) && !("fileId" in listed[0]));
 });
 
+test("submission recovery looks up only the original request key for the signed-in owner", async t => {
+  const request = req();
+  request.query = { requestKey: request.body.requestKey };
+  t.mock.method(PdfExport, "find", filter => {
+    assert.equal(filter.owner, owner);
+    assert.equal(filter.requestKey, request.body.requestKey);
+    return query([{ _id: id, surveyId, requestKey: filter.requestKey, status: "completed", snapshot: { private: true } }]);
+  });
+  const result = await invoke(listPdfExports, request);
+  assert.equal(result.data.jobs[0].requestKey, request.body.requestKey);
+  assert.ok(!("snapshot" in result.data.jobs[0]));
+  request.query.requestKey = { $ne: "" };
+  await assert.rejects(invoke(listPdfExports, request), /Invalid export request key/);
+});
+
 test("downloads and acknowledgement enforce owner, expiry and ready status", async (t) => {
   t.mock.method(PdfExport, "findOne", (filter) => { assert.equal(filter.owner, owner); assert.ok(filter.expiresAt.$gt); return query(null); });
   await assert.rejects(invoke(downloadPdfExport, req()), /not found or expired/);

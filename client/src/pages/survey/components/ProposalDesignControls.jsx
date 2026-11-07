@@ -3,7 +3,7 @@ import { useState } from "react";
 import AlertDialogSlide from "../../../components/AlertDialogSlide";
 import { Alert, Box, Button, FormControlLabel, Grid, IconButton, LinearProgress, MenuItem, Paper, Stack, Switch, Radio, RadioGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import { FiPlus, FiTrash2, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
-import { gradeToSlopeRatio, slopeRatioToGrade } from "../../../utils/slopeRatio";
+import { gradeToSlopeRatio, slopeRatioToGrade, reverseSlopeRatio } from "../../../utils/slopeRatio";
 import { stoppingSightDistance } from "../../../utils/proposalWorkspace";
 
 export default function ProposalDesignControls({ tab, isWaterWay, design, onChange, stations, profileName = "", designLayerSelected = false, onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
@@ -17,8 +17,8 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
   const customSegments = () => {
     const saved = design.ls.custom;
     return saved?.segments?.map(segment => ({ ...segment, ratio: gradeToSlopeRatio(Math.abs(Number(segment.grade))), direction: Number(segment.grade) < 0 ? "fall" : "rise" })) || (saved?.from ? [{ from: saved.from, to: saved.to,
-      ratio: `${saved.denominator}:1`, direction: saved.direction === "falling" ? "fall" : "rise" }]
-      : [{ from: stations[0]?.chainage || "", to: stations[1]?.chainage || "", ratio: "1:0", direction: "rise" }]);
+      ratio: `1:${saved.denominator}`, direction: saved.direction === "falling" ? "fall" : "rise" }]
+      : [{ from: stations[0]?.chainage || "", to: stations[1]?.chainage || "", ratio: "0:1", direction: "rise" }]);
   };
   const [customDraft, setCustomDraft] = useState(customSegments);
   const [customError, setCustomError] = useState("");
@@ -41,7 +41,7 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
       const from = stations.findIndex(row => row.chainage === segment.from);
       const to = stations.findIndex(row => row.chainage === segment.to);
       if (from < 0 || to <= from || from < previousEnd || (!Number.isFinite(slopeRatioToGrade(segment.ratio)) || slopeRatioToGrade(segment.ratio) < 0)) {
-        setCustomError(`Segment ${index + 1}: choose increasing chainages in order, without overlap, and enter a valid H:V slope (e.g. 200:1; choose Rise or Fall separately).`); return;
+        setCustomError(`Segment ${index + 1}: choose increasing chainages in order, without overlap, and enter a valid V:H slope (e.g. 1:200; choose Rise or Fall separately).`); return;
       }
       previousEnd = to;
     }
@@ -92,12 +92,12 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
             </MenuItem>
           </TextField>
           {!["custom", "quantity"].includes(design.ls.strategy) && <Box>
-            <Typography sx={{ mb: 1, fontSize: "0.875rem", fontWeight: 600, color: "#334155" }}>LS grade (H:V)</Typography>
+            <Typography sx={{ mb: 1, fontSize: "0.875rem", fontWeight: 600, color: "#334155" }}>LS grade (V:H)</Typography>
             <Stack direction="row" alignItems="center" spacing={0.75}>
-              {["H", "V"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              {["V", "H"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                 {part === 1 && <Typography aria-hidden="true">:</Typography>}
                 <TextField type="number" size="small" label={label} value={lsRatio.split(":")[part] ?? ""}
-                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { step: "any", ...(part === 0 ? { min: 0 } : {}), "aria-label": `LS grade ${part === 0 ? "horizontal run" : "vertical rise"}` } }}
+                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { step: "any", ...(part === 1 ? { min: "0.000001" } : {}), "aria-label": `LS grade ${part === 0 ? "vertical rise" : "horizontal run"}` } }}
                   onChange={event => {
                     const parts = lsRatio.split(":");
                     parts[part] = event.target.value;
@@ -110,7 +110,7 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
                   sx={{ width: 60, "& input": { px: 0.75, MozAppearance: "textfield" }, "& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button": { WebkitAppearance: "none", margin: 0 } }} />
               </Box>)}
             </Stack>
-            <Typography variant="caption" color="text.secondary">H:V = horizontal run : vertical rise. Use 200:1 to rise, 200:-1 to fall, or 1:0 for level.</Typography>
+            <Typography variant="caption" color="text.secondary">V:H = vertical rise : horizontal run. Use 1:200 to rise, -1:200 to fall, or 0:1 for level.</Typography>
           </Box>}
           {design.ls.strategy === "quantity" && <>
             <Button variant="outlined" onClick={openCompliance} sx={{ alignSelf: "flex-start", borderRadius: "12px", textTransform: "none", color: "#4f46e5", borderColor: "#c7d2fe" }}>Edit quantity compliance</Button>
@@ -135,12 +135,12 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
                   slotProps={{ input: { readOnly: true }, htmlInput: { "aria-label": "Calculated start RL", style: { fontVariantNumeric: "tabular-nums" } } }} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography sx={{ mb: 1.5, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Slope magnitude (H:V)</Typography>
-                <Stack direction="row" alignItems="center" spacing={1} role="group" aria-label="Slope magnitude (H:V)">
-                  {["H", "V"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1, minWidth: 0 }}>
+                <Typography sx={{ mb: 1.5, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Slope magnitude (V:H)</Typography>
+                <Stack direction="row" alignItems="center" spacing={1} role="group" aria-label="Slope magnitude (V:H)">
+                  {["V", "H"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1, minWidth: 0 }}>
                     {part === 1 && <Typography aria-hidden="true" fontWeight={700}>:</Typography>}
                     <TextField fullWidth size="small" type="number" label={label} value={magnitudeRatio.split(":")[part] ?? ""}
-                      slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: 0, step: "any", "aria-label": `Slope magnitude ${part === 0 ? "horizontal run" : "vertical rise"}` } }}
+                      slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: part === 0 ? "0" : "0.000001", step: "any", "aria-label": `Slope magnitude ${part === 0 ? "vertical rise" : "horizontal run"}` } }}
                       onChange={event => {
                         const parts = magnitudeRatio.split(":");
                         parts[part] = event.target.value;
@@ -154,8 +154,8 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
                 </Stack>
               </Grid>
               <Grid size={12}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>H = horizontal distance; V = vertical change. For a 1-in-5000 gradient, enter H = 5000 and V = 1.</Typography>
-                {steepComplianceSlope && <Alert severity="warning" sx={{ mb: 1.5 }}>Check the slope ratio: the vertical change is greater than the horizontal distance. H and V may be reversed. For a 1-in-5000 gradient, enter H = 5000 and V = 1, then choose Rise or Fall. A slope this steep can produce an unusually large Start RL.</Alert>}
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>V = vertical change; H = horizontal distance. For a 1-in-5000 gradient, enter V = 1 and H = 5000.</Typography>
+                {steepComplianceSlope && <Alert severity="warning" sx={{ mb: 1.5 }}>Check the slope ratio: the vertical change is greater than the horizontal distance. H and V may be reversed. For a 1-in-5000 gradient, enter V = 1 and H = 5000, then choose Rise or Fall. A slope this steep can produce an unusually large Start RL.</Alert>}
                 <Typography sx={{ mb: 1, fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>Gradient direction</Typography>
                 <Stack role="group" aria-label="Gradient direction" direction="row" spacing={1.5}>
                   {[{ negative: false, label: "+Rise", icon: <FiTrendingUp /> }, { negative: true, label: "-Fall", icon: <FiTrendingDown /> }].map(option => {
@@ -184,13 +184,13 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
                 <Button variant="contained" disableElevation startIcon={<FiPlus />} disabled={customDraft.length >= 100} onClick={() => {
                   const last = customDraft.at(-1);
                   const next = last ? stations.findIndex(row => row.chainage === last.to) : 0;
-                  setCustomDraft(previous => [...previous, { from: stations[next]?.chainage || "", to: stations[next + 1]?.chainage || "", ratio: "1:0", direction: "rise" }]);
+                  setCustomDraft(previous => [...previous, { from: stations[next]?.chainage || "", to: stations[next + 1]?.chainage || "", ratio: "0:1", direction: "rise" }]);
                   setCustomError("");
                 }} sx={{ flexShrink: 0, bgcolor: "#6366f1", borderRadius: "10px", textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }}>Add segment</Button>
               </Stack>
               <TableContainer sx={{ border: "1px solid #e0e7ff", borderRadius: "14px", maxHeight: 360 }}>
                 <Table size="small" stickyHeader sx={{ minWidth: 620, "& th": { bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 700 }, "& td": { borderColor: "#eef2ff", py: 1.5 } }}>
-                  <TableHead><TableRow><TableCell>Start</TableCell><TableCell>End</TableCell><TableCell>Slope (H:V)</TableCell><TableCell>Direction</TableCell><TableCell align="right">Action</TableCell></TableRow></TableHead>
+                  <TableHead><TableRow><TableCell>Start</TableCell><TableCell>End</TableCell><TableCell>Slope (V:H)</TableCell><TableCell>Direction</TableCell><TableCell align="right">Action</TableCell></TableRow></TableHead>
                   <TableBody>{customDraft.map((segment, index) => <TableRow key={index}>
                     {["from", "to"].map(key => <TableCell key={key}><TextField select size="small" fullWidth value={segment[key]} slotProps={{ select: { displayEmpty: true }, htmlInput: { "aria-label": `Segment ${index + 1} ${key === "from" ? "start" : "end"} chainage` } }}
                       onChange={event => { setCustomDraft(previous => previous.map((row, i) => i === index ? { ...row, [key]: event.target.value } : row)); setCustomError(""); }}
@@ -198,11 +198,11 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
                       <MenuItem value="" disabled>Select chainage</MenuItem>
                       {stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}
                     </TextField></TableCell>)}
-                    <TableCell><Stack direction="row" alignItems="center" spacing={0.75} role="group" aria-label={`Segment ${index + 1} slope (H:V)`}>
-                      {["H", "V"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <TableCell><Stack direction="row" alignItems="center" spacing={0.75} role="group" aria-label={`Segment ${index + 1} slope (V:H)`}>
+                      {["V", "H"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                         {part === 1 && <Typography aria-hidden="true" sx={{ color: "#64748b", fontWeight: 700 }}>:</Typography>}
                         <TextField type="number" size="small" label={label} value={segment.ratio.split(":")[part] ?? ""}
-                          slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: part === 0 ? "0.000001" : "0", step: "any", "aria-label": `Segment ${index + 1} ${part === 0 ? "horizontal run" : "vertical rise"}` } }}
+                          slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: part === 1 ? "0.000001" : "0", step: "any", "aria-label": `Segment ${index + 1} ${part === 0 ? "vertical rise" : "horizontal run"}` } }}
                           onChange={event => {
                             const parts = segment.ratio.split(":");
                             parts[part] = event.target.value;
@@ -223,7 +223,7 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
                   </TableRow>)}</TableBody>
                 </Table>
               </TableContainer>
-              <Typography variant="caption" color="text.secondary">H:V = horizontal run : vertical rise. Enter a positive ratio such as 200:1 and choose +Rise or -Fall. Use 1:0 for level. Connected segments continue from the previous end level. Levels outside the selected segments stay unchanged.</Typography>
+              <Typography variant="caption" color="text.secondary">V:H = vertical rise : horizontal run. Enter a positive ratio such as 1:200 and choose +Rise or -Fall. Use 0:1 for level. Connected segments continue from the previous end level. Levels outside the selected segments stay unchanged.</Typography>
               {customError && <Alert severity="error">{customError}</Alert>}
               <Button variant="contained" onClick={applyCustom} sx={{ alignSelf: "flex-start", borderRadius: "10px", textTransform: "none" }}>Apply slopes</Button>
               </Stack>
@@ -254,26 +254,28 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
       </>}
       {[false, true].map(width => {
         const enabled = width ? "fixedBottomEnabled" : "slopeEnabled", mode = width ? "widthMode" : "slopeMode", ranges = width ? "widthRanges" : "slopeRanges";
+        const filledTop = width && isWaterWay && design.ls.quantityType === "filling";
         const custom = design.cs[mode] === "custom", entries = custom ? (design.cs[ranges] || []) : [design.cs];
         const edit = (index, key, value) => custom ? update("cs", ranges, entries.map((row, i) => i === index ? { ...row, [key]: value } : row)) : update("cs", key, value);
         return <Box key={enabled}>
-          <FormControlLabel label={width ? "Custom width design (Fixed bottom width)" : "Side slope H:V"} control={<Switch checked={Boolean(design.cs[enabled])} onChange={event => onChange({ ...design, cs: { ...design.cs, [enabled]: event.target.checked, [width ? "slopeEnabled" : "fixedBottomEnabled"]: false } })} />} />
+          <FormControlLabel label={width ? `Custom width design (Fixed ${filledTop ? "top" : "bottom"} width)` : "Side slope V:H"} control={<Switch checked={Boolean(design.cs[enabled])} onChange={event => onChange({ ...design, cs: { ...design.cs, [enabled]: event.target.checked, [width ? "slopeEnabled" : "fixedBottomEnabled"]: false } })} />} />
           {design.cs[enabled] && <Stack spacing={1.5} sx={{ mt: 1 }}>
+            {width && isWaterWay && <Typography variant="body2" color="text.secondary">{filledTop ? "Filling: flat top with side slopes falling outward." : "Cutting: flat bed with side slopes rising outward."} Change the design condition in the LS tab.</Typography>}
             <RadioGroup value={custom ? "custom" : "all"} onChange={event => update("cs", mode, event.target.value)}>{[["all", width ? "Centre to both sides" : "All"], ["custom", width ? "Any offset" : "Custom"]].map(([value, label]) => <FormControlLabel key={value} value={value} control={<Radio />} label={label} />)}</RadioGroup>
             {custom && <Button startIcon={<FiPlus />} onClick={() => update("cs", ranges, [...entries, { from: stations[0]?.chainage || "", to: stations.at(-1)?.chainage || "", side: "all", horizontal: "1", vertical: "1", berm: "0", bottomWidth: "", widthOffset: "0" }])}>Add range</Button>}
             <TableContainer sx={{ border: "1px solid #e2e8f0", borderRadius: 2 }}><Table size="small" sx={{ minWidth: custom ? (width ? 720 : 760) : 400, tableLayout: "fixed", "& th, & td": { px: 1, py: 1 }, "& th": { whiteSpace: "nowrap" } }}>
               <colgroup>{custom && <><col style={{ width: 150 }} /><col style={{ width: 150 }} /></>}{width && custom && <col style={{ width: 120 }} />}<col style={{ width: 110 }} /><col />{!width && <col style={{ width: 110 }} />}{custom && <col style={{ width: 48 }} />}</colgroup>
-              <TableHead><TableRow>{custom && <><TableCell>Start chainage</TableCell><TableCell>End chainage</TableCell></>}{width && custom && <TableCell>Offset (m)</TableCell>}<TableCell>Side</TableCell><TableCell>{width ? "Width (m)" : "Slope H:V"}</TableCell>{!width && <TableCell>Berm (m)</TableCell>}{custom && <TableCell />}</TableRow></TableHead>
+              <TableHead><TableRow>{custom && <><TableCell>Start chainage</TableCell><TableCell>End chainage</TableCell></>}{width && custom && <TableCell>Offset (m)</TableCell>}<TableCell>Side</TableCell><TableCell>{width ? "Width (m)" : "Slope V:H"}</TableCell>{!width && <TableCell>Berm (m)</TableCell>}{custom && <TableCell />}</TableRow></TableHead>
               <TableBody>{entries.map((entry, index) => <TableRow key={index}>
                 {custom && ["from", "to"].map(key => <TableCell key={key}><TextField fullWidth select size="small" label={key === "from" ? "Start" : "End"} slotProps={{ inputLabel: { shrink: true } }} value={entry[key]} onChange={event => edit(index, key, event.target.value)}>{stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField></TableCell>)}
                 {width && custom && <TableCell><TextField fullWidth size="small" type="number" label="Offset" value={entry.widthOffset ?? "0"} onChange={event => edit(index, "widthOffset", event.target.value)} /></TableCell>}
                 <TableCell><TextField fullWidth select size="small" label="Side" sx={{ minWidth: 90 }} value={entry.side || "all"} onChange={event => edit(index, "side", event.target.value)}>{[["lhs", "LHS"], ["rhs", "RHS"], ["all", "All"]].map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField></TableCell>
-                <TableCell>{width ? <TextField fullWidth size="small" type="number" label="Width" value={entry.bottomWidth ?? ""} onChange={event => edit(index, "bottomWidth", event.target.value)} /> : <Stack direction="row" spacing={0.5}>{["horizontal", "vertical"].map((key, part) => <TextField fullWidth key={key} size="small" type="number" label={part ? "V" : "H"} sx={{ minWidth: 0 }} value={entry[key] ?? "1"} onChange={event => edit(index, key, event.target.value)} />)}</Stack>}</TableCell>
+                <TableCell>{width ? <TextField fullWidth size="small" type="number" label="Width" value={entry.bottomWidth ?? ""} onChange={event => edit(index, "bottomWidth", event.target.value)} /> : <Stack direction="row" spacing={0.5}>{["vertical", "horizontal"].map((key, part) => <TextField fullWidth key={key} size="small" type="number" label={part ? "H" : "V"} sx={{ minWidth: 0 }} value={entry[key] ?? "1"} onChange={event => edit(index, key, event.target.value)} />)}</Stack>}</TableCell>
                 {!width && <TableCell><TextField fullWidth size="small" type="number" label="Berm" value={entry.berm ?? "0"} onChange={event => edit(index, "berm", event.target.value)} /></TableCell>}
                 {custom && <TableCell><IconButton color="error" aria-label={"Remove range " + (index + 1)} onClick={() => update("cs", ranges, entries.filter((_, i) => i !== index))}><FiTrash2 /></IconButton></TableCell>}
               </TableRow>)}</TableBody>
             </Table></TableContainer>
-            {width && <Stack direction="row" spacing={1}>{[["fixedLhs", "LHS slope (H:V)"], ["fixedRhs", "RHS slope (H:V)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={design.cs[key] ?? "1:1"} onChange={event => update("cs", key, event.target.value)} />)}</Stack>}
+            {width && <Stack direction="row" spacing={1}>{[["fixedLhs", "LHS slope (V:H)"], ["fixedRhs", "RHS slope (V:H)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={reverseSlopeRatio(design.cs[key] ?? "1:1")} onChange={event => update("cs", key, reverseSlopeRatio(event.target.value))} />)}</Stack>}
           </Stack>}
         </Box>;
       })}
@@ -302,14 +304,14 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
         <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
           <Box><Typography fontWeight={700}>{preset.name}</Typography>
             <Typography component="span" variant="caption" sx={{ display: "inline-block", my: 0.75, px: 1, py: 0.25, borderRadius: "999px", bgcolor: "#e0e7ff", color: "#4f46e5", fontWeight: 700 }}>Example profile</Typography>
-            <Typography variant="body2" color="text.secondary">{preset.system === "water" ? "Bottom" : "Formation"} width: {preset.width} m ? LHS {preset.lhs} ? RHS {preset.rhs}</Typography>
+            <Typography variant="body2" color="text.secondary">{preset.system === "water" ? "Bottom" : "Formation"} width: {preset.width} m ? LHS (V:H) {reverseSlopeRatio(preset.lhs)} ? RHS (V:H) {reverseSlopeRatio(preset.rhs)}</Typography>
           </Box>
           <Button variant="outlined" sx={{ flexShrink: 0, borderRadius: "12px", px: 2, py: 1, textTransform: "none", fontWeight: 700, color: "#4f46e5", borderColor: "#c7d2fe", bgcolor: "#ffffff", "&:hover": { borderColor: "#6366f1", bgcolor: "#e0e7ff" } }} aria-pressed={design.templateId === preset.id} onClick={() => onTemplate(preset)}>{design.templateId === preset.id ? "Reapply" : "Apply template"}</Button>
         </Stack>
       </Paper>)}
       {design.templateId && <Box sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: "20px", bgcolor: "#f8f9fe", border: "1px solid #e0e7ff" }}><Typography fontWeight={700} color="#312e81">Edit selected example</Typography><Stack spacing={1.5} sx={{ mt: 1 }}>
         {field("cs", "bottomWidth", "Bottom / formation width (m)")}
-        <Stack direction="row" spacing={1}>{[["fixedLhs", "LHS (H:V)"], ["fixedRhs", "RHS (H:V)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={design.cs[key]} onChange={event => update("cs", key, event.target.value)} />)}</Stack>
+        <Stack direction="row" spacing={1}>{[["fixedLhs", "LHS (V:H)"], ["fixedRhs", "RHS (V:H)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={reverseSlopeRatio(design.cs[key])} onChange={event => update("cs", key, reverseSlopeRatio(event.target.value))} />)}</Stack>
       </Stack></Box>}
 
       <Typography variant="caption" color="text.secondary">Templates configure the new design controls. Enter the project’s dimensions and slopes before wrapping.</Typography>

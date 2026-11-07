@@ -9,17 +9,23 @@ import { pdfRendererConfig } from "../services/pdfExportRenderer.js";
 
 export const createPdfExport = async (req, res, next) => {
   try {
+    req.pdfExportStage = "snapshot validation";
     const snapshot = validatePdfSnapshot(req.body);
     if (!mongoose.isValidObjectId(req.body.surveyId)) throw createHttpError(400, "Invalid survey.");
+    req.pdfExportStage = "survey ownership lookup";
     const survey = await Survey.findOne({ _id: req.body.surveyId, createdBy: req.user.userId, deleted: false }).select("project").lean();
     if (!survey) throw createHttpError(404, "Survey not found.");
+    req.pdfExportStage = "existing job lookup";
     const prior = await PdfExport.findOne({ owner: req.user.userId, requestKey: req.body.requestKey });
     if (prior) return res.json({ job: publicPdfJob(prior) });
+    req.pdfExportStage = "renderer configuration";
     if (!pdfRendererConfig()) throw createHttpError(503, "Background PDF generation is not configured on this server. Please contact the administrator.");
     try {
+      req.pdfExportStage = "persisting queued job";
       const job = await PdfExport.create({ owner: req.user.userId, surveyId: survey._id, requestKey: req.body.requestKey,
         title: String(survey.project || "Plotting and quantity report").slice(0, 200), snapshot,
         expiresAt: new Date(Date.now() + 7 * 86400000) });
+      req.pdfExportStage = "queued";
       res.status(202).json({ job: publicPdfJob(job) });
     } catch (error) {
       if (error.code !== 11000) throw error;
@@ -32,7 +38,9 @@ export const createPdfExport = async (req, res, next) => {
 
 export const listPdfExports = async (req, res, next) => {
   try {
-    const jobs = await PdfExport.find({ owner: req.user.userId, dismissedAt: null, expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 }).limit(20).lean();
+    const requestKey = req.query?.requestKey;
+    if (requestKey !== undefined && (typeof requestKey !== "string" || !/^[a-zA-Z0-9-]{16,80}$/.test(requestKey))) throw createHttpError(400, "Invalid export request key.");
+    const jobs = await PdfExport.find({ owner: req.user.userId, ...(requestKey !== undefined ? { requestKey } : {}), dismissedAt: null, expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 }).limit(20).lean();
     res.set("Cache-Control", "no-store").json({ jobs: jobs.map(publicPdfJob) });
   } catch (error) { next(error); }
 };

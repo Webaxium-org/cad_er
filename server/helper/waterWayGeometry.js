@@ -9,7 +9,7 @@ const finite = (value, label) => {
 export const sideSlope = (value) => {
   const match = String(value ?? "").trim().match(/^(\d+(?:\.\d+)?|\.\d+)\s*[:/∶]\s*(\d+(?:\.\d+)?|\.\d+)$/);
   if (!match || Number(match[1]) <= 0 || Number(match[2]) <= 0) {
-    throw new Error("Side slope must be a positive H:V ratio, e.g. 1:1.");
+    throw new Error("Side slope must be a positive V:H ratio, e.g. 1:1.");
   }
   return Number(match[1]) / Number(match[2]);
 };
