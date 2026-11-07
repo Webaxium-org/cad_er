@@ -1,12 +1,12 @@
 import { proposalTemplates } from "../../../utils/proposalTemplates";
 import { useState } from "react";
 import AlertDialogSlide from "../../../components/AlertDialogSlide";
-import { Alert, Box, Button, FormControlLabel, Grid, IconButton, LinearProgress, MenuItem, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, FormControlLabel, Grid, IconButton, LinearProgress, MenuItem, Paper, Stack, Switch, Radio, RadioGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import { FiPlus, FiTrash2, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import { gradeToSlopeRatio, slopeRatioToGrade } from "../../../utils/slopeRatio";
 import { stoppingSightDistance } from "../../../utils/proposalWorkspace";
 
-export default function ProposalDesignControls({ tab, crossSection, isWaterWay, design, onChange, stations, profileName = "", designLayerSelected = false, onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
+export default function ProposalDesignControls({ tab, isWaterWay, design, onChange, stations, profileName = "", designLayerSelected = false, onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
   const [transportSystem, setTransportSystem] = useState(design.template || "road");
   const [layerWarningOpen, setLayerWarningOpen] = useState(false);
   const [complianceOpen, setComplianceOpen] = useState(false);
@@ -247,39 +247,40 @@ export default function ProposalDesignControls({ tab, crossSection, isWaterWay, 
       </Box>
     </>}
     {tab === "cs" && <>
-      {crossSection === "slop" && <>
-      {!isWaterWay && <Box><FormControlLabel control={<Switch checked={design.cs.superelevationEnabled} onChange={(event) => update("cs", "superelevationEnabled", event.target.checked)} />} label="Superelevation" />
-        {design.cs.superelevationEnabled && field("cs", "superelevation", "Crossfall (%)", { helperText: "Positive raises the right side; negative raises the left side." })}
-      </Box>}
-      <Box>
-        <FormControlLabel label="Fixed bottom width" control={<Switch checked={Boolean(design.cs.fixedBottomEnabled)} onChange={event => onChange({ ...design, cs: { ...design.cs, fixedBottomEnabled: event.target.checked, slopeEnabled: event.target.checked ? false : design.cs.slopeEnabled } })} />} />
-        {design.cs.fixedBottomEnabled && <Stack spacing={1.5} sx={{ mt: 1 }}>
-          {field("cs", "bottomWidth", "Bottom width (m)")}
-          <Stack direction="row" spacing={1.5}>{[["fixedLhs", "LHS (H:V)"], ["fixedRhs", "RHS (H:V)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={design.cs[key] ?? "1:1"} onChange={event => update("cs", key, event.target.value)} />)}</Stack>
-        </Stack>}
-      </Box>
-      <Box>
-        <FormControlLabel control={<Switch checked={design.cs.slopeEnabled} onChange={(event) => onChange({ ...design, cs: { ...design.cs, slopeEnabled: event.target.checked, fixedBottomEnabled: event.target.checked ? false : design.cs.fixedBottomEnabled } })} />} label="CS slope" />
-        {design.cs.slopeEnabled && <Stack spacing={1.5} sx={{ mt: 1 }}>
-          <Grid container spacing={1.5}>
-            {[["horizontal", "Horizontal run"], ["vertical", "Vertical rise"]].map(([key, label]) => <Grid key={key} size={6}>
-              <TextField size="small" fullWidth type="number" label={label} value={design.cs[key]} inputProps={{ min: 0, step: "any" }}
-                onChange={event => {
-                  const cs = { ...design.cs, [key]: event.target.value };
-                  const ratio = `${cs.horizontal}:${cs.vertical}`;
-                  onChange({ ...design, cs: { ...cs, lhs: ratio, rhs: ratio } });
-                }} />
-            </Grid>)}
-          </Grid>
-          <Typography variant="caption" color="text.secondary">The shared H:V ratio fills both sides. Adjust LHS or RHS below for different side slopes.</Typography>
-          <Stack direction="row" spacing={1.5}>{[["lhs", "LHS (H:V)"], ["rhs", "RHS (H:V)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={design.cs[key] ?? "1:1"} onChange={event => update("cs", key, event.target.value)} />)}</Stack>
-          {field("cs", "berm", "Berm (m)", { helperText: "Inset from each surveyed edge. 0 starts at the edge; 1 starts 1 m inward on each side." })}
-        </Stack>}
-      </Box>
+      {<>
+      {!isWaterWay && <>
+      <Box><FormControlLabel label="Camber" control={<Switch slotProps={{ input: { role: "switch" } }} checked={Boolean(design.cs.camberEnabled)} onChange={event => update("cs", "camberEnabled", event.target.checked)} />} />{design.cs.camberEnabled && field("cs", "camber", "Camber (%)")}</Box>
+      <Box><FormControlLabel label="Super elevation" control={<Switch slotProps={{ input: { role: "switch" } }} checked={Boolean(design.cs.superelevationEnabled)} onChange={event => update("cs", "superelevationEnabled", event.target.checked)} />} />{design.cs.superelevationEnabled && field("cs", "superelevation", "Super elevation (%)")}</Box>
+      </>}
+      {[false, true].map(width => {
+        const enabled = width ? "fixedBottomEnabled" : "slopeEnabled", mode = width ? "widthMode" : "slopeMode", ranges = width ? "widthRanges" : "slopeRanges";
+        const custom = design.cs[mode] === "custom", entries = custom ? (design.cs[ranges] || []) : [design.cs];
+        const edit = (index, key, value) => custom ? update("cs", ranges, entries.map((row, i) => i === index ? { ...row, [key]: value } : row)) : update("cs", key, value);
+        return <Box key={enabled}>
+          <FormControlLabel label={width ? "Custom width design (Fixed bottom width)" : "Side slope H:V"} control={<Switch checked={Boolean(design.cs[enabled])} onChange={event => onChange({ ...design, cs: { ...design.cs, [enabled]: event.target.checked, [width ? "slopeEnabled" : "fixedBottomEnabled"]: false } })} />} />
+          {design.cs[enabled] && <Stack spacing={1.5} sx={{ mt: 1 }}>
+            <RadioGroup value={custom ? "custom" : "all"} onChange={event => update("cs", mode, event.target.value)}>{[["all", width ? "Centre to both sides" : "All"], ["custom", width ? "Any offset" : "Custom"]].map(([value, label]) => <FormControlLabel key={value} value={value} control={<Radio />} label={label} />)}</RadioGroup>
+            {custom && <Button startIcon={<FiPlus />} onClick={() => update("cs", ranges, [...entries, { from: stations[0]?.chainage || "", to: stations.at(-1)?.chainage || "", side: "all", horizontal: "1", vertical: "1", berm: "0", bottomWidth: "", widthOffset: "0" }])}>Add range</Button>}
+            <TableContainer sx={{ border: "1px solid #e2e8f0", borderRadius: 2 }}><Table size="small" sx={{ minWidth: custom ? (width ? 720 : 760) : 400, tableLayout: "fixed", "& th, & td": { px: 1, py: 1 }, "& th": { whiteSpace: "nowrap" } }}>
+              <colgroup>{custom && <><col style={{ width: 150 }} /><col style={{ width: 150 }} /></>}{width && custom && <col style={{ width: 120 }} />}<col style={{ width: 110 }} /><col />{!width && <col style={{ width: 110 }} />}{custom && <col style={{ width: 48 }} />}</colgroup>
+              <TableHead><TableRow>{custom && <><TableCell>Start chainage</TableCell><TableCell>End chainage</TableCell></>}{width && custom && <TableCell>Offset (m)</TableCell>}<TableCell>Side</TableCell><TableCell>{width ? "Width (m)" : "Slope H:V"}</TableCell>{!width && <TableCell>Berm (m)</TableCell>}{custom && <TableCell />}</TableRow></TableHead>
+              <TableBody>{entries.map((entry, index) => <TableRow key={index}>
+                {custom && ["from", "to"].map(key => <TableCell key={key}><TextField fullWidth select size="small" label={key === "from" ? "Start" : "End"} slotProps={{ inputLabel: { shrink: true } }} value={entry[key]} onChange={event => edit(index, key, event.target.value)}>{stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField></TableCell>)}
+                {width && custom && <TableCell><TextField fullWidth size="small" type="number" label="Offset" value={entry.widthOffset ?? "0"} onChange={event => edit(index, "widthOffset", event.target.value)} /></TableCell>}
+                <TableCell><TextField fullWidth select size="small" label="Side" sx={{ minWidth: 90 }} value={entry.side || "all"} onChange={event => edit(index, "side", event.target.value)}>{[["lhs", "LHS"], ["rhs", "RHS"], ["all", "All"]].map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField></TableCell>
+                <TableCell>{width ? <TextField fullWidth size="small" type="number" label="Width" value={entry.bottomWidth ?? ""} onChange={event => edit(index, "bottomWidth", event.target.value)} /> : <Stack direction="row" spacing={0.5}>{["horizontal", "vertical"].map((key, part) => <TextField fullWidth key={key} size="small" type="number" label={part ? "V" : "H"} sx={{ minWidth: 0 }} value={entry[key] ?? "1"} onChange={event => edit(index, key, event.target.value)} />)}</Stack>}</TableCell>
+                {!width && <TableCell><TextField fullWidth size="small" type="number" label="Berm" value={entry.berm ?? "0"} onChange={event => edit(index, "berm", event.target.value)} /></TableCell>}
+                {custom && <TableCell><IconButton color="error" aria-label={"Remove range " + (index + 1)} onClick={() => update("cs", ranges, entries.filter((_, i) => i !== index))}><FiTrash2 /></IconButton></TableCell>}
+              </TableRow>)}</TableBody>
+            </Table></TableContainer>
+            {width && <Stack direction="row" spacing={1}>{[["fixedLhs", "LHS slope (H:V)"], ["fixedRhs", "RHS slope (H:V)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={design.cs[key] ?? "1:1"} onChange={event => update("cs", key, event.target.value)} />)}</Stack>}
+          </Stack>}
+        </Box>;
+      })}
       </>}
 
       <Box>
-        <Stack direction="row" justifyContent="space-between" alignItems="center"><Typography fontWeight={800}>Proposal breaks</Typography><Button startIcon={<FiPlus />} onClick={() => onChange({ ...design, breaks: [...design.breaks, { from: "", to: "", remark: "" }] })}>Add break</Button></Stack>
+        <Stack direction="row" justifyContent="space-between" alignItems="center"><Typography fontWeight={800}>Proposal Break</Typography><Button startIcon={<FiPlus />} onClick={() => onChange({ ...design, breaks: [...design.breaks, { from: "", to: "", remark: "" }] })}>Add break</Button></Stack>
         <Typography variant="caption" color="text.secondary">Exclude these chainage intervals from proposed quantities.</Typography>
         <Stack spacing={1.5} sx={{ mt: 1.5 }}>{design.breaks.map((entry, index) => <Paper key={index} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
           <Grid container spacing={1}>{["from", "to"].map((key) => <Grid size={6} key={key}><TextField fullWidth select size="small" label={key === "from" ? "From chainage" : "To chainage"} value={entry[key]} onChange={(event) => onChange({ ...design, breaks: design.breaks.map((item, i) => i === index ? { ...item, [key]: event.target.value } : item) })}>{stations.map((station) => <MenuItem key={station.chainage} value={station.chainage}>{station.chainage}</MenuItem>)}</TextField></Grid>)}</Grid>

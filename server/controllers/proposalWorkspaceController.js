@@ -23,11 +23,21 @@ const calculate = async (req) => {
   const plainBase = base.toObject();
   const scopedBase = { ...plainBase, rows: proposalLengthRows(plainBase.rows, form, survey.separator) };
   const settings = { ...design, chainageRange: form.length === "Custom" ? form.chainageRange : undefined };
+  const waterWorkspace = survey.type === "Water Way" && design.cs?.slopeMode != null;
+  if (waterWorkspace && design.mode !== "manual") {
+    const dimensions = [design.dimensions?.length, design.dimensions?.width, design.dimensions?.height].map(Number);
+    if (design.mode === "dimensions" && dimensions.some(value => !Number.isFinite(value) || value <= 0)) throw createHttpError(400, "Enter positive length, width and height.");
+    const quantity = design.mode === "dimensions" ? dimensions.reduce((a, b) => a * b, 1) : Number(form.quantity);
+    if ((form.quantity === "" && design.mode !== "dimensions") || !Number.isFinite(quantity) || quantity <= 0) throw createHttpError(400, "Enter a positive target quantity.");
+    settings.targetQuantity = quantity;
+    settings.waterWorkspace = true;
+  }
   let seed;
-  if (design.mode === "manual") {
+  if (design.mode === "manual" || waterWorkspace) {
     seed = { type: form.proposal, phase: "Proposal", relation: String(base._id), pls: base.pls, quantity: 0,
       geometryVersion: survey.type === "Water Way" ? 4 : undefined,
-      rows: base.rows.filter((row) => row.type === "Chainage").map((row) => ({
+      ...(waterWorkspace ? { quantity: settings.targetQuantity ?? 0, proposalMethod: "Slope End-to-End Type", length: form.length || "All" } : {}),
+      rows: scopedBase.rows.filter((row) => row.type === "Chainage").map((row) => ({
         type: "Chainage", chainage: row.chainage, roadWidth: row.roadWidth, spacing: row.spacing,
         heightOfInstrument: row.heightOfInstrument, reducedLevels: [...row.reducedLevels],
         intermediateOffsets: row.intermediateOffsets.map((point) => ({ offset: point.offset, is: "", mode: point.mode || "R", remark: point.remark || "" })),
@@ -53,7 +63,7 @@ const calculate = async (req) => {
   }
   try {
     const plainSeed = JSON.parse(JSON.stringify(seed));
-    const changed = design.mode === "manual" || design.ls?.quantityType || design.ls?.enabled || design.cs?.fixedBottomEnabled || design.cs?.slopeEnabled || design.cs?.superelevationEnabled;
+    const changed = waterWorkspace || design.mode === "manual" || design.ls?.quantityType || design.ls?.enabled || design.cs?.fixedBottomEnabled || design.cs?.slopeEnabled || design.cs?.superelevationEnabled || design.cs?.camberEnabled;
     const purpose = changed || design.breaks?.length
       ? applyProposalWorkspace(survey.toObject(), scopedBase, plainSeed, settings)
       : { ...plainSeed, designSettings: settings };

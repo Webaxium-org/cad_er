@@ -27,3 +27,14 @@ test("berm is an inset at each edge, with separate side ratios",()=>{
 test("invalid geometry and simultaneous modes are rejected",()=>{
  for(const cs of [{fixedBottomEnabled:true,slopeEnabled:true},{fixedBottomEnabled:true,bottomWidth:20,fixedLhs:"1:1",fixedRhs:"1:1"},{slopeEnabled:true,lhs:"0:1",rhs:"1:1",berm:0},{slopeEnabled:true,lhs:"1:1",rhs:"1:1",berm:5}]) assert.throws(()=>applyProposalWorkspace(survey,fixture(12),fixture(10),{cs}));
 });
+
+test("camber falls away from the centre", () => {
+ const result = applyProposalWorkspace({type:"Road Survey",separator:"/"},fixture(10),fixture(10),{cs:{camberEnabled:true,camber:"2"}});
+ assert.deepEqual(result.rows[0].reducedLevels,["9.900","10.000","9.900"]);
+});
+test("custom slope ranges apply the entered H:V and reject reversed chainages", () => {
+ const cs={slopeEnabled:true,lhs:"1:1",rhs:"1:1",berm:0,slopeMode:"custom",slopeRanges:[{from:"0/000",to:"0/010",side:"all",horizontal:2,vertical:1,berm:0}]};
+ const result=applyProposalWorkspace(survey,fixture(12),fixture(10),{cs});
+ assert.ok(result.rows[0].intermediateOffsets.some(p=>Number(p.offset)===-1));
+ assert.throws(()=>applyProposalWorkspace(survey,fixture(12),fixture(10),{cs:{...cs,slopeRanges:[{...cs.slopeRanges[0],from:"0/010",to:"0/000"}]}}));
+});

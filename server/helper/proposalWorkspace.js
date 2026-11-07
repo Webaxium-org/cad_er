@@ -1,4 +1,4 @@
-import { csSection, csRatio } from "./proposalCsGeometry.js";
+import { csSection, csElevationBounds } from "./proposalCsGeometry.js";
 import { chainageMetres, groundProfile, interpolateGround } from "./waterWayGeometry.js";
 
 const number = (value, name) => {
@@ -91,6 +91,41 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
   if (settings.cs?.fixedBottomEnabled && settings.cs?.slopeEnabled) throw Error("Choose either Fixed bottom width or CS slope.");
   const waterTemplate = settings.template ? settings.template === "water" : survey.type === "Water Way";
   const csGeometry = Boolean(settings.cs?.fixedBottomEnabled || (settings.cs?.slopeEnabled && settings.cs?.lhs != null));
+  const camber = settings.cs?.camberEnabled ? number(settings.cs.camber, "camber") / 100 : 0;
+  const sectionSettings = row => {
+    const cs = { ...settings.cs, camber };
+    const width = cs.fixedBottomEnabled;
+    const custom = cs[width ? "widthMode" : "slopeMode"] === "custom";
+    const ranges = custom ? cs[width ? "widthRanges" : "slopeRanges"] : [cs];
+    if (!Array.isArray(ranges) || !ranges.length) throw Error("Add at least one cross-section range.");
+    let matched = !custom;
+    for (const entry of ranges) {
+      if (custom) {
+        const from = rows.findIndex(r => r.chainage === entry.from), to = rows.findIndex(r => r.chainage === entry.to);
+        if (from < 0 || to <= from) throw Error("Choose increasing start and end chainages for each cross-section range.");
+        const index = rows.findIndex(r => r.chainage === row.chainage);
+        if (index < from || index > to) continue;
+        matched = true;
+      }
+      const side = entry.side || "all";
+      if (!["all", "lhs", "rhs"].includes(side)) throw Error("Choose a valid cross-section side.");
+      if (width) {
+        cs.bottomWidth = entry.bottomWidth;
+        cs.widthOffset = custom ? number(entry.widthOffset, "width offset") : 0;
+        cs.widthSide = side;
+      } else {
+        const ratio = entry.horizontal != null && entry.vertical != null ? String(entry.horizontal) + ":" + String(entry.vertical) : null;
+        if (ratio && side !== "rhs") cs.lhs = ratio;
+        if (ratio && side !== "lhs") cs.rhs = ratio;
+        cs.berm = entry.berm;
+      }
+    }
+    return matched ? cs : null;
+  };
+  const shapeSection = (row, target) => {
+    const cs = sectionSettings(row);
+    return cs ? csSection(sourceRows.get(row.chainage), row, center, target, cs, waterTemplate, superElevation) : row;
+  };
   const sourceRows = new Map(base.rows.map(row => [row.chainage, row]));
   if (csGeometry) draft.csGeometry = true;
   const first = chainageMetres(rows[0].chainage, separator);
@@ -144,6 +179,13 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
       const segment = customSegments.find(entry => position >= entry.from && position <= entry.to);
       if (segment) target = segment.start + segment.grade * (position - segment.from);
     }
+    if (settings.waterWorkspace && csGeometry && !settings.cs.fixedBottomEnabled && !slopeEnabled) {
+      const cs = sectionSettings(row);
+      if (cs) {
+        const bounds = csElevationBounds(sourceRows.get(row.chainage), center, cs, waterTemplate);
+        target = Math.min(bounds.max, Math.max(bounds.min, target));
+      }
+    }
     row.reducedLevels = row.reducedLevels.map((value, index) => {
       const offset = Number(row.intermediateOffsets[index].offset) - center;
       let next = Number(value) + target - oldCenter;
@@ -152,13 +194,13 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
         if (bedWidth < 0) throw Error("Flat bed width must not be negative.");
         next = target + (settings.template === "water" ? 1 : -1) * Math.max(0, Math.abs(offset) - bedWidth / 2) * crossGrade;
       }
-      return next + offset * superElevation;
+      return next + offset * superElevation - Math.abs(offset) * camber;
     });
   });
-  if (csGeometry) rows.forEach(row => Object.assign(row, csSection(sourceRows.get(row.chainage), row, center, interpolateGround(groundProfile(row), center), settings.cs, waterTemplate, superElevation)));
-  const shift = (amount) => ({ ...draft, rows: draft.rows.map((row) => row.type !== "Chainage" ? row : csGeometry ? csSection(sourceRows.get(row.chainage), row, center, interpolateGround(groundProfile(row), center) + amount, settings.cs, waterTemplate, superElevation) : { ...row, reducedLevels: row.reducedLevels.map((value) => Number(value) + amount) }) });
+  if (csGeometry) rows.forEach(row => Object.assign(row, shapeSection(row, interpolateGround(groundProfile(row), center))));
+  const shift = (amount) => ({ ...draft, rows: draft.rows.map((row) => row.type !== "Chainage" ? row : csGeometry ? shapeSection(row, interpolateGround(groundProfile(row), center) + amount) : { ...row, reducedLevels: row.reducedLevels.map((value) => Number(value) + amount) }) });
   const conditionQuantity = settings.mode !== "manual" && !slopeEnabled && settings.ls?.quantityType
-    && settings.ls.quantityType !== (survey.type === "Water Way" ? "cutting" : "filling");
+    && (settings.waterWorkspace || settings.ls.quantityType !== (survey.type === "Water Way" ? "cutting" : "filling"));
   const strategy = conditionQuantity ? "quantity" : settings.ls?.strategy;
   if (conditionQuantity || (slopeEnabled && !customSlope && strategy !== "anchor")) {
     const groundLevels = base.rows.filter((row) => row.type === "Chainage").flatMap((row) => row.reducedLevels.map(Number));
@@ -166,15 +208,12 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
     let low = Math.min(...groundLevels) - Math.max(...designLevels) - 100;
     let high = Math.max(...groundLevels) - Math.min(...designLevels) + 100;
     if (csGeometry && !settings.cs.fixedBottomEnabled) {
-      const sign = waterTemplate ? 1 : -1;
-      const lhs = csRatio(settings.cs.lhs, "LHS slope"), rhs = csRatio(settings.cs.rhs, "RHS slope");
       for (const row of rows) {
-        const gp = groundProfile(sourceRows.get(row.chainage));
-        const left = gp[0].x + Number(settings.cs.berm || 0), right = gp.at(-1).x - Number(settings.cs.berm || 0);
-        const l = interpolateGround(gp, left), r = interpolateGround(gp, right), current = interpolateGround(groundProfile(row), center);
-        const minimum = sign > 0 ? Math.max(l-(center-left)*lhs, r-(right-center)*rhs) : Math.max(l,r);
-        const maximum = sign > 0 ? Math.min(l,r) : Math.min(l+(center-left)*lhs, r+(right-center)*rhs);
-        low = Math.max(low, minimum-current); high = Math.min(high, maximum-current);
+        const cs = sectionSettings(row);
+        if (!cs) continue;
+        const bounds = csElevationBounds(sourceRows.get(row.chainage), center, cs, waterTemplate);
+        const current = interpolateGround(groundProfile(row), center);
+        low = Math.max(low, bounds.min-current); high = Math.min(high, bounds.max-current);
       }
       if (low > high) throw Error("No profile elevation fits the selected side slopes and berm.");
     }
@@ -183,7 +222,7 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
     if (strategy === "quantity") {
       const key = settings.ls.quantityType === "cutting" ? "cutting" : "filling";
       const endQuantities = [proposalDesignQuantity(survey, base, shift(low), breaks)[key], proposalDesignQuantity(survey, base, shift(high), breaks)[key]];
-      if (quantity > Math.max(...endQuantities)) throw Error("Target quantity cannot be reached within the available sections and proposal breaks.");
+      if (quantity > Math.max(...endQuantities) + 0.0001 || quantity < Math.min(...endQuantities) - 0.0001) throw Error("Target quantity cannot be reached within the available sections and proposal breaks.");
     }
     for (let iteration = 0; iteration < 65; iteration++) {
       if (strategy === "minimum") {

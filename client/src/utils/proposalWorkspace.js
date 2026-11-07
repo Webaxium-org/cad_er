@@ -1,9 +1,28 @@
 import { chainageValue, profileLevel, profilePoints } from "./surveyGeometry.js";
 
+// The workspace owns CS inputs; adapt them to the legacy seed generator once.
+export const proposalWorkspaceRequest = (form, design, interpolation, isWaterWay) => {
+  const cs = design.cs;
+  if (!isWaterWay) return { form: { ...form, interpolation }, design };
+  const fixed = cs.fixedBottomEnabled && cs.widthMode !== "custom";
+  const ratio = cs.slopeEnabled && cs.slopeMode !== "custom"
+    && Number(cs.horizontal) > 0 && Number(cs.vertical) > 0
+    ? `${cs.horizontal}:${cs.vertical}` : "1:1";
+  return {
+    form: { ...form, interpolation,
+      proposalMethod: fixed ? "Bottom Width Fixed" : "Slope End-to-End Type",
+      bottomWidth: fixed ? cs.bottomWidth : "",
+      slope: fixed ? cs.fixedLhs : ratio,
+      bermWidth: "0",
+    },
+    design: { ...design, cs: { ...cs, camberEnabled: false, superelevationEnabled: false } },
+  };
+};
+
 export const initialProposalDesign = {
   mode: "legacy", template: "road",
   ls: { enabled: false, grade: "0", strategy: "minimum", quantityType: "filling", anchorRl: "" },
-  cs: { fixedBottomEnabled: false, bottomWidth: "", fixedLhs: "1:1", fixedRhs: "1:1", lhs: "1:1", rhs: "1:1", berm: "0", slopeEnabled: false, horizontal: "1", vertical: "0", bedWidth: "", superelevationEnabled: false, superelevation: "0" },
+  cs: { camberEnabled: false, camber: "0", slopeMode: "all", widthMode: "all", slopeRanges: [], widthRanges: [], side: "all", fixedBottomEnabled: false, bottomWidth: "", fixedLhs: "1:1", fixedRhs: "1:1", lhs: "1:1", rhs: "1:1", berm: "0", slopeEnabled: false, horizontal: "1", vertical: "0", bedWidth: "", superelevationEnabled: false, superelevation: "0" },
   dimensions: { length: "", width: "", height: "" }, manualLevels: {}, breaks: [],
   ssd: { enabled: false, speed: "", reaction: "2.5", deceleration: "3.4", grade: "0" },
 };

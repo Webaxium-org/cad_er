@@ -40,7 +40,7 @@ import { handleFormError } from "../../utils/handleFormError";
 
 import ProposalProfileGraph from "./components/ProposalProfileGraph";
 import ProposalDesignControls from "./components/ProposalDesignControls";
-import { initialProposalDesign, proposalGraphSeries, stoppingSightDistance } from "../../utils/proposalWorkspace";
+import { initialProposalDesign, proposalGraphSeries, proposalWorkspaceRequest, stoppingSightDistance } from "../../utils/proposalWorkspace";
 
 import { initialPreviewState, proposalPreviewReducer } from "../../utils/proposalPreviewState";
 
@@ -330,28 +330,9 @@ export default function ProposeLevel() {
     project: Yup.string().required("Project name is required"),
     purpose: Yup.string().required("Purpose is required"),
     proposal: Yup.string().required("Proposal is required"),
-    proposalMethod: isWaterWay
-      ? Yup.string().required("Water Way proposal method is required")
-      : Yup.string().nullable(),
-    bottomWidth:
-      isWaterWay && formValues.proposalMethod === "Bottom Width Fixed"
-        ? Yup.number()
-            .typeError("Bottom width is required")
-            .required("Bottom width is required")
-        : Yup.string().nullable(),
-    slope:
-      isWaterWay
-        ? Yup.string().required("Side slope ratio is required").matches(
-            /^(\d+(?:\.\d+)?|\.\d+)\s*[:/?]\s*(\d+(?:\.\d+)?|\.\d+)$/,
-            "Enter a positive H:V ratio, e.g. 1:1",
-          )
-        : Yup.string().nullable(),
-    bermWidth: isWaterWay && formValues.proposalMethod === "With Respect to Berm"
-      ? Yup.number().typeError("Enter total berm width").min(0, "Berm width must not be negative").required("Enter total berm width")
-      : Yup.mixed().nullable(),
     quantity:
       (entryType === "autoGenerate" && !isWaterWay) ||
-      (isWaterWay && ["Bottom Width Fixed", "With Respect to Berm", "Slope End-to-End Type"].includes(formValues.proposalMethod))
+      isWaterWay
         ? Yup.number()
             .typeError("Quantity is required")
             .required("Quantity is required")
@@ -370,28 +351,13 @@ export default function ProposeLevel() {
             .typeError("Proposed Level is required")
             .required("Proposed Level is required")
         : Yup.string().nullable(),
-    cSection:
-      crossSection === "slop" && !isWaterWay
-        ? Yup.number()
-            .typeError("Cross section slope is required")
-            .required("Cross section slope is required")
-        : Yup.string().nullable(),
-    csSlop:
-      crossSection === "slop" && !isWaterWay
-        ? Yup.number()
-            .typeError("Cross section slope is required")
-            .required("Cross section slope is required")
-        : Yup.string().nullable(),
-    csCamper:
-      crossSection === "camper" && !isWaterWay
-        ? Yup.string().required("Cross section camper is required")
-        : Yup.string().nullable(),
+    cSection: Yup.string().nullable(),
+    csSlop: Yup.string().nullable(),
+    csCamper: Yup.string().nullable(),
     formula: Yup.string().nullable(),
-  }), [isWaterWay, formValues.proposalMethod, entryType, crossSection]);
+  }), [isWaterWay, entryType]);
 
-  const request = useMemo(() => ({ form: { ...formValues, interpolation: rows }, design: crossSection === "camper"
-    ? { ...design, cs: { ...design.cs, fixedBottomEnabled: false, slopeEnabled: false, superelevationEnabled: false } }
-    : isWaterWay ? { ...design, cs: { ...design.cs, superelevationEnabled: false } } : design }), [formValues, rows, design, crossSection, isWaterWay]);
+  const request = useMemo(() => proposalWorkspaceRequest(formValues, design, rows, isWaterWay), [formValues, design, rows, isWaterWay]);
   const validateWorkspace = useCallback(async () => {
     if (design.mode === "manual") {
       if (!formValues.project || !formValues.purpose || !formValues.proposal) throw Error("Choose the base and proposal levels.");
@@ -547,7 +513,8 @@ setFormValues((prev) => ({
       setSurvey(surveyDoc);
       setCrossSection(surveyDoc?.type === "Water Way" ? "slop" : "camper");
       setDesign((previous) => ({ ...previous, template: surveyDoc?.type === "Water Way" ? "water" : surveyDoc?.type === "Rail Way" ? "rail" : "road",
-        ls: { ...previous.ls, quantityType: surveyDoc?.type === "Water Way" ? "cutting" : "filling" } }));
+        ls: { ...previous.ls, quantityType: surveyDoc?.type === "Water Way" ? "cutting" : "filling" },
+        cs: { ...previous.cs, camberEnabled: ["Road Survey", "Road Way"].includes(surveyDoc?.type), camber: previous.cs.camber ?? "0", superelevationEnabled: false, slopeEnabled: surveyDoc?.type === "Water Way", horizontal: "1", vertical: surveyDoc?.type === "Water Way" ? "1" : "0", fixedBottomEnabled: false } }));
       updateInputData(completedPurposes, surveyDoc?.type);
 
       setSelectableItems([]);
@@ -772,7 +739,7 @@ setFormValues((prev) => ({
         action={<Stack direction="row" alignItems="center" spacing={0.5}>
           <Tooltip title="Undo"><span><IconButton size="small" aria-label="Undo proposal change" disabled={!editHistory.past.length || btnLoading} onClick={() => restoreProposal("undo")} sx={historyActionSx}><FiCornerUpLeft /></IconButton></span></Tooltip>
           <Tooltip title="Redo"><span><IconButton size="small" aria-label="Redo proposal change" disabled={!editHistory.future.length || btnLoading} onClick={() => restoreProposal("redo")} sx={historyActionSx}><FiCornerUpRight /></IconButton></span></Tooltip>
-          {activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 140, sm: 200 }, bgcolor: "white", borderRadius: 2, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1 } }} label="Preview chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
+          {activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 140, sm: 200 }, bgcolor: "white", borderRadius: 2, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1 } }} label="Chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
         </Stack>}
         onBack={() => navigate(-1)} />
 
@@ -816,11 +783,11 @@ setFormValues((prev) => ({
         </Stack>} />
 
       <Container maxWidth="lg" disableGutters sx={{ mt: -8, position: "relative", width: "100%", minWidth: 0, px: { lg: 3 } }}>
-        <ProposalProfileGraph totals={activeIsland === "ls" ? previewQuantity ?? { totalCuttingVolume: 0, totalFillingVolume: 0 } : null} stickyTop={{ xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
+        <ProposalProfileGraph previewMessage={activeIsland !== "templates" && previewError && !previewValidation ? `${preview ? "Showing the last calculated profile. " : "Proposed preview unavailable. "}${previewError}` : undefined} totals={activeIsland === "ls" ? previewQuantity : null} stickyTop={{ xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
         <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 3, lg: 0 } }}>
         {activeIsland === "templates" && design.templateId && <Alert severity="info" sx={{ mb: 2 }}>Illustrative profile: 1 m side height and an arbitrary 100 m datum. Edit the CS dimensions for your project; the actual proposal uses surveyed levels.</Alert>}
         {previewBusy && <LinearProgress sx={{ mb: 1, borderRadius: 2 }} />}
-        {previewError && !previewValidation && <Alert severity="warning" sx={{ mb: 2 }}>{preview ? "Showing the last calculated profile. " : ""}{previewError}</Alert>}
+
         {previewQuantity && (activeIsland !== "ls" || previewQuantity.missingSections?.length > 0) && <Stack direction="row" gap={2} flexWrap="wrap" sx={{ mb: 2 }}><Typography fontWeight={800} color="#b45309">Cutting {previewQuantity.totalCuttingVolume.toFixed(3)} m&sup3;</Typography><Typography fontWeight={800} color="#2878c7">Filling {previewQuantity.totalFillingVolume.toFixed(3)} m&sup3;</Typography>{previewQuantity.missingSections?.length > 0 && <Typography color="error">Quantity incomplete: missing cross-sections.</Typography>}</Stack>}
 
         <Paper
@@ -882,11 +849,11 @@ setFormValues((prev) => ({
             </Box>}
             <Grid container spacing={3} columns={12} alignItems={"end"} sx={{ "&:empty": { display: "none" } }}>
               {inputData.filter((input) => {
-                if (["project", "purpose", "proposal", "quantity", "length", "width", "entryType", "proposedLevel"].includes(input.name)) return false;
+                if (["project", "purpose", "proposal", "quantity", "length", "width", "entryType", "proposedLevel", "crossSectionType", "cSection", "csSlop", "csCamper"].includes(input.name)) return false;
                 if (design.mode === "manual" && !["project", "purpose", "proposal"].includes(input.name)) return false;
                 if (design.mode === "dimensions" && ["quantity", "width", "length"].includes(input.name)) return false;
                 const csField = ["crossSectionType", "cSection", "csSlop", "csCamper", "proposalMethod", "bottomWidth", "slope", "bermWidth"].includes(input.name);
-                return activeIsland === "cs" ? csField : activeIsland === "ls" ? !csField : false;
+                return activeIsland === "ls" && !csField;
               }).map(
                 ({ hidden, mode, size, ...input }, index) =>
                   !hidden && (

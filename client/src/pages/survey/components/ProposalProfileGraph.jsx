@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Dialog, IconButton, Stack, Typography, useMediaQuery } from "@mui/material";
+import { Alert, Box, Button, Dialog, IconButton, Stack, Typography, useMediaQuery } from "@mui/material";
 import { FiMaximize, FiMinus, FiPlus, FiRefreshCw, FiX, FiRotateCw, FiTrendingUp } from "react-icons/fi";
 import { graphTicks } from "../../../utils/proposalWorkspace";
 import QuantityDeltaBadge from "./QuantityDeltaBadge";
 
-function GraphViewport({ series, height, ssd, quantities, totals, fullScreen, onToggleFullScreen, plotSx }) {
+function GraphViewport({ series, height, ssd, quantities, totals, previewMessage, fullScreen, onToggleFullScreen, plotSx }) {
   const scroller = useRef(null);
   const [size, setSize] = useState({ width: 640, height: 260 });
   const [scroll, setScroll] = useState({ x: 0, y: 0 });
@@ -76,6 +76,7 @@ function GraphViewport({ series, height, ssd, quantities, totals, fullScreen, on
       {totals && <Stack direction="column" alignItems="flex-end" aria-label="Earthwork quantities" aria-live="polite" spacing={0.5} sx={{ position: "absolute", right: 8, top: 38, pointerEvents: "none" }}>
         {[["Cutting", "totalCuttingVolume", "#b45309"], ["Filling", "totalFillingVolume", "#2878c7"]].map(([label, key, color]) => <Box key={key} sx={{ px: 1, py: 0.5, borderRadius: 1, border: "1px solid", borderColor: color, bgcolor: "rgba(255,255,255,0.95)", color, fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{label} {Number(totals[key]).toFixed(3)} m&sup3;</Box>)}
       </Stack>}
+      {previewMessage && <Alert severity="warning" sx={{ position: "absolute", bottom: 8, left: axisWidth + 8, right: 8, maxHeight: "45%", overflow: "auto", py: 0.25, bgcolor: "#fff4e5", fontSize: "0.8rem" }}>{previewMessage}</Alert>}
       {quantities && <QuantityDeltaBadge saved={quantities.saved} live={quantities.live} invalid={quantities.invalid} />}
     </Box>
     <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: { xs: 1.25, sm: 2 }, py: 1.25, gap: 1.25, flexWrap: "wrap", bgcolor: "#fcfcff", mb: 2, border: "1px solid #e2e8f0", borderTop: 0, borderRadius: "0 0 16px 16px" }}>
@@ -94,19 +95,19 @@ function GraphViewport({ series, height, ssd, quantities, totals, fullScreen, on
   </>;
 }
 
-export default function ProposalProfileGraph({ series = [], type = "ls", title, ssd, quantities, totals, sx, stickyTop }) {
+export default function ProposalProfileGraph({ series = [], type = "ls", title, ssd, quantities, totals, previewMessage, sx, stickyTop }) {
   const [fullScreen, setFullScreen] = useState(false);
   const mobile = useMediaQuery("(max-width:900px)");
   const landscape = useMediaQuery("(orientation: landscape)");
   return <>
     <Box role="region" aria-label={title || (type === "cs" ? "Live CS preview" : "Live LS preview")} sx={{ bgcolor: "white", border: "1px solid #e2e8f5", borderRadius: "20px", p: { xs: 1.5, sm: 2 }, mb: 2, ...(stickyTop != null ? { display: "contents" } : {}), ...sx }}>
-    <GraphViewport plotSx={stickyTop != null ? { position: "sticky", top: stickyTop, zIndex: 1001, borderRadius: "16px 16px 0 0", boxShadow: "0 8px 24px rgba(20,32,72,0.08)" } : undefined} series={series} height={{ xs: "clamp(150px, 28dvh, 220px)", sm: 240 }} ssd={ssd} quantities={quantities} totals={totals} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />
+    <GraphViewport plotSx={stickyTop != null ? { position: "sticky", top: stickyTop, zIndex: 1001, borderRadius: "16px 16px 0 0", boxShadow: "0 8px 24px rgba(20,32,72,0.08)" } : undefined} series={series} height={{ xs: "clamp(150px, 28dvh, 220px)", sm: 240 }} ssd={ssd} quantities={quantities} totals={totals} previewMessage={previewMessage} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />
     </Box>
     <Dialog fullScreen open={fullScreen} onClose={() => setFullScreen(false)}>
       <Box sx={{ p: 1.5, height: "100dvh", boxSizing: "border-box" }}>
         {mobile && !landscape ? <Stack sx={{ height: "75vh" }} justifyContent="center" alignItems="center" spacing={2}>
           <FiRotateCw size={40} color="#595cf2" /><Typography>Rotate your phone to landscape to view the full-screen graph.</Typography><Button onClick={() => setFullScreen(false)}>Close graph</Button>
-        </Stack> : <GraphViewport series={series} height="calc(100dvh - 110px)" ssd={ssd} quantities={quantities} totals={totals} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />}
+        </Stack> : <GraphViewport series={series} height="calc(100dvh - 110px)" ssd={ssd} quantities={quantities} totals={totals} previewMessage={previewMessage} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />}
       </Box>
     </Dialog>
   </>;

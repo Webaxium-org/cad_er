@@ -6,7 +6,7 @@ import Purpose from "../models/surveyPurpose.js";
 import Row from "../models/surveyRows.js";
 import { generateSurveyPurpose, generateWaterWayProposalPurpose } from "../controllers/surveyController.js";
 import { previewProposalWorkspace, saveProposalWorkspace } from "../controllers/proposalWorkspaceController.js";
-import { initialProposalDesign, proposalGraphSeries } from "../../client/src/utils/proposalWorkspace.js";
+import { initialProposalDesign, proposalGraphSeries, proposalWorkspaceRequest } from "../../client/src/utils/proposalWorkspace.js";
 import { calculateVolumeReport } from "../../client/src/utils/volumeReport.js";
 
 const id = "000000000000000000000001", owner = "000000000000000000000002", baseId = "000000000000000000000003";
@@ -38,6 +38,54 @@ const setup = (t, type = "Road") => {
 };
 const invoke = async (handler, req) => { const res = response(); await handler(req, res, (error) => { throw error; }); return res; };
 const geometry = (rows) => rows.map(({ chainage, reducedLevels, intermediateOffsets, roadWidth }) => ({ chainage, reducedLevels, intermediateOffsets, roadWidth }));
+
+test("water workspace previews and saves using switch inputs without legacy CS fields", async t => {
+  const mocks = setup(t, "Water Way");
+  const form = { ...mocks.req.body.form, bottomWidth: "", slope: "", proposalMethod: "" };
+  for (const fixed of [false, true]) {
+    const design = structuredClone(initialProposalDesign);
+    design.template = "water";
+    design.ls.quantityType = "cutting";
+    Object.assign(design.cs, { slopeEnabled: !fixed, fixedBottomEnabled: fixed, vertical: "1", bottomWidth: "4" });
+    mocks.req.body = proposalWorkspaceRequest(form, design, [], true);
+    const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+    assert.equal(preview.rows.length, 3);
+    await invoke(saveProposalWorkspace, mocks.req);
+    assert.ok(mocks.sessions.at(-1).committed);
+  }
+});
+
+test("water switch preview follows varying surveyed levels without requiring a common bed RL", async t => {
+  const mocks = setup(t, "Water Way");
+  mocks.base.rows.forEach((row, i) => { row.reducedLevels = Array(3).fill(String(10 - i * 6)); });
+  const design = structuredClone(initialProposalDesign);
+  design.template = "water";
+  design.ls.quantityType = "cutting";
+  Object.assign(design.cs, { slopeEnabled: true, vertical: "1" });
+  mocks.req.body = proposalWorkspaceRequest(mocks.req.body.form, design, [], true);
+  const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  const normalized = p => ({ ...p, rows: p.rows.map(row => ({ ...row, offsets: row.intermediateOffsets.map(p => p.offset) })) });
+  const series = proposalGraphSeries(normalized(mocks.base), normalized(preview), "ls");
+  assert.equal(series.length, 2);
+  assert.equal(series[1].points.filter(Boolean).length, 3);
+  assert.ok(series[1].points[0].y > series[1].points[2].y + 11.9);
+  const report = calculateVolumeReport(mocks.survey, normalized(mocks.base), normalized(preview));
+  assert.ok(Math.abs(report.totalCuttingVolume - 40) < 0.2);
+  assert.equal(report.totalFillingVolume, 0);
+});
+
+test("water preview identifies the chainage and bank reading that cannot fit", async t => {
+  const mocks = setup(t, "Water Way");
+  mocks.base.rows[1].reducedLevels = ["9.000", "8.800", "-1489.490"];
+  mocks.base.rows[1].intermediateOffsets = [-1, 0, 1].map(offset => ({ offset: String(offset), mode: "R" }));
+  const design = structuredClone(initialProposalDesign);
+  design.template = "water";
+  design.ls.quantityType = "cutting";
+  Object.assign(design.cs, { slopeEnabled: true, vertical: "1" });
+  mocks.req.body = proposalWorkspaceRequest(mocks.req.body.form, design, [], true);
+  await assert.rejects(invoke(previewProposalWorkspace, mocks.req), /Chainage 0\/010:.*right bank RL -1489\.490 m/);
+  assert.equal(mocks.purposeWrite.mock.calls.length, 0);
+});
 
 test("switching design condition without grade optimisation updates preview quantities and saved levels", async t => {
   const mocks = setup(t);
