@@ -87,6 +87,31 @@ test("water preview identifies the chainage and bank reading that cannot fit", a
   assert.equal(mocks.purposeWrite.mock.calls.length, 0);
 });
 
+test("water grade optimisation finds a feasible elevation before constructing bank slopes", async t => {
+  const mocks = setup(t, "Water Way");
+  mocks.base.rows.forEach((row, i) => { row.reducedLevels = Array(3).fill(String(10 - i * 0.5)); });
+  const design = structuredClone(initialProposalDesign);
+  design.template = "water";
+  Object.assign(design.cs, { slopeEnabled: true, vertical: "1" });
+  Object.assign(design.ls, { enabled: true, strategy: "minimum", quantityType: "cutting", grade: "0" });
+  const normalized = p => ({ ...p, rows: p.rows.map(row => ({ ...row, offsets: row.intermediateOffsets.map(p => p.offset) })) });
+  for (const strategy of ["minimum", "quantity"]) for (const grade of ["0", "1", "-1"]) {
+    Object.assign(design.ls, { strategy, grade });
+    mocks.req.body = proposalWorkspaceRequest({ ...mocks.req.body.form, quantity: "120" }, design, [], true);
+    const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+    const series = proposalGraphSeries(normalized(mocks.base), normalized(preview), "ls");
+    assert.equal(series[1].points.filter(Boolean).length, 3);
+    const [start, end] = [series[1].points[0], series[1].points.at(-1)];
+    assert.ok(Math.abs(end.y - start.y - Number(grade) / 100 * 20) < 0.002);
+    const report = calculateVolumeReport(mocks.survey, normalized(mocks.base), normalized(preview));
+    assert.equal(report.totalFillingVolume, 0);
+    if (strategy === "quantity") assert.ok(Math.abs(report.totalCuttingVolume - 120) < 0.2);
+    else assert.ok(report.totalCuttingVolume < 120);
+  }
+  design.ls.grade = "100";
+  await assert.rejects(invoke(previewProposalWorkspace, mocks.req), /No profile elevation fits.*LS grade/);
+});
+
 test("switching design condition without grade optimisation updates preview quantities and saved levels", async t => {
   const mocks = setup(t);
   mocks.req.body.design = structuredClone(initialProposalDesign);

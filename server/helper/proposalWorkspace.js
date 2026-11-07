@@ -124,7 +124,9 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
   };
   const shapeSection = (row, target) => {
     const cs = sectionSettings(row);
-    return cs ? csSection(sourceRows.get(row.chainage), row, center, target, cs, waterTemplate, superElevation) : row;
+    if (cs) return csSection(sourceRows.get(row.chainage), row, center, target, cs, waterTemplate, superElevation);
+    const amount = target - interpolateGround(groundProfile(row), center);
+    return { ...row, reducedLevels: row.reducedLevels.map(value => Number(value) + amount) };
   };
   const sourceRows = new Map(base.rows.map(row => [row.chainage, row]));
   if (csGeometry) draft.csGeometry = true;
@@ -197,7 +199,8 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
       return next + offset * superElevation - Math.abs(offset) * camber;
     });
   });
-  if (csGeometry) rows.forEach(row => Object.assign(row, shapeSection(row, interpolateGround(groundProfile(row), center))));
+  // The reference LS elevation may sit above a bank (or below the feasible
+  // slope toes). Find the allowed shift before constructing CS geometry.
   const shift = (amount) => ({ ...draft, rows: draft.rows.map((row) => row.type !== "Chainage" ? row : csGeometry ? shapeSection(row, interpolateGround(groundProfile(row), center) + amount) : { ...row, reducedLevels: row.reducedLevels.map((value) => Number(value) + amount) }) });
   const conditionQuantity = settings.mode !== "manual" && !slopeEnabled && settings.ls?.quantityType
     && (settings.waterWorkspace || settings.ls.quantityType !== (survey.type === "Water Way" ? "cutting" : "filling"));
@@ -215,7 +218,7 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
         const current = interpolateGround(groundProfile(row), center);
         low = Math.max(low, bounds.min-current); high = Math.min(high, bounds.max-current);
       }
-      if (low > high) throw Error("No profile elevation fits the selected side slopes and berm.");
+      if (low > high) throw Error("No profile elevation fits the selected LS grade, side slopes and berm. Adjust the LS grade or cross-section settings.");
     }
     const quantity = strategy === "minimum" ? 0 : number(settings.targetQuantity ?? seed.quantity, "target quantity");
     if (strategy === "quantity" && quantity < 0) throw Error("Target quantity must not be negative.");
@@ -237,6 +240,8 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
       }
     }
     draft.rows = shift((low + high) / 2).rows;
+  } else if (csGeometry) {
+    rows.forEach(row => Object.assign(row, shapeSection(row, interpolateGround(groundProfile(row), center))));
   }
   draft.rows.forEach((row) => {
     row.reducedLevels = row.reducedLevels.map((value) => {
