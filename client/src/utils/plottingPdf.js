@@ -150,7 +150,7 @@ export const exportPlottingPdf = async ({
       const percent = Math.min(Math.round((currentStep / totalSteps) * 100), 100);
       
       let estimatedTimeLeft = null;
-      if (currentStep > 1 && currentStep < totalSteps) {
+      if (currentStep > 5 && currentStep < totalSteps) {
         const elapsed = Date.now() - startTime;
         const avgTimePerStep = elapsed / currentStep;
         const remainingSteps = totalSteps - currentStep;
@@ -467,7 +467,7 @@ export const exportPlottingPdf = async ({
       const el = chartItems[i];
       updateProgress(`Processing chart ${i + 1} of ${chartItems.length}...`);
 
-      await new Promise(resolve => requestAnimationFrame(resolve));
+      await new Promise(resolve => setTimeout(resolve, 0));
       const { canvas, plots } = await captureSession.capture(el);
 
       // Rotate canvas -90 degrees so it fits portrait page vertically

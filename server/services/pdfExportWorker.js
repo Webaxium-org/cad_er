@@ -81,7 +81,7 @@ export const startPdfExportWorker = () => {
     try {
       if (Date.now() - lastCleanup > 3600000) { await cleanupPdfExports(); lastCleanup = Date.now(); }
       const now = new Date();
-      const job = await PdfExport.findOneAndUpdate(pdfClaimFilter(now), { $set: { status: "running", leaseToken: randomUUID(), leaseUntil: new Date(Date.now() + 120000), progress: 0, message: "Starting PDF renderer..." }, $inc: { attempts: 1 } }, { sort: { createdAt: 1 }, new: true }).select("+snapshot").lean();
+      const job = await PdfExport.findOneAndUpdate(pdfClaimFilter(now), { $set: { status: "running", leaseToken: randomUUID(), leaseUntil: new Date(Date.now() + 120000), progress: 0, estimatedTimeLeft: null, message: "Starting PDF renderer..." }, $inc: { attempts: 1 } }, { sort: { createdAt: 1 }, new: true }).select("+snapshot").lean();
       if (job) await runPdfJob(job);
     } catch (error) { console.error("PDF worker error:", error.message); }
     finally { busy = false; }

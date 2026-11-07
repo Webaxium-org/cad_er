@@ -155,3 +155,36 @@ test("expired leases are reclaimable, retries are bounded, and retention deletes
   await cleanupPdfExports();
   assert.equal(removed.mock.callCount(), 1);
 });
+
+
+test("cancellation is owner scoped and atomically releases queued or running jobs", async (t) => {
+  t.mock.method(PdfExport, "findOne", filter => { assert.equal(filter.owner, owner); return query({ _id: id, status: "running", active: true }); });
+  t.mock.method(PdfExport, "findOneAndUpdate", async (filter, change) => {
+    assert.equal(filter.owner, owner);
+    assert.equal(filter.active, true);
+    assert.deepEqual(filter.status.$in, ["queued", "running"]);
+    assert.equal(change.$unset.leaseToken, 1);
+    assert.equal(change.$unset.snapshot, 1);
+    assert.equal(change.$set.active, false);
+    return { _id: id, ...change.$set };
+  });
+  const result = await invoke(acknowledgePdfExport, { ...req(), body: { action: "cancel" } });
+  assert.equal(result.data.job.status, "cancelled");
+});
+
+test("cancellation cannot overwrite a completed export", async (t) => {
+  t.mock.method(PdfExport, "findOne", () => query({ _id: id, status: "running", active: true }));
+  t.mock.method(PdfExport, "findOneAndUpdate", async () => null);
+  await assert.rejects(invoke(acknowledgePdfExport, { ...req(), body: { action: "cancel" } }), /already finished/);
+});
+
+test("a worker whose lease was cancelled cannot publish a PDF", async (t) => {
+  const state = mockStorage(t);
+  let first = true;
+  t.mock.method(PdfExport, "updateOne", async () => { const matchedCount = first ? 1 : 0; first = false; return { matchedCount }; });
+  t.mock.method(PdfExport, "exists", async () => null);
+  await runPdfJob(job(), async (snapshot, { onChunk }) => {
+    await onChunk(Buffer.from("%PDF-1.7\ncancelled").toString("base64"));
+  });
+  assert.ok(state.deleted.some(entry => entry.name === "pdfExports.files"));
+});

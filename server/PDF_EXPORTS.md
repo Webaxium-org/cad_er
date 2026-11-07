@@ -6,6 +6,13 @@ The existing export modal has a Minimize button. The progress card survives navi
 
 ## Required deployment
 
+Local renderer origins (`localhost`, `127.0.0.1`, or `::1`) use the separate
+`pdfexports_local` collection. Deployed origins keep using `pdfexports`, so a
+deployed worker cannot claim a locally submitted export in a shared database.
+For additional isolated environments, set `PDF_EXPORT_QUEUE` to the same short
+name on that environment's API and workers. Jobs remain in their original
+queue; submit a fresh export after changing queue configuration.
+
 Deploy both client and server changes together. The worker's browser must reach the new client route `/pdf-export-render`.
 
 Set on the **server**:

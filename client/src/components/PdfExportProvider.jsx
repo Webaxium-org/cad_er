@@ -18,6 +18,7 @@ export default function PdfExportProvider({ children }) {
   const [minimized, setMinimized] = useState(false);
   const [connectionError, setConnectionError] = useState("");
   const [downloadError, setDownloadError] = useState("");
+  const [cancelling, setCancelling] = useState(null);
   const [downloading, setDownloading] = useState(null);
   const submittingRef = useRef(false);
   const attempted = useRef(new Set());
@@ -37,7 +38,7 @@ export default function PdfExportProvider({ children }) {
       inFlight = true;
       const version = revision.current;
       try {
-        const { data } = await axiosInstance.get("pdf-exports", { signal: controller.signal });
+        const { data } = await axiosInstance.get("pdf-exports", { signal: controller.signal, timeout: 15000 });
         if (!disposed && version === revision.current) {
           hasActive = data.jobs.some((job) => ["queued", "running"].includes(job.status));
           setJobs(data.jobs); setConnectionError("");
@@ -94,6 +95,18 @@ export default function PdfExportProvider({ children }) {
       refresh.current();
     } finally { submittingRef.current = false; if (owner.current === userId) { setSubmitting(false); setCheckingSubmission(false); } }
   };
+  const cancel = async (job) => {
+    setCancelling(job.id); setDownloadError("");
+    try {
+      const { data } = await axiosInstance.patch(`pdf-exports/${job.id}`, { action: "cancel" }, { timeout: 15000 });
+      if (owner.current !== userId) return;
+      revision.current++;
+      setJobs(previous => previous.map(item => item.id === job.id ? data.job : item));
+      setModalId(null);
+    } catch {
+      if (owner.current === userId) { setDownloadError("Could not cancel the PDF export. Please try again."); setMinimized(true); }
+    } finally { if (owner.current === userId) { setCancelling(null); refresh.current(); } }
+  };
   const dismiss = async (job) => {
     try {
       await axiosInstance.patch(`pdf-exports/${job.id}`, { action: "dismissed" });
@@ -106,8 +119,9 @@ export default function PdfExportProvider({ children }) {
   return <PdfExportContext.Provider value={{ startExport }}>
     {children}
     <ExportLoader open={Boolean(showModal)} progress={submitting ? 0 : selected?.progress ?? 0}
-      progressMessage={submitting ? checkingSubmission ? "The server response was delayed. Checking whether your PDF was queued..." : "Sending report to server. Keep the app open until it is queued..." : connectionError || selected?.message || ""}
-      estimatedTimeLeft={selected?.estimatedTimeLeft ?? null} onMinimize={() => setMinimized(true)} />
+      progressMessage={submitting ? checkingSubmission ? "The server response was delayed. Checking whether your PDF was queued..." : "Sending report to server. Keep the app open until it is queued..." : connectionError || (selected?.attempts > 1 ? `Retry ${selected.attempts - 1} after an interruption. ${selected.message}` : selected?.message) || ""}
+      onCancel={active ? () => cancel(selected) : undefined} cancelling={cancelling === selected?.id}
+      estimatedTimeLeft={connectionError ? null : selected?.estimatedTimeLeft ?? null} onMinimize={() => setMinimized(true)} />
     {!showModal && (submitting || jobs.length > 0) && <Stack spacing={1} aria-live="polite" sx={{ position: "fixed", right: 12, bottom: 88, zIndex: 1600, width: { xs: "calc(100% - 24px)", sm: 340 }, maxHeight: "55vh", overflowY: "auto" }}>
       {connectionError && <Alert severity="warning">{connectionError}</Alert>}
       {downloadError && <Alert severity="error">{downloadError}</Alert>}
@@ -117,7 +131,7 @@ export default function PdfExportProvider({ children }) {
         <Typography variant="body2" color={job.status === "failed" ? "error" : "text.secondary"}>{job.message}</Typography>
         {["queued", "running"].includes(job.status) ? <>
           <LinearProgress variant={job.status === "queued" ? "indeterminate" : "determinate"} value={job.progress} sx={{ my: 1 }} />
-          <Stack direction="row" justifyContent="space-between" alignItems="center"><Typography variant="caption">{job.progress}% · Continues if you close the app</Typography><Button size="small" onClick={() => { setModalId(job.id); setMinimized(false); }}>Expand</Button></Stack>
+          <Stack direction="row" justifyContent="space-between" alignItems="center"><Typography variant="caption">{job.progress}% · Continues if you close the app</Typography><Button size="small" disabled={cancelling === job.id} onClick={() => cancel(job)}>{cancelling === job.id ? "Cancelling..." : "Cancel"}</Button><Button size="small" onClick={() => { setModalId(job.id); setMinimized(false); }}>Expand</Button></Stack>
         </> : <Box>
           {job.status === "completed" && <><Button size="small" disabled={downloading === job.id} onClick={() => download(job)}>{downloading === job.id ? "Downloading…" : "Download PDF"}</Button><Typography variant="caption" display="block">Available until {new Date(job.expiresAt).toLocaleDateString()}. If no download appears, use the button.</Typography></>}
           <Button size="small" color="inherit" onClick={() => dismiss(job)}>Dismiss</Button>

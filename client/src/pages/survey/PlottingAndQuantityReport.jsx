@@ -1,3 +1,4 @@
+import { profilePoints, profileLevel, chainageValue } from "../../utils/surveyGeometry";
 import { usePdfExports } from "../../utils/pdfExportContext";
 
 
@@ -206,7 +207,7 @@ const PlottingAndQuantityReport = () => {
   };
 
   const getSafeChainage = (chainage) => {
-    return Number(chainage?.split(survey.separator || "/")[1]);
+    return chainageValue(chainage, survey.separator || "/");
   };
 
   const buildCsData = (row) => {
@@ -340,17 +341,15 @@ const PlottingAndQuantityReport = () => {
 
     const pls = Number(initialEntry.pls || 0);
     const safeChainages = row.map((r) => getSafeChainage(r.chainage)) || [];
-    const safeInitial = row.map((r) => {
-      const offsetPointIndex = r.offsets?.findIndex((o) => Number(o) === pls);
+    const getRl = r => r ? profileLevel(profilePoints(r.offsets, r.reducedLevels), pls) : null;
+    const safeInitial = row.map(getRl);
 
-      const safeOffsetPointIndex =
-        offsetPointIndex === -1
-          ? Math.round(r.offsets.length / 2)
-          : offsetPointIndex;
-
-      return r.reducedLevels[safeOffsetPointIndex];
+    const breaks = new Set();
+    let pendingBreak = false;
+    initialEntry.rows.forEach(r => {
+      if (r.type === "Break") pendingBreak = true;
+      else if (r.type === "Chainage" && pendingBreak) { breaks.add(getSafeChainage(r.chainage)); pendingBreak = false; }
     });
-
     const data = {
       id,
       type: "ls",
@@ -361,10 +360,10 @@ const PlottingAndQuantityReport = () => {
     };
 
     const makeSeries = (offsets, levels) =>
-      offsets.map((o, i) => ({
-        x: Number(Number(o).toFixed(3)), // NUMERIC X (IMPORTANT)
-        y: Number(Number(levels?.[i] ?? 0).toFixed(3)),
-      }));
+      offsets.flatMap((o, i) => [
+        ...(breaks.has(o) ? [{ x: o, y: null }] : []),
+        { x: Number(Number(o).toFixed(3)), y: levels[i] == null ? null : Number(Number(levels[i]).toFixed(3)) },
+      ]);
 
     // Add the Initial Entry at the end
     data.series.push({
@@ -381,19 +380,9 @@ const PlottingAndQuantityReport = () => {
         const newRow = table?.rows?.filter((r) => r.type === "Chainage") || [];
         if (!newRow.length) continue;
 
-        const safeProposal = newRow.map((r) => {
-          const offsetPointIndex = r.offsets?.findIndex(
-            (o) => Number(o) === pls,
-          );
-          const safeOffsetPointIndex =
-            offsetPointIndex === -1
-              ? Math.round(r.offsets.length / 2)
-              : offsetPointIndex;
+        const safeProposal = row.map(r => getRl(newRow.find(p => p.chainage === r.chainage)));
 
-          return r.reducedLevels[safeOffsetPointIndex];
-        });
-
-        data.allRl.push(...safeProposal);
+        data.allRl.push(...safeProposal.filter(v => v !== null));
 
         data.series.push({
           name: table.type,
@@ -403,11 +392,11 @@ const PlottingAndQuantityReport = () => {
       }
     }
 
-    data.allRl.push(...safeInitial);
+    data.allRl.push(...safeInitial.filter(v => v !== null));
 
     // Compute bounds
-    const minY = Math.min(...data.allRl);
-    const maxY = Math.max(...data.allRl);
+    const minY = data.allRl.length ? Math.min(...data.allRl) : 0;
+    const maxY = data.allRl.length ? Math.max(...data.allRl) : 10;
 
     const pad = (maxY - minY) * 0.1;
 

@@ -71,6 +71,8 @@ const ExportLoader = ({
   progressMessage = "",
   estimatedTimeLeft = null,
   onMinimize,
+  onCancel,
+  cancelling = false,
 }) => {
   const [timeLeft, setTimeLeft] = React.useState(duration);
 
@@ -115,6 +117,7 @@ const ExportLoader = ({
         }}
       >
         {onMinimize && <Button onClick={onMinimize} aria-label="Minimize PDF export" sx={{ position: "absolute", right: 8, top: 8, color: "white", zIndex: 1 }}>Minimize</Button>}
+        {onCancel && <Button onClick={onCancel} disabled={cancelling} aria-label="Cancel PDF export" sx={{ position: "absolute", left: 8, top: 8, color: "white", zIndex: 1 }}>{cancelling ? "Cancelling..." : "Cancel"}</Button>}
         <Stack spacing={3} alignItems="center" sx={{ width: "100%" }}>
           {/* Animated Icon Container */}
           <Box

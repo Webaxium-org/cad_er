@@ -62,6 +62,14 @@ export const downloadPdfExport = async (req, res, next) => {
 export const acknowledgePdfExport = async (req, res, next) => {
   try {
     const job = await ownedJob(req);
+    if (req.body.action === "cancel") {
+      const cancelled = await PdfExport.findOneAndUpdate({ _id: job._id, owner: req.user.userId, active: true, status: { $in: ["queued", "running"] } }, {
+        $set: { status: "cancelled", active: false, message: "PDF export cancelled.", estimatedTimeLeft: null },
+        $unset: { snapshot: 1, leaseToken: 1, leaseUntil: 1 },
+      }, { new: true });
+      if (!cancelled && job.status !== "cancelled") throw createHttpError(409, "This export has already finished. Refresh its status.");
+      return res.json({ job: publicPdfJob(cancelled || job) });
+    }
     if (!["downloaded", "dismissed"].includes(req.body.action)) throw createHttpError(400, "Invalid action.");
     if (job.active) throw createHttpError(409, "This export is still running.");
     if (req.body.action === "downloaded" && job.status !== "completed") throw createHttpError(409, "The PDF is not ready yet.");

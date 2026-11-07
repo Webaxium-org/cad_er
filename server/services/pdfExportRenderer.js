@@ -21,6 +21,11 @@ export const renderPdfSnapshot = async (snapshot, { onProgress, onChunk, signal,
   const browser = await puppeteer.launch({ executablePath: config.executablePath, headless: true,
     args: ["--disable-dev-shm-usage", ...(process.env.PDF_CHROME_NO_SANDBOX === "true" ? ["--no-sandbox"] : [])] });
   const abort = () => { browser.close().catch(() => {}); };
+  let lastProgress = Date.now(), lastStage = "Loading report", stalled = false;
+  const watchdog = setInterval(() => {
+    if (Date.now() - lastProgress > 120000) { stalled = true; abort(); }
+  }, 5000);
+  watchdog.unref();
   signal?.addEventListener("abort", abort, { once: true });
   try {
     if (signal?.aborted) throw Error("Export lease lost.");
@@ -37,14 +42,24 @@ export const renderPdfSnapshot = async (snapshot, { onProgress, onChunk, signal,
       if (parsed.origin === origin && !parsed.pathname.startsWith("/api/")) return void request.continue();
       return void request.abort();
     });
-    await page.exposeFunction("pdfExportProgress", onProgress);
-    await page.exposeFunction("pdfExportChunk", onChunk);
+    await page.exposeFunction("pdfExportProgress", async value => {
+      lastProgress = Date.now(); lastStage = value.message;
+      await onProgress(value);
+    });
+    await page.exposeFunction("pdfExportChunk", async value => {
+      lastProgress = Date.now();
+      await onChunk(value);
+    });
     await page.evaluateOnNewDocument((value) => { window.__PDF_EXPORT_SNAPSHOT__ = value; }, snapshot);
     await page.goto(config.url, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForFunction(() => window.__PDF_EXPORT_DONE__ || window.__PDF_EXPORT_ERROR__, { timeout: 20 * 60 * 1000, polling: 500 });
     const error = await page.evaluate(() => window.__PDF_EXPORT_ERROR__);
     if (error) throw Error(error);
+  } catch (error) {
+    if (stalled) throw Error(`PDF rendering stopped making progress at: ${lastStage}`);
+    throw error;
   } finally {
+    clearInterval(watchdog);
     signal?.removeEventListener("abort", abort);
     await browser.close();
   }

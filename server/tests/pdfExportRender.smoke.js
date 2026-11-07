@@ -7,9 +7,12 @@ import { renderPdfSnapshot, pdfRendererConfig } from "../services/pdfExportRende
 import { pdfExportSnapshot } from "./fixtures/pdfExportSnapshot.js";
 process.env.PDF_RENDER_ORIGIN ||= "http://127.0.0.1:5194";
 const chunks = [], progress = [];
-await renderPdfSnapshot(pdfExportSnapshot(), { config: pdfRendererConfig(),
+const snapshot = pdfExportSnapshot();
+if (process.env.PDF_SMOKE_CS_COUNT) snapshot.allCs = Array.from({ length: Number(process.env.PDF_SMOKE_CS_COUNT) }, (_, index) => ({ ...snapshot.allCs[index % snapshot.allCs.length] }));
+const started = Date.now();
+await renderPdfSnapshot(snapshot, { config: pdfRendererConfig(),
   onChunk: async (chunk) => chunks.push(Buffer.from(chunk, "base64")),
-  onProgress: async (value) => progress.push(value),
+  onProgress: async (value) => { progress.push(value); console.log(value.message); },
 });
 const pdf = Buffer.concat(chunks);
 assert.equal(pdf.subarray(0, 5).toString(), "%PDF-");
@@ -17,4 +20,4 @@ assert.ok(pdf.length > 10000);
 assert.ok(progress.some((value) => value.percent === 100));
 const output = process.env.PDF_SMOKE_OUTPUT || join(tmpdir(), "cader-background-export-smoke.pdf");
 await writeFile(output, pdf);
-console.log(JSON.stringify({ bytes: pdf.length, updates: progress.length, output, status: "passed" }));
+console.log(JSON.stringify({ elapsedMs: Date.now() - started, bytes: pdf.length, updates: progress.length, output, status: "passed" }));

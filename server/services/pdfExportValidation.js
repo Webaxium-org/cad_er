@@ -15,6 +15,7 @@ export const validatePdfSnapshot = (body) => {
 export const publicPdfJob = (job) => ({
   id: String(job._id), surveyId: String(job.surveyId), title: job.title,
   requestKey: job.requestKey,
+  attempts: job.attempts || 0,
   status: job.status, progress: job.progress, message: job.message,
   estimatedTimeLeft: job.estimatedTimeLeft ?? null, createdAt: job.createdAt,
   completedAt: job.completedAt, downloadedAt: job.downloadedAt, expiresAt: job.expiresAt,
