@@ -42,7 +42,7 @@ function GraphViewport({ series, height, ssd, quantities, totals, totalsStale, p
   const axisWidth = Math.max(44, ...[bounds.y0, bounds.y1].map((value) => value.toFixed(3).length * 6 + 8));
   const changeZoom = (value) => setZoom(Math.min(8, Math.max(1, value)));
   return <>
-    <Box sx={{ position: "relative", display: "grid", gridTemplateColumns: `${axisWidth}px minmax(0,1fr)`, gridTemplateRows: "30px minmax(0,1fr)", height, bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "16px 16px 0 0", overflow: "hidden", ...plotSx }}>
+    <Box sx={{ position: "relative", display: "grid", gridTemplateColumns: `${axisWidth}px minmax(0,1fr)`, gridTemplateRows: "30px minmax(0,1fr)", height, bgcolor: "white", border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden", ...plotSx }}>
       <Box sx={{ fontSize: 10, color: "#667795", display: "grid", placeItems: "center", bgcolor: "#f8f9fd" }}>RL (m)</Box>
       <svg width="100%" height="30" style={{ background: "#f8f9fd" }} aria-label="Horizontal scale in metres">
         {xticks.map((tick) => <g key={tick}><text x={Math.max(18, Math.min(size.width - 18, x(tick) - scroll.x))} y={17} fontSize="10" fill="#52617f" textAnchor="middle">{Number(tick.toFixed(3))}</text><line x1={x(tick) - scroll.x} x2={x(tick) - scroll.x} y1="23" y2="30" stroke="#c7d2e5" /></g>)}
@@ -102,7 +102,7 @@ export default function ProposalProfileGraph({ series = [], type = "ls", title, 
   const landscape = useMediaQuery("(orientation: landscape)");
   return <>
     <Box role="region" aria-label={title || (type === "cs" ? "Live CS preview" : "Live LS preview")} sx={{ bgcolor: "white", border: "1px solid #e2e8f5", borderRadius: "20px", p: { xs: 1.5, sm: 2 }, mb: 2, ...(stickyTop != null ? { display: "contents" } : {}), ...sx }}>
-    <GraphViewport plotSx={stickyTop != null ? { position: "sticky", top: stickyTop, zIndex: 1001, borderRadius: "16px 16px 0 0", boxShadow: "0 8px 24px rgba(20,32,72,0.08)" } : undefined} series={series} height={{ xs: "clamp(150px, 28dvh, 220px)", sm: 240 }} ssd={ssd} quantities={quantities} totals={totals} totalsStale={totalsStale} previewMessage={previewMessage} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />
+    <GraphViewport plotSx={stickyTop != null ? { position: "sticky", top: stickyTop, zIndex: 1001, borderRadius: "16px", boxShadow: "0 8px 24px rgba(20,32,72,0.08)" } : undefined} series={series} height={{ xs: "clamp(150px, 28dvh, 220px)", sm: 240 }} ssd={ssd} quantities={quantities} totals={totals} totalsStale={totalsStale} previewMessage={previewMessage} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />
     </Box>
     <Dialog fullScreen open={fullScreen} onClose={() => setFullScreen(false)}>
       <Box sx={{ p: 1.5, height: "100dvh", boxSizing: "border-box" }}>

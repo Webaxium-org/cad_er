@@ -739,7 +739,7 @@ setFormValues((prev) => ({
         action={<Stack direction="row" alignItems="center" spacing={0.5}>
           <Tooltip title="Undo"><span><IconButton size="small" aria-label="Undo proposal change" disabled={!editHistory.past.length || btnLoading} onClick={() => restoreProposal("undo")} sx={historyActionSx}><FiCornerUpLeft /></IconButton></span></Tooltip>
           <Tooltip title="Redo"><span><IconButton size="small" aria-label="Redo proposal change" disabled={!editHistory.future.length || btnLoading} onClick={() => restoreProposal("redo")} sx={historyActionSx}><FiCornerUpRight /></IconButton></span></Tooltip>
-          {activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 140, sm: 200 }, bgcolor: "white", borderRadius: 2, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1 } }} label="Chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
+          {activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 90, sm: 120 }, bgcolor: "white", borderRadius: 2, "& .MuiOutlinedInput-root": { height: 32, fontSize: "0.75rem" }, "& .MuiSelect-select": { py: 0.5, pl: 1 }, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1, fontSize: "0.75rem" } }} label="Chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
         </Stack>}
         onBack={() => navigate(-1)} />
 

@@ -10,7 +10,11 @@ import {
   IconButton,
   Menu,
   Container,
+  Badge,
+  Tooltip,
 } from "@mui/material";
+import { FiDownload } from "react-icons/fi";
+import { usePdfExports } from "../utils/pdfExportContext";
 import TemporaryDrawer from "./TemporaryDrawer";
 import DrawerList from "./DrawerList";
 import logo from "../assets/logo/cader_logo.png";
@@ -73,6 +77,7 @@ const AppHeader = ({
   const [search, setSearch] = useState("");
   const { user } = useSelector((state) => state.user || { user: null });
   const navigate = useNavigate();
+  const pdfExports = usePdfExports();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const toggleDrawer = (newOpen) => () => setDrawerOpen(newOpen);
@@ -111,7 +116,7 @@ const AppHeader = ({
             justifyContent="space-between"
             alignItems="center"
           >
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
               <Box
                 component="button"
                 type="button"
@@ -142,10 +147,11 @@ const AppHeader = ({
                   }}
                 />
               </Box>
-              <Box>
+              <Box sx={{ minWidth: 0 }}>
                 <Typography
                   variant="subtitle2"
                   fontWeight={800}
+                  noWrap
                   sx={{
                     opacity: 0.95,
                     lineHeight: 1.1,
@@ -163,7 +169,7 @@ const AppHeader = ({
               </Box>
             </Stack>
 
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={{ xs: 0.75, sm: 1.5 }} alignItems="center" sx={{ flexShrink: 0, ml: 1 }}>
               {showSearch && (
                 <TextField
                   size="small"
@@ -198,6 +204,23 @@ const AppHeader = ({
                     ),
                   }}
                 />
+              )}
+
+              {pdfExports && (
+                <Tooltip title="Downloads">
+                  <IconButton
+                    aria-label="Downloads"
+                    aria-haspopup="dialog"
+                    aria-expanded={pdfExports.downloadsOpen}
+                    aria-controls={pdfExports.downloadsOpen ? "navbar-downloads" : undefined}
+                    onClick={pdfExports.openDownloads}
+                    sx={{ color: "white", bgcolor: "rgba(255,255,255,0.15)", borderRadius: "14px", p: { xs: 0.8, md: 1.2 } }}
+                  >
+                    <Badge badgeContent={pdfExports.downloadCount} color="error" max={99}>
+                      <FiDownload size={22} />
+                    </Badge>
+                  </IconButton>
+                </Tooltip>
               )}
 
               {showNotifications && (

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { Alert, Box, Button, LinearProgress, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, LinearProgress, Paper, Popover, Stack, Typography } from "@mui/material";
 import { saveAs } from "file-saver";
 import { axiosInstance } from "../utils/config";
 import ExportLoader from "./ExportLoader";
@@ -16,6 +16,7 @@ export default function PdfExportProvider({ children }) {
   const [submitting, setSubmitting] = useState(false);
   const [checkingSubmission, setCheckingSubmission] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [downloadsAnchor, setDownloadsAnchor] = useState(null);
   const [connectionError, setConnectionError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [cancelling, setCancelling] = useState(null);
@@ -29,6 +30,7 @@ export default function PdfExportProvider({ children }) {
 
   useEffect(() => {
     setJobs([]); setModalId(null); setSubmitting(false); setMinimized(false);
+    setDownloadsAnchor(null);
     setConnectionError(""); setDownloadError(""); attempted.current.clear();
     if (!enabled) return;
     let disposed = false, timer, inFlight = false, hasActive = false;
@@ -80,10 +82,10 @@ export default function PdfExportProvider({ children }) {
   const startExport = async (surveyId, snapshot) => {
     if (submittingRef.current) return;
     const existing = jobs.find((job) => ["queued", "running"].includes(job.status));
-    if (existing) { setModalId(existing.id); setMinimized(false); return; }
+    if (existing) { setModalId(existing.id); setMinimized(false); setDownloadsAnchor(null); return; }
     submittingRef.current = true;
     setCheckingSubmission(false);
-    setSubmitting(true); setMinimized(false); setDownloadError("");
+    setSubmitting(true); setMinimized(false); setDownloadsAnchor(null); setDownloadError("");
     try {
       const job = await queuePdfExport(axiosInstance, { surveyId, snapshot, requestKey: crypto.randomUUID() }, {
         onRecovery: () => { if (owner.current === userId) setCheckingSubmission(true); },
@@ -116,13 +118,18 @@ export default function PdfExportProvider({ children }) {
   const selected = jobs.find((job) => job.id === modalId);
   const active = selected && ["queued", "running"].includes(selected.status);
   const showModal = !minimized && (submitting || active);
-  return <PdfExportContext.Provider value={{ startExport }}>
+  return <PdfExportContext.Provider value={{ startExport, downloadCount: jobs.length + (submitting ? 1 : 0), downloadsOpen: Boolean(downloadsAnchor), openDownloads: (event) => setDownloadsAnchor(event.currentTarget) }}>
     {children}
     <ExportLoader open={Boolean(showModal)} progress={submitting ? 0 : selected?.progress ?? 0}
       progressMessage={submitting ? checkingSubmission ? "The server response was delayed. Checking whether your PDF was queued..." : "Sending report to server. Keep the app open until it is queued..." : connectionError || (selected?.attempts > 1 ? `Retry ${selected.attempts - 1} after an interruption. ${selected.message}` : selected?.message) || ""}
       onCancel={active ? () => cancel(selected) : undefined} cancelling={cancelling === selected?.id}
-      estimatedTimeLeft={connectionError ? null : selected?.estimatedTimeLeft ?? null} onMinimize={() => setMinimized(true)} />
-    {!showModal && (submitting || jobs.length > 0) && <Stack spacing={1} aria-live="polite" sx={{ position: "fixed", right: 12, bottom: 88, zIndex: 1600, width: { xs: "calc(100% - 24px)", sm: 340 }, maxHeight: "55vh", overflowY: "auto" }}>
+      estimatedTimeLeft={connectionError ? null : selected?.estimatedTimeLeft ?? null} onMinimize={() => { setMinimized(true); setDownloadsAnchor(null); }} />
+    <Popover id="navbar-downloads" open={Boolean(downloadsAnchor) && !showModal} anchorEl={downloadsAnchor} onClose={() => setDownloadsAnchor(null)}
+      anchorOrigin={{ vertical: "bottom", horizontal: "right" }} transformOrigin={{ vertical: "top", horizontal: "right" }}
+      slotProps={{ paper: { role: "dialog", "aria-label": "Downloads", sx: { mt: 1, p: 2, width: 360, maxWidth: "calc(100vw - 24px)", maxHeight: "70vh", borderRadius: 3 } } }}>
+    <Stack spacing={1} aria-live="polite">
+      <Typography fontWeight={800}>Downloads</Typography>
+      {!submitting && jobs.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No downloads yet</Typography>}
       {connectionError && <Alert severity="warning">{connectionError}</Alert>}
       {downloadError && <Alert severity="error">{downloadError}</Alert>}
       {submitting && <Paper sx={{ p: 2 }}><Typography>Sending report to server…</Typography><LinearProgress /><Typography variant="caption">Keep the app open until it is queued.</Typography></Paper>}
@@ -131,12 +138,14 @@ export default function PdfExportProvider({ children }) {
         <Typography variant="body2" color={job.status === "failed" ? "error" : "text.secondary"}>{job.message}</Typography>
         {["queued", "running"].includes(job.status) ? <>
           <LinearProgress variant={job.status === "queued" ? "indeterminate" : "determinate"} value={job.progress} sx={{ my: 1 }} />
-          <Stack direction="row" justifyContent="space-between" alignItems="center"><Typography variant="caption">{job.progress}% · Continues if you close the app</Typography><Button size="small" disabled={cancelling === job.id} onClick={() => cancel(job)}>{cancelling === job.id ? "Cancelling..." : "Cancel"}</Button><Button size="small" onClick={() => { setModalId(job.id); setMinimized(false); }}>Expand</Button></Stack>
+          <Typography variant="caption">{job.progress}% · Continues if you close the app</Typography>
+          <Stack direction="row" justifyContent="flex-end"><Button size="small" disabled={cancelling === job.id} onClick={() => cancel(job)}>{cancelling === job.id ? "Cancelling..." : "Cancel"}</Button><Button size="small" onClick={() => { setModalId(job.id); setMinimized(false); setDownloadsAnchor(null); }}>Expand</Button></Stack>
         </> : <Box>
           {job.status === "completed" && <><Button size="small" disabled={downloading === job.id} onClick={() => download(job)}>{downloading === job.id ? "Downloading…" : "Download PDF"}</Button><Typography variant="caption" display="block">Available until {new Date(job.expiresAt).toLocaleDateString()}. If no download appears, use the button.</Typography></>}
           <Button size="small" color="inherit" onClick={() => dismiss(job)}>Dismiss</Button>
         </Box>}
       </Paper>)}
-    </Stack>}
+    </Stack>
+    </Popover>
   </PdfExportContext.Provider>;
 }

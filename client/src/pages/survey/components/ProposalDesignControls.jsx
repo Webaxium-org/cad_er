@@ -8,6 +8,12 @@ import { stoppingSightDistance } from "../../../utils/proposalWorkspace";
 
 export default function ProposalDesignControls({ tab, isWaterWay, design, onChange, stations, profileName = "", designLayerSelected = false, onTemplate, startRl, startChainage, previewBusy = false, previewError = "", previewValidation = false }) {
   const [transportSystem, setTransportSystem] = useState(design.template || "road");
+  const [superelevationDraft, setSuperelevationDraft] = useState({
+    speed: "", radius: "", rate: "", normalCamber: "", rotatedWidth: "",
+    direction: "", axis: "", from: "", to: "",
+    entryRunout: "", entryRunoff: "", exitRunoff: "", exitRunout: "",
+  });
+  const updateSuperelevationDraft = (key, value) => setSuperelevationDraft(previous => ({ ...previous, [key]: value }));
   const [layerWarningOpen, setLayerWarningOpen] = useState(false);
   const [complianceOpen, setComplianceOpen] = useState(false);
   const openCompliance = () => {
@@ -250,7 +256,42 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
       {<>
       {!isWaterWay && <>
       <Box><FormControlLabel label="Camber" control={<Switch slotProps={{ input: { role: "switch" } }} checked={Boolean(design.cs.camberEnabled)} onChange={event => update("cs", "camberEnabled", event.target.checked)} />} />{design.cs.camberEnabled && field("cs", "camber", "Camber (%)")}</Box>
-      <Box><FormControlLabel label="Super elevation" control={<Switch slotProps={{ input: { role: "switch" } }} checked={Boolean(design.cs.superelevationEnabled)} onChange={event => update("cs", "superelevationEnabled", event.target.checked)} />} />{design.cs.superelevationEnabled && field("cs", "superelevation", "Super elevation (%)")}</Box>
+      <Box>
+        <FormControlLabel label={<Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+          <span>Super elevation</span>
+          <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: "999px", bgcolor: "#eef2ff", color: "#4f46e5", border: "1px solid #c7d2fe", fontSize: "0.7rem", fontWeight: 700, lineHeight: 1.5 }}>Upcoming</Box>
+        </Box>} control={<Switch slotProps={{ input: { role: "switch" } }} checked={Boolean(design.cs.superelevationEnabled)} onChange={event => update("cs", "superelevationEnabled", event.target.checked)} />} />
+        {design.cs.superelevationEnabled && <Paper variant="outlined" sx={{ mt: 1, p: { xs: 1.5, sm: 2 }, borderRadius: 2 }}>
+          <Stack spacing={2}>
+            <Alert severity="info">Upcoming: these inputs are a draft only. They are not saved or applied to the graph, levels, or quantities.</Alert>
+            <Typography fontWeight={700}>Curve and cross-section</Typography>
+            <Typography variant="caption" color="text.secondary">Enter the adopted design values for the road. The required rate and transitions depend on the applicable design standard.</Typography>
+            <Grid container spacing={2}>
+              {[["speed", "Design speed (km/h)"], ["radius", "Curve radius (m)"], ["rate", "Full superelevation (%)"], ["normalCamber", "Normal camber (%)"], ["rotatedWidth", "Rotated carriageway width (m)"]].map(([key, label]) => <Grid key={key} size={{ xs: 12, sm: 6 }}>
+                <TextField fullWidth size="small" type="number" label={label} value={superelevationDraft[key]} onChange={event => updateSuperelevationDraft(key, event.target.value)} slotProps={{ htmlInput: { min: 0, step: "any" } }} />
+              </Grid>)}
+              <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth select size="small" label="Curve direction" value={superelevationDraft.direction} onChange={event => updateSuperelevationDraft("direction", event.target.value)} helperText="Looking in the direction of increasing chainage.">
+                <MenuItem value="left">Left curve (raise RHS)</MenuItem><MenuItem value="right">Right curve (raise LHS)</MenuItem>
+              </TextField></Grid>
+              <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth select size="small" label="Axis of rotation" value={superelevationDraft.axis} onChange={event => updateSuperelevationDraft("axis", event.target.value)}>
+                <MenuItem value="centre">Centreline</MenuItem><MenuItem value="inner">Inner carriageway edge</MenuItem><MenuItem value="outer">Outer carriageway edge</MenuItem>
+              </TextField></Grid>
+            </Grid>
+            <Typography fontWeight={700}>Application range and transitions</Typography>
+            <Grid container spacing={2}>
+              {[["from", "Full superelevation starts"], ["to", "Full superelevation ends"]].map(([key, label]) => <Grid key={key} size={{ xs: 12, sm: 6 }}>
+                <TextField fullWidth select size="small" label={label} value={superelevationDraft[key]} onChange={event => updateSuperelevationDraft(key, event.target.value)} helperText="Chainage">
+                  {stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}
+                </TextField>
+              </Grid>)}
+              {[["entryRunout", "Entry tangent runout (m)"], ["entryRunoff", "Entry superelevation runoff (m)"], ["exitRunoff", "Exit superelevation runoff (m)"], ["exitRunout", "Exit tangent runout (m)"]].map(([key, label]) => <Grid key={key} size={{ xs: 12, sm: 6 }}>
+                <TextField fullWidth size="small" type="number" label={label} value={superelevationDraft[key]} onChange={event => updateSuperelevationDraft(key, event.target.value)} slotProps={{ htmlInput: { min: 0, step: "any" } }} />
+              </Grid>)}
+            </Grid>
+            <Typography variant="caption" color="text.secondary">Tangent runout changes the outside lane from normal camber to flat. Runoff changes it from flat to full superelevation; the exit reverses this sequence.</Typography>
+          </Stack>
+        </Paper>}
+      </Box>
       </>}
       {[false, true].map(width => {
         const enabled = width ? "fixedBottomEnabled" : "slopeEnabled", mode = width ? "widthMode" : "slopeMode", ranges = width ? "widthRanges" : "slopeRanges";
@@ -295,7 +336,10 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
       "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: "#f8f9fe", "& fieldset": { borderColor: "#e2e8f0" }, "&:hover fieldset": { borderColor: "#a5a6f6" }, "&.Mui-focused fieldset": { borderColor: "#6366f1" } },
       "& .MuiInputLabel-root.Mui-focused": { color: "#6366f1" },
     }}>
-      <Typography fontWeight={800} sx={{ color: "#312e81", fontSize: { xs: "1.1rem", sm: "1.25rem" }, letterSpacing: "-0.025em" }}>Select transport system</Typography>
+      <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+        <Typography fontWeight={800} sx={{ color: "#312e81", fontSize: { xs: "1.1rem", sm: "1.25rem" }, letterSpacing: "-0.025em" }}>Select transport system</Typography>
+        <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: "999px", bgcolor: "#eef2ff", color: "#4f46e5", border: "1px solid #c7d2fe", fontSize: "0.7rem", fontWeight: 700, lineHeight: 1.5 }}>Upcoming</Box>
+      </Box>
       <Stack direction="row" spacing={0.75} sx={{ p: 0.75, bgcolor: "#eef2ff", border: "1px solid #e0e7ff", borderRadius: "18px" }}>
         {[{ key: "road", title: "Road way" }, { key: "water", title: "Water way" }, { key: "rail", title: "Rail way" }].map(system => <Button key={system.key} fullWidth variant={transportSystem === system.key ? "contained" : "outlined"} aria-pressed={transportSystem === system.key} onClick={() => setTransportSystem(system.key)} disableElevation sx={{ textTransform: "none", minWidth: 0, px: { xs: 0.75, sm: 2 }, py: 1.25, borderRadius: "12px", fontWeight: 700, fontSize: { xs: "0.78rem", sm: "0.9rem" }, border: "none", bgcolor: transportSystem === system.key ? "#6366f1" : "transparent", color: transportSystem === system.key ? "#ffffff" : "#4f46e5", boxShadow: transportSystem === system.key ? "0 4px 12px rgba(99,102,241,0.22)" : "none", "&:hover": { border: "none", bgcolor: transportSystem === system.key ? "#4f46e5" : "#e0e7ff" } }}>{system.title}</Button>)}
       </Stack>
