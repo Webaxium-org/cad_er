@@ -5,14 +5,14 @@ const Tipper = () => <svg width="21" height="18" viewBox="0 0 28 24" fill="none"
 
 export default function QuantityDeltaBadge({ saved, live, invalid = false, showTotals = false, sx }) {
   if (!saved || !live) return null;
-  return <Box data-html2canvas-ignore="true" sx={{ position: "absolute", right: 8, top: 8, zIndex: 5, display: "grid", justifyItems: "end", gap: 0.5, ...sx }} aria-live="polite">
-    {[{ key: "totalCuttingVolume", name: "Cutting", color: "#b45309", icon: <Excavator /> }, { key: "totalFillingVolume", name: "Filling", color: "#2878c7", icon: <Tipper /> }].map(({ key, name, color, icon }) => {
+  return <Box data-html2canvas-ignore="true" sx={{ position: "absolute", right: 8, top: 8, zIndex: 5, display: "grid", justifyItems: "end", gap: 1.5, mt: 1, ...sx }} aria-live="polite">
+    {[{ key: "totalCuttingVolume", name: "Cutting", color: "#ea580c", icon: <Excavator /> }, { key: "totalFillingVolume", name: "Filling", color: "#6366f1", icon: <Tipper /> }].map(({ key, name, color, icon }) => {
       const value = showTotals ? Number(live[key]) : Number(live[key]) - Number(saved[key]);
       const valid = !invalid && Number.isFinite(value) && !live.missingSections?.length;
       const label = valid ? `${!showTotals && value > 0 ? "+" : ""}${value.toFixed(3)}` : "—";
       return <Tooltip key={key} title={`${name}${showTotals ? "" : " change"}: ${label} m³`}>
-        <Box aria-label={`${name} quantity ${showTotals ? "" : "change "}${label} cubic metres`} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 0.5, width: "max-content", whiteSpace: "nowrap", px: 0.6, py: 0.35, color, bgcolor: "rgba(255,255,255,.96)", border: "1px solid #e2e8f0", borderRadius: "5px", boxShadow: "0 2px 5px #15204712", fontSize: 11, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
-          {icon}<span>{label}</span>
+        <Box aria-label={`${name} quantity ${showTotals ? "" : "change "}${label} cubic metres`} sx={{ position: "relative", width: "max-content", minWidth: 40, textAlign: "center", whiteSpace: "nowrap", px: 0.75, pt: 1.25, pb: 0.35, color, bgcolor: "rgba(255,255,255,.96)", border: "1px solid", borderColor: color, borderRadius: "3px", boxShadow: "0 2px 5px #15204712", fontSize: 11, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
+          <Box component="span" sx={{ position: "absolute", top: 0, left: 5, transform: "translateY(-50%)", display: "flex", px: 0.25, bgcolor: "white", lineHeight: 0 }}>{icon}</Box><span>{label}</span>
         </Box>
       </Tooltip>;
     })}
