@@ -697,10 +697,9 @@ const RoadSurveyForm = () => {
   const handleSubmit = async () => {
     setBtnLoading(true);
     try {
-      // Keep the input as the user's note; compose the saved remark only here.
       const submissionValues = {
         ...formValues,
-        remark: [defaultRemark, formValues.remark.trim()].filter(Boolean).join(" - "),
+        remark: formValues.remark.trim() || `${defaultRemark} - `,
       };
       await step2Schema.validate(submissionValues, { abortEarly: false });
 
@@ -1034,9 +1033,12 @@ const RoadSurveyForm = () => {
           <BasicInput
             {...input}
             value={formValues[input.name] || ""}
-            placeholder={input.name === "remark" ? defaultRemark : input.placeholder}
+            placeholder={input.name === "remark" ? `${defaultRemark} - ` : input.placeholder}
+            onFocus={input.name === "remark" ? () => {
+              setFormValues(previous => previous.remark ? previous : { ...previous, remark: `${defaultRemark} - ` });
+            } : undefined}
             helperText={input.name === "remark"
-              ? "Your note will be added after the TBM label and timestamp."
+              ? "Add your note after the TBM label and timestamp."
               : ""}
             error={(formErrors && formErrors[input.name]) || ""}
             sx={{ width: "100%" }}
