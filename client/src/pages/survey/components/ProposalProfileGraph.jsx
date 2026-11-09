@@ -73,10 +73,10 @@ function GraphViewport({ series, height, ssd, quantities, totals, totalsStale, p
         <Typography sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#334155" }}>Your profile preview appears here</Typography>
         <Typography sx={{ fontSize: "0.75rem", color: "#64748b" }}>Select a design layer below to view survey levels.</Typography>
       </Stack>}
-      {totals && <Stack direction="column" alignItems="flex-end" aria-label="Earthwork quantities" aria-live="polite" spacing={0.5} sx={{ position: "absolute", right: 8, top: 38, pointerEvents: "none" }}>
-        {totalsStale && <Typography variant="caption" sx={{ px: 1, bgcolor: "white", color: "#64748b" }}>Previous calculation</Typography>}
-        {[["Cutting", "totalCuttingVolume", "#b45309"], ["Filling", "totalFillingVolume", "#2878c7"]].map(([label, key, color]) => <Box key={key} sx={{ px: 1, py: 0.5, borderRadius: 1, border: "1px solid", borderColor: color, bgcolor: "rgba(255,255,255,0.95)", color, fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{label} {Number(totals[key]).toFixed(3)} m&sup3;</Box>)}
-      </Stack>}
+      {totals && <>
+        {totalsStale && <Typography variant="caption" sx={{ position: "absolute", top: 38, right: 8, px: 1, bgcolor: "white", color: "#64748b" }}>Previous calculation</Typography>}
+        <QuantityDeltaBadge showTotals saved={totals} live={totals} sx={{ top: totalsStale ? 60 : 38 }} />
+      </>}
       {previewMessage && <Alert severity="warning" sx={{ position: "absolute", bottom: 8, left: axisWidth + 8, right: 8, maxHeight: "45%", overflow: "auto", py: 0.25, bgcolor: "#fff4e5", fontSize: "0.8rem" }}>{previewMessage}</Alert>}
       {quantities && <QuantityDeltaBadge saved={quantities.saved} live={quantities.live} invalid={quantities.invalid} />}
     </Box>
@@ -96,13 +96,13 @@ function GraphViewport({ series, height, ssd, quantities, totals, totalsStale, p
   </>;
 }
 
-export default function ProposalProfileGraph({ series = [], type = "ls", title, ssd, quantities, totals, totalsStale, previewMessage, sx, stickyTop }) {
+export default function ProposalProfileGraph({ series = [], type = "ls", title, ssd, quantities, totals, totalsStale, previewMessage, sx, stickyTop, squareTop = false }) {
   const [fullScreen, setFullScreen] = useState(false);
   const mobile = useMediaQuery("(max-width:900px)");
   const landscape = useMediaQuery("(orientation: landscape)");
   return <>
     <Box role="region" aria-label={title || (type === "cs" ? "Live CS preview" : "Live LS preview")} sx={{ bgcolor: "white", border: "1px solid #e2e8f5", borderRadius: "20px", p: { xs: 1.5, sm: 2 }, mb: 2, ...(stickyTop != null ? { display: "contents" } : {}), ...sx }}>
-    <GraphViewport plotSx={stickyTop != null ? { position: "sticky", top: stickyTop, zIndex: 1001, borderRadius: "16px", boxShadow: "0 8px 24px rgba(20,32,72,0.08)" } : undefined} series={series} height={{ xs: "clamp(150px, 28dvh, 220px)", sm: 240 }} ssd={ssd} quantities={quantities} totals={totals} totalsStale={totalsStale} previewMessage={previewMessage} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />
+    <GraphViewport plotSx={stickyTop != null ? { position: "sticky", top: stickyTop, zIndex: 1001, borderRadius: squareTop ? "0 0 16px 16px" : "16px", boxShadow: "0 8px 24px rgba(20,32,72,0.08)" } : undefined} series={series} height={{ xs: "clamp(150px, 28dvh, 220px)", sm: 240 }} ssd={ssd} quantities={quantities} totals={totals} totalsStale={totalsStale} previewMessage={previewMessage} fullScreen={fullScreen} onToggleFullScreen={() => setFullScreen(previous => !previous)} />
     </Box>
     <Dialog fullScreen open={fullScreen} onClose={() => setFullScreen(false)}>
       <Box sx={{ p: 1.5, height: "100dvh", boxSizing: "border-box" }}>
