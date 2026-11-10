@@ -18,6 +18,7 @@ export const pdfRendererConfig = () => {
 
 export const renderPdfSnapshot = async (snapshot, { onProgress, onChunk, signal, config = pdfRendererConfig() }) => {
   if (!config) throw Error("The PDF renderer is not configured.");
+  await onProgress({ percent: 0, message: "Launching PDF browser...", estimatedTimeLeft: null });
   const browser = await puppeteer.launch({ executablePath: config.executablePath, headless: true,
     args: ["--disable-dev-shm-usage", ...(process.env.PDF_CHROME_NO_SANDBOX === "true" ? ["--no-sandbox"] : [])] });
   const abort = () => { browser.close().catch(() => {}); };
@@ -30,6 +31,9 @@ export const renderPdfSnapshot = async (snapshot, { onProgress, onChunk, signal,
   try {
     if (signal?.aborted) throw Error("Export lease lost.");
     const page = await browser.newPage();
+    page.on("pageerror", error => {
+      page.evaluate(message => { window.__PDF_EXPORT_ERROR__ = message; }, error.message).catch(() => {});
+    });
     await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
     await page.setBypassServiceWorker(true);
     await page.setRequestInterception(true);
@@ -51,7 +55,11 @@ export const renderPdfSnapshot = async (snapshot, { onProgress, onChunk, signal,
       await onChunk(value);
     });
     await page.evaluateOnNewDocument((value) => { window.__PDF_EXPORT_SNAPSHOT__ = value; }, snapshot);
-    await page.goto(config.url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    lastStage = "Loading PDF renderer";
+    await onProgress({ percent: 0, message: "Loading PDF renderer...", estimatedTimeLeft: null });
+    const response = await page.goto(config.url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    if (!response?.ok()) throw Error(`PDF renderer page returned HTTP ${response?.status() || "no response"}.`);
+    await page.waitForFunction(() => window.__PDF_EXPORT_READY__ || window.__PDF_EXPORT_DONE__ || window.__PDF_EXPORT_ERROR__, { timeout: 60000 });
     await page.waitForFunction(() => window.__PDF_EXPORT_DONE__ || window.__PDF_EXPORT_ERROR__, { timeout: 20 * 60 * 1000, polling: 500 });
     const error = await page.evaluate(() => window.__PDF_EXPORT_ERROR__);
     if (error) throw Error(error);

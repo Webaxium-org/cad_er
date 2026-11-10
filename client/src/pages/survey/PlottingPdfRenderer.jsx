@@ -14,12 +14,19 @@ export default function PlottingPdfRenderer() {
     started.current = true;
     const run = async () => {
       try {
+        await window.pdfExportProgress({ percent: 0, message: "Preparing report charts...", estimatedTimeLeft: null });
         await document.fonts.ready;
         const expected = snapshot.lsPages.length + snapshot.allCs.length;
         const deadline = Date.now() + 120000;
+        let lastReady = -1;
         while (true) {
           const charts = [...document.querySelectorAll(".js-plotly-plot")];
-          if (charts.length === expected && charts.every((chart) => chart._fullLayout?._size?.w > 0 && chart.getBoundingClientRect().width > 0 && chart.getBoundingClientRect().height > 0 && chart.querySelector("svg.main-svg"))) break;
+          const ready = charts.filter((chart) => chart._fullLayout?._size?.w > 0 && chart.getBoundingClientRect().width > 0 && chart.getBoundingClientRect().height > 0 && chart.querySelector("svg.main-svg")).length;
+          if (ready !== lastReady) {
+            lastReady = ready;
+            await window.pdfExportProgress({ percent: 0, message: `Preparing report charts (${ready}/${expected})...`, estimatedTimeLeft: null });
+          }
+          if (ready === expected) break;
           if (Date.now() > deadline) throw Error("The report charts did not finish rendering.");
           await new Promise((resolve) => setTimeout(resolve, 100));
         }

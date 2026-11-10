@@ -1,0 +1,10 @@
+/* The export browser has no external network access. Use installed fonts. */
+* {
+  padding: 0;
+  margin: 0;
+  font-family: Arial, sans-serif !important;
+}
+
+body {
+  background-color: #ffffff;
+}
