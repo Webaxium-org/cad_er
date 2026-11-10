@@ -728,6 +728,8 @@ setFormValues((prev) => ({
     fetchData();
   }, [id]);
 
+  const chainageControl = activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 86, sm: 96 }, bgcolor: "white", borderRadius: 2, "& .MuiOutlinedInput-root": { height: 26, fontSize: "0.6875rem" }, "& .MuiSelect-icon": { fontSize: 18, right: 2 }, "& .MuiSelect-select": { py: 0.25, pl: 0.75 }, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1, fontSize: "0.6875rem" } }} label="Chainage" slotProps={{ inputLabel: { shrink: true } }} value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>;
+
   return (
     <ThemeProvider theme={proposalTheme}>
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: { xs: 12, md: 14 } }}>
@@ -739,7 +741,6 @@ setFormValues((prev) => ({
         action={<Stack direction="row" alignItems="center" spacing={0.5}>
           <Tooltip title="Undo"><span><IconButton size="small" aria-label="Undo proposal change" disabled={!editHistory.past.length || btnLoading} onClick={() => restoreProposal("undo")} sx={historyActionSx}><FiCornerUpLeft /></IconButton></span></Tooltip>
           <Tooltip title="Redo"><span><IconButton size="small" aria-label="Redo proposal change" disabled={!editHistory.future.length || btnLoading} onClick={() => restoreProposal("redo")} sx={historyActionSx}><FiCornerUpRight /></IconButton></span></Tooltip>
-          {activeIsland !== "ls" && <TextField select size="small" sx={{ width: { xs: 90, sm: 120 }, bgcolor: "white", borderRadius: 2, "& .MuiOutlinedInput-root": { height: 32, fontSize: "0.75rem" }, "& .MuiSelect-select": { py: 0.5, pl: 1 }, "& .MuiInputLabel-root": { bgcolor: "white", px: 0.5, borderRadius: 1, fontSize: "0.75rem" } }} label="Chainage" value={selectedChainage || stations[0]?.chainage || ""} onChange={(event) => setSelectedChainage(event.target.value)}>{stations.map((row) => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField>}
         </Stack>}
         onBack={() => navigate(-1)} />
 
@@ -783,7 +784,7 @@ setFormValues((prev) => ({
         </Stack>} />
 
       <Container maxWidth="lg" disableGutters sx={{ mt: -8, position: "relative", width: "100%", minWidth: 0, px: { lg: 3 } }}>
-        <ProposalProfileGraph squareTop={compactHeroHeight > 0} previewMessage={activeIsland !== "templates" && previewError && !previewValidation ? `${preview ? "Showing the last calculated profile. " : "Proposed preview unavailable. "}${previewError}` : undefined} totals={activeIsland === "ls" ? previewQuantity : null} totalsStale={previewBusy || Boolean(previewError)} stickyTop={{ xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
+        <ProposalProfileGraph topRightControl={chainageControl} squareTop={compactHeroHeight > 0} previewMessage={activeIsland !== "templates" && previewError && !previewValidation ? `${preview ? "Showing the last calculated profile. " : "Proposed preview unavailable. "}${previewError}` : undefined} totals={activeIsland === "ls" ? previewQuantity : null} totalsStale={previewBusy || Boolean(previewError)} stickyTop={{ xs: 49 + compactHeroHeight, md: 65 + compactHeroHeight }} series={activeIsland === "templates" && design.templateId ? templateSeries : graphSeries} title={activeIsland === "templates" && design.templateId ? "Example CS preview" : undefined} type={graphType} ssd={graphType === "ls" && design.ssd.enabled ? stoppingSightDistance(design.ssd) : null} />
         <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 3, lg: 0 } }}>
         {activeIsland === "templates" && design.templateId && <Alert severity="info" sx={{ mb: 2 }}>Illustrative profile: 1 m side height and an arbitrary 100 m datum. Edit the CS dimensions for your project; the actual proposal uses surveyed levels.</Alert>}
         {previewBusy && <LinearProgress sx={{ mb: 1, borderRadius: 2 }} />}
