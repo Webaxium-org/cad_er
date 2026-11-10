@@ -70,9 +70,9 @@ const ExportLoader = ({
   progress = null,
   progressMessage = "",
   estimatedTimeLeft = null,
-  onMinimize,
   onCancel,
   cancelling = false,
+  keepWindowOpen = false,
 }) => {
   const [timeLeft, setTimeLeft] = React.useState(duration);
 
@@ -116,7 +116,6 @@ const ExportLoader = ({
           overflow: "hidden",
         }}
       >
-        {onMinimize && <Button onClick={onMinimize} aria-label="Minimize PDF export" sx={{ position: "absolute", right: 8, top: 8, color: "white", zIndex: 1 }}>Minimize</Button>}
         {onCancel && <Button onClick={onCancel} disabled={cancelling} aria-label="Cancel PDF export" sx={{ position: "absolute", left: 8, top: 8, color: "white", zIndex: 1 }}>{cancelling ? "Cancelling..." : "Cancel"}</Button>}
         <Stack spacing={3} alignItems="center" sx={{ width: "100%" }}>
           {/* Animated Icon Container */}
@@ -215,6 +214,9 @@ const ExportLoader = ({
           </Stack>
 
           {/* Custom Modern Progress Bar */}
+          {keepWindowOpen && <Typography variant="body2" sx={{ color: "white", textAlign: "center" }}>
+            Please do not close or refresh this window, or leave this page, until your PDF has downloaded.
+          </Typography>}
           <Box sx={{ width: "100%", pt: 1 }}>
             <Box
               sx={{

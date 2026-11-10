@@ -6,6 +6,7 @@ import SurveyPurpose from "../models/surveyPurpose.js";
 import SurveyRow from "../models/surveyRows.js";
 import { generateSurveyPurpose, generateWaterWayProposalPurpose } from "./surveyController.js";
 import { applyProposalWorkspace } from "../helper/proposalWorkspace.js";
+import { roundProposalLevels } from "../helper/proposalRounding.js";
 
 const calculate = async (req) => {
   if (!mongoose.isValidObjectId(req.params.id)) throw createHttpError(400, "Invalid survey ID");
@@ -66,7 +67,7 @@ const calculate = async (req) => {
     const changed = waterWorkspace || design.mode === "manual" || design.ls?.quantityType || design.ls?.enabled || design.cs?.fixedBottomEnabled || design.cs?.slopeEnabled || design.cs?.superelevationEnabled || design.cs?.camberEnabled;
     const purpose = changed || design.breaks?.length
       ? applyProposalWorkspace(survey.toObject(), scopedBase, plainSeed, settings)
-      : { ...plainSeed, designSettings: settings };
+      : roundProposalLevels({ ...plainSeed, designSettings: settings });
     return { survey, base, purpose };
   } catch (error) { throw createHttpError(400, error.message); }
 };

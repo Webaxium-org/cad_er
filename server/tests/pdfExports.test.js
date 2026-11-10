@@ -6,7 +6,7 @@ import PdfExport from "../models/pdfExport.js";
 import Survey from "../models/survey.js";
 import { createPdfExport, listPdfExports, downloadPdfExport, acknowledgePdfExport } from "../controllers/pdfExportController.js";
 import { validatePdfSnapshot, publicPdfJob } from "../services/pdfExportValidation.js";
-import { pdfClaimFilter, runPdfJob, cleanupPdfExports } from "../services/pdfExportWorker.js";
+import { pdfClaimFilter, runPdfJob, cleanupPdfExports, startPdfExportWorker } from "../services/pdfExportWorker.js";
 import { pdfExportSnapshot } from "./fixtures/pdfExportSnapshot.js";
 
 const owner = "000000000000000000000001", surveyId = "000000000000000000000002", id = "000000000000000000000003";
@@ -15,11 +15,13 @@ const query = (value) => ({ select() { return this; }, sort() { return this; }, 
 const response = () => ({ status(code) { this.code = code; return this; }, set() { return this; }, json(value) { this.data = value; } });
 const invoke = async (handler, request) => { const res = response(); await handler(request, res, (error) => { throw error; }); return res; };
 const configure = (t) => {
-  const prior = { path: process.env.PDF_CHROME_PATH, origin: process.env.PDF_RENDER_ORIGIN };
+  const prior = { path: process.env.PDF_CHROME_PATH, origin: process.env.PDF_RENDER_ORIGIN, enabled: process.env.PDF_EXPORTS_ENABLED };
+  process.env.PDF_EXPORTS_ENABLED = "true";
   process.env.PDF_CHROME_PATH = process.execPath; process.env.PDF_RENDER_ORIGIN = "http://localhost:5194";
   t.after(() => {
     if (prior.path == null) delete process.env.PDF_CHROME_PATH; else process.env.PDF_CHROME_PATH = prior.path;
     if (prior.origin == null) delete process.env.PDF_RENDER_ORIGIN; else process.env.PDF_RENDER_ORIGIN = prior.origin;
+    if (prior.enabled == null) delete process.env.PDF_EXPORTS_ENABLED; else process.env.PDF_EXPORTS_ENABLED = prior.enabled;
   });
 };
 
@@ -40,6 +42,7 @@ test("export creation validates ownership and durably queues the exact report sn
 });
 
 test("idempotent retries return the existing job and owner-scoped lists never disclose snapshot data", async (t) => {
+  configure(t);
   const job = { _id: id, owner, surveyId, status: "queued", snapshot: { secret: true }, fileId: "private" };
   t.mock.method(Survey, "findOne", () => query({ _id: surveyId }));
   t.mock.method(PdfExport, "findOne", (filter) => { assert.equal(filter.owner, owner); return query(job); });
@@ -148,6 +151,7 @@ test("expired leases are reclaimable, retries are bounded, and retention deletes
   await runPdfJob({ ...job(), attempts: 4 }, async () => { rendered = true; });
   assert.equal(rendered, false);
   assert.equal(state.updates.at(-1).change.$set.status, "failed");
+  assert.match(state.updates.at(-1).change.$set.message, /interrupted repeatedly on the server/);
   t.mock.method(PdfExport, "find", () => query([{ _id: id, fileId: id }]));
   const removed = t.mock.method(PdfExport, "deleteOne", async () => {
     assert.ok(state.deleted.some((entry) => entry.name === "pdfExports.files"));
@@ -187,4 +191,17 @@ test("a worker whose lease was cancelled cannot publish a PDF", async (t) => {
     await onChunk(Buffer.from("%PDF-1.7\ncancelled").toString("base64"));
   });
   assert.ok(state.deleted.some(entry => entry.name === "pdfExports.files"));
+});
+
+test("disabled background exports cannot queue jobs or start a worker", async t => {
+  const prior = process.env.PDF_EXPORTS_ENABLED;
+  delete process.env.PDF_EXPORTS_ENABLED;
+  t.after(() => { if (prior == null) delete process.env.PDF_EXPORTS_ENABLED; else process.env.PDF_EXPORTS_ENABLED = prior; });
+  const create = t.mock.method(PdfExport, "create", () => { throw Error("must not queue"); });
+  const claim = t.mock.method(PdfExport, "findOneAndUpdate", () => { throw Error("must not claim"); });
+  await assert.rejects(invoke(createPdfExport, req()), error => error.status === 503 && /temporarily disabled/.test(error.message));
+  const stop = startPdfExportWorker();
+  stop();
+  assert.equal(create.mock.callCount(), 0);
+  assert.equal(claim.mock.callCount(), 0);
 });

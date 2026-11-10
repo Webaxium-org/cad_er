@@ -206,7 +206,7 @@ const AppHeader = ({
                 />
               )}
 
-              {pdfExports && (
+              {pdfExports?.backgroundExportsEnabled && (
                 <Tooltip title="Downloads">
                   <IconButton
                     aria-label="Downloads"

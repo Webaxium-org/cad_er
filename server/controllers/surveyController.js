@@ -1,4 +1,5 @@
 import { proposalLengthRows } from "../helper/proposalLength.js";
+import { roundProposalLevel } from "../helper/proposalRounding.js";
 import Survey from "../models/survey.js";
 import SurveyPurpose from "../models/surveyPurpose.js";
 import SurveyRow from "../models/surveyRows.js";
@@ -2358,8 +2359,7 @@ const generateSurveyPurpose = async (req, res, next) => {
             doHaveCamper || 0,
           );
           proposedLevels.forEach((level) => {
-            const rounded = Math.ceil(level / 0.005) * 0.005;
-            reducedLevels.push(rounded.toFixed(3));
+            reducedLevels.push(roundProposalLevel(level));
           });
         } else {
           const baseLevel = useSolver
@@ -2388,8 +2388,7 @@ const generateSurveyPurpose = async (req, res, next) => {
               value -= (avgProposalTotalWidth / 2) * (doHaveCamper / 100);
             }
 
-            const rounded = Math.round(value / 0.005) * 0.005;
-            reducedLevels.push(rounded.toFixed(3));
+            reducedLevels.push(roundProposalLevel(value));
           });
         }
       } else {
@@ -2432,8 +2431,7 @@ const generateSurveyPurpose = async (req, res, next) => {
             doHaveCamper || 0,
           );
           proposedLevels.forEach((level) => {
-            const rounded = Math.ceil(level / 0.005) * 0.005;
-            reducedLevels.push(rounded.toFixed(3));
+            reducedLevels.push(roundProposalLevel(level));
           });
         } else {
           (reading.intermediateOffsets || []).forEach((_, idx) => {
@@ -2449,8 +2447,7 @@ const generateSurveyPurpose = async (req, res, next) => {
               value -= (avgProposalTotalWidth / 2) * (doHaveCamper / 100);
             }
 
-            const rounded = Math.round(value / 0.005) * 0.005;
-            reducedLevels.push(rounded.toFixed(3));
+            reducedLevels.push(roundProposalLevel(value));
           });
         }
 
@@ -2966,8 +2963,8 @@ const generateWaterWayProposalPurpose = async (req, res, next) => {
         fixedRL = bottomWidthProposedRL || centerLevel;
       }
 
-      const reducedLevels = bottomWidthData?.proposedLevels ||
-        intermediateOffsets.map(() => Number(fixedRL || 0).toFixed(3));
+      const reducedLevels = (bottomWidthData?.proposedLevels ||
+        intermediateOffsets.map(() => fixedRL || 0)).map(roundProposalLevel);
 
       return {
         insertOne: {

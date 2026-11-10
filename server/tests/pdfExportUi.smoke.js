@@ -1,88 +1,97 @@
-// Opt-in browser test against a client dev server on localhost:5194. API calls are mocked.
+﻿// Opt-in browser test against a client dev server on localhost:5194.
 import assert from "node:assert/strict";
-import { writeFile, unlink } from "node:fs/promises";
+import { writeFile, unlink, mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import puppeteer from "puppeteer-core";
 import { pdfRendererConfig } from "../services/pdfExportRenderer.js";
+import { pdfExportSnapshot } from "./fixtures/pdfExportSnapshot.js";
 const html = new URL("../../client/.tmp-pdf-export-ui.html", import.meta.url);
 const jsx = new URL("../../client/.tmp-pdf-export-ui.jsx", import.meta.url);
+const snapshot = pdfExportSnapshot();
+snapshot.allCs = Array.from({ length: 8 }, () => snapshot.allCs[0]);
 const harness = `
-import React from 'react';
+import React,{useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {configureStore} from '@reduxjs/toolkit';
-import {Provider} from 'react-redux';
-import {MemoryRouter, Routes, Route, Link} from 'react-router-dom';
+import {BrowserRouter,Routes,Route,Link} from 'react-router-dom';
 import PdfExportProvider from './src/components/PdfExportProvider';
 import {usePdfExports} from './src/utils/pdfExportContext';
+import Chart from './src/pages/survey/components/CrossSectionChartV2';
+import LsChart from './src/pages/survey/components/CrossSectionChart';
 import {axiosInstance} from './src/utils/config';
-const load=()=>JSON.parse(localStorage.getItem('pdf-test-jobs')||'[]');
-const storeJobs=jobs=>localStorage.setItem('pdf-test-jobs',JSON.stringify(jobs));
-window.completeExport=()=>{storeJobs(load().map(job=>({...job,status:'completed',progress:100,message:'PDF ready to download'})));document.dispatchEvent(new Event('visibilitychange'));};
-axiosInstance.defaults.adapter=async config=>{
- let jobs=load(),data;
- if(config.method==='post') {localStorage.setItem('pdf-test-posts',String(Number(localStorage.getItem('pdf-test-posts')||0)+1));const job={requestKey:JSON.parse(config.data).requestKey,id:String(Date.now()),title:'Mock survey PDF',status:'queued',message:'Queued for PDF generation...',progress:0,expiresAt:new Date(Date.now()+86400000).toISOString()};jobs.push(job);storeJobs(jobs);if(localStorage.getItem('pdf-test-timeout')==='yes'){localStorage.removeItem('pdf-test-timeout');throw Object.assign(new Error('Gateway timeout'),{response:{status:504}});}data={job};}
- else if(config.method==='patch'){const action=JSON.parse(config.data).action;jobs=action==='dismissed'?jobs.filter(job=>!config.url.includes(job.id)):jobs.map(job=>config.url.includes(job.id)?{...job,downloadedAt:new Date().toISOString()}:job);storeJobs(jobs);data={success:true};}
- else if(config.url.endsWith('/download')){localStorage.setItem('pdf-test-downloads',String(Number(localStorage.getItem('pdf-test-downloads')||0)+1));data=new Blob(['%PDF-1.7 test'],{type:'application/pdf'});}
- else data={jobs:config.params?.requestKey?jobs.filter(job=>job.requestKey===config.params.requestKey):jobs};
- return {data,status:200,statusText:'OK',headers:{},config};
-};
-function Start(){const {startExport}=usePdfExports();return <><button onClick={()=>startExport('survey',{})}>Start PDF</button><Link to='/other'>Another page</Link></>;}
-createRoot(document.getElementById('root')).render(<Provider store={configureStore({reducer:()=>({user:{user:{_id:'test-owner',type:'Professional'}}})})}><MemoryRouter><PdfExportProvider><Routes><Route path='/' element={<Start/>}/><Route path='/other' element={<><h1>Another page</h1><Link to='/'>Back</Link></>}/></Routes></PdfExportProvider></MemoryRouter></Provider>);
+const snapshot=${JSON.stringify(snapshot)};
+window.apiRequests=0;
+axiosInstance.defaults.adapter=async()=>{window.apiRequests++;throw Error('Server PDF API must not be called');};
+window.holdEncoding=true;
+const original=HTMLCanvasElement.prototype.toBlob;
+HTMLCanvasElement.prototype.toBlob=function(callback,...args){return original.call(this,blob=>{
+ if(window.failNextEncoding){window.failNextEncoding=false;callback(null);}
+ else if(window.holdEncoding) window.releaseEncoding=()=>{window.holdEncoding=false;callback(blob);};
+ else setTimeout(()=>callback(blob),150);
+},...args);};
+function Start(){const {startExport}=usePdfExports();const [error,setError]=useState('');return <>
+ <button onClick={()=>{startExport('survey',snapshot).catch(e=>setError(e.message));startExport('survey',snapshot).catch(e=>setError(e.message));}}>Start PDF</button>
+ <Link to='/other'>Another page</Link><p role='alert'>{error}</p>
+ <div style={{width:760}}>
+ {snapshot.lsPages.map((p,i)=><div key={'ls'+i} className='pdf-chart-item'><LsChart selectedCs={p.section} chartOptions={snapshot.chartOptions} showLevelBands/></div>)}
+ {snapshot.allCs.map((cs,i)=><div key={i} className='pdf-chart-item'><Chart selectedCs={cs} chartOptions={cs.specificOptions} showLevelBands/></div>)}
+ </div></>;}
+createRoot(document.getElementById('root')).render(<BrowserRouter><PdfExportProvider><Routes>
+ <Route path='/other' element={<><h1>Other page</h1><Link to='/.tmp-pdf-export-ui.html'>Back</Link></>}/>
+ <Route path='*' element={<Start/>}/>
+</Routes></PdfExportProvider></BrowserRouter>);
 `;
 process.env.PDF_RENDER_ORIGIN ||= "http://127.0.0.1:5194";
-let browser, testPage;
+let browser, downloadDir;
 try {
   await writeFile(html, '<html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div id="root"></div><script type="module" src="/.tmp-pdf-export-ui.jsx"></script></body></html>');
   await writeFile(jsx, harness);
+  downloadDir = await mkdtemp(join(tmpdir(), "cader-browser-pdf-"));
   browser = await puppeteer.launch({ executablePath: pdfRendererConfig().executablePath, headless: true });
-  const page = await browser.newPage(), errors = [];
-  testPage = page;
+  const page = await browser.newPage(), errors = [], downloads = [];
   page.on("pageerror", error => errors.push(error.message));
-  const url = "http://127.0.0.1:5194/.tmp-pdf-export-ui.html";
-  await page.goto(url);
+  const session = await browser.target().createCDPSession();
+  await session.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: downloadDir, eventsEnabled: true });
+  session.on("Browser.downloadProgress", value => { if (value.state === "completed") downloads.push(value); });
+  await page.goto("http://127.0.0.1:5194/.tmp-pdf-export-ui.html");
+  await page.waitForFunction(() => document.querySelectorAll('.js-plotly-plot').length === 9 && [...document.querySelectorAll('.js-plotly-plot')].every(chart => chart._fullLayout?._size?.w > 0));
+  await page.click("button");
+  await page.waitForFunction(() => typeof window.releaseEncoding === 'function');
+  assert.equal(await page.evaluate(() => document.body.innerText.includes("Please do not close or refresh this window")), true);
+  assert.equal(await page.evaluate(() => document.body.innerText.includes("Minimize")), false);
+  const unloadPrevented = () => page.evaluate(() => {const event=new Event('beforeunload',{cancelable:true});window.dispatchEvent(event);return event.defaultPrevented;});
+  assert.equal(await unloadPrevented(), true);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Tab");
+  assert.equal(await page.evaluate(() => document.querySelector('[aria-label="PDF download progress"]').contains(document.activeElement)), true);
+  await page.click("a");
+  assert.equal(await page.evaluate(() => location.pathname), "/.tmp-pdf-export-ui.html");
+  await page.evaluate(() => history.back());
+  await page.waitForFunction(() => history.state?.pdfExportLock === true);
+  assert.equal(await page.evaluate(() => location.pathname), "/.tmp-pdf-export-ui.html");
+  await page.evaluate(() => window.releaseEncoding());
+  await page.waitForFunction(() => document.body.innerText.includes("Estimated Time Left: ~"));
+  await page.waitForFunction(() => !document.body.innerText.includes("PREMIERING PROJECT"));
+  for (let i=0; i<50 && !downloads.length; i++) await new Promise(resolve=>setTimeout(resolve,100));
+  assert.equal(downloads.length,1,"Repeated clicks must produce one download");
+  const pdf=await readFile(join(downloadDir,"plotting-and-quantity-report.pdf"));
+  assert.equal(pdf.subarray(0,5).toString(),"%PDF-");
+  assert.equal((pdf.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length,10);
+  assert.equal(await unloadPrevented(),false);
+  assert.equal(await page.evaluate(() => window.apiRequests),0);
+  await page.click("a");
+  await page.waitForSelector("h1");
+  await page.click("a");
   await page.waitForSelector("button");
-  const click = async (text) => {
-    await page.waitForFunction(value => [...document.querySelectorAll("button,a")].some(node => node.textContent.trim() === value), {}, text);
-    await page.evaluate(value => [...document.querySelectorAll("button,a")].find(node => node.textContent.trim() === value).click(), text);
-  };
-  await click("Start PDF");
-  await page.waitForFunction(() => document.body.innerText.includes("PREMIERING PROJECT"));
-  await click("Minimize");
-  await page.waitForFunction(() => document.body.innerText.includes("Continues if you close the app"));
-  await click("Another page");
-  assert.equal(await page.evaluate(() => !!document.querySelector("h1") && document.body.innerText.includes("Mock survey PDF")), true);
-  await click("Expand");
-  await page.waitForFunction(() => document.body.innerText.includes("PREMIERING PROJECT"));
-  await click("Minimize");
-  await page.evaluate(() => window.completeExport());
-  await page.waitForFunction(() => Number(localStorage.getItem("pdf-test-downloads")) === 1);
-  await page.waitForFunction(() => JSON.parse(localStorage.getItem("pdf-test-jobs"))[0].downloadedAt);
-  await page.reload();
-  await page.waitForFunction(() => document.body.textContent.includes("Download PDF"));
-  assert.equal(await page.evaluate(() => Number(localStorage.getItem("pdf-test-downloads"))), 1);
-  await click("Dismiss");
-  await click("Start PDF");
-  await page.waitForFunction(() => JSON.parse(localStorage.getItem("pdf-test-jobs")).length === 1);
-  await page.evaluate(() => {const jobs=JSON.parse(localStorage.getItem('pdf-test-jobs'));jobs[0].status='completed';jobs[0].progress=100;jobs[0].message='PDF ready to download';localStorage.setItem('pdf-test-jobs',JSON.stringify(jobs));});
-  await page.close();
-  const reopened = await browser.newPage();
-  reopened.on("pageerror", error => errors.push(error.message));
-  await reopened.setViewport({ width: 390, height: 844, isMobile: true });
-  await reopened.goto(url);
-  await reopened.waitForFunction(() => Number(localStorage.getItem("pdf-test-downloads")) === 2);
-  assert.equal(await reopened.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await reopened.waitForFunction(() => JSON.parse(localStorage.getItem("pdf-test-jobs"))[0].downloadedAt);
-  const beforePosts = await reopened.evaluate(() => Number(localStorage.getItem("pdf-test-posts")));
-  await reopened.evaluate(() => { localStorage.setItem("pdf-test-timeout", "yes"); [...document.querySelectorAll("button")].find(button => button.textContent.trim() === "Start PDF").click(); });
-  await reopened.waitForFunction(() => document.body.innerText.includes("PREMIERING PROJECT") && JSON.parse(localStorage.getItem("pdf-test-jobs")).some(job => job.status === "queued"));
-  assert.equal(await reopened.evaluate(() => Number(localStorage.getItem("pdf-test-posts"))), beforePosts + 1);
-  await reopened.evaluate(() => window.completeExport());
-  await reopened.waitForFunction(() => Number(localStorage.getItem("pdf-test-downloads")) === 3);
-  assert.deepEqual(errors, []);
-  console.log("PASS: original modal, minimize/expand, navigation, automatic download, reload deduplication, reopening, mobile width, recovery from a 504 without duplicate submissions; no browser errors.");
-} catch (error) {
-  if (testPage && !testPage.isClosed()) console.error(await testPage.evaluate(() => ({ url: location.href, body: document.body.innerText.slice(0, 1500), jobs: localStorage.getItem("pdf-test-jobs") })));
-  throw error;
+  await page.evaluate(() => {window.failNextEncoding=true;window.holdEncoding=false;});
+  await page.click("button");
+  await page.waitForFunction(() => document.querySelector('[role="alert"]').textContent.includes("Could not encode"));
+  assert.equal(await unloadPrevented(),false);
+  assert.equal(await page.$('[aria-label="PDF download progress"]'),null);
+  assert.deepEqual(errors,[]);
+  console.log("PASS: browser-generated 10-page PDF, no PDF API requests, no Minimize, visible warning and ETA, blocked mouse/keyboard/Back navigation, one download on repeated clicks, navigation restored after success and encoding failure.");
 } finally {
   await browser?.close();
-  await Promise.all([unlink(html).catch(() => {}), unlink(jsx).catch(() => {})]);
+  await Promise.all([unlink(html).catch(()=>{}),unlink(jsx).catch(()=>{})]);
+  if (downloadDir?.startsWith(join(tmpdir(),"cader-browser-pdf-"))) await rm(downloadDir,{recursive:true,force:true});
 }

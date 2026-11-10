@@ -8,6 +8,7 @@ import { generateSurveyPurpose, generateWaterWayProposalPurpose } from "../contr
 import { previewProposalWorkspace, saveProposalWorkspace } from "../controllers/proposalWorkspaceController.js";
 import { initialProposalDesign, proposalGraphSeries, proposalWorkspaceRequest } from "../../client/src/utils/proposalWorkspace.js";
 import { calculateVolumeReport } from "../../client/src/utils/volumeReport.js";
+import { applyProposalWorkspace } from "../helper/proposalWorkspace.js";
 
 const id = "000000000000000000000001", owner = "000000000000000000000002", baseId = "000000000000000000000003";
 const response = () => ({ status(code) { this.code = code; return this; }, json(value) { this.data = value; } });
@@ -38,6 +39,27 @@ const setup = (t, type = "Road") => {
 };
 const invoke = async (handler, req) => { const res = response(); await handler(req, res, (error) => { throw error; }); return res; };
 const geometry = (rows) => rows.map(({ chainage, reducedLevels, intermediateOffsets, roadWidth }) => ({ chainage, reducedLevels, intermediateOffsets, roadWidth }));
+
+// With a 5 mm RL grid an arbitrary target quantity may fall between two
+// constructible profiles. Verify the selected profile beats both neighbours.
+const assertClosestRoundedQuantity = (mocks, preview, target) => {
+  const normalize = purpose => ({ ...purpose, rows: purpose.rows.map(row => ({ ...row, offsets: row.intermediateOffsets.map(point => Number(point.offset)) })) });
+  const quantity = purpose => calculateVolumeReport(mocks.survey, normalize(mocks.base), normalize(purpose)).totalCuttingVolume;
+  const error = Math.abs(quantity(preview) - target);
+  const center = Number(mocks.base.pls);
+  const centerRl = row => Number(row.reducedLevels[row.intermediateOffsets.findIndex(point => Number(point.offset) === center)]);
+  for (const delta of [-0.005, 0.005]) {
+    const design = mocks.req.body.design;
+    const neighbour = applyProposalWorkspace(mocks.survey, mocks.base, preview, {
+      ...design, mode: "manual", ls: { ...design.ls, enabled: false },
+      manualLevels: Object.fromEntries(preview.rows.map(row => [row.chainage, centerRl(row) + delta])),
+    });
+    assert.ok(error <= Math.abs(quantity(neighbour) - target) + 0.001, "Use the closest achievable rounded quantity");
+  }
+  for (const row of preview.rows) for (const value of row.reducedLevels) {
+    assert.ok(Math.abs(Number(value) * 200 - Math.round(Number(value) * 200)) < 1e-8);
+  }
+};
 
 test("water workspace previews and saves using switch inputs without legacy CS fields", async t => {
   const mocks = setup(t, "Water Way");
@@ -97,7 +119,7 @@ test("water switch preview follows varying surveyed levels without requiring a c
   assert.equal(series[1].points.filter(Boolean).length, 3);
   assert.ok(series[1].points[0].y > series[1].points[2].y + 11.9);
   const report = calculateVolumeReport(mocks.survey, normalized(mocks.base), normalized(preview));
-  assert.ok(Math.abs(report.totalCuttingVolume - 40) < 0.2);
+  assertClosestRoundedQuantity(mocks, preview, 40);
   assert.equal(report.totalFillingVolume, 0);
 });
 
@@ -132,7 +154,7 @@ test("water grade optimisation finds a feasible elevation before constructing ba
     assert.ok(Math.abs(end.y - start.y - Number(grade) / 100 * 20) < 0.002);
     const report = calculateVolumeReport(mocks.survey, normalized(mocks.base), normalized(preview));
     assert.equal(report.totalFillingVolume, 0);
-    if (strategy === "quantity") assert.ok(Math.abs(report.totalCuttingVolume - 120) < 0.2);
+    if (strategy === "quantity") assertClosestRoundedQuantity(mocks, preview, 120);
     else assert.ok(report.totalCuttingVolume < 120);
   }
   design.ls.grade = "100";
@@ -281,4 +303,34 @@ test("custom slope anchors at its from-chainage, preserves outside rows and save
   assert.deepEqual(geometry(mocks.rowsCreate.mock.calls[0].arguments[0]), geometry(preview.rows));
   mocks.req.body.design.ls.custom.denominator = "0";
   await assert.rejects(invoke(previewProposalWorkspace, mocks.req), /Invalid custom slope/);
+});
+
+test("manual proposal preview and saved rows use the same nearest-5-mm RLs", async t => {
+  const mocks = setup(t);
+  mocks.req.body.design = { mode: "manual", manualLevels: { "0/000": "9.114", "0/010": "9.112", "0/020": "9.1175" } };
+  const original = structuredClone(mocks.base.toObject());
+  const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+  assert.deepEqual(preview.rows.map(row => row.reducedLevels), [Array(3).fill("9.115"), Array(3).fill("9.110"), Array(3).fill("9.120")]);
+  await invoke(saveProposalWorkspace, mocks.req);
+  assert.deepEqual(geometry(mocks.rowsCreate.mock.calls[0].arguments[0]), geometry(preview.rows));
+  assert.deepEqual(mocks.base.toObject(), original);
+});
+
+for (const type of ["Road", "Water Way"]) test(`${type}: combined width All and offset ranges preview and save the same rounded geometry`, async t => {
+  const mocks = setup(t, type);
+  const design = structuredClone(initialProposalDesign);
+  design.template = type === "Water Way" ? "water" : "road";
+  Object.assign(design.cs, { fixedBottomEnabled: true, widthMode: "custom", fixedLhs: "2:1", fixedRhs: "1:1", widthRanges: [
+    { from: "all", to: "", widthOffset: "0", side: "all", bottomWidth: "4" },
+    { from: "0/010", to: "0/020", widthOffset: "-2", side: "all", bottomWidth: "2" },
+  ] });
+  for (const quantityType of ["cutting", "filling"]) {
+    design.ls.quantityType = quantityType;
+    mocks.req.body = proposalWorkspaceRequest(mocks.req.body.form, design, [], type === "Water Way");
+    const preview = (await invoke(previewProposalWorkspace, mocks.req)).data.purpose;
+    await invoke(saveProposalWorkspace, mocks.req);
+    assert.deepEqual(geometry(mocks.rowsCreate.mock.calls.at(-1).arguments[0]), geometry(preview.rows));
+    assert.deepEqual(preview.designSettings.cs.widthRanges, design.cs.widthRanges);
+    for (const row of preview.rows) for (const value of row.reducedLevels) assert.ok(Math.abs(Number(value) * 200 - Math.round(Number(value) * 200)) < 1e-8);
+  }
 });

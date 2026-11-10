@@ -51,3 +51,54 @@ test("custom slope ranges apply the entered H:V and reject reversed chainages", 
  assert.ok(result.rows[0].intermediateOffsets.some(p=>Number(p.offset)===-1));
  assert.throws(()=>applyProposalWorkspace(survey,fixture(12),fixture(10),{cs:{...cs,slopeRanges:[{...cs.slopeRanges[0],from:"0/010",to:"0/000"}]}}));
 });
+
+test("unified width All row preserves legacy centred and offset geometry for both design conditions", () => {
+  for (const type of ["Road", "Water Way"]) for (const condition of ["cutting", "filling"]) {
+    const context = { type, separator: "/" }, base = fixture(12), seed = fixture(10);
+    const settings = { mode: "manual", manualLevels: { "0/000": 10, "0/010": 10 }, ls: { quantityType: condition } };
+    const fixed = { fixedBottomEnabled: true, bottomWidth: 2, fixedLhs: "2:1", fixedRhs: "1:1" };
+    const legacy = applyProposalWorkspace(context, base, seed, { ...settings, cs: { ...fixed, widthMode: "all", side: "all" } });
+    const unified = applyProposalWorkspace(context, base, seed, { ...settings, cs: { ...fixed, widthMode: "custom", widthRanges: [{ from: "all", to: "", side: "all", widthOffset: "0", bottomWidth: 2 }] } });
+    assert.deepEqual(unified.rows, legacy.rows);
+    assert.deepEqual(proposalDesignQuantity(context, base, unified), proposalDesignQuantity(context, base, legacy));
+    for (const side of ["all", "lhs", "rhs"]) for (const offset of [-2, 0, 2]) {
+      const entry = { side, widthOffset: String(offset), bottomWidth: 2 };
+      const previous = applyProposalWorkspace(context, base, seed, { ...settings, cs: { ...fixed, widthMode: "custom", widthRanges: [{ ...entry, from: "0/000", to: "0/010" }] } });
+      const current = applyProposalWorkspace(context, base, seed, { ...settings, cs: { ...fixed, widthMode: "custom", widthRanges: [{ ...entry, from: "all", to: "" }] } });
+      assert.deepEqual(current.rows, previous.rows, `${type}/${condition}/${side}/${offset}`);
+      const report = calculateVolumeReport(context, normalized(base), normalized(current));
+      const quantity = proposalDesignQuantity(context, base, current);
+      assert.ok(Math.abs(quantity.cutting - report.totalCuttingVolume) < 0.02);
+      assert.ok(Math.abs(quantity.filling - report.totalFillingVolume) < 0.02);
+    }
+  }
+});
+
+test("width rows combine All defaults and chainage overrides with last matching row winning", () => {
+  const chainages = ["0/000", "0/010", "0/020", "0/030"];
+  const base = fixture(12), seed = fixture(10);
+  base.rows = chainages.map(chainage => ({ ...structuredClone(base.rows[0]), chainage }));
+  seed.rows = chainages.map(chainage => ({ ...structuredClone(seed.rows[0]), chainage }));
+  const result = applyProposalWorkspace(survey, base, seed, {
+    mode: "manual", manualLevels: Object.fromEntries(chainages.map(chainage => [chainage, 10])),
+    cs: { fixedBottomEnabled: true, fixedLhs: "1:1", fixedRhs: "1:1", widthMode: "custom", widthRanges: [
+      { from: "all", to: "", widthOffset: "0", side: "all", bottomWidth: 4 },
+      { from: "0/010", to: "0/020", widthOffset: "-2", side: "lhs", bottomWidth: 2 },
+      { from: "0/020", to: "0/030", widthOffset: "2", side: "rhs", bottomWidth: 2 },
+    ] },
+  });
+  const flatOffsets = result.rows.map(row => row.intermediateOffsets.filter((_, index) => Number(row.reducedLevels[index]) === 10).map(point => Number(point.offset)));
+  assert.deepEqual(flatOffsets, [[-2, 0, 2], [-4, -2], [2, 4], [2, 4]]);
+  assert.deepEqual(seed.rows[0].reducedLevels, [10, 10, 10]);
+});
+
+test("unified width offset remains relative to PLS and rejects invalid geometry", () => {
+  const base = { ...fixture(12), pls: 1 }, seed = { ...fixture(10), pls: 1 };
+  const cs = { fixedBottomEnabled: true, fixedLhs: "1:1", fixedRhs: "1:1", widthMode: "custom", widthRanges: [{ from: "all", to: "", widthOffset: "-2", side: "all", bottomWidth: 2 }] };
+  const result = applyProposalWorkspace(survey, base, seed, { cs });
+  const flat = result.rows[0].intermediateOffsets.filter((_, index) => Number(result.rows[0].reducedLevels[index]) === 10).map(point => Number(point.offset));
+  assert.deepEqual(flat, [-2, 0]);
+  for (const change of [{ widthOffset: "" }, { widthOffset: "NaN" }, { widthOffset: 10 }, { bottomWidth: 0 }, { side: "invalid" }, { from: "0/010", to: "0/000" }]) {
+    assert.throws(() => applyProposalWorkspace(survey, base, seed, { cs: { ...cs, widthRanges: [{ ...cs.widthRanges[0], ...change }] } }));
+  }
+});

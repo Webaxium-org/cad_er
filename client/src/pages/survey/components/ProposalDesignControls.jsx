@@ -1,7 +1,7 @@
 import { proposalTemplates } from "../../../utils/proposalTemplates";
 import { useState } from "react";
 import AlertDialogSlide from "../../../components/AlertDialogSlide";
-import { Alert, Box, Button, FormControlLabel, Grid, IconButton, LinearProgress, MenuItem, Paper, Stack, Switch, Radio, RadioGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, FormControlLabel, Grid, IconButton, LinearProgress, MenuItem, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import { FiPlus, FiTrash2, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import { gradeToSlopeRatio, slopeRatioToGrade, reverseSlopeRatio } from "../../../utils/slopeRatio";
 import { stoppingSightDistance } from "../../../utils/proposalWorkspace";
@@ -296,29 +296,60 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
       {[false, true].map(width => {
         const enabled = width ? "fixedBottomEnabled" : "slopeEnabled", mode = width ? "widthMode" : "slopeMode", ranges = width ? "widthRanges" : "slopeRanges";
         const filledTop = width && isWaterWay && design.ls.quantityType === "filling";
-        const custom = design.cs[mode] === "custom", entries = custom ? (design.cs[ranges] || []) : [design.cs];
-        const edit = (index, key, value) => custom ? update("cs", ranges, entries.map((row, i) => i === index ? { ...row, [key]: value } : row)) : update("cs", key, value);
+        const custom = design.cs[mode] === "custom";
+        const entries = custom ? (design.cs[ranges] || []) : width ? [{
+          from: "all", to: "", widthOffset: "0", side: design.cs.side || "all", bottomWidth: design.cs.bottomWidth ?? "",
+        }] : [design.cs];
+        const edit = (index, key, value) => {
+          if (width) {
+            onChange({ ...design, cs: { ...design.cs, widthMode: "custom",
+              widthRanges: entries.map((row, i) => i === index ? { ...row, [key]: value } : row) } });
+          } else if (custom) update("cs", ranges, entries.map((row, i) => i === index ? { ...row, [key]: value } : row));
+          else update("cs", key, value);
+        };
+        const selectStart = (index, value) => {
+          if (width) {
+            onChange({ ...design, cs: { ...design.cs, widthMode: "custom", widthRanges: entries.map((row, i) => i === index ? {
+              ...row, from: value === "__all__" ? "all" : value,
+              to: value === "__all__" ? "" : row.to || stations.at(-1)?.chainage || "",
+            } : row) } });
+            return;
+          }
+          const entry = entries[index];
+          if (value === "__all__") {
+            onChange({ ...design, cs: { ...design.cs, slopeMode: "all",
+              side: entry.side || "all", vertical: entry.vertical ?? "1", horizontal: entry.horizontal ?? "1", berm: entry.berm ?? "0" } });
+          } else if (!custom) {
+            onChange({ ...design, cs: { ...design.cs, slopeMode: "custom", slopeRanges: [{
+              from: value, to: stations.at(-1)?.chainage || "", side: entry.side || "all",
+              vertical: entry.vertical ?? "1", horizontal: entry.horizontal ?? "1", berm: entry.berm ?? "0",
+            }] } });
+          } else edit(index, "from", value);
+        };
         return <Box key={enabled}>
-          <FormControlLabel label={width ? `Custom width design (Fixed ${filledTop ? "top" : "bottom"} width)` : "Side slope V:H"} control={<Switch checked={Boolean(design.cs[enabled])} onChange={event => onChange({ ...design, cs: { ...design.cs, [enabled]: event.target.checked, [width ? "slopeEnabled" : "fixedBottomEnabled"]: false } })} />} />
+          <FormControlLabel label={width ? "Design width" : "Design side slope"} control={<Switch checked={Boolean(design.cs[enabled])} onChange={event => onChange({ ...design, cs: { ...design.cs, [enabled]: event.target.checked, [width ? "slopeEnabled" : "fixedBottomEnabled"]: false } })} />} />
           {design.cs[enabled] && <Stack spacing={1.5} sx={{ mt: 1, width: "100%", boxSizing: "border-box", p: { xs: 1.5, sm: 2.5 }, border: "1px solid #e0e7ff", borderRadius: "20px", minWidth: 0, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }}>
             {width && isWaterWay && <Typography variant="body2" color="text.secondary">{filledTop ? "Filling: flat top with side slopes falling outward." : "Cutting: flat bed with side slopes rising outward."} Change the design condition in the LS tab.</Typography>}
-            <RadioGroup value={custom ? "custom" : "all"} onChange={event => update("cs", mode, event.target.value)}>{[["all", width ? "Centre to both sides" : "All"], ["custom", width ? "Any offset" : "Custom"]].map(([value, label]) => <FormControlLabel key={value} value={value} control={<Radio />} label={label} />)}</RadioGroup>
-            {custom && <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}><Typography fontWeight={600} color="#334155">{width ? "Chainage ranges & widths" : "Chainage ranges & slopes"}</Typography><Button variant="contained" disableElevation sx={{ alignSelf: "flex-end", flexShrink: 0, bgcolor: "#6366f1", borderRadius: "10px", textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }} startIcon={<FiPlus />} onClick={() => update("cs", ranges, [...entries, { from: stations[0]?.chainage || "", to: stations.at(-1)?.chainage || "", side: "all", horizontal: "1", vertical: "1", berm: "0", bottomWidth: "", widthOffset: "0" }])}>Add range</Button></Stack>}
-            <TableContainer sx={{ border: "1px solid #e0e7ff", borderRadius: "14px", maxHeight: 360 }}><Table size="small" stickyHeader sx={{ width: "100%", minWidth: custom ? (width ? 808 : 748) : 400, tableLayout: "fixed", "& th, & td": { px: 2, py: 1 }, "& th": { whiteSpace: "nowrap", bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 700 }, "& td": { borderColor: "#eef2ff", py: 1.5 }, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }}>
-              <colgroup>{custom ? <>
+            {(width || custom) && <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}><Typography fontWeight={600} color="#334155">{width ? "Chainage ranges & widths" : "Chainage ranges & slopes"}</Typography><Button variant="contained" disableElevation sx={{ alignSelf: "flex-end", flexShrink: 0, bgcolor: "#6366f1", borderRadius: "10px", textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }} startIcon={<FiPlus />} onClick={() => onChange({ ...design, cs: { ...design.cs, [mode]: "custom", [ranges]: [...entries, { from: stations[0]?.chainage || "", to: stations.at(-1)?.chainage || "", side: "all", horizontal: "1", vertical: "1", berm: "0", bottomWidth: "", widthOffset: "0" }] } })}>Add range</Button></Stack>}
+            {width && <Typography variant="caption" color="text.secondary">All covers every chainage. Later rows override earlier rows where chainage ranges overlap.</Typography>}
+            <TableContainer sx={{ border: "1px solid #e0e7ff", borderRadius: "14px", maxHeight: 360 }}><Table size="small" stickyHeader sx={{ width: "100%", minWidth: width ? 808 : 748, tableLayout: "fixed", "& th, & td": { px: 2, py: 1 }, "& th": { whiteSpace: "nowrap", bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 700 }, "& td": { borderColor: "#eef2ff", py: 1.5 }, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }}>
+              <colgroup>
                 <col style={{ width: width ? "21%" : "24%" }} /><col style={{ width: width ? "21%" : "24%" }} />
                 {width && <col style={{ width: "16%" }} />}
                 <col style={{ width: "14%" }} /><col style={{ width: "18%" }} />
                 {!width && <col style={{ width: "14%" }} />}<col style={{ width: width ? "10%" : "6%" }} />
-              </> : <><col style={{ width: 110 }} /><col />{!width && <col style={{ width: 110 }} />}</>}</colgroup>
-              <TableHead><TableRow>{custom && <><TableCell>Start chainage</TableCell><TableCell>End chainage</TableCell></>}{width && custom && <TableCell>Offset (m)</TableCell>}<TableCell>Side</TableCell><TableCell>{width ? "Width (m)" : "Slope V:H"}</TableCell>{!width && <TableCell>Berm (m)</TableCell>}{custom && <TableCell />}</TableRow></TableHead>
+              </colgroup>
+              <TableHead><TableRow><TableCell>Start chainage</TableCell><TableCell>End chainage</TableCell>{width && <TableCell>Offset (m)</TableCell>}<TableCell>Side</TableCell><TableCell>{width ? "Width (m)" : "Slope V:H"}</TableCell>{!width && <TableCell>Berm (m)</TableCell>}<TableCell /></TableRow></TableHead>
               <TableBody>{entries.map((entry, index) => <TableRow key={index}>
-                {custom && ["from", "to"].map(key => <TableCell key={key}><TextField fullWidth select size="small" label={key === "from" ? "Start" : "End"} slotProps={{ inputLabel: { shrink: true } }} value={entry[key]} onChange={event => edit(index, key, event.target.value)}>{stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField></TableCell>)}
-                {width && custom && <TableCell><TextField fullWidth size="small" type="number" label="Offset" value={entry.widthOffset ?? "0"} onChange={event => edit(index, "widthOffset", event.target.value)} /></TableCell>}
-                <TableCell><TextField fullWidth select size="small" label="Side" sx={{ minWidth: 90 }} value={entry.side || "all"} onChange={event => edit(index, "side", event.target.value)}>{[["lhs", "LHS"], ["rhs", "RHS"], ["all", "All"]].map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField></TableCell>
-                <TableCell>{width ? <TextField fullWidth size="small" type="number" label="Width" value={entry.bottomWidth ?? ""} onChange={event => edit(index, "bottomWidth", event.target.value)} /> : <Stack direction="row" alignItems="center" spacing={0.75} divider={<Typography aria-hidden="true" sx={{ color: "#64748b", fontWeight: 700 }}>:</Typography>}>{["vertical", "horizontal"].map((key, part) => <TextField fullWidth key={key} size="small" type="number" label={part ? "H" : "V"} sx={{ minWidth: 0, width: 44, flexShrink: 0, "& input": { px: 0.5, MozAppearance: "textfield" }, "& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button": { WebkitAppearance: "none", margin: 0 } }} value={entry[key] ?? "1"} onChange={event => edit(index, key, event.target.value)} />)}</Stack>}</TableCell>
+                {["from", "to"].map(key => {
+                  const all = width ? entry.from === "all" : !custom;
+                  return <TableCell key={key}><TextField fullWidth select size="small" label={key === "from" ? "Start" : "End"} disabled={all && key === "to"} slotProps={{ inputLabel: { shrink: true } }} value={all ? key === "from" ? "__all__" : "" : entry[key] ?? ""} onChange={event => key === "from" ? selectStart(index, event.target.value) : edit(index, key, event.target.value)}>{key === "from" && <MenuItem value="__all__">All</MenuItem>}{stations.map(row => <MenuItem key={row.chainage} value={row.chainage}>{row.chainage}</MenuItem>)}</TextField></TableCell>;
+                })}
+                {width && <TableCell><TextField fullWidth size="small" type="number" label="Offset" slotProps={{ htmlInput: { step: "any" } }} value={entry.widthOffset ?? "0"} onChange={event => edit(index, "widthOffset", event.target.value)} /></TableCell>}
+                <TableCell><TextField fullWidth select size="small" label="Side" sx={{ minWidth: 90 }} value={entry.side || "all"} onChange={event => edit(index, "side", event.target.value)}>{(width ? [["all", "All"], ["lhs", "LHS"], ["rhs", "RHS"]] : [["lhs", "LHS"], ["rhs", "RHS"], ["all", "All"]]).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField></TableCell>
+                <TableCell>{width ? <TextField fullWidth size="small" type="number" label="Width" slotProps={{ htmlInput: { step: "any" } }} value={entry.bottomWidth ?? ""} onChange={event => edit(index, "bottomWidth", event.target.value)} /> : <Stack direction="row" alignItems="center" spacing={0.75} divider={<Typography aria-hidden="true" sx={{ color: "#64748b", fontWeight: 700 }}>:</Typography>}>{["vertical", "horizontal"].map((key, part) => <TextField fullWidth key={key} size="small" type="number" label={part ? "H" : "V"} sx={{ minWidth: 0, width: 44, flexShrink: 0, "& input": { px: 0.5, MozAppearance: "textfield" }, "& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button": { WebkitAppearance: "none", margin: 0 } }} value={entry[key] ?? "1"} onChange={event => edit(index, key, event.target.value)} />)}</Stack>}</TableCell>
                 {!width && <TableCell><TextField fullWidth size="small" type="number" label="Berm" value={entry.berm ?? "0"} onChange={event => edit(index, "berm", event.target.value)} /></TableCell>}
-                {custom && <TableCell><IconButton color="error" aria-label={"Remove range " + (index + 1)} onClick={() => update("cs", ranges, entries.filter((_, i) => i !== index))}><FiTrash2 /></IconButton></TableCell>}
+                <TableCell>{(width || custom) && <IconButton color="error" disabled={width && entries.length <= 1} aria-label={"Remove range " + (index + 1)} onClick={() => update("cs", ranges, entries.filter((_, i) => i !== index))}><FiTrash2 /></IconButton>}</TableCell>
               </TableRow>)}</TableBody>
             </Table></TableContainer>
             {width && <Stack direction="row" spacing={1}>{[["fixedLhs", "LHS slope (V:H)"], ["fixedRhs", "RHS slope (V:H)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={reverseSlopeRatio(design.cs[key] ?? "1:1")} onChange={event => update("cs", key, reverseSlopeRatio(event.target.value))} />)}</Stack>}

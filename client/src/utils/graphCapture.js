@@ -5,8 +5,13 @@ export const GRAPH_EXPORT_JPEG_QUALITY = 0.98;
 
 export const loadExportImage = src => new Promise((resolve, reject) => {
   const image = new Image();
-  image.onload = () => resolve(image);
-  image.onerror = () => reject(new Error("Could not render the graph for PDF export."));
+  const timeout = setTimeout(() => {
+    image.onload = image.onerror = null;
+    image.src = "";
+    reject(new Error("Graph image decoding timed out."));
+  }, 30000);
+  image.onload = () => { clearTimeout(timeout); resolve(image); };
+  image.onerror = () => { clearTimeout(timeout); reject(new Error("Could not render the graph for PDF export.")); };
   image.src = src;
 });
 

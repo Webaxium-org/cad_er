@@ -6,9 +6,11 @@ import Survey from "../models/survey.js";
 import { pdfBucket } from "../services/pdfExportStorage.js";
 import { publicPdfJob, validatePdfSnapshot } from "../services/pdfExportValidation.js";
 import { pdfRendererConfig } from "../services/pdfExportRenderer.js";
+import { serverPdfExportsEnabled } from "../services/pdfExportAvailability.js";
 
 export const createPdfExport = async (req, res, next) => {
   try {
+    if (!serverPdfExportsEnabled()) throw createHttpError(503, "Background PDF exports are temporarily disabled. Refresh the app and download the PDF from the report page.");
     req.pdfExportStage = "snapshot validation";
     const snapshot = validatePdfSnapshot(req.body);
     if (!mongoose.isValidObjectId(req.body.surveyId)) throw createHttpError(400, "Invalid survey.");

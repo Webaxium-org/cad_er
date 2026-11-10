@@ -1,8 +1,19 @@
-# Background plotting PDF exports
+# PDF downloads
 
-The browser uploads a frozen report snapshot, then the API returns `202` once MongoDB has stored the job. Only after that acknowledgement can the app be closed safely. A server worker renders the same React charts and shared jsPDF exporter used by the report. The client does not need to remain connected. The server stores the resulting PDF privately in MongoDB GridFS and the app polls for jobs belonging to the signed-in user.
+Plotting PDFs are currently generated and downloaded in the user's browser. The
+progress dialog blocks navigation, warns against closing or refreshing the
+window, and shows an estimate based on completed charts. Minimize and the
+background Downloads menu are disabled. The client does not submit or poll PDF jobs.
 
-The existing export modal has a Minimize button. The progress card survives navigation within the authenticated app. After reopening, queued/running/completed jobs are restored from the API; a completed PDF starts downloading, with a Download PDF button available if the browser blocks automatic saving. A closed app cannot save a file onto the user's device: the server **generates and stores** it until the browser returns.
+Background generation is disabled by default, including processing previously
+queued jobs. Leave `PDF_EXPORTS_ENABLED` unset or set it to `false` on the server.
+New background submissions receive HTTP 503, directing older clients to refresh.
+Deploy both client and server for this temporary browser-only mode.
+
+The background implementation is retained for future use. Setting
+`PDF_EXPORTS_ENABLED=true` re-enables server job acceptance and the worker; it
+does not switch the current browser UI back to background exports. The remaining
+deployment notes describe that retained server implementation.
 
 ## Required deployment
 
@@ -78,6 +89,36 @@ node --test --test-isolation=none server/tests/pdfExports.test.js
 
 For the real headless-render smoke check, run the client dev server on `127.0.0.1:5194`, then run `node server/tests/pdfExportRender.smoke.js` from the repository root. It uses a synthetic survey, not a live account. Set `PDF_CHROME_PATH` if Chromium is not at a detected path. Set `PDF_RENDER_ORIGIN` to check another deployed client build.
 
-`node server/tests/pdfExportUi.smoke.js` checks the modal, minimize/expand, navigation, download, and reopening flow in a real browser with a mocked API. It creates and removes a temporary local test page. The render smoke test writes its PDF to the OS temporary directory, or to `PDF_SMOKE_OUTPUT` if supplied.
+`node server/tests/pdfExportUi.smoke.js` checks browser-only generation of a real
+PDF, the keep-window-open warning, ETA, blocked navigation, duplicate-click
+protection, and recovery after encoding failure. It rejects unexpected API calls
+and creates and removes a temporary local test page and download directory. The
+separate render smoke test writes its PDF to the OS temporary directory, or to
+`PDF_SMOKE_OUTPUT` if supplied.
+
+### Worker restarts during chart capture
+
+The renderer mounts one chart at a time, releases capture canvases after each page,
+and avoids the intermediate base64 JPEG copy. Deploy both client and server for
+these changes. An interrupted job can be reclaimed after its lease expires, up to
+three attempts. Increasing retries or the stall timeout does not fix a host restart.
+
+Runtime logs now include `PDF export resources` at startup and every 15 seconds:
+`containerBytes` includes Chromium and Node, `containerLimitBytes` is the Linux
+cgroup limit, and `stage` identifies rendering, capturing, or encoding. On systems
+without cgroups only Node RSS is available. Compare these with App Platform memory
+and restart events; exit code 128 by itself does not establish an OOM kill.
+
+For a wider stress check, set `PDF_SMOKE_CS_COUNT=35`,
+`PDF_SMOKE_CHART_WIDTH=2000`, and `PDF_SMOKE_CPU_RATE=4` before running the render
+smoke test. It asserts that only one live chart is mounted and that every chart
+appears in the PDF. CPU throttling is not a container memory-limit test; validate
+the real survey on the deployed instance before considering production resolved.
 
 References: [Puppeteer launch options](https://pptr.dev/api/puppeteer.launchoptions), [MongoDB GridFS](https://www.mongodb.com/docs/drivers/node/current/crud/gridfs/).
+
+Long-running exports use short worker-side status checks rather than one pending
+browser evaluation. This avoids the browser protocol's separate three-minute
+request timeout while retaining the export time limit and no-progress watchdog.
+The smoke test includes a synthetic export whose duration exceeds its per-request
+protocol timeout to prevent that regression.

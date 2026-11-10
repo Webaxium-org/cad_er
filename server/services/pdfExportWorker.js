@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import PdfExport from "../models/pdfExport.js";
 import { pdfBucket, deletePdfFile } from "./pdfExportStorage.js";
 import { pdfRendererConfig, renderPdfSnapshot } from "./pdfExportRenderer.js";
+import { pdfExportResources } from "./pdfExportResources.js";
+import { serverPdfExportsEnabled } from "./pdfExportAvailability.js";
 
 export const pdfClaimFilter = (now) => ({ active: true, expiresAt: { $gt: now }, $or: [
   { status: "queued" }, { status: "running", leaseUntil: { $lt: now } },
@@ -12,24 +14,33 @@ export const runPdfJob = async (job, render = renderPdfSnapshot) => {
   const match = { _id: job._id, leaseToken: job.leaseToken, status: "running" };
   const controller = new AbortController();
   let upload, heartbeat, bytes = 0, streamError;
+  let stage = "Starting PDF renderer";
+  const startedAt = Date.now();
+  const logResources = async () => console.info("PDF export resources", JSON.stringify({
+    jobId: String(job._id), attempt: job.attempts, stage, elapsedMs: Date.now() - startedAt,
+    ...await pdfExportResources(),
+  }));
   const fileId = new mongoose.Types.ObjectId();
   try {
     if (job.fileId) await deletePdfFile(job.fileId);
     if (job.attempts > 3) throw Error("Export was interrupted repeatedly. Please start a new export.");
     const reserved = await PdfExport.updateOne(match, { $set: { fileId } });
     if (!reserved.matchedCount) return;
+    await logResources();
     upload = pdfBucket().openUploadStreamWithId(fileId, "plotting-and-quantity-report.pdf", { metadata: { owner: job.owner, jobId: job._id }, contentType: "application/pdf" });
     upload.on("error", (error) => { streamError = error; controller.abort(); });
     heartbeat = setInterval(async () => {
       try {
         const result = await PdfExport.updateOne(match, { $set: { leaseUntil: new Date(Date.now() + 120000) } });
         if (!result.matchedCount) controller.abort();
+        else await logResources();
       } catch { controller.abort(); }
     }, 15000);
     let lastProgress = 0;
     await render(job.snapshot, {
       signal: controller.signal,
       onProgress: async (progress) => {
+        stage = String(progress.message || "Generating PDF...").slice(0, 200);
         if (Date.now() - lastProgress < 1000) return;
         lastProgress = Date.now();
         await PdfExport.updateOne(match, { $set: {
@@ -55,8 +66,11 @@ export const runPdfJob = async (job, render = renderPdfSnapshot) => {
     if (!result.matchedCount) await deletePdfFile(fileId);
   } catch (error) {
     if (upload && !upload.writableFinished) await upload.abort().catch(() => {});
-    console.error("PDF export failed", String(job._id), error.message);
-    const failed = await PdfExport.updateOne(match, { $set: { active: false, status: "failed", message: "PDF generation failed. Please start a new export or contact support." },
+    console.error("PDF export failed", String(job._id), stage, error.message);
+    const message = job.attempts > 3
+      ? "PDF generation was interrupted repeatedly on the server. Please contact support before retrying."
+      : "PDF generation failed. Please start a new export or contact support.";
+    const failed = await PdfExport.updateOne(match, { $set: { active: false, status: "failed", message },
       $unset: { snapshot: 1, fileId: 1, leaseToken: 1, leaseUntil: 1 } });
     // A completion write can succeed even if its acknowledgement is lost.
     // Never delete a PDF still referenced by a completed job in that case.
@@ -73,6 +87,7 @@ export const cleanupPdfExports = async () => {
 };
 
 export const startPdfExportWorker = () => {
+  if (!serverPdfExportsEnabled()) { console.info("Background PDF exports disabled: downloads are generated in the browser."); return () => {}; }
   if (!pdfRendererConfig()) { console.warn("Background PDF exports disabled: configure PDF_RENDER_ORIGIN and PDF_CHROME_PATH."); return () => {}; }
   let busy = false, stopped = false, lastCleanup = 0;
   const tick = async () => {

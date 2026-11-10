@@ -130,6 +130,8 @@ export const exportPlottingPdf = async ({
   download = true,
   setProgress,
   onError,
+  getChart,
+  chartCount,
 }) => {
   if (setLoading) setLoading(true);
   if (setProgress) setProgress({ percent: 0, message: "Initializing document...", estimatedTimeLeft: null });
@@ -137,24 +139,25 @@ export const exportPlottingPdf = async ({
   let captureSession;
   try {
     const chartItems = document.querySelectorAll(".pdf-chart-item");
+    const count = getChart ? chartCount : chartItems.length;
     let totalSteps = 1; // Cover page
     if (tableData?.rows?.length > 0) totalSteps++;
     if (tableData?.areaReport?.length > 0) totalSteps++;
-    totalSteps += chartItems.length;
+    totalSteps += count;
 
     let currentStep = 0;
-    const startTime = Date.now();
+    let chartStartTime = null, completedCharts = 0;
 
-    const updateProgress = (message) => {
-      currentStep++;
+    const updateProgress = (message, advance = true) => {
+      if (advance) currentStep++;
       const percent = Math.min(Math.round((currentStep / totalSteps) * 100), 100);
       
       let estimatedTimeLeft = null;
-      if (currentStep > 5 && currentStep < totalSteps) {
-        const elapsed = Date.now() - startTime;
-        const avgTimePerStep = elapsed / currentStep;
-        const remainingSteps = totalSteps - currentStep;
-        estimatedTimeLeft = Math.round((avgTimePerStep * remainingSteps) / 1000);
+      if (chartStartTime !== null && completedCharts > 0 && completedCharts < count) {
+        const averageChartTime = (Date.now() - chartStartTime) / completedCharts;
+        estimatedTimeLeft = Math.max(1, Math.ceil(averageChartTime * (count - completedCharts) / 1000));
+      } else if (completedCharts === count && count > 0) {
+        estimatedTimeLeft = 0;
       }
       
       if (setProgress) {
@@ -462,13 +465,16 @@ export const exportPlottingPdf = async ({
     const chartGap = 4;
     const drawGraphInfoSection = bottom => infoPanel.draw(pageTotalWidth - chartPageMargin - infoBoxHeight, bottom);
 
-    if (chartItems.length) captureSession = await createChartCaptureSession();
-    for (let i = 0; i < chartItems.length; i++) {
-      const el = chartItems[i];
-      updateProgress(`Processing chart ${i + 1} of ${chartItems.length}...`);
+    chartStartTime = Date.now();
+    for (let i = 0; i < count; i++) {
+      updateProgress(`Processing chart ${i + 1} of ${count}: rendering...`, false);
+      const el = getChart ? await getChart(i) : chartItems[i];
+      if (!captureSession) captureSession = await createChartCaptureSession();
 
       await new Promise(resolve => setTimeout(resolve, 0));
+      updateProgress(`Processing chart ${i + 1} of ${count}: capturing image...`, false);
       const { canvas, plots } = await captureSession.capture(el);
+      const sourceWidth = canvas.width, sourceHeight = canvas.height;
 
       // Rotate canvas -90 degrees so it fits portrait page vertically
       const rotatedCanvas = document.createElement("canvas");
@@ -478,8 +484,10 @@ export const exportPlottingPdf = async ({
       ctx.translate(0, canvas.width);
       ctx.rotate(-Math.PI / 2);
       ctx.drawImage(canvas, 0, 0);
+      canvas.width = canvas.height = 0;
 
       // Encode at high quality without an extra base64 copy.
+      updateProgress(`Processing chart ${i + 1} of ${count}: encoding image...`, false);
       const imgData = await canvasJpegBytes(rotatedCanvas);
       doc.addPage();
 
@@ -520,8 +528,8 @@ export const exportPlottingPdf = async ({
       const x = availableLeft + (availableWidth - imgWidth) / 2;
       const y = availableTop + (availableHeight - imgHeight) / 2;
       const printedScales = plots.map(plot => printedGraphScale(plot.plotArea,
-        imgHeight * plot.plotWidthPx / (canvas.width / GRAPH_EXPORT_SCALE),
-        imgWidth * plot.plotHeightPx / (canvas.height / GRAPH_EXPORT_SCALE)));
+        imgHeight * plot.plotWidthPx / (sourceWidth / GRAPH_EXPORT_SCALE),
+        imgWidth * plot.plotHeightPx / (sourceHeight / GRAPH_EXPORT_SCALE)));
 
       // Embed the encoded JPEG without recompressing it.
       doc.addImage(
@@ -551,6 +559,8 @@ export const exportPlottingPdf = async ({
       canvas.width = 0;
       canvas.height = 0;
       rotatedCanvas.width = rotatedCanvas.height = 0;
+      completedCharts++;
+      updateProgress(`Chart ${i + 1} of ${count} completed`);
     }
 
     if (setProgress) {
