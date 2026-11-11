@@ -6,6 +6,74 @@ import { reverseSlopeRatio, slopeRatioToGrade } from "../../client/src/utils/slo
 const fixture = level => ({ pls: 0, rows: ["0/000","0/010"].map(chainage => ({ type:"Chainage", chainage, roadWidth:10, reducedLevels:[level,level,level], intermediateOffsets:[-5,0,5].map(offset=>({offset})) })) });
 const normalized = p => ({...p, rows:p.rows.map(r=>({...r, offsets:r.intermediateOffsets.map(p=>Number(p.offset))}))});
 const survey={type:"Water Way",separator:"/"};
+
+test("width rows apply independent side slopes, overlap overrides and legacy defaults", () => {
+ for (const quantityType of ["cutting", "filling"]) {
+  const base = fixture(12), seed = fixture(12);
+  for (const doc of [base, seed]) doc.rows.push({ ...structuredClone(doc.rows[0]), chainage: "0/020" });
+  const level = quantityType === "cutting" ? 10 : 14;
+  const cs = { fixedBottomEnabled: true, widthMode: "custom", fixedLhs: "1:1", fixedRhs: "1:1", widthRanges: [
+   { from: "all", side: "all", widthOffset: 0, bottomWidth: 4, fixedLhs: "2:1", fixedRhs: "4:1" },
+   { from: "0/010", to: "0/020", side: "all", widthOffset: 0, bottomWidth: 2, fixedLhs: "4:1", fixedRhs: "2:1" },
+  ] };
+  const settings = { mode: "manual", ls: { quantityType }, manualLevels: Object.fromEntries(base.rows.map(row => [row.chainage, level])), cs };
+  const result = applyProposalWorkspace(survey, base, seed, settings);
+  const sign = quantityType === "cutting" ? 1 : -1;
+  assert.equal(Number(result.rows[0].reducedLevels[0]), level + sign * 1.5);
+  assert.equal(Number(result.rows[0].reducedLevels.at(-1)), level + sign * 0.75);
+  assert.equal(Number(result.rows[1].reducedLevels[0]), level + sign);
+  assert.equal(Number(result.rows[1].reducedLevels.at(-1)), level + sign * 2);
+  const quantity = proposalDesignQuantity(survey, base, result);
+  const report = calculateVolumeReport(survey, normalized(base), normalized(result));
+  assert.ok(Math.abs(quantity.cutting - report.totalCuttingVolume) < 0.02);
+  assert.ok(Math.abs(quantity.filling - report.totalFillingVolume) < 0.02);
+  const fallback = applyProposalWorkspace(survey, base, seed, { ...settings, cs: { ...cs, widthRanges: cs.widthRanges.map(({ fixedLhs, fixedRhs, ...row }) => row) } });
+  assert.equal(Number(fallback.rows[0].reducedLevels[0]), level + sign * 3);
+  for (const invalid of ["", "bad", "0:1", "1:-1"]) assert.throws(() => applyProposalWorkspace(survey, base, seed, { ...settings, cs: { ...cs, widthRanges: [{ ...cs.widthRanges[0], fixedLhs: invalid }] } }));
+ }
+});
+
+test("connected custom slopes fit cutting and filling banks from the opposite seed condition", () => {
+ for (const quantityType of ["cutting", "filling"]) {
+  const base = fixture(12), seed = fixture(quantityType === "cutting" ? 13 : 11);
+  for (const doc of [base, seed]) doc.rows.push({ ...structuredClone(doc.rows[0]), chainage: "0/020" });
+  const result = applyProposalWorkspace(survey, base, seed, {
+   waterWorkspace: true,
+   ls: { enabled: true, strategy: "custom", quantityType, custom: { segments: [
+    { from: "0/000", to: "0/010", grade: -1 },
+    { from: "0/010", to: "0/020", grade: -0.5 },
+   ] } },
+   cs: { slopeEnabled: true, lhs: "1:1", rhs: "1:1", berm: 0 },
+  });
+  const centers = result.rows.map(row => Number(row.reducedLevels[row.intermediateOffsets.findIndex(p => Number(p.offset) === 0)]));
+  assert.ok(Math.abs(centers[1] - centers[0] + 0.1) < 1e-8);
+  assert.ok(Math.abs(centers[2] - centers[1] + 0.05) < 1e-8);
+  assert.ok(centers.every(level => quantityType === "cutting" ? level <= 12 : level >= 12));
+  assert.ok(proposalDesignQuantity(survey, base, result)[quantityType] > 0);
+ }
+});
+
+test("waterway side slopes solve filling and cutting with matching elevation bounds", () => {
+ for (const quantityType of ["filling", "cutting"]) for (const enabled of [false, true]) {
+  const base = fixture(12), seed = { ...fixture(10), quantity: 80 };
+  const result = applyProposalWorkspace(survey, base, seed, {
+   waterWorkspace: true,
+   ls: { enabled, strategy: "quantity", grade: 0, quantityType },
+   cs: { slopeEnabled: true, lhs: "1:1", rhs: "1:1", berm: 0 },
+  });
+  const quantity = proposalDesignQuantity(survey, base, result);
+  assert.ok(Math.abs(quantity[quantityType] - 80) < 0.3);
+  assert.equal(quantity[quantityType === "filling" ? "cutting" : "filling"], 0);
+  const row = result.rows[0];
+  const center = Number(row.reducedLevels[row.intermediateOffsets.findIndex(p => Number(p.offset) === 0)]);
+  assert.ok(quantityType === "filling" ? center > 12 : center < 12);
+  assert.equal(row.reducedLevels[0], "12.000");
+  assert.equal(row.reducedLevels.at(-1), "12.000");
+  const report = calculateVolumeReport(survey, normalized(base), normalized(result));
+  assert.ok(Math.abs(quantity.filling - report.totalFillingVolume) < 0.02);
+  assert.ok(Math.abs(quantity.cutting - report.totalCuttingVolume) < 0.02);
+ }
+});
 test("V:H inputs preserve the stored CS geometry and signed LS gradient", () => {
  const base = fixture(12), seed = fixture(10);
  const oldCs = { fixedBottomEnabled:true, bottomWidth:4, fixedLhs:"2:1", fixedRhs:"1:1" };

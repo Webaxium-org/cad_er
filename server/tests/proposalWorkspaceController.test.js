@@ -321,8 +321,8 @@ for (const type of ["Road", "Water Way"]) test(`${type}: combined width All and 
   const design = structuredClone(initialProposalDesign);
   design.template = type === "Water Way" ? "water" : "road";
   Object.assign(design.cs, { fixedBottomEnabled: true, widthMode: "custom", fixedLhs: "2:1", fixedRhs: "1:1", widthRanges: [
-    { from: "all", to: "", widthOffset: "0", side: "all", bottomWidth: "4" },
-    { from: "0/010", to: "0/020", widthOffset: "-2", side: "all", bottomWidth: "2" },
+    { from: "all", to: "", widthOffset: "0", side: "all", bottomWidth: "4", fixedLhs: "2:1", fixedRhs: "3:1" },
+    { from: "0/010", to: "0/020", widthOffset: "-2", side: "all", bottomWidth: "2", fixedLhs: "4:1", fixedRhs: "2:1" },
   ] });
   for (const quantityType of ["cutting", "filling"]) {
     design.ls.quantityType = quantityType;

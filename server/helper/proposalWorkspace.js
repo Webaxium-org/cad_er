@@ -91,9 +91,9 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
   const center = Number(base.pls || 0);
   if (settings.cs?.fixedBottomEnabled && settings.cs?.slopeEnabled) throw Error("Choose either Fixed bottom width or CS slope.");
   const waterTemplate = settings.template ? settings.template === "water" : survey.type === "Water Way";
-  // A fixed-width water section can represent either an excavated channel or
+  // A water section can represent either an excavated channel or
   // a filled embankment. The design condition determines the side direction.
-  const channelShape = waterTemplate && !(settings.cs?.fixedBottomEnabled && settings.ls?.quantityType === "filling");
+  const channelShape = waterTemplate && settings.ls?.quantityType !== "filling";
   const csGeometry = Boolean(settings.cs?.fixedBottomEnabled || (settings.cs?.slopeEnabled && settings.cs?.lhs != null));
   const camber = settings.cs?.camberEnabled ? number(settings.cs.camber, "camber") / 100 : 0;
   const sectionSettings = row => {
@@ -117,6 +117,8 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
         cs.bottomWidth = entry.bottomWidth;
         cs.widthOffset = custom ? number(entry.widthOffset, "width offset") : 0;
         cs.widthSide = side;
+        cs.fixedLhs = entry.fixedLhs ?? settings.cs.fixedLhs;
+        cs.fixedRhs = entry.fixedRhs ?? settings.cs.fixedRhs;
       } else {
         const ratio = entry.horizontal != null && entry.vertical != null ? String(entry.horizontal) + ":" + String(entry.vertical) : null;
         if (ratio && side !== "rhs") cs.lhs = ratio;
@@ -188,7 +190,7 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
     if (settings.waterWorkspace && csGeometry && !settings.cs.fixedBottomEnabled && !slopeEnabled) {
       const cs = sectionSettings(row);
       if (cs) {
-        const bounds = csElevationBounds(sourceRows.get(row.chainage), center, cs, waterTemplate);
+        const bounds = csElevationBounds(sourceRows.get(row.chainage), center, cs, channelShape);
         target = Math.min(bounds.max, Math.max(bounds.min, target));
       }
     }
@@ -203,6 +205,35 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
       return next + offset * superElevation - Math.abs(offset) * camber;
     });
   });
+  // Fit each connected custom profile into the bank limits while preserving
+  // its entered gradients and continuity. Its initial seed RL may belong to
+  // the opposite design condition.
+  if (customSlope && csGeometry && !settings.cs.fixedBottomEnabled) {
+    const groups = [];
+    for (const segment of customSegments) {
+      const previous = groups.at(-1);
+      if (previous && previous.to === segment.from) previous.to = segment.to;
+      else groups.push({ from: segment.from, to: segment.to });
+    }
+    for (const group of groups) {
+      const selected = rows.filter(row => {
+        const position = chainageMetres(row.chainage, separator);
+        return position >= group.from && position <= group.to;
+      });
+      let low = -Infinity, high = Infinity;
+      for (const row of selected) {
+        const cs = sectionSettings(row);
+        if (!cs) continue;
+        const bounds = csElevationBounds(sourceRows.get(row.chainage), center, cs, channelShape);
+        const current = interpolateGround(groundProfile(row), center);
+        low = Math.max(low, bounds.min - current);
+        high = Math.min(high, bounds.max - current);
+      }
+      if (low > high + 1e-7) throw Error("No profile elevation fits the selected custom slopes and bank levels. Adjust the LS slopes or cross-section settings.");
+      const amount = Math.min(high, Math.max(low, 0));
+      for (const row of selected) row.reducedLevels = row.reducedLevels.map(value => Number(value) + amount);
+    }
+  }
   // The reference LS elevation may sit above a bank (or below the feasible
   // slope toes). Find the allowed shift before constructing CS geometry.
   const shift = (amount) => roundProposalLevels({ ...draft, rows: draft.rows.map((row) => row.type !== "Chainage" ? row : csGeometry ? shapeSection(row, interpolateGround(groundProfile(row), center) + amount) : { ...row, reducedLevels: row.reducedLevels.map((value) => Number(value) + amount) }) });
@@ -218,7 +249,7 @@ export const applyProposalWorkspace = (survey, base, seed, settings = {}) => {
       for (const row of rows) {
         const cs = sectionSettings(row);
         if (!cs) continue;
-        const bounds = csElevationBounds(sourceRows.get(row.chainage), center, cs, waterTemplate);
+        const bounds = csElevationBounds(sourceRows.get(row.chainage), center, cs, channelShape);
         const current = interpolateGround(groundProfile(row), center);
         low = Math.max(low, bounds.min-current); high = Math.min(high, bounds.max-current);
       }

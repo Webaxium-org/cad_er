@@ -299,6 +299,7 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
         const custom = design.cs[mode] === "custom";
         const entries = custom ? (design.cs[ranges] || []) : width ? [{
           from: "all", to: "", widthOffset: "0", side: design.cs.side || "all", bottomWidth: design.cs.bottomWidth ?? "",
+          fixedLhs: design.cs.fixedLhs ?? "1:1", fixedRhs: design.cs.fixedRhs ?? "1:1",
         }] : [design.cs];
         const edit = (index, key, value) => {
           if (width) {
@@ -330,16 +331,17 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
           <FormControlLabel label={width ? "Design width" : "Design side slope"} control={<Switch checked={Boolean(design.cs[enabled])} onChange={event => onChange({ ...design, cs: { ...design.cs, [enabled]: event.target.checked, [width ? "slopeEnabled" : "fixedBottomEnabled"]: false } })} />} />
           {design.cs[enabled] && <Stack spacing={1.5} sx={{ mt: 1, width: "100%", boxSizing: "border-box", p: { xs: 1.5, sm: 2.5 }, border: "1px solid #e0e7ff", borderRadius: "20px", minWidth: 0, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }}>
             {width && isWaterWay && <Typography variant="body2" color="text.secondary">{filledTop ? "Filling: flat top with side slopes falling outward." : "Cutting: flat bed with side slopes rising outward."} Change the design condition in the LS tab.</Typography>}
-            {(width || custom) && <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}><Typography fontWeight={600} color="#334155">{width ? "Chainage ranges & widths" : "Chainage ranges & slopes"}</Typography><Button variant="contained" disableElevation sx={{ alignSelf: "flex-end", flexShrink: 0, bgcolor: "#6366f1", borderRadius: "10px", textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }} startIcon={<FiPlus />} onClick={() => onChange({ ...design, cs: { ...design.cs, [mode]: "custom", [ranges]: [...entries, { from: stations[0]?.chainage || "", to: stations.at(-1)?.chainage || "", side: "all", horizontal: "1", vertical: "1", berm: "0", bottomWidth: "", widthOffset: "0" }] } })}>Add range</Button></Stack>}
-            {width && <Typography variant="caption" color="text.secondary">All covers every chainage. Later rows override earlier rows where chainage ranges overlap.</Typography>}
-            <TableContainer sx={{ border: "1px solid #e0e7ff", borderRadius: "14px", maxHeight: 360 }}><Table size="small" stickyHeader sx={{ width: "100%", minWidth: width ? 808 : 748, tableLayout: "fixed", "& th, & td": { px: 2, py: 1 }, "& th": { whiteSpace: "nowrap", bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 700 }, "& td": { borderColor: "#eef2ff", py: 1.5 }, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }}>
+            {(width || custom) && <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}><Typography fontWeight={600} color="#334155">{width ? "Chainage ranges, widths & slopes" : "Chainage ranges & slopes"}</Typography><Button variant="contained" disableElevation sx={{ alignSelf: "flex-end", flexShrink: 0, bgcolor: "#6366f1", borderRadius: "10px", textTransform: "none", "&:hover": { bgcolor: "#4f46e5" } }} startIcon={<FiPlus />} onClick={() => onChange({ ...design, cs: { ...design.cs, [mode]: "custom", [ranges]: [...entries, { from: stations[0]?.chainage || "", to: stations.at(-1)?.chainage || "", side: "all", horizontal: "1", vertical: "1", berm: "0", bottomWidth: "", widthOffset: "0", fixedLhs: design.cs.fixedLhs ?? "1:1", fixedRhs: design.cs.fixedRhs ?? "1:1" }] } })}>Add range</Button></Stack>}
+            {width && <Typography variant="caption" color="text.secondary">All covers every chainage. Set LHS and RHS side slopes as V:H (vertical:horizontal). Later rows override earlier rows where chainage ranges overlap.</Typography>}
+            <TableContainer sx={{ border: "1px solid #e0e7ff", borderRadius: "14px", maxHeight: 360 }}><Table size="small" stickyHeader sx={{ width: "100%", minWidth: width ? 1120 : 748, tableLayout: "fixed", "& th, & td": { px: 2, py: 1 }, "& th": { whiteSpace: "nowrap", bgcolor: "#eef2ff", color: "#4f46e5", fontWeight: 700 }, "& td": { borderColor: "#eef2ff", py: 1.5 }, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8f9fe" } }}>
               <colgroup>
-                <col style={{ width: width ? "21%" : "24%" }} /><col style={{ width: width ? "21%" : "24%" }} />
-                {width && <col style={{ width: "16%" }} />}
-                <col style={{ width: "14%" }} /><col style={{ width: "18%" }} />
-                {!width && <col style={{ width: "14%" }} />}<col style={{ width: width ? "10%" : "6%" }} />
+                <col style={{ width: width ? "16%" : "24%" }} /><col style={{ width: width ? "16%" : "24%" }} />
+                {width && <col style={{ width: "11%" }} />}
+                <col style={{ width: width ? "10%" : "14%" }} /><col style={{ width: width ? "11%" : "18%" }} />
+                {width && <><col style={{ width: "15%" }} /><col style={{ width: "15%" }} /></>}
+                {!width && <col style={{ width: "14%" }} />}<col style={{ width: "6%" }} />
               </colgroup>
-              <TableHead><TableRow><TableCell>Start chainage</TableCell><TableCell>End chainage</TableCell>{width && <TableCell>Offset (m)</TableCell>}<TableCell>Side</TableCell><TableCell>{width ? "Width (m)" : "Slope V:H"}</TableCell>{!width && <TableCell>Berm (m)</TableCell>}<TableCell /></TableRow></TableHead>
+              <TableHead><TableRow><TableCell>Start chainage</TableCell><TableCell>End chainage</TableCell>{width && <TableCell>Offset (m)</TableCell>}<TableCell>Side</TableCell><TableCell>{width ? "Width (m)" : "Slope V:H"}</TableCell>{width && <><TableCell>LHS slope (V:H)</TableCell><TableCell>RHS slope (V:H)</TableCell></>}{!width && <TableCell>Berm (m)</TableCell>}<TableCell /></TableRow></TableHead>
               <TableBody>{entries.map((entry, index) => <TableRow key={index}>
                 {["from", "to"].map(key => {
                   const all = width ? entry.from === "all" : !custom;
@@ -348,11 +350,25 @@ export default function ProposalDesignControls({ tab, isWaterWay, design, onChan
                 {width && <TableCell><TextField fullWidth size="small" type="number" label="Offset" slotProps={{ htmlInput: { step: "any" } }} value={entry.widthOffset ?? "0"} onChange={event => edit(index, "widthOffset", event.target.value)} /></TableCell>}
                 <TableCell><TextField fullWidth select size="small" label="Side" sx={{ minWidth: 90 }} value={entry.side || "all"} onChange={event => edit(index, "side", event.target.value)}>{(width ? [["all", "All"], ["lhs", "LHS"], ["rhs", "RHS"]] : [["lhs", "LHS"], ["rhs", "RHS"], ["all", "All"]]).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField></TableCell>
                 <TableCell>{width ? <TextField fullWidth size="small" type="number" label="Width" slotProps={{ htmlInput: { step: "any" } }} value={entry.bottomWidth ?? ""} onChange={event => edit(index, "bottomWidth", event.target.value)} /> : <Stack direction="row" alignItems="center" spacing={0.75} divider={<Typography aria-hidden="true" sx={{ color: "#64748b", fontWeight: 700 }}>:</Typography>}>{["vertical", "horizontal"].map((key, part) => <TextField fullWidth key={key} size="small" type="number" label={part ? "H" : "V"} sx={{ minWidth: 0, width: 44, flexShrink: 0, "& input": { px: 0.5, MozAppearance: "textfield" }, "& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button": { WebkitAppearance: "none", margin: 0 } }} value={entry[key] ?? "1"} onChange={event => edit(index, key, event.target.value)} />)}</Stack>}</TableCell>
+                {width && ["fixedLhs", "fixedRhs"].map(key => <TableCell key={key}>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    {["V", "H"].map((label, part) => <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.5, flex: 1, minWidth: 0 }}>
+                      {part === 1 && <Typography aria-hidden="true">:</Typography>}
+                      <TextField fullWidth size="small" type="number" label={label}
+                        value={reverseSlopeRatio(entry[key] ?? design.cs[key] ?? "1:1").split(":")[part] ?? ""}
+                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: part === 0 ? 0 : "0.000001", step: "any", "aria-label": (key === "fixedLhs" ? "LHS" : "RHS") + " slope " + label + " for width range " + (index + 1) } }}
+                        onChange={event => {
+                          const parts = reverseSlopeRatio(entry[key] ?? design.cs[key] ?? "1:1").split(":");
+                          parts[part] = event.target.value;
+                          edit(index, key, reverseSlopeRatio(parts.join(":")));
+                        }} sx={{ "& input": { px: 0.75 } }} />
+                    </Box>)}
+                  </Stack>
+                </TableCell>)}
                 {!width && <TableCell><TextField fullWidth size="small" type="number" label="Berm" value={entry.berm ?? "0"} onChange={event => edit(index, "berm", event.target.value)} /></TableCell>}
                 <TableCell>{(width || custom) && <IconButton color="error" disabled={width && entries.length <= 1} aria-label={"Remove range " + (index + 1)} onClick={() => update("cs", ranges, entries.filter((_, i) => i !== index))}><FiTrash2 /></IconButton>}</TableCell>
               </TableRow>)}</TableBody>
             </Table></TableContainer>
-            {width && <Stack direction="row" spacing={1}>{[["fixedLhs", "LHS slope (V:H)"], ["fixedRhs", "RHS slope (V:H)"]].map(([key, label]) => <TextField key={key} fullWidth size="small" label={label} value={reverseSlopeRatio(design.cs[key] ?? "1:1")} onChange={event => update("cs", key, reverseSlopeRatio(event.target.value))} />)}</Stack>}
           </Stack>}
         </Box>;
       })}
